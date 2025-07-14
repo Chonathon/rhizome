@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import {Artist, BasicNode, Genre, LastFMArtistJSON, LastFMSearchArtistData, NodeLink} from "@/types";
+import {Artist, BasicNode, Genre, GenreClusterMode, LastFMArtistJSON, LastFMSearchArtistData, NodeLink} from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -40,4 +40,17 @@ export const generateSimilarLinks = (artists: Artist[]) => {
 
 export const isGenre = (item: BasicNode) => {
   return "artistCount" in item;
+}
+
+export const isParentGenre = (genre: Genre, genreClusterMode: GenreClusterMode) => {
+  switch (genreClusterMode) {
+    case "subgenre":
+      return genre.subgenre_of.length === 0 && genre.subgenres.length > 0;
+    case "influence":
+      return genre.influenced_by.length === 0 && genre.influenced_genres.length > 0;
+    case "fusion":
+      return genre.fusion_of.length === 0 && genre.fusion_genres.length > 0;
+    default:
+      return false;
+  }
 }

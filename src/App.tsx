@@ -9,7 +9,16 @@ import useGenres from "@/hooks/useGenres";
 import useArtist from "@/hooks/useArtist";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
-import {Artist, BasicNode, Genre, GraphType, LastFMArtistJSON, LastFMSearchArtistData, NodeLink} from "@/types";
+import {
+  Artist,
+  BasicNode,
+  Genre,
+  GenreClusterMode, GenreGraphData,
+  GraphType,
+  LastFMArtistJSON,
+  LastFMSearchArtistData,
+  NodeLink
+} from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
 import { ListViewPanel } from "@/components/ListViewPanel";
@@ -17,11 +26,11 @@ import { useMediaQuery } from 'react-responsive';
 import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
-import {generateSimilarLinks} from "@/lib/utils";
+import {generateSimilarLinks, isParentGenre} from "@/lib/utils";
 import { ModeToggle } from './components/ModeToggle';
 
 function App() {
-  const [selectedGenre, setSelectedGenre] = useState<string | undefined>(undefined);
+  const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showListView, setShowListView] = useState(false);
   const [showArtistCard, setShowArtistCard] = useState(false);
@@ -29,12 +38,15 @@ function App() {
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
+  const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode>('subgenre');
+  const [dagGenreData, setDagGenreData] = useState<GenreGraphData>();
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
-  const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre);
+  const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
   const { artistData, artistLoading, artistError } = useArtist(selectedArtist);
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
+  const PARENT_GENRE_THRESHOLD = 2000;
 
   useEffect(() => {
     setCurrentArtists(artists);
@@ -64,7 +76,10 @@ function App() {
       setShowArtistCard(true);
     }
   }
-  const onGenreNodeClick = (genre: string) => {
+  const onGenreNodeClick = (genre: Genre) => {
+    if (isParentGenre(genre, genreClusterMode)) {
+      setGraph('genreDAG');
+    }
     setSelectedGenre(genre);
     setGraph('artists');
   }
@@ -123,7 +138,7 @@ function App() {
             : " inline-flex flex-col gap-2 items-start"
         }>
             <BreadcrumbHeader
-                selectedGenre={selectedGenre}
+                selectedGenre={selectedGenre ? selectedGenre.name : undefined}
                 selectedArtist={selectedArtist}
                 HomeIcon={Waypoints}
                 toggleListView={() => setShowListView(!showListView)}
@@ -147,8 +162,7 @@ function App() {
 
       </div>
         <GenresForceGraph
-            genres={genres}
-            links={genreLinks}
+            genresGraphData={{nodes: genres, links: genreLinks}}
             onNodeClick={onGenreNodeClick}
             loading={genresLoading}
             show={graph === 'genres' && !genresError}
