@@ -69,3 +69,5 @@ export type GraphType = 'genres' | 'artists' | 'similarArtists';
 export interface LastFMSearchArtistData extends BasicNode {
     listeners: number;
 }
+
+export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion';
