@@ -12,12 +12,13 @@ interface GenresForceGraphProps {
     onNodeClick: (genre: Genre) => void;
     loading: boolean;
     show: boolean;
+    dag: boolean;
 }
 
 // Helper to estimate label width based on name length and font size
 const estimateLabelWidth = (name: string, fontSize: number) => name.length * (fontSize * 0.6);
 
-const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, onNodeClick, loading, show }) => {
+const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, onNodeClick, loading, show, dag }) => {
     const [graphData, setGraphData] = useState<GraphData<Genre, NodeLink>>({ nodes: [], links: [] });
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const { theme } = useTheme();

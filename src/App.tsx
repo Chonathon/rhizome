@@ -26,7 +26,7 @@ import { useMediaQuery } from 'react-responsive';
 import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
-import {generateSimilarLinks, isParentGenre} from "@/lib/utils";
+import {buildGenreTree, generateSimilarLinks, isParentGenre} from "@/lib/utils";
 import { ModeToggle } from './components/ModeToggle';
 
 function App() {
@@ -77,9 +77,13 @@ function App() {
     }
   }
   const onGenreNodeClick = (genre: Genre) => {
-    if (isParentGenre(genre, genreClusterMode)) {
-      setGraph('genreDAG');
+    if (graph === 'genres') {
+      if (isParentGenre(genre, genreClusterMode)) {
+        setDagGenreData(buildGenreTree(genres, genre, genreClusterMode));
+        setGraph('genreDAG');
+      }
     }
+
     setSelectedGenre(genre);
     setGraph('artists');
   }
