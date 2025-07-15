@@ -39,19 +39,22 @@ function App() {
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode>('subgenre');
-  const [dagGenreData, setDagGenreData] = useState<GenreGraphData>();
+  const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
   const { artistData, artistLoading, artistError } = useArtist(selectedArtist);
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
-  const PARENT_GENRE_THRESHOLD = 2000;
 
   useEffect(() => {
     setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
   }, [artists]);
+
+  useEffect(() => {
+    setCurrentGenres({nodes: genres, links: genreLinks});
+  }, [genres]);
 
   useEffect(() => {
     if (canCreateSimilarArtistGraph && artistData?.similar && selectedArtist && selectedArtist.name === artistData.name) {
@@ -79,13 +82,16 @@ function App() {
   const onGenreNodeClick = (genre: Genre) => {
     if (graph === 'genres') {
       if (isParentGenre(genre, genreClusterMode)) {
-        setDagGenreData(buildGenreTree(genres, genre, genreClusterMode));
         setGraph('genreDAG');
+        setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
+      } else {
+        setSelectedGenre(genre);
+        setGraph('artists');
       }
+    } else {
+      setSelectedGenre(genre);
+      setGraph('artists');
     }
-
-    setSelectedGenre(genre);
-    setGraph('artists');
   }
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
@@ -98,10 +104,14 @@ function App() {
   }
   const resetAppState = () => {
     setGraph('genres');
+    setCurrentGenres({nodes: genres, links: genreLinks});
     setSelectedGenre(undefined);
     setSelectedArtist(undefined);
     setShowArtistCard(false);
     setShowListView(false);
+    setCanCreateSimilarArtistGraph(false);
+    setCurrentArtists([]);
+    setCurrentArtistLinks([]);
   }
   const deselectArtist = () => {
     setSelectedArtist(undefined);
@@ -128,6 +138,8 @@ function App() {
   artistData,
   artistLoading,
   artistError,
+  graph,
+  currentGenres
 });
   return (
     <div className="relative min-h-screen min-w-screen">
@@ -166,10 +178,11 @@ function App() {
 
       </div>
         <GenresForceGraph
-            genresGraphData={{nodes: genres, links: genreLinks}}
+            genresGraphData={currentGenres}
             onNodeClick={onGenreNodeClick}
             loading={genresLoading}
-            show={graph === 'genres' && !genresError}
+            show={(graph === 'genres' || graph === 'genreDAG') && !genresError}
+            dag={graph === 'genreDAG'}
         />
         <ArtistsForceGraph
             artists={currentArtists}

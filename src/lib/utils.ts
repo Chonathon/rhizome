@@ -44,12 +44,18 @@ export const isGenre = (item: BasicNode) => {
 
 export const isParentGenre = (genre: Genre, genreClusterMode: GenreClusterMode) => {
   switch (genreClusterMode) {
+    // case "subgenre":
+    //   return genre.subgenre_of.length === 0 && genre.subgenres.length > 0;
+    // case "influence":
+    //   return genre.influenced_by.length === 0 && genre.influenced_genres.length > 0;
+    // case "fusion":
+    //   return genre.fusion_of.length === 0 && genre.fusion_genres.length > 0;
     case "subgenre":
-      return genre.subgenre_of.length === 0 && genre.subgenres.length > 0;
+      return genre.subgenres.length > 0;
     case "influence":
-      return genre.influenced_by.length === 0 && genre.influenced_genres.length > 0;
+      return genre.influenced_genres.length > 0;
     case "fusion":
-      return genre.fusion_of.length === 0 && genre.fusion_genres.length > 0;
+      return genre.fusion_genres.length > 0;
     default:
       return false;
   }

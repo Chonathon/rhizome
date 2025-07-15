@@ -8,7 +8,7 @@ import { useTheme } from "next-themes";
 
 
 interface GenresForceGraphProps {
-    genresGraphData: GenreGraphData;
+    genresGraphData?: GenreGraphData;
     onNodeClick: (genre: Genre) => void;
     loading: boolean;
     show: boolean;
@@ -44,7 +44,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, on
                     const padding = 10;
                     return Math.max(radius + padding, labelWidth + padding);
                 })));
-                fgRef.current.zoom(.15);
+                fgRef.current.zoom(dag ? 0.3 : 0.15);
                 // fgRef.current.centerAt(0, 0, 0);
             }
         }
@@ -101,7 +101,9 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, on
              d3VelocityDecay={0.8}    // How springy tugs feel; smaller → more inertia
             cooldownTime={8000} // How long to run the simulation before stopping
             graphData={graphData}
-            linkCurvature={0.3}
+            dagMode={dag ? 'radialout' : undefined}
+            dagLevelDistance={300}
+            linkCurvature={dag ? 0 : 0.3}
             linkColor={() => theme === "dark" ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
             linkWidth={0.5}
             onNodeClick={node => onNodeClick(node)}
