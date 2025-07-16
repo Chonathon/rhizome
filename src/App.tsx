@@ -40,7 +40,14 @@ function App() {
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode>('subgenre');
-  const [dagMode, setDagMode] = useState<boolean>(false);
+  const [dagMode, setDagMode] = useState<boolean>(() => {
+    const storedDagMode = localStorage.getItem('dagMode');
+    return storedDagMode ? JSON.parse(storedDagMode) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('dagMode', JSON.stringify(dagMode));
+  }, [dagMode]);
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const { genres, genreLinks, genresLoading, genresError } = useGenres(genreClusterMode);
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);

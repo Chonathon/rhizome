@@ -122,7 +122,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, on
             graphData={graphData}
             dagMode={dag ? 'radialout' : undefined}
             dagLevelDistance={200}
-            linkCurvature={dag ? 0 : 0.3}
+            linkCurvature={dag ? 0 : 0.5}
             linkColor={() => theme === "dark" ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.18)'}
             linkWidth={1}
             onNodeClick={node => onNodeClick(node)}
