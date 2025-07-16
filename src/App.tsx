@@ -175,8 +175,10 @@ function App() {
                 isMobile={isMobile}
             /> */}
             </div>
-          <ModeToggle />
-
+            <ModeToggle />
+          <div className="fixed right-0 bottom-4 justify-end gap-2">
+            <ClusteringPanel clusterMode={genreClusterMode} setClusterMode={setGenreClusterMode} />
+          </div>
       </div>
         <GenresForceGraph
             genresGraphData={currentGenres}
@@ -233,7 +235,7 @@ function App() {
                 />
               </motion.div>
             </div>
-            <ClusteringPanel clusterMode={genreClusterMode} setClusterMode={setGenreClusterMode} />
+            
           </motion.div>
         </AnimatePresence>
     </div>
