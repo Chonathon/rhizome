@@ -41,7 +41,7 @@ function App() {
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode>('subgenre');
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
-  const { genres, genreLinks, genresLoading, genresError } = useGenres();
+  const { genres, genreLinks, genresLoading, genresError } = useGenres(genreClusterMode);
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
   const { artistData, artistLoading, artistError } = useArtist(selectedArtist);
 
@@ -55,7 +55,7 @@ function App() {
 
   useEffect(() => {
     setCurrentGenres({nodes: genres, links: genreLinks});
-  }, [genres]);
+  }, [genres, genreLinks]);
 
   useEffect(() => {
     if (canCreateSimilarArtistGraph && artistData?.similar && selectedArtist && selectedArtist.name === artistData.name) {

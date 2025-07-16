@@ -27,7 +27,7 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
             );
         }
 
-    }, [artists]);
+    }, [artists, artistLinks]);
 
     return !show ? null : loading ? (<div className="flex-1 h-[calc(100vh-104px)] w-full">
         <Loading />
