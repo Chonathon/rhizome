@@ -48,10 +48,9 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, on
                 // fgRef.current.d3Force('center')?.strength(-1, -1);
                 fgRef.current.d3Force('charge')?.strength(-55); // Applies a repelling force between all nodes
                 fgRef.current.d3Force('link')?.distance(70); //how far apart linked nodes want to be and how tightly they pull
-                fgRef.current.d3Force('link')?.strength(0.01); // Prevents nodes from overlapping, based on radius and label width
-                fgRef.current.d3Force('collide')?.strength(300);
-                fgRef.current.d3Force('x', d3.forceX(0).strength(0.02));
-                fgRef.current.d3Force('y', d3.forceY(0).strength(0.02));
+                fgRef.current.d3Force('link')?.strength(0.5); // Prevents nodes from overlapping, based on radius and label width
+                // fgRef.current.d3Force('x', d3.forceX(0).strength(0.02));
+                // fgRef.current.d3Force('y', d3.forceY(0).strength(0.02));
                 fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(0.05));
                 
                 // fgRef.current.d3Force('charge')?.strength(-55);
@@ -60,7 +59,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, on
                 // fgRef.current.d3Force('collide')?.strength(1);
                 const fontSize = 10;
                 const labelWidthBuffer = 20;
-
+                
                 fgRef.current.d3Force('collide', forceCollide((node => {
                     const genreNode = node as Genre;
                     const radius = calculateRadius(genreNode.artistCount);
@@ -68,6 +67,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, on
                     const padding = 10;
                     return Math.max(radius + padding, labelWidth + padding);
                 })));
+                fgRef.current.d3Force('collide')?.strength(.5);
                 fgRef.current.zoom(dag ? 0.3 : 0.3);
                 // fgRef.current.centerAt(0, 0, 0);
             }
