@@ -27,6 +27,7 @@ import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import {buildGenreTree, generateSimilarLinks, isParentGenre} from "@/lib/utils";
+import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 
 function App() {
@@ -183,6 +184,7 @@ function App() {
             loading={genresLoading}
             show={(graph === 'genres' || graph === 'genreDAG') && !genresError}
             dag={graph === 'genreDAG'}
+            clusterMode={genreClusterMode}
         />
         <ArtistsForceGraph
             artists={currentArtists}
@@ -231,6 +233,7 @@ function App() {
                 />
               </motion.div>
             </div>
+            <ClusteringPanel clusterMode={genreClusterMode} setClusterMode={setGenreClusterMode} />
           </motion.div>
         </AnimatePresence>
     </div>

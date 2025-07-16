@@ -1,30 +1,32 @@
-import { useState } from "react";
+import { GenreClusterMode } from "@/types";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function ClusteringPanel() {
-    const [selected, setSelected] = useState("genre")
+interface ClusteringPanelProps {
+    clusterMode: GenreClusterMode;
+    setClusterMode: (mode: GenreClusterMode) => void;
+}
+
+export default function ClusteringPanel({ clusterMode, setClusterMode }: ClusteringPanelProps) {
     const options = [
-        { id: "genre", label: "Genre", description: "Clusters artists who have worked together on songs, albums, or live performances. Ideal for visualizing creative partnerships and discovering interconnected artist networks" },
-        { id: "collab", label: "Collaboratons", description: "Finds relationships between artists who have worked together on songs, albums, or live performances. Ideal for visualizing creative partnerships and discovering interconnected artist networks." },
-        { id: "fanbase", label: "Common Fanbase", description: "Organizes artists by audience overlap. This can help surface surprising connections between artists across genres or scenes." },
-        { id: "popularity", label: "Popularity", description: "Groups artists by their general level of popularity, such as streaming numbers or chart performance. Use this to see how top artists relate to rising or niche ones in the broader music landscape." },
+        { id: "subgenre", label: "Hierarchy", description: "Clusters genres based on their parent-child relationships, such as 'rock' and its subgenre 'alternative rock'." },
+        { id: "influence", label: "Influence", description: "Visualizes how genres have influenced each other over time, revealing historical connections and the evolution of musical styles." },
+        { id: "fusion", label: "Fusion", description: "Highlights genres that have merged to create new, hybrid genres, like 'jazz fusion' or 'folk punk'." },
     ];
-    
+
     return (
-        // TODO: add animation to accordion effect
-        <div>
+        <div className="w-full max-w-md mx-auto">
             <RadioGroup
-              value={selected}
-              onValueChange={setSelected}
-              className="flex flex-col items-start w-full gap-0.5 p-1 bg-gray-50 border border-gray-200 rounded-xl shadow-sm"
+              value={clusterMode}
+              onValueChange={(value) => setClusterMode(value as GenreClusterMode)}
+              className="flex flex-col items-start w-full gap-1 p-2 bg-white/10 dark:bg-black/10 border border-white/20 dark:border-black/20 rounded-2xl shadow-lg backdrop-blur-sm"
             >
                 {options.map((option) => (
                   <div key={option.id} className="w-full">
                     <label
                       htmlFor={option.id}
-                      className={`flex items-start w-full gap-2 rounded-xl p-3 transition-colors cursor-pointer ${
-                        selected === option.id ? "bg-gray-200" : "hover:bg-gray-100"
+                      className={`flex items-start w-full gap-3 rounded-xl p-3 transition-colors cursor-pointer ${
+                        clusterMode === option.id ? "bg-white/20 dark:bg-black/20" : "hover:bg-white/10 dark:hover:bg-black/10"
                       }`}
                     >
                       <RadioGroupItem
@@ -33,22 +35,23 @@ export default function ClusteringPanel() {
                         className="mt-1 sr-only"
                       />
                       <div className="flex flex-col items-start">
-                        <span className="text-md font-medium leading-none">
+                        <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">
                           {option.label}
                         </span>
                           <AnimatePresence mode="wait" initial={false}>
-                            {selected === option.id && (
+                            {clusterMode === option.id && (
                               <motion.p
-                            
+
                               key={option.id}
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: .8 }}
+                              initial={{ opacity: 0, height: 0, y: -10 }}
+                              animate={{ opacity: 1, height: "auto", y: 0 }}
+                              exit={{ opacity: 0, height: 0, y: -10 }}
                               transition={{
-                                opacity: { duration: 0.25, ease: "easeOut" },
-                                height: { duration: 0.25, ease: "easeOut" }
+                                opacity: { duration: 0.2, ease: "easeOut" },
+                                height: { duration: 0.2, ease: "easeOut" },
+                                y: { duration: 0.2, ease: "easeOut" }
                               }}
-                                className="text-md text-muted-foreground mt-1 text-left"
+                                className="text-sm text-gray-700 dark:text-gray-300 mt-1 text-left"
                               >
                                 {option.description}
                               </motion.p>
