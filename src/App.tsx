@@ -40,6 +40,7 @@ function App() {
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode>('subgenre');
+  const [dagMode, setDagMode] = useState<boolean>(false);
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const { genres, genreLinks, genresLoading, genresError } = useGenres(genreClusterMode);
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
@@ -177,7 +178,7 @@ function App() {
             </div>
             <ModeToggle />
           <div className="fixed right-0 bottom-4 justify-end gap-2">
-            <ClusteringPanel clusterMode={genreClusterMode} setClusterMode={setGenreClusterMode} />
+            <ClusteringPanel clusterMode={genreClusterMode} setClusterMode={setGenreClusterMode} dagMode={dagMode} setDagMode={setDagMode} />
           </div>
       </div>
         <GenresForceGraph
@@ -185,7 +186,7 @@ function App() {
             onNodeClick={onGenreNodeClick}
             loading={genresLoading}
             show={(graph === 'genres' || graph === 'genreDAG') && !genresError}
-            dag={graph === 'genreDAG'}
+            dag={dagMode}
             clusterMode={genreClusterMode}
         />
         <ArtistsForceGraph

@@ -1,13 +1,16 @@
 import { GenreClusterMode } from "@/types";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { motion, AnimatePresence } from "framer-motion";
+import { Switch } from "@/components/ui/switch";
 
 interface ClusteringPanelProps {
     clusterMode: GenreClusterMode;
     setClusterMode: (mode: GenreClusterMode) => void;
+    dagMode: boolean;
+    setDagMode: (enabled: boolean) => void;
 }
 
-export default function ClusteringPanel({ clusterMode, setClusterMode }: ClusteringPanelProps) {
+export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, setDagMode }: ClusteringPanelProps) {
     const options = [
         { id: "subgenre", label: "Hierarchy", description: "Clusters genres based on their parent-child relationships, such as 'rock' and its subgenre 'alternative rock'." },
         { id: "influence", label: "Influence", description: "Visualizes how genres have influenced each other over time, revealing historical connections and the evolution of musical styles." },
@@ -61,6 +64,13 @@ export default function ClusteringPanel({ clusterMode, setClusterMode }: Cluster
                     </label>
                   </div>
                 ))}
+                <div className="flex items-center justify-between w-full p-3">
+                    <div className="flex flex-col">
+                        <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">DAG Mode</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300 mt-1">Display as a directed acyclic graph.</span>
+                    </div>
+                    <Switch checked={dagMode} onCheckedChange={setDagMode} />
+                </div>
             </RadioGroup>
         </div>
     )
