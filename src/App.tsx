@@ -183,11 +183,15 @@ function App() {
                 isMobile={isMobile}
             /> */}
             </div>
-            <ModeToggle />
-          <div className="fixed right-0 bottom-4 justify-end gap-2">
-            <ClusteringPanel clusterMode={genreClusterMode} setClusterMode={setGenreClusterMode} dagMode={dagMode} setDagMode={setDagMode} />
-          </div>
       </div>
+          <div className="fixed flex flex-col h-auto right-4 top-4 justify-end gap-3 z-50">
+              <ModeToggle />
+              <ClusteringPanel 
+                clusterMode={genreClusterMode} 
+                setClusterMode={setGenreClusterMode} 
+                dagMode={dagMode} 
+                setDagMode={setDagMode} />
+          </div>
         <GenresForceGraph
             genresGraphData={currentGenres}
             onNodeClick={onGenreNodeClick}
