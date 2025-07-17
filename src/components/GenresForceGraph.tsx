@@ -47,9 +47,9 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, on
 
             if (fgRef.current) {
                 // fgRef.current.d3Force('center')?.strength(-1, -1);
-                fgRef.current.d3Force('charge')?.strength(dag ? -200 : -70); // Applies a repelling force between all nodes
+                fgRef.current.d3Force('charge')?.strength(dag ? -1230 : -70); // Applies a repelling force between all nodes
                 fgRef.current.d3Force('link')?.distance(dag ? 150 : 70); //how far apart linked nodes want to be and how tightly they pull
-                fgRef.current.d3Force('link')?.strength(dag ? .5 : 0.8); 
+                fgRef.current.d3Force('link')?.strength(dag ? 1 : 0.8); 
                 // fgRef.current.d3Force('x', d3.forceX(0).strength(0.02));
                 // fgRef.current.d3Force('y', d3.forceY(0).strength(0.02));
                 fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(dag ? 0.01 : .1));
@@ -64,8 +64,8 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, on
                     const padding = 8; 
                     return Math.max(radius + padding, Math.sqrt(labelWidth * labelWidth + labelHeight * labelHeight) / 2 + padding);
                 })));
-                fgRef.current.d3Force('collide')?.strength(.7); // Increased strength
-                fgRef.current.zoom(dag ? 0.3 : 0.18);
+                fgRef.current.d3Force('collide')?.strength(dag ? .02: .7); // Increased strength
+                fgRef.current.zoom(dag ? 0.25 : 0.18);
                 // fgRef.current.centerAt(0, 0, 0);
             }
         }
@@ -120,7 +120,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, on
              d3VelocityDecay={.75}    // How springy tugs feel; smaller → more inertia
             cooldownTime={20000} // How long to run the simulation before stopping
             graphData={graphData}
-            dagMode={dag ? 'radialout' : undefined}
+            dagMode={dag ? 'radialin' : undefined}
             dagLevelDistance={200}
             linkCurvature={dag ? 0 : 0.5}
             linkColor={() => theme === "dark" ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.18)'}
