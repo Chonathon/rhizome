@@ -45,10 +45,6 @@ function App() {
     const storedDagMode = localStorage.getItem('dagMode');
     return storedDagMode ? JSON.parse(storedDagMode) : false;
   });
-
-  useEffect(() => {
-    localStorage.setItem('dagMode', JSON.stringify(dagMode));
-  }, [dagMode]);
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
@@ -56,6 +52,10 @@ function App() {
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('dagMode', JSON.stringify(dagMode));
+  }, [dagMode]);
 
   useEffect(() => {
     setCurrentArtists(artists);
