@@ -30,8 +30,8 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
 
         <Popover>
           <div>
-             <PopoverTrigger>
-               <Button className="bg-background backdrop-blur-xs rounded-full border border-border" variant="secondary" size="icon" aria-label="Clustering Panel"
+             <PopoverTrigger asChild>
+               <Button className="bg-background backdrop-blur-xs rounded-full border border-border" variant="outline" size="icon" aria-label="Clustering Panel"
                onClick={() => setOpen(prev => !prev)}>
                   <span className="sr-only">Show Clustering Pannel</span>
                   <Settings2 />
