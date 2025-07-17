@@ -27,7 +27,9 @@ import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import {buildGenreTree, generateSimilarLinks, isParentGenre} from "@/lib/utils";
+import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
+import DisplayPanel from './components/DisplayPanel';
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -39,8 +41,16 @@ function App() {
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode>('subgenre');
+  const [dagMode, setDagMode] = useState<boolean>(() => {
+    const storedDagMode = localStorage.getItem('dagMode');
+    return storedDagMode ? JSON.parse(storedDagMode) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('dagMode', JSON.stringify(dagMode));
+  }, [dagMode]);
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
-  const { genres, genreLinks, genresLoading, genresError } = useGenres();
+  const { genres, genreLinks, genresLoading, genresError } = useGenres(genreClusterMode);
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
   const { artistData, artistLoading, artistError } = useArtist(selectedArtist);
 
@@ -54,7 +64,7 @@ function App() {
 
   useEffect(() => {
     setCurrentGenres({nodes: genres, links: genreLinks});
-  }, [genres]);
+  }, [genres, genreLinks]);
 
   useEffect(() => {
     if (canCreateSimilarArtistGraph && artistData?.similar && selectedArtist && selectedArtist.name === artistData.name) {
@@ -174,15 +184,23 @@ function App() {
                 isMobile={isMobile}
             /> */}
             </div>
-          <ModeToggle />
-
       </div>
+          <div className="fixed flex flex-col h-auto right-4 top-4 justify-end gap-3 z-50">
+              <ModeToggle />
+              <ClusteringPanel 
+                clusterMode={genreClusterMode} 
+                setClusterMode={setGenreClusterMode} 
+                dagMode={dagMode} 
+                setDagMode={setDagMode} />
+              <DisplayPanel />
+          </div>
         <GenresForceGraph
             genresGraphData={currentGenres}
             onNodeClick={onGenreNodeClick}
             loading={genresLoading}
             show={(graph === 'genres' || graph === 'genreDAG') && !genresError}
-            dag={graph === 'genreDAG'}
+            dag={dagMode}
+            clusterMode={genreClusterMode}
         />
         <ArtistsForceGraph
             artists={currentArtists}
@@ -231,6 +249,7 @@ function App() {
                 />
               </motion.div>
             </div>
+            
           </motion.div>
         </AnimatePresence>
     </div>
