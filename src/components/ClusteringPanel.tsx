@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { Settings2 } from "lucide-react";
+import { Spline } from "lucide-react";
 import { useState } from "react";
 import {
   Popover,
@@ -34,7 +34,7 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
                <Button className="bg-background backdrop-blur-xs rounded-full border border-border" variant="outline" size="icon" aria-label="Clustering Panel"
                onClick={() => setOpen(prev => !prev)}>
                   <span className="sr-only">Show Clustering Pannel</span>
-                  <Settings2 />
+                  <Spline />
                 </Button>
              </PopoverTrigger>
             <PopoverContent side="left" align="start" sideOffset= {4} className="w-full max-w-md">
