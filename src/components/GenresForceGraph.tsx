@@ -8,7 +8,7 @@ import { useTheme } from "next-themes";
 
 
 interface GenresForceGraphProps {
-    genresGraphData?: GenreGraphData;
+    graphData?: GenreGraphData;
     onNodeClick: (genre: Genre) => void;
     loading: boolean;
     show: boolean;
@@ -20,30 +20,30 @@ interface GenresForceGraphProps {
 const LABEL_FONT_SIZE = 12;
 const estimateLabelWidth = (name: string) => name.length * (LABEL_FONT_SIZE * 0.6);
 
-const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, onNodeClick, loading, show, dag, clusterMode }) => {
-    const [graphData, setGraphData] = useState<GraphData<Genre, NodeLink>>({ nodes: [], links: [] });
+const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode }) => {
+    //const [graphData, setGraphData] = useState<GraphData<Genre, NodeLink>>({ nodes: [], links: [] });
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const { theme } = useTheme();
 
     useEffect(() => {
-        if (genresGraphData) {
-            const filteredLinks = genresGraphData.links.filter(link => {
-                const sourceNode = genresGraphData.nodes.find(node => node.id === link.source);
-                if (!sourceNode) return false;
+        if (graphData) {
+            // const filteredLinks = genresGraphData.links.filter(link => {
+            //     const sourceNode = genresGraphData.nodes.find(node => node.id === link.source);
+            //     if (!sourceNode) return false;
+            //
+            //     switch (clusterMode) {
+            //         case 'subgenre':
+            //             return sourceNode.subgenres.some(subgenre => subgenre.id === link.target) || sourceNode.subgenre_of.some(parent => parent.id === link.target);
+            //         case 'influence':
+            //             return sourceNode.influenced_genres.some(influenced => influenced.id === link.target) || sourceNode.influenced_by.some(influencer => influencer.id === link.target);
+            //         case 'fusion':
+            //             return sourceNode.fusion_genres.some(fusion => fusion.id === link.target) || sourceNode.fusion_of.some(fused => fused.id === link.target);
+            //         default:
+            //             return true;
+            //     }
+            // });
 
-                switch (clusterMode) {
-                    case 'subgenre':
-                        return sourceNode.subgenres.some(subgenre => subgenre.id === link.target) || sourceNode.subgenre_of.some(parent => parent.id === link.target);
-                    case 'influence':
-                        return sourceNode.influenced_genres.some(influenced => influenced.id === link.target) || sourceNode.influenced_by.some(influencer => influencer.id === link.target);
-                    case 'fusion':
-                        return sourceNode.fusion_genres.some(fusion => fusion.id === link.target) || sourceNode.fusion_of.some(fused => fused.id === link.target);
-                    default:
-                        return true;
-                }
-            });
-
-            setGraphData({ nodes: genresGraphData.nodes, links: filteredLinks });
+            //setGraphData({ nodes: genresGraphData.nodes, links: genresGraphData.links });
 
             if (fgRef.current) {
                 // fgRef.current.d3Force('center')?.strength(-1, -1);
@@ -69,7 +69,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ genresGraphData, on
                 // fgRef.current.centerAt(0, 0, 0);
             }
         }
-    }, [genresGraphData, show, clusterMode]);
+    }, [graphData, show, clusterMode]);
 
     const calculateRadius = (artistCount: number) => {
         return 5 + Math.sqrt(artistCount) * .5;

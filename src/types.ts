@@ -42,6 +42,7 @@ export interface BasicNode {
 export interface NodeLink {
     source: string;
     target: string;
+    linkType?: GenreClusterMode;
 }
 
 export interface LastFMArtistJSON extends BasicNode {
