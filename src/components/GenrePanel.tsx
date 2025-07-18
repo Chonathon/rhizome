@@ -1,19 +1,15 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Tag } from "lucide-react";
 import useGenres from "@/hooks/useGenres";
-import { GraphType } from "@/types";     // remove if not needed
-import { Genre } from "@/types";         // keeps Genre for local typings
+import { Genre } from "@/types";
 
-// If the component should be controlled from the parent, keep the prop.
-// Otherwise, delete the prop and rely entirely on the hook. Here we delete it.
+
 export default function GenrePanel() {
   // Fetch genres once the component mounts
   const { genres, genresLoading, genresError } = useGenres();
-
-  // Optional: show a loader / error message
-  if (genresLoading) return <p>Loading genres…</p>;
-  if (genresError)   return <p>Failed to load genres.</p>;
 
   return (
     <Popover>
@@ -29,15 +25,22 @@ export default function GenrePanel() {
         align="start"
         className="w-72 p-4 bg-white border border-gray-200 rounded-xl shadow-md"
       >
-        {/* List the genres */}
         {genres.map((genre: Genre) => (
-          <div
-            key={genre.name}
-            className="flex items-center justify-between p-2 border-b border-gray-200"
-          >
-            <span className="text-sm font-medium">{genre.name}</span>
-            <span className="text-xs text-gray-500">{genre.artistCount} artists</span>
-          </div>
+
+            <div>
+                <Checkbox
+                    key={genre.id}
+                />
+                <Label htmlFor={genre.id} className="ml-2">{genre.name}</Label>
+            </div>
+
+        //   <div
+        //     key={genre.name}
+        //     className="flex items-center justify-between p-2 border-b border-gray-200"
+        //   >
+        //     <span className="text-sm font-medium">{genre.name}</span>
+        //     <span className="text-xs text-gray-500">{genre.artistCount} artists</span>
+        //   </div>
         ))}
 
         <p className="mt-2 text-sm text-gray-600">
