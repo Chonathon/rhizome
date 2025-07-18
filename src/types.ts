@@ -42,6 +42,7 @@ export interface BasicNode {
 export interface NodeLink {
     source: string;
     target: string;
+    linkType?: GenreClusterMode;
 }
 
 export interface LastFMArtistJSON extends BasicNode {
@@ -64,10 +65,15 @@ export interface LastFMBio {
     content: string;
 }
 
-export type GraphType = 'genres' | 'artists' | 'similarArtists';
+export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'genreDAG';
 
 export interface LastFMSearchArtistData extends BasicNode {
     listeners: number;
 }
 
 export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion';
+
+export interface GenreGraphData {
+    nodes: Genre[];
+    links: NodeLink[];
+}

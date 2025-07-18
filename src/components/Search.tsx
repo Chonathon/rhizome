@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 
 interface SearchProps {
-  onGenreSelect: (genre: string) => void;
+  onGenreSelect: (genre: Genre) => void;
   onArtistSelect: (artist: Artist) => void;
   graphState: GraphType;
   currentArtists: Artist[];
@@ -81,7 +81,7 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres }
 
   const onItemSelect = (selection: BasicNode) => {
     if (isGenre(selection)) {
-      onGenreSelect(selection.name);
+      onGenreSelect(selection as Genre);
     } else {
       onArtistSelect(selection as Artist);
     }

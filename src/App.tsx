@@ -9,7 +9,16 @@ import useGenres from "@/hooks/useGenres";
 import useArtist from "@/hooks/useArtist";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
-import {Artist, BasicNode, Genre, GraphType, LastFMArtistJSON, LastFMSearchArtistData, NodeLink} from "@/types";
+import {
+  Artist,
+  BasicNode,
+  Genre,
+  GenreClusterMode, GenreGraphData,
+  GraphType,
+  LastFMArtistJSON,
+  LastFMSearchArtistData,
+  NodeLink
+} from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
 import { ListViewPanel } from "@/components/ListViewPanel";
@@ -17,11 +26,13 @@ import { useMediaQuery } from 'react-responsive';
 import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
-import {generateSimilarLinks} from "@/lib/utils";
+import {buildGenreTree, generateSimilarLinks, isParentGenre} from "@/lib/utils";
+import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
+import DisplayPanel from './components/DisplayPanel';
 
 function App() {
-  const [selectedGenre, setSelectedGenre] = useState<string | undefined>(undefined);
+  const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showListView, setShowListView] = useState(false);
   const [showArtistCard, setShowArtistCard] = useState(false);
@@ -29,17 +40,31 @@ function App() {
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
+  const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode>('subgenre');
+  const [dagMode, setDagMode] = useState<boolean>(() => {
+    const storedDagMode = localStorage.getItem('dagMode');
+    return storedDagMode ? JSON.parse(storedDagMode) : false;
+  });
+  const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
-  const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre);
+  const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
   const { artistData, artistLoading, artistError } = useArtist(selectedArtist);
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
 
   useEffect(() => {
+    localStorage.setItem('dagMode', JSON.stringify(dagMode));
+  }, [dagMode]);
+
+  useEffect(() => {
     setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
   }, [artists]);
+
+  useEffect(() => {
+    setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === genreClusterMode)});
+  }, [genres, genreLinks, genreClusterMode]);
 
   useEffect(() => {
     if (canCreateSimilarArtistGraph && artistData?.similar && selectedArtist && selectedArtist.name === artistData.name) {
@@ -64,9 +89,19 @@ function App() {
       setShowArtistCard(true);
     }
   }
-  const onGenreNodeClick = (genre: string) => {
-    setSelectedGenre(genre);
-    setGraph('artists');
+  const onGenreNodeClick = (genre: Genre) => {
+    if (graph === 'genres') {
+      if (isParentGenre(genre, genreClusterMode)) {
+        setGraph('genreDAG');
+        setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
+      } else {
+        setSelectedGenre(genre);
+        setGraph('artists');
+      }
+    } else {
+      setSelectedGenre(genre);
+      setGraph('artists');
+    }
   }
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
@@ -79,10 +114,14 @@ function App() {
   }
   const resetAppState = () => {
     setGraph('genres');
+    setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === genreClusterMode)});
     setSelectedGenre(undefined);
     setSelectedArtist(undefined);
     setShowArtistCard(false);
     setShowListView(false);
+    setCanCreateSimilarArtistGraph(false);
+    setCurrentArtists([]);
+    setCurrentArtistLinks([]);
   }
   const deselectArtist = () => {
     setSelectedArtist(undefined);
@@ -109,6 +148,8 @@ function App() {
   artistData,
   artistLoading,
   artistError,
+  graph,
+  currentGenres
 });
   return (
     <div className="relative min-h-screen min-w-screen">
@@ -123,7 +164,7 @@ function App() {
             : " inline-flex flex-col gap-2 items-start"
         }>
             <BreadcrumbHeader
-                selectedGenre={selectedGenre}
+                selectedGenre={selectedGenre ? selectedGenre.name : undefined}
                 selectedArtist={selectedArtist}
                 HomeIcon={Waypoints}
                 toggleListView={() => setShowListView(!showListView)}
@@ -143,15 +184,23 @@ function App() {
                 isMobile={isMobile}
             /> */}
             </div>
-          <ModeToggle />
-
       </div>
+          <div className="fixed flex flex-col h-auto right-4 top-4 justify-end gap-3 z-50">
+              <ModeToggle />
+              <ClusteringPanel 
+                clusterMode={genreClusterMode} 
+                setClusterMode={setGenreClusterMode} 
+                dagMode={dagMode} 
+                setDagMode={setDagMode} />
+              <DisplayPanel />
+          </div>
         <GenresForceGraph
-            genres={genres}
-            links={genreLinks}
+            graphData={currentGenres}
             onNodeClick={onGenreNodeClick}
             loading={genresLoading}
-            show={graph === 'genres' && !genresError}
+            show={(graph === 'genres' || graph === 'genreDAG') && !genresError}
+            dag={dagMode}
+            clusterMode={genreClusterMode}
         />
         <ArtistsForceGraph
             artists={currentArtists}
@@ -200,6 +249,7 @@ function App() {
                 />
               </motion.div>
             </div>
+            
           </motion.div>
         </AnimatePresence>
     </div>
