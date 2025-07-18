@@ -45,12 +45,8 @@ function App() {
     const storedDagMode = localStorage.getItem('dagMode');
     return storedDagMode ? JSON.parse(storedDagMode) : false;
   });
-
-  useEffect(() => {
-    localStorage.setItem('dagMode', JSON.stringify(dagMode));
-  }, [dagMode]);
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
-  const { genres, genreLinks, genresLoading, genresError } = useGenres(genreClusterMode);
+  const { genres, genreLinks, genresLoading, genresError } = useGenres();
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
   const { artistData, artistLoading, artistError } = useArtist(selectedArtist);
 
@@ -58,13 +54,17 @@ function App() {
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
 
   useEffect(() => {
+    localStorage.setItem('dagMode', JSON.stringify(dagMode));
+  }, [dagMode]);
+
+  useEffect(() => {
     setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
   }, [artists]);
 
   useEffect(() => {
-    setCurrentGenres({nodes: genres, links: genreLinks});
-  }, [genres, genreLinks]);
+    setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === genreClusterMode)});
+  }, [genres, genreLinks, genreClusterMode]);
 
   useEffect(() => {
     if (canCreateSimilarArtistGraph && artistData?.similar && selectedArtist && selectedArtist.name === artistData.name) {
@@ -114,7 +114,7 @@ function App() {
   }
   const resetAppState = () => {
     setGraph('genres');
-    setCurrentGenres({nodes: genres, links: genreLinks});
+    setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === genreClusterMode)});
     setSelectedGenre(undefined);
     setSelectedArtist(undefined);
     setShowArtistCard(false);
@@ -195,7 +195,7 @@ function App() {
               <DisplayPanel />
           </div>
         <GenresForceGraph
-            genresGraphData={currentGenres}
+            graphData={currentGenres}
             onNodeClick={onGenreNodeClick}
             loading={genresLoading}
             show={(graph === 'genres' || graph === 'genreDAG') && !genresError}

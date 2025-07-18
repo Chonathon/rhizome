@@ -7,7 +7,7 @@ const url = envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
     ? import.meta.env.VITE_LOCALHOST
     : import.meta.env.VITE_SERVER_URL || `https://rhizome-server-production.up.railway.app`;
 
-const useGenres = (clusterMode: string) => {
+const useGenres = () => {
     const [genres, setGenres] = useState<Genre[]>([]);
     const [genreLinks, setGenreLinks] = useState<NodeLink[]>([]);
     const [genresLoading, setGenresLoading] = useState(true);
@@ -16,7 +16,7 @@ const useGenres = (clusterMode: string) => {
     const fetchGenres = async () => {
         setGenresLoading(true);
         try {
-            const response = await axios.get(`${url}/genres?clusterMode=${clusterMode}`);
+            const response = await axios.get(`${url}/genres`);
             setGenres(response.data.genres);
             setGenreLinks(response.data.links);
         } catch (err) {
@@ -29,7 +29,7 @@ const useGenres = (clusterMode: string) => {
 
     useEffect(() => {
         fetchGenres();
-    }, [clusterMode]);
+    }, []);
 
     return { genres, genreLinks, genresLoading, genresError };
 }
