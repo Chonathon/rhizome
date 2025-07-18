@@ -65,7 +65,7 @@ export interface LastFMBio {
     content: string;
 }
 
-export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'genreDAG';
+export type GraphType = 'genres' | 'artists' | 'similarArtists';
 
 export interface LastFMSearchArtistData extends BasicNode {
     listeners: number;
