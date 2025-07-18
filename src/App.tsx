@@ -194,7 +194,9 @@ function App() {
                 dagMode={dagMode} 
                 setDagMode={setDagMode} />
               <DisplayPanel />
-              <GenrePanel />
+              <GenrePanel 
+              genres={genres}
+              />
           </div>
         <GenresForceGraph
             graphData={currentGenres}
