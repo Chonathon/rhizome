@@ -46,6 +46,7 @@ function App() {
     return storedDagMode ? JSON.parse(storedDagMode) : false;
   });
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
+  const [genreMiniView, setGenreMiniView] = useState<boolean>(false);
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
   const { artistData, artistLoading, artistError } = useArtist(selectedArtist);
@@ -90,18 +91,13 @@ function App() {
     }
   }
   const onGenreNodeClick = (genre: Genre) => {
-    if (graph === 'genres') {
-      if (isParentGenre(genre, genreClusterMode)) {
-        setGraph('genreDAG');
-        setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
-      } else {
-        setSelectedGenre(genre);
-        setGraph('artists');
-      }
-    } else {
-      setSelectedGenre(genre);
-      setGraph('artists');
-    }
+    // this code makes the mini genre graph
+    // if (isParentGenre(genre, genreClusterMode)) {
+    //   setGenreMiniView(true);
+    //   setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
+    // }
+    setSelectedGenre(genre);
+    setGraph('artists');
   }
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
@@ -119,6 +115,7 @@ function App() {
     setSelectedArtist(undefined);
     setShowArtistCard(false);
     setShowListView(false);
+    setGenreMiniView(false);
     setCanCreateSimilarArtistGraph(false);
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
@@ -198,7 +195,7 @@ function App() {
             graphData={currentGenres}
             onNodeClick={onGenreNodeClick}
             loading={genresLoading}
-            show={(graph === 'genres' || graph === 'genreDAG') && !genresError}
+            show={graph === 'genres' && !genresError}
             dag={dagMode}
             clusterMode={genreClusterMode}
         />
