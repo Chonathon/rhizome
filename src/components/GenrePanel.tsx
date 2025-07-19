@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Tag } from "lucide-react";
 import useGenres from "@/hooks/useGenres";
 import { Genre } from "@/types";
+import { isParentGenre } from "@/lib/utils";
 
 
 export default function GenrePanel() {
@@ -23,29 +24,33 @@ export default function GenrePanel() {
       <PopoverContent
         side="left"
         align="start"
-        className="w-72 p-4 bg-white border border-gray-200 rounded-xl shadow-md"
+        className="w-72 p-2"
       >
-        {genres.map((genre: Genre) => (
-
-            <div>
-                <Checkbox
-                    key={genre.id}
-                />
-                <Label htmlFor={genre.id} className="ml-2">{genre.name}</Label>
-            </div>
-
-        //   <div
-        //     key={genre.name}
-        //     className="flex items-center justify-between p-2 border-b border-gray-200"
-        //   >
-        //     <span className="text-sm font-medium">{genre.name}</span>
-        //     <span className="text-xs text-gray-500">{genre.artistCount} artists</span>
-        //   </div>
-        ))}
-
-        <p className="mt-2 text-sm text-gray-600">
-          Select a genre to explore its artists and links.
-        </p>
+        {/* scrolling container */}
+        <div className="overflow-y-auto max-h-120">
+          {/* content */}
+          <div className="
+          flex flex-col gap-0.5 py-2 pl-4 rounded-xl
+          bg-gray-50 border border-border">
+            {genres.map(((genre: Genre) => (
+                  <Label htmlFor={genre.id} className="flex items-center py-3 border-b cursor-pointer">
+                  <Checkbox defaultChecked 
+                  id={genre.id}/>
+                  {genre.name}
+                {/* <div key={genre.id} className="flex items-center py-2 cursor-pointer" > */}
+                  </Label>
+          
+                // </div>
+            //   <div
+            //     key={genre.name}
+            //     className="flex items-center justify-between p-2 border-b border-gray-200"
+            //   >
+            //     <span className="text-sm font-medium">{genre.name}</span>
+            //     <span className="text-xs text-gray-500">{genre.artistCount} artists</span>
+            //   </div>
+            )))}
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
   );
