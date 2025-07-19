@@ -4,11 +4,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tag } from "lucide-react";
 import useGenres from "@/hooks/useGenres";
-import { Genre } from "@/types";
+import {Genre, GenreClusterMode} from "@/types";
 import { isParentGenre } from "@/lib/utils";
 
 
-export default function GenrePanel({genres}: {genres: Genre[]}) {
+export default function GenrePanel({genres, genreClusterMode}: {genres: Genre[], genreClusterMode: GenreClusterMode}) {
 
   return (
     <Popover>
@@ -31,9 +31,9 @@ export default function GenrePanel({genres}: {genres: Genre[]}) {
           bg-gray-50">
           <div className="
           flex flex-col gap-0.5 py-2 pl-4 ">
-            {genres.map(((genre: Genre) => (
+            {genres.filter(genre => isParentGenre(genre, genreClusterMode)).map(((genre: Genre) => (
                   <Label htmlFor={genre.id} className="text-md text-foreground flex items-center py-2 cursor-pointer">
-                  <Checkbox defaultChecked 
+                  <Checkbox defaultChecked
                   id={genre.id}/>
                   {genre.name}
                   </Label>

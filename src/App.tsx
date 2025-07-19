@@ -193,6 +193,7 @@ function App() {
               <DisplayPanel />
               <GenrePanel 
               genres={genres}
+              genreClusterMode={genreClusterMode}
               />
           </div>
         <GenresForceGraph
