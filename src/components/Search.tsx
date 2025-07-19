@@ -101,8 +101,8 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres }
         <Button
           variant="outline"
           aria-label="Search"
-          className=
-            {isMobile ? "w-full bg-background/90 hover:bg-accent/90 backdrop-blur-xs shadow-md rounded-full justify-between text-left text-md font-normal text-foreground h-[54px]" : "w- "}
+          className={`w-full bg-background/90 hover:bg-accent/90 backdrop-blur-xs shadow-md rounded-full justify-between text-left text-md font-normal text-foreground h-[54px]
+            ${isMobile ? "w-full" : ""}`}
           onClick={() => setOpen(true)}
         >
           <div className="flex gap-2 items-center">
