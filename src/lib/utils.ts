@@ -98,3 +98,12 @@ export const buildGenreTree = (genres: Genre[], parent: Genre, mode: GenreCluste
   addChildren(parent.id, 1);
   return { nodes, links };
 };
+
+export const clusterColors = [
+  "#e06c75",
+  "#98c379",
+  "#d19a66",
+  "#56b6c2",
+  "#be5046",
+  "#a9a1e1",
+];

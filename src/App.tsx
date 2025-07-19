@@ -30,6 +30,7 @@ import {buildGenreTree, generateSimilarLinks, isParentGenre} from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import DisplayPanel from './components/DisplayPanel';
+import GenrePanel from './components/GenrePanel'
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -190,6 +191,10 @@ function App() {
                 dagMode={dagMode} 
                 setDagMode={setDagMode} />
               <DisplayPanel />
+              <GenrePanel 
+              genres={genres}
+              genreClusterMode={genreClusterMode}
+              />
           </div>
         <GenresForceGraph
             graphData={currentGenres}
