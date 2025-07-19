@@ -24,7 +24,7 @@ export default function GenrePanel({
       className="p-2 overflow-hidden"
     >
       {/* scrolling container */}
-      <div className="overflow-y-auto max-h-120 rounded-xl border border-accent shadow-sm bg-accent dark:dark:bg-background">
+      <div className="overflow-y-auto max-h-120 rounded-2xl border border-accent shadow-sm bg-accent dark:dark:bg-background">
         <div className="flex flex-col gap-0.5 py-2 pl-4 pr-2">
           {genres
             .filter((genre) => isParentGenre(genre, genreClusterMode))
