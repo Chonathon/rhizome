@@ -2,6 +2,7 @@ import * as React from "react"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer"
+import { cn } from "@/lib/utils"
 
 interface ResponsivePanelProps {
   trigger: React.ReactNode
@@ -26,7 +27,7 @@ export function ResponsivePanel({ trigger, children, className }: ResponsivePane
   return (
     <Drawer>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-      <DrawerContent className="w-full dark:bg-background">
+      <DrawerContent className={cn("w-full")}>
         {children}
       </DrawerContent>
     </Drawer>
