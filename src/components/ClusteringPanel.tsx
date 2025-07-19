@@ -33,14 +33,14 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
             <RadioGroup
                 value={clusterMode}
                 onValueChange={(value) => setClusterMode(value as GenreClusterMode)}
-                className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm p-2 rounded-2xl border border-accent dark:border-border/50 bg-accent"
+                className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm p-1 rounded-2xl border border-accent dark:border-border/50 bg-accent"
             >
                 {options.map((option) => (
                     <div key={option.id} className="w-full">
                         <label
                             htmlFor={option.id}
                             className={`flex items-start w-full gap-3 rounded-xl p-3 transition-colors cursor-pointer ${
-                                clusterMode === option.id ? "bg-gray-100 border-accent border dark:bg-accent" : "hover:bg-white/10 dark:hover:bg-black/10"
+                                clusterMode === option.id ? "bg-gray-200 border-accent border dark:bg-accent" : "hover:bg-white/10 dark:hover:bg-black/10"
                             }`}
                         >
                             <RadioGroupItem
