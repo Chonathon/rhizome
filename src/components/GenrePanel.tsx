@@ -3,17 +3,48 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tag } from "lucide-react";
 import { Genre, GenreClusterMode } from "@/types";
-import { clusterColors, isParentGenre } from "@/lib/utils";
+import {clusterColors, isTopLevelGenre} from "@/lib/utils";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
+import {useEffect, useState} from "react";
 
 export default function GenrePanel({
   genres,
   genreClusterMode,
+    onParentClick,
+    onParentDeselect,
+    onParentSelect,
+    show,
 }: {
   genres: Genre[];
   genreClusterMode: GenreClusterMode;
+  onParentClick: (genre: Genre) => void;
+  onParentDeselect: (genre: Genre) => void;
+  onParentSelect: (genre: Genre) => void;
+  show: boolean;
 }) {
-  return (
+  const [checked, setChecked] = useState<boolean[]>([]);
+
+  useEffect(() => {
+    if (genres){
+      setChecked(new Array(genres.length).fill(true));
+    }
+  }, [genres, genreClusterMode]);
+
+  const onCheckboxChange = (genre: Genre, index: number) => {
+    if (checked[index]) {
+      onParentDeselect(genre);
+    } else {
+      onParentSelect(genre);
+    }
+    setChecked(checked.map((c, i) => i === index ? !c : c));
+  }
+
+  const onGenreClick = (genre: Genre, index: number) => {
+    onParentClick(genre);
+    setChecked(checked.map((c, i) => i === index));
+  }
+
+  return !show ? null : (
     <ResponsivePanel
       trigger={
         <Button variant="outline" size="icon" className="h-10 w-10">
@@ -27,7 +58,7 @@ export default function GenrePanel({
       <div className="overflow-y-auto max-h-120 rounded-2xl border border-accent shadow-sm bg-accent dark:dark:bg-background">
         <div className="flex flex-col gap-0.5 py-2 pl-4 pr-2">
           {genres
-            .filter((genre) => isParentGenre(genre, genreClusterMode))
+            .filter((genre) => isTopLevelGenre(genre, genreClusterMode))
             .map((genre: Genre, index: number) => (
               <Label
                 key={genre.id}
@@ -35,11 +66,20 @@ export default function GenrePanel({
                 className="text-md text-foreground flex items-center gap-2 py-2 cursor-pointer"
               >
                 {/* TODO: Add click handler to toggle visibility of genre/cluster */}
-                <Checkbox defaultChecked id={genre.id} />
+                <Checkbox
+                    checked={checked[index]}
+                    id={genre.id}
+                    onCheckedChange={() => onCheckboxChange(genre, index)}
+                />
 
                 {/* colored dot */}
 
-                <span className="w-full">{genre.name}</span>
+                <span
+                    className="w-full"
+                    //onClick={() => onGenreClick(genre, index)}
+                >
+                  {genre.name}
+                </span>
                 <Button
                   variant="ghost"
                   className="p-2"
