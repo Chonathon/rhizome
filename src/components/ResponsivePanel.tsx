@@ -11,7 +11,7 @@ interface ResponsivePanelProps {
 }
 
 export function ResponsivePanel({ trigger, children, className }: ResponsivePanelProps) {
-  const isDesktop = useMediaQuery("(min-width: 768px)")
+  const isDesktop = useMediaQuery("(min-width: 640px)")
 
   if (isDesktop) {
     return (
@@ -27,7 +27,7 @@ export function ResponsivePanel({ trigger, children, className }: ResponsivePane
   return (
     <Drawer>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-      <DrawerContent className={cn("w-full")}>
+      <DrawerContent className={cn("")}>
         {children}
       </DrawerContent>
     </Drawer>

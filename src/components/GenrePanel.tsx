@@ -21,7 +21,7 @@ export default function GenrePanel({
           <span className="sr-only">Display Settings</span>
         </Button>
       }
-      className="w-sm p-2 overflow-hidden"
+      className="p-2 overflow-hidden"
     >
       {/* scrolling container */}
       <div className="overflow-y-auto max-h-120 rounded-xl border border-accent shadow-sm bg-accent dark:dark:bg-background">
