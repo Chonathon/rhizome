@@ -7,24 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tag } from "lucide-react";
-import useGenres from "@/hooks/useGenres";
 import { Genre, GenreClusterMode } from "@/types";
 import { isParentGenre } from "@/lib/utils";
-
-/**
- * If you already export `clusterColors` from "@/lib/utils", keep the import.
- * Otherwise, define it locally as shown below. (Remove whichever version you don't need.)
- */
-// import { clusterColors } from "@/lib/utils";
-const clusterColors = [
-  "#FFB6C1",
-  "#87CEFA",
-  "#90EE90",
-  "#FFD700",
-  "#FFA07A",
-  "#20B2AA",
-  "#9370DB",
-];
+import { clusterColors } from "@/lib/utils";
 
 export default function GenrePanel({
   genres,
