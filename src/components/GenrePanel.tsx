@@ -30,7 +30,7 @@ export default function GenrePanel({
       <PopoverContent
         side="left"
         align="start"
-        className="w-72 p-2 overflow-hidden"
+        className="w-sm p-2 overflow-hidden"
       >
         {/* scrolling container */}
         <div className="overflow-y-auto max-h-120 rounded-xl border border-accent shadow-sm bg-accent dark:dark:bg-background">

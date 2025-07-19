@@ -37,7 +37,7 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
                   <Spline />
                 </Button>
              </PopoverTrigger>
-            <PopoverContent side="left" align="start" className="w-full max-w-md">
+            <PopoverContent side="left" align="start" className="w-full w-sm">
                   <RadioGroup
                     value={clusterMode}
                     onValueChange={(value) => setClusterMode(value as GenreClusterMode)}
