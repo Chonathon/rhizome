@@ -27,8 +27,8 @@ export default function GenrePanel({genres, genreClusterMode}: {genres: Genre[],
         {/* scrolling container */}
           {/* <h3 className="text-md px-3 py-2 text-accent-foreground font-semibold ">Genre clusters</h3> */}
           {/* content */}
-        <div className="overflow-y-auto max-h-120 rounded-xl border border-accent shadow-xs 
-          bg-accent">
+        <div className="overflow-y-auto max-h-120 rounded-xl border border-accent shadow-sm 
+          bg-accent dark:dark:bg-background">
           <div className="
           flex flex-col gap-0.5 py-2 pl-4 ">
             {genres.filter(genre => isParentGenre(genre, genreClusterMode)).map(((genre: Genre) => (
@@ -42,7 +42,7 @@ export default function GenrePanel({genres, genreClusterMode}: {genres: Genre[],
           </div>
            {/* overflow gradient */}
         </div>
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent dark:from-black/40" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent dark:from-black/27" />
       </PopoverContent>
     </Popover>
   );

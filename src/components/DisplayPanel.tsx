@@ -24,7 +24,10 @@ export default function DisplayPanel() {
           </Button>
         </PopoverTrigger>
         <PopoverContent side="left" className="w-sm">
-          <div className="flex flex-col gap-4 p-2">
+          <div className="flex flex-col gap-4 p-2
+          rounded-xl border border-accent shadow-sm 
+          bg-accent dark:dark:bg-background"
+          >
             {/* Node Size */}
             <div className="flex items-center justify-start gap-6">
               <label htmlFor="node-size" className="w-full text-left

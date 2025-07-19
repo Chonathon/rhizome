@@ -41,8 +41,8 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
                   <RadioGroup
                     value={clusterMode}
                     onValueChange={(value) => setClusterMode(value as GenreClusterMode)}
-                    className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-xs p-2 rounded-xl border border-accent dark:border-border/50
-          bg-gray-50"
+                    className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm p-2 rounded-2xl border border-accent dark:border-border/50
+          bg-accent"
                   >
                       {options.map((option) => (
                         <div key={option.id} className="w-full">
