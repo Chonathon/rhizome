@@ -8,9 +8,7 @@ import { Genre } from "@/types";
 import { isParentGenre } from "@/lib/utils";
 
 
-export default function GenrePanel() {
-  // Fetch genres once the component mounts
-  const { genres, genresLoading, genresError } = useGenres();
+export default function GenrePanel({genres}: {genres: Genre[]}) {
 
   return (
     <Popover>
@@ -24,33 +22,27 @@ export default function GenrePanel() {
       <PopoverContent
         side="left"
         align="start"
-        className="w-72 p-2"
+        className="w-72 p-2 overflow-hidden"
       >
         {/* scrolling container */}
-        <div className="overflow-y-auto max-h-120">
+          {/* <h3 className="text-md px-3 py-2 text-accent-foreground font-semibold ">Genre clusters</h3> */}
           {/* content */}
+        <div className="overflow-y-auto max-h-120 rounded-xl border border-border dark:border-border/50
+          bg-gray-50">
           <div className="
-          flex flex-col gap-0.5 py-2 pl-4 rounded-xl
-          bg-gray-50 border border-border">
+          flex flex-col gap-0.5 py-2 pl-4 ">
             {genres.map(((genre: Genre) => (
-                  <Label htmlFor={genre.id} className="flex items-center py-3 border-b cursor-pointer">
+                  <Label htmlFor={genre.id} className="text-md text-foreground flex items-center py-2 cursor-pointer">
                   <Checkbox defaultChecked 
                   id={genre.id}/>
                   {genre.name}
-                {/* <div key={genre.id} className="flex items-center py-2 cursor-pointer" > */}
                   </Label>
-          
-                // </div>
-            //   <div
-            //     key={genre.name}
-            //     className="flex items-center justify-between p-2 border-b border-gray-200"
-            //   >
-            //     <span className="text-sm font-medium">{genre.name}</span>
-            //     <span className="text-xs text-gray-500">{genre.artistCount} artists</span>
-            //   </div>
+
             )))}
           </div>
+           {/* overflow gradient */}
         </div>
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent" />
       </PopoverContent>
     </Popover>
   );
