@@ -1,15 +1,38 @@
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tag } from "lucide-react";
 import useGenres from "@/hooks/useGenres";
-import {Genre, GenreClusterMode} from "@/types";
+import { Genre, GenreClusterMode } from "@/types";
 import { isParentGenre } from "@/lib/utils";
 
+/**
+ * If you already export `clusterColors` from "@/lib/utils", keep the import.
+ * Otherwise, define it locally as shown below. (Remove whichever version you don't need.)
+ */
+// import { clusterColors } from "@/lib/utils";
+const clusterColors = [
+  "#FFB6C1",
+  "#87CEFA",
+  "#90EE90",
+  "#FFD700",
+  "#FFA07A",
+  "#20B2AA",
+  "#9370DB",
+];
 
-export default function GenrePanel({genres, genreClusterMode}: {genres: Genre[], genreClusterMode: GenreClusterMode}) {
-
+export default function GenrePanel({
+  genres,
+  genreClusterMode,
+}: {
+  genres: Genre[];
+  genreClusterMode: GenreClusterMode;
+}) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -25,24 +48,43 @@ export default function GenrePanel({genres, genreClusterMode}: {genres: Genre[],
         className="w-72 p-2 overflow-hidden"
       >
         {/* scrolling container */}
-          {/* <h3 className="text-md px-3 py-2 text-accent-foreground font-semibold ">Genre clusters</h3> */}
-          {/* content */}
-        <div className="overflow-y-auto max-h-120 rounded-xl border border-accent shadow-sm 
-          bg-accent dark:dark:bg-background">
-          <div className="
-          flex flex-col gap-0.5 py-2 pl-4 ">
-            {genres.filter(genre => isParentGenre(genre, genreClusterMode)).map(((genre: Genre) => (
-                  <Label htmlFor={genre.id} className="text-md text-foreground flex items-center py-2 cursor-pointer">
-                  <Checkbox defaultChecked
-                  id={genre.id}/>
-                  {genre.name}
-                  </Label>
+        <div className="overflow-y-auto max-h-120 rounded-xl border border-accent shadow-sm bg-accent dark:dark:bg-background">
+          <div className="flex flex-col gap-0.5 py-2 pl-4 pr-2">
+            {genres
+              .filter((genre) => isParentGenre(genre, genreClusterMode))
+              .map((genre: Genre, index: number) => (
+                <Label
+                  key={genre.id}
+                  htmlFor={genre.id}
+                  className="text-md text-foreground flex items-center gap-2 py-2 cursor-pointer"
+                >
+                  {/* TODO: Add click handler to toggle visibility of genre/cluster */}
+                  <Checkbox defaultChecked id={genre.id} />
 
-            )))}
+                  {/* colored dot */}
+
+                  <span className="w-full">{genre.name}</span>
+                  <Button 
+                  variant="ghost"
+                  className="p-2"
+                  // TODO: Add click handler to change cluster/genre color
+                  >
+                    <span
+                      className="
+                      p-2 w-4 h-4 shrink-0
+                      rounded-full inline-block"
+                      style={{
+                        backgroundColor:
+                          clusterColors[index % clusterColors.length],
+                      }}
+                    />
+                  </Button>
+                </Label>
+              ))}
           </div>
-           {/* overflow gradient */}
+          {/* overflow gradient */}
         </div>
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent dark:from-black/27" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent dark:from-black/27" />
       </PopoverContent>
     </Popover>
   );
