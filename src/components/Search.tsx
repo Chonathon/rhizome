@@ -114,7 +114,7 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, 
             ) : selectedArtist ? (
               <span>{selectedArtist.name}</span>
             ) : (
-              <div>
+              <div className="flex text-muted-foreground items-center gap-2">
                 <span>Search</span>
                           <Badge
                           className="text-xs text-muted-foreground"
