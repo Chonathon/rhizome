@@ -20,12 +20,14 @@ interface SearchProps {
   graphState: GraphType;
   currentArtists: Artist[];
   genres: Genre[];
+  selectedGenre?: Genre;
+  selectedArtist?: Artist;
 }
 
 
 const DEBOUNCE_MS = 500;
 
-export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres }: SearchProps) {
+export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, selectedGenre, selectedArtist }: SearchProps) {
   const isMobile = useMediaQuery({ maxWidth: 640 });
   const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");
@@ -107,7 +109,13 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres }
         >
           <div className="flex gap-2 items-center">
             <SearchIcon size={20}></SearchIcon>
-            <span className="text-sm text-foreground">⌘K</span>
+            {selectedGenre ? (
+              <span className="">{selectedGenre.name}</span>
+            ) : selectedArtist ? (
+              <span>{selectedArtist.name}</span>
+            ) : (
+              <span>⌘K</span>
+            )}
           </div>
           {/* <Badge
           className="text-xs text-muted-foreground"

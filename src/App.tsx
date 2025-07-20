@@ -248,6 +248,8 @@ function App() {
                     currentArtists={currentArtists}
                     genres={genres}
                     graphState={graph}
+                    selectedGenre={selectedGenre}
+                    selectedArtist={selectedArtist}
                 />
               </motion.div>
             </div>
