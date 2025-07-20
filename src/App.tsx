@@ -60,6 +60,24 @@ function App() {
   }, [dagMode]);
 
   useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (showArtistCard) {
+          deselectArtist();
+        } else {
+          resetAppState();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showArtistCard]);
+
+  useEffect(() => {
     setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
   }, [artists]);
