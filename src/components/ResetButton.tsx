@@ -13,21 +13,7 @@ export function ResetButton({ onClick, show }: ResetButtonProps) {
 
   const isMobile = useMediaQuery({ maxWidth: 640 }); // pass this in as a prop if you want to use it
   const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.metaKey && event.key === "ArrowLeft") {
-        onClick();
-      }
-    },
-    [onClick]
-  );
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [handleKeyDown]);
+  
 
   return show && (
       <motion.div 
