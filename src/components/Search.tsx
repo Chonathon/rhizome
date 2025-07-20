@@ -114,14 +114,16 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, 
             ) : selectedArtist ? (
               <span>{selectedArtist.name}</span>
             ) : (
-              <span>⌘K</span>
+              <div>
+                <span>Search</span>
+                          <Badge
+                          className="text-xs text-muted-foreground"
+                          variant="outline"
+                          >⌘K
+                          </Badge>
+              </div>
             )}
           </div>
-          {/* <Badge
-          className="text-xs text-muted-foreground"
-          variant="outline"
-          >⌘K
-          </Badge> */}
         </Button>
       </motion.div>
       <CommandDialog

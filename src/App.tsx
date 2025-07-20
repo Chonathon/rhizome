@@ -161,7 +161,27 @@ function App() {
             ? "max-w-[calc(100vw-32px)]  inline-flex flex-col gap-2 items-start"
             : " inline-flex flex-col gap-2 items-start"
         }>
-            <BreadcrumbHeader
+          <div className={`flex justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
+              <ResetButton
+                onClick={() => resetAppState()}
+                show={graph !== 'genres'}
+              />
+              <motion.div
+                layout
+                // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
+              >
+                <Search
+                    onGenreSelect={onGenreNodeClick}
+                    onArtistSelect={createSimilarArtistGraph}
+                    currentArtists={currentArtists}
+                    genres={genres}
+                    graphState={graph}
+                    selectedGenre={selectedGenre}
+                    selectedArtist={selectedArtist}
+                />
+              </motion.div>
+            </div>
+            {/* <BreadcrumbHeader
                 selectedGenre={selectedGenre ? selectedGenre.name : undefined}
                 selectedArtist={selectedArtist}
                 HomeIcon={Waypoints}
@@ -169,7 +189,7 @@ function App() {
                 showListView={showListView}
                 reset={resetAppState}
                 hideArtistCard={deselectArtist}
-            />
+            /> */}
             {/* <ListViewPanel
                 genres={genres}
                 onGenreClick={onGenreNodeClick}
@@ -233,26 +253,7 @@ function App() {
               deselectArtist={deselectArtist}
               similarFilter={similarArtistFilter}
             />
-            <div className={`flex justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
-              <ResetButton
-                onClick={() => resetAppState()}
-                show={graph !== 'genres'}
-              />
-              <motion.div
-                layout
-                // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
-              >
-                <Search
-                    onGenreSelect={onGenreNodeClick}
-                    onArtistSelect={createSimilarArtistGraph}
-                    currentArtists={currentArtists}
-                    genres={genres}
-                    graphState={graph}
-                    selectedGenre={selectedGenre}
-                    selectedArtist={selectedArtist}
-                />
-              </motion.div>
-            </div>
+            
             
           </motion.div>
         </AnimatePresence>
