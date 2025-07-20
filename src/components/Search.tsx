@@ -107,7 +107,7 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, 
             ${isMobile ? "w-full" : ""}`}
           onClick={() => setOpen(true)}
         >
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center animate-fade-in">
             <SearchIcon size={20}></SearchIcon>
             {selectedGenre ? (
               <span className="">{selectedGenre.name}</span>
