@@ -116,11 +116,12 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, 
             ) : (
               <div className="flex text-muted-foreground items-center gap-2">
                 <span>Search</span>
-                          <Badge
+                          {isMobile ? 
+                          "" : <Badge
                           className="text-xs text-muted-foreground"
                           variant="outline"
                           >⌘K
-                          </Badge>
+                          </Badge>}
               </div>
             )}
           </div>
