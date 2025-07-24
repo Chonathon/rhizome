@@ -4,22 +4,27 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
+  SidebarInset,
   SidebarMenu,
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
+import React from "react"
 
-export function AppSidebar() {
+export function AppSidebar({ children }: { children: React.ReactNode }) {
   return (
-    <Sidebar className="absolute" variant="inset">
-      <SidebarHeader />
-      <SidebarContent>
-        <SidebarGroup />
-        {/* <SidebarMenu />
-         */}
-        
-        <SidebarGroup />
-      </SidebarContent>
-      <SidebarFooter />
-    </Sidebar>
+    <>
+      <Sidebar className="absolute" variant="floating">
+        <SidebarHeader />
+        <SidebarContent>
+          <SidebarGroup />
+          {/* <SidebarMenu />
+           */}
+
+          <SidebarGroup />
+        </SidebarContent>
+        <SidebarFooter />
+      </Sidebar>
+      <SidebarInset>{children}</SidebarInset>
+    </>
   )
 }
