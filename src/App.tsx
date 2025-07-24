@@ -181,10 +181,10 @@ function App() {
           {/* Top Bar */}
           <div
             className={
-              "fixed top-0 left-0 flex w-full justify-between items-center p-4 z-50"
+              "fixed top-0 left-0 flex w-full justify-center items-center p-4 z-50"
             }
           >
-            <SidebarTrigger />
+            
             {/* Breadcrumb & ListViewPanel Container */}
               <div
                 className={`md:flex hidden justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
@@ -206,6 +206,9 @@ function App() {
                     selectedArtist={selectedArtist}
                   />
                 </motion.div>
+              </div>
+              <div className='fixed bottom-4 left-4 flex items-center'>
+                <SidebarTrigger />
               </div>
             <div
               className={
