@@ -13,7 +13,7 @@ import React from "react"
 export function AppSidebar({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <Sidebar className="absolute" variant="floating">
+      <Sidebar className="absolute rounded-3xl" variant="floating">
         <SidebarHeader />
         <SidebarContent>
           <SidebarGroup />

@@ -171,7 +171,10 @@ function App() {
 });
   return (
     <SidebarProvider>
-      <AppSidebar>
+      <AppSidebar
+        genres={genres}
+        genreLinks={genreLinks}
+        selectedGenre={selectedGenre}>
         <div className="relative min-h-screen min-w-screen">
 
           <Gradient />
@@ -183,13 +186,6 @@ function App() {
           >
             <SidebarTrigger />
             {/* Breadcrumb & ListViewPanel Container */}
-            <div
-              className={
-                isMobile
-                  ? "max-w-[calc(100vw-32px)]  inline-flex flex-col gap-2 items-start"
-                  : " inline-flex flex-col gap-2 items-start"
-              }
-            >
               <div
                 className={`md:flex hidden justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
                 <ResetButton
@@ -211,6 +207,13 @@ function App() {
                   />
                 </motion.div>
               </div>
+            <div
+              className={
+                isMobile
+                  ? "max-w-[calc(100vw-32px)]  inline-flex flex-col gap-2 items-start"
+                  : " inline-flex flex-col gap-2 items-start"
+              }
+            >
               {/* <BreadcrumbHeader
                     selectedGenre={selectedGenre ? selectedGenre.name : undefined}
                     selectedArtist={selectedArtist}
@@ -311,7 +314,7 @@ function App() {
         </div>
       </AppSidebar>
     </SidebarProvider>
-  )
+  );
 }
 
 export default App
