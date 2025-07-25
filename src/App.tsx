@@ -29,6 +29,7 @@ import { Search } from './components/Search';
 import {buildGenreTree, generateSimilarLinks, isParentGenre} from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
+import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
 import GenrePanel from './components/GenrePanel'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
@@ -48,6 +49,7 @@ function App() {
     const storedDagMode = localStorage.getItem('dagMode');
     return storedDagMode ? JSON.parse(storedDagMode) : false;
   });
+  const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const [genreMiniView, setGenreMiniView] = useState<boolean>(false);
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
@@ -119,11 +121,15 @@ function App() {
     // }
     setSelectedGenre(genre);
     setGraph('artists');
+    addRecentSelection(genre);
+    console.log("Genre selected:", genre);
   }
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
       setSelectedArtist(artist);
       setShowArtistCard(true);
+      addRecentSelection(artist);
+      console.log("Artist selected:", artist);
     }
     if (graph === 'similarArtists') {
       createSimilarArtistGraph(artist);

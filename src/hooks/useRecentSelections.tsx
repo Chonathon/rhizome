@@ -35,6 +35,7 @@ export function useRecentSelections() {
   }, []);
 
   const addRecentSelection = useCallback((selection: BasicNode) => {
+    console.log("Adding recent selection:", selection);
     setRecentSelections((prevSelections) => {
       const newSelections = [selection, ...prevSelections.filter(s => s.id !== selection.id)];
       const limitedSelections = newSelections.slice(0, MAX_RECENT_SELECTIONS);

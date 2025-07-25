@@ -30,6 +30,7 @@ interface AppSidebarProps {
 export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { recentSelections } = useRecentSelections()
+  console.log("Recent selections in sidebar:", recentSelections);
 
   const genreRelationships = {
     description: `The genre emerged in the early 1980s as musicians began fusing the double bass drumming and complex guitar stylings of the new wave of British heavy metal (NWOBHM) with the speed and aggression of hardcore punk and the technicality of progressive rock. Philosophically, thrash metal developed as a backlash against both the conservatism of the Reagan era and the much more moderate, pop-influenced, and widely accessible heavy metal subgenre of glam metal which also developed concurrently in the 1980s. Derived genres include crossover thrash, a fusion of thrash metal and hardcore punk.
@@ -47,6 +48,7 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
   return (
     <>
       <Sidebar className="" variant="floating">
+        <SidebarContent className="p-1">
         {selectedGenre ? (
           <>
           {/* <Button
@@ -54,7 +56,6 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
             size="icon"
             onClick={onClick}
           ><Undo2 /></Button> */}
-              <SidebarContent className="p-1">
             <SidebarHeader className="mb-2">
               <span>{selectedGenre.name}</span>
               <p
@@ -69,10 +70,10 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
             </SidebarHeader>
               <div className="flex flex-col gap-4">
                 {genreRelationships.subgenreOf.map((subgenreOf, index) => (
-                  <SidebarGroup>
+                  <SidebarGroup key={`subgenreOf-${index}`}>
                     <SidebarGroupLabel>Subgenre of</SidebarGroupLabel>
                     <SidebarGroupContent>
-                      <SidebarMenu key={index}>
+                      <SidebarMenu>
                         <SidebarMenuItem>
                           <SidebarMenuButton asChild>
                             <a href="">
@@ -85,9 +86,9 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
                   </SidebarGroup>
                 ))}
                 {genreRelationships.subgenres.map((subgenre, index) => (
-                  <SidebarGroup>
+                  <SidebarGroup key={`subgenre-${index}`}>
                     <SidebarGroupLabel>subgenres</SidebarGroupLabel>
-                    <SidebarMenu key={index}>
+                    <SidebarMenu>
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild>
                           <a href="">
@@ -99,10 +100,10 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
                   </SidebarGroup>
                 ))}
                 {genreRelationships.fusionGenres.map((fusion, index) => (
-                  <SidebarGroup>
+                  <SidebarGroup key={`fusion-${index}`}>
                     <SidebarGroupLabel>Fusions</SidebarGroupLabel>
                     <SidebarMenu>
-                      <SidebarMenuItem key={index}>
+                      <SidebarMenuItem>
                         <SidebarMenuButton asChild>
                           <a href="">
                             <span>{fusion}</span>
@@ -113,10 +114,10 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
                   </SidebarGroup>
                 ))}
                 {genreRelationships.influencedBy.map((influencedBy, index) => (
-                  <SidebarGroup>
+                  <SidebarGroup key={`influencedBy-${index}`}>
                     <SidebarGroupLabel>Influenced by</SidebarGroupLabel>
                     <SidebarMenu>
-                      <SidebarMenuItem key={index}>
+                      <SidebarMenuItem>
                         <SidebarMenuButton asChild>
                           <a href="">
                             <span>{influencedBy}</span>
@@ -127,10 +128,10 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
                   </SidebarGroup>
                 ))}
                 {genreRelationships.influencedGenres.map((influencedGenres, index) => (
-                  <SidebarGroup>
+                  <SidebarGroup key={`influencedGenre-${index}`}>
                     <SidebarGroupLabel>Influenced</SidebarGroupLabel>
                     <SidebarMenu>
-                      <SidebarMenuItem key={index}>
+                      <SidebarMenuItem>
                         <SidebarMenuButton asChild>
                           <a href="">
                             <span>{influencedGenres}</span>
@@ -141,10 +142,9 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
                   </SidebarGroup>
                 ))}
               </div>
-            </SidebarContent>
+
           </>
         ) : (
-          <SidebarContent>
             <SidebarGroup>
               <SidebarGroupLabel>Recent Selections</SidebarGroupLabel>
               <SidebarGroupContent>
@@ -161,10 +161,9 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
                 ))}
               </SidebarGroupContent>
             </SidebarGroup>
-          </SidebarContent>
-        )}
+      )}
+      </SidebarContent>
         <SidebarRail />
-        {/* <SidebarFooter /> */}
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
     </>
