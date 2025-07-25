@@ -173,15 +173,18 @@ function App() {
     <SidebarProvider>
       <AppSidebar
         genres={genres}
+        onClick={resetAppState}
         genreLinks={genreLinks}
         selectedGenre={selectedGenre}>
-        <div className="relative min-h-screen min-w-screen">
-
           <Gradient />
+        <div className="relative min-h-screen min-w-screen">
           {/* Top Bar */}
+        <div className='fixed z-50 bottom-4 left-4 flex items-center'>
+            <SidebarTrigger />
+          </div>
           <div
             className={
-              "fixed top-0 left-0 flex w-full justify-center items-center p-4 z-50"
+              "fixed w-auto top-0 left-1/2 -translate-x-1/2 flex justify-center items-center p-4 z-50"
             }
           >
             
@@ -207,9 +210,7 @@ function App() {
                   />
                 </motion.div>
               </div>
-              <div className='fixed bottom-4 left-4 flex items-center'>
-                <SidebarTrigger />
-              </div>
+              
             <div
               className={
                 isMobile
