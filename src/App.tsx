@@ -172,9 +172,7 @@ function App() {
   return (
     <SidebarProvider>
       <AppSidebar
-        genres={genres}
         onClick={resetAppState}
-        genreLinks={genreLinks}
         selectedGenre={selectedGenre}>
           <Gradient />
         <div className="relative min-h-screen min-w-screen">
