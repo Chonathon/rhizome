@@ -134,7 +134,7 @@ export function GraphControls() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <GenrePanel />
+              {/* <GenrePanel /> */}
             </motion.div>
           )}
         </AnimatePresence>

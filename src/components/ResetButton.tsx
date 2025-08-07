@@ -3,6 +3,7 @@ import { Undo2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useMediaQuery } from "react-responsive";
 import { useEffect, useCallback, useState } from "react";
+import { Badge } from "./ui/badge";
 
 interface ResetButtonProps {
     onClick: () => void;
@@ -13,21 +14,7 @@ export function ResetButton({ onClick, show }: ResetButtonProps) {
 
   const isMobile = useMediaQuery({ maxWidth: 640 }); // pass this in as a prop if you want to use it
   const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.metaKey && event.key === "ArrowLeft") {
-        onClick();
-      }
-    },
-    [onClick]
-  );
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [handleKeyDown]);
+  
 
   return show && (
       <motion.div 
@@ -42,11 +29,15 @@ export function ResetButton({ onClick, show }: ResetButtonProps) {
     >
         <Button
           className="rounded-full h-[54px] w-[54px] bg-stone-100/90 dark:bg-stone-900/50 backdrop-blur-xs border border-input shadow-lg"
-          size="icon"
           variant="secondary"
           onClick={onClick}
         >
           <Undo2 />
+          {/* <Badge
+                          className="text-xs text-muted-foreground"
+                          variant="outline"
+                          >ESC
+                          </Badge> */}
         </Button>
     </motion.div>
     )

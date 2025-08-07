@@ -26,10 +26,11 @@ import { useMediaQuery } from 'react-responsive';
 import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
-import {buildGenreTree, generateSimilarLinks, isParentGenre} from "@/lib/utils";
+import {buildGenreTree, filterOutGenreTree, generateSimilarLinks, genreHasChildren} from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import DisplayPanel from './components/DisplayPanel';
+import GenrePanel from './components/GenrePanel'
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -57,6 +58,24 @@ function App() {
   useEffect(() => {
     localStorage.setItem('dagMode', JSON.stringify(dagMode));
   }, [dagMode]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (showArtistCard) {
+          deselectArtist();
+        } else {
+          resetAppState();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showArtistCard]);
 
   useEffect(() => {
     setCurrentArtists(artists);
@@ -92,7 +111,7 @@ function App() {
   }
   const onGenreNodeClick = (genre: Genre) => {
     // this code makes the mini genre graph
-    // if (isParentGenre(genre, genreClusterMode)) {
+    // if (genreHasChildren(genre, genreClusterMode)) {
     //   setGenreMiniView(true);
     //   setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
     // }
@@ -119,6 +138,7 @@ function App() {
     setCanCreateSimilarArtistGraph(false);
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
+    setGenreClusterMode('subgenre');
   }
   const deselectArtist = () => {
     setSelectedArtist(undefined);
@@ -131,6 +151,23 @@ function App() {
     setSelectedArtist(artistResult);
     setShowArtistCard(true);
     setCanCreateSimilarArtistGraph(true);
+  }
+  const onParentGenreClick = (genre: Genre) => {
+    setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
+  }
+  const onParentGenreDeselect = (genre: Genre) => {
+    if (currentGenres){
+      setCurrentGenres(filterOutGenreTree(currentGenres, genre, genreClusterMode));
+    }
+  }
+  const onParentGenreReselect = (genre: Genre) => {
+    if (currentGenres){
+      const reselectedGenreData = buildGenreTree(genres, genre, genreClusterMode);
+      setCurrentGenres({
+        nodes: [...currentGenres.nodes, ...reselectedGenreData.nodes],
+        links: [...currentGenres.links, ...reselectedGenreData.links],
+      });
+    }
   }
 
   console.log("App render", {
@@ -160,7 +197,27 @@ function App() {
             ? "max-w-[calc(100vw-32px)]  inline-flex flex-col gap-2 items-start"
             : " inline-flex flex-col gap-2 items-start"
         }>
-            <BreadcrumbHeader
+          <div className={`md:flex hidden justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
+              <ResetButton
+                onClick={() => resetAppState()}
+                show={graph !== 'genres'}
+              />
+              <motion.div
+                layout
+                // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
+              >
+                <Search
+                    onGenreSelect={onGenreNodeClick}
+                    onArtistSelect={createSimilarArtistGraph}
+                    currentArtists={currentArtists}
+                    genres={genres}
+                    graphState={graph}
+                    selectedGenre={selectedGenre}
+                    selectedArtist={selectedArtist}
+                />
+              </motion.div>
+            </div>
+            {/* <BreadcrumbHeader
                 selectedGenre={selectedGenre ? selectedGenre.name : undefined}
                 selectedArtist={selectedArtist}
                 HomeIcon={Waypoints}
@@ -168,7 +225,7 @@ function App() {
                 showListView={showListView}
                 reset={resetAppState}
                 hideArtistCard={deselectArtist}
-            />
+            /> */}
             {/* <ListViewPanel
                 genres={genres}
                 onGenreClick={onGenreNodeClick}
@@ -190,12 +247,20 @@ function App() {
                 dagMode={dagMode} 
                 setDagMode={setDagMode} />
               <DisplayPanel />
+              <GenrePanel
+                genres={genres}
+                onParentClick={onParentGenreClick}
+                genreClusterMode={genreClusterMode}
+                onParentDeselect={onParentGenreDeselect}
+                onParentSelect={onParentGenreReselect}
+                show={graph === 'genres' && !genresLoading}
+              />
           </div>
         <GenresForceGraph
             graphData={currentGenres}
             onNodeClick={onGenreNodeClick}
             loading={genresLoading}
-            show={graph === 'genres' && !genresError}
+            show={(graph === 'genres') && !genresError}
             dag={dagMode}
             clusterMode={genreClusterMode}
         />
@@ -228,7 +293,7 @@ function App() {
               deselectArtist={deselectArtist}
               similarFilter={similarArtistFilter}
             />
-            <div className={`flex justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
+            <div className={`flex md:hidden justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
               <ResetButton
                 onClick={() => resetAppState()}
                 show={graph !== 'genres'}
@@ -243,6 +308,8 @@ function App() {
                     currentArtists={currentArtists}
                     genres={genres}
                     graphState={graph}
+                    selectedGenre={selectedGenre}
+                    selectedArtist={selectedArtist}
                 />
               </motion.div>
             </div>
