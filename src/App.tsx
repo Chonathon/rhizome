@@ -132,9 +132,22 @@ function App() {
     const timeout = setTimeout(() => {
       setHoveredArtist(artist);
       setSelectedArtist(artist);
-      setArtistCardPosition(position);
+      if (!isMobile) {
+        setArtistCardPosition(position);
+      }
     }, 200);
     setArtistHoverTimeout(timeout);
+  };
+
+  const handleNodeTap = (artist: Artist) => {
+    setHoveredArtist(artist);
+    setSelectedArtist(artist);
+  };
+
+  const handleBackgroundTap = () => {
+    if (isMobile && hoveredArtist) {
+      handleNodeMouseOut();
+    }
   };
 
   const handleNodeMouseOut = () => {
@@ -201,7 +214,10 @@ function App() {
   currentGenres
 });
   return (
-    <div className="relative min-h-screen min-w-screen">
+    <div 
+      className="relative min-h-screen min-w-screen"
+      onClick={handleBackgroundTap}
+    >
        <Gradient/>
        {/* Top Bar */}
       <div className={
@@ -286,10 +302,12 @@ function App() {
             onNodeClick={onArtistNodeClick}
             onNodeMouseOver={handleNodeMouseOver}
             onNodeMouseOut={handleNodeMouseOut}
+            onNodeTap={handleNodeTap}
+            isMobile={isMobile}
             show={(graph === 'artists' || graph === 'similarArtists') && !artistsError}
         />
         <AnimatePresence>
-          {hoveredArtist && artistCardPosition && (
+          {hoveredArtist && !isMobile && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -297,11 +315,12 @@ function App() {
               transition={{ type: "spring", stiffness: 250, damping: 24, mass: 0.8 }}
               style={{
                 position: 'absolute',
-                left: artistCardPosition.x,
-                top: artistCardPosition.y,
+                left: artistCardPosition?.x || '50%',
+                top: artistCardPosition?.y || '50%',
                 transform: 'translate(-50%, -110%)', // to position the card above the cursor
                 zIndex: 50,
               }}
+              onClick={(e) => e.stopPropagation()}
             >
               <ArtistCard
                 selectedArtist={selectedArtist}
@@ -327,6 +346,28 @@ function App() {
                 : "bottom-4 items-end"}
             `}
           >
+            {/* Mobile Artist Card */}
+            {isMobile && hoveredArtist && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 250, damping: 24, mass: 0.8 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ArtistCard
+                  selectedArtist={selectedArtist}
+                  setArtistFromName={setArtistFromName}
+                  setSelectedArtist={setSelectedArtist}
+                  artistData={artistData}
+                  artistLoading={artistLoading}
+                  artistError={artistError}
+                  deselectArtist={handleNodeMouseOut}
+                  similarFilter={similarArtistFilter}
+                />
+              </motion.div>
+            )}
+            
             <div className={`flex md:hidden justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
               <ResetButton
                 onClick={() => resetAppState()}

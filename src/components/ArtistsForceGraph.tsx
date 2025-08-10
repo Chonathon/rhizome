@@ -11,14 +11,16 @@ interface ArtistsForceGraphProps {
     onNodeClick: (artist: Artist) => void;
     onNodeMouseOver: (artist: Artist, coords: {x: number, y: number}) => void;
     onNodeMouseOut: () => void;
+    onNodeTap?: (artist: Artist) => void;
     loading: boolean;
     show: boolean;
+    isMobile?: boolean;
 }
 
-const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLinks, onNodeClick, onNodeMouseOver, onNodeMouseOut, loading, show}) => {
+const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLinks, onNodeClick, onNodeMouseOver, onNodeMouseOut, onNodeTap, loading, show, isMobile}) => {
     const [graphData, setGraphData] = useState<GraphData<Artist, NodeLink>>({ nodes: [], links: [] });
     const { theme } = useTheme();
-    const fgRef = useRef();
+    const fgRef = useRef<any>();
 
     useEffect(() => {
         if (artists && artistLinks) {
@@ -41,12 +43,18 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
             linkVisibility={true}
             linkColor={'#666666'}
             linkCurvature={0.2}
-            onNodeClick={onNodeClick}
+            onNodeClick={(node) => {
+                if (isMobile && onNodeTap) {
+                    onNodeTap(node);
+                } else {
+                    onNodeClick(node);
+                }
+            }}
             onNodeHover={(node) => {
-                if (node && fgRef.current) {
+                if (!isMobile && node && fgRef.current) {
                     const { x, y } = (fgRef.current as any).graph2ScreenCoords(node.x, node.y);
                     onNodeMouseOver(node, { x, y });
-                } else {
+                } else if (!isMobile) {
                     onNodeMouseOut();
                 }
             }}
