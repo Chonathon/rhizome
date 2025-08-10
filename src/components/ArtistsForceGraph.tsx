@@ -1,5 +1,5 @@
 import {Artist, BasicNode, NodeLink} from "@/types";
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import ForceGraph, {GraphData} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
@@ -9,13 +9,16 @@ interface ArtistsForceGraphProps {
     artists: Artist[];
     artistLinks: NodeLink[];
     onNodeClick: (artist: Artist) => void;
+    onNodeMouseOver: (artist: Artist, coords: {x: number, y: number}) => void;
+    onNodeMouseOut: () => void;
     loading: boolean;
     show: boolean;
 }
 
-const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLinks, onNodeClick, loading, show}) => {
+const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLinks, onNodeClick, onNodeMouseOver, onNodeMouseOut, loading, show}) => {
     const [graphData, setGraphData] = useState<GraphData<Artist, NodeLink>>({ nodes: [], links: [] });
     const { theme } = useTheme();
+    const fgRef = useRef();
 
     useEffect(() => {
         if (artists && artistLinks) {
@@ -33,11 +36,20 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
         <Loading />
     </div>) : (
         (<ForceGraph
+            ref={fgRef}
             graphData={graphData}
             linkVisibility={true}
             linkColor={'#666666'}
             linkCurvature={0.2}
             onNodeClick={onNodeClick}
+            onNodeHover={(node) => {
+                if (node && fgRef.current) {
+                    const { x, y } = (fgRef.current as any).graph2ScreenCoords(node.x, node.y);
+                    onNodeMouseOver(node, { x, y });
+                } else {
+                    onNodeMouseOut();
+                }
+            }}
             nodeCanvasObject={(node, ctx, globalScale) => {
                 const label = node.name;
                 const fontSize = 12/globalScale;

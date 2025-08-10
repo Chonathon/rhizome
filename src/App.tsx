@@ -36,7 +36,9 @@ function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showListView, setShowListView] = useState(false);
-  const [showArtistCard, setShowArtistCard] = useState(false);
+  const [hoveredArtist, setHoveredArtist] = useState<Artist | undefined>(undefined);
+  const [artistCardPosition, setArtistCardPosition] = useState<{ x: number, y: number } | undefined>(undefined);
+  const [artistHoverTimeout, setArtistHoverTimeout] = useState<NodeJS.Timeout | undefined>(undefined);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
@@ -62,8 +64,8 @@ function App() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (showArtistCard) {
-          deselectArtist();
+        if (hoveredArtist) {
+          handleNodeMouseOut();
         } else {
           resetAppState();
         }
@@ -75,7 +77,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showArtistCard]);
+  }, [hoveredArtist]);
 
   useEffect(() => {
     setCurrentArtists(artists);
@@ -106,7 +108,6 @@ function App() {
     const artist = artists.find((artist) => artist.name === name);
     if (artist) {
       setSelectedArtist(artist);
-      setShowArtistCard(true);
     }
   }
   const onGenreNodeClick = (genre: Genre) => {
@@ -119,20 +120,35 @@ function App() {
     setGraph('artists');
   }
   const onArtistNodeClick = (artist: Artist) => {
-    if (graph === 'artists') {
-      setSelectedArtist(artist);
-      setShowArtistCard(true);
-    }
-    if (graph === 'similarArtists') {
+    if (graph === 'artists' || graph === 'similarArtists') {
       createSimilarArtistGraph(artist);
     }
   }
+
+  const handleNodeMouseOver = (artist: Artist, position: { x: number, y: number }) => {
+    if (artistHoverTimeout) {
+      clearTimeout(artistHoverTimeout);
+    }
+    const timeout = setTimeout(() => {
+      setHoveredArtist(artist);
+      setSelectedArtist(artist);
+      setArtistCardPosition(position);
+    }, 200);
+    setArtistHoverTimeout(timeout);
+  };
+
+  const handleNodeMouseOut = () => {
+    if (artistHoverTimeout) {
+      clearTimeout(artistHoverTimeout);
+    }
+    setHoveredArtist(undefined);
+  };
   const resetAppState = () => {
     setGraph('genres');
     setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === genreClusterMode)});
     setSelectedGenre(undefined);
     setSelectedArtist(undefined);
-    setShowArtistCard(false);
+    setHoveredArtist(undefined);
     setShowListView(false);
     setGenreMiniView(false);
     setCanCreateSimilarArtistGraph(false);
@@ -141,15 +157,14 @@ function App() {
     setGenreClusterMode('subgenre');
   }
   const deselectArtist = () => {
-    setSelectedArtist(undefined);
-    setShowArtistCard(false);
+    handleNodeMouseOut();
   }
   const similarArtistFilter = (similarArtists: string[]) => {
     return similarArtists.filter(s => currentArtists.some(a => a.name === s));
   }
   const createSimilarArtistGraph = (artistResult: Artist) => {
     setSelectedArtist(artistResult);
-    setShowArtistCard(true);
+    setHoveredArtist(undefined);
     setCanCreateSimilarArtistGraph(true);
   }
   const onParentGenreClick = (genre: Genre) => {
@@ -269,30 +284,49 @@ function App() {
             artistLinks={currentArtistLinks}
             loading={artistsLoading}
             onNodeClick={onArtistNodeClick}
+            onNodeMouseOver={handleNodeMouseOver}
+            onNodeMouseOut={handleNodeMouseOut}
             show={(graph === 'artists' || graph === 'similarArtists') && !artistsError}
         />
+        <AnimatePresence>
+          {hoveredArtist && artistCardPosition && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 250, damping: 24, mass: 0.8 }}
+              style={{
+                position: 'absolute',
+                left: artistCardPosition.x,
+                top: artistCardPosition.y,
+                transform: 'translate(-50%, -110%)', // to position the card above the cursor
+                zIndex: 50,
+              }}
+            >
+              <ArtistCard
+                selectedArtist={selectedArtist}
+                setArtistFromName={setArtistFromName}
+                setSelectedArtist={setSelectedArtist}
+                artistData={artistData}
+                artistLoading={artistLoading}
+                artistError={artistError}
+                deselectArtist={handleNodeMouseOut}
+                similarFilter={similarArtistFilter}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <AnimatePresence mode="popLayout">
           <motion.div
             className={`
               fixed left-1/2 transform -translate-x-1/2 z-50
               flex flex-col gap-4
-              ${isMobile
+              ${
+                isMobile
                 ? "w-full px-4 items-center bottom-4"
                 : "bottom-4 items-end"}
             `}
           >
-            <ArtistCard
-              selectedArtist={selectedArtist}
-              setArtistFromName={setArtistFromName}
-              setSelectedArtist={setSelectedArtist}
-              artistData={artistData}
-              artistLoading={artistLoading}
-              artistError={artistError}
-              show={showArtistCard}
-              setShowArtistCard={setShowArtistCard}
-              deselectArtist={deselectArtist}
-              similarFilter={similarArtistFilter}
-            />
             <div className={`flex md:hidden justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
               <ResetButton
                 onClick={() => resetAppState()}

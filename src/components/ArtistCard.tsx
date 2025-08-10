@@ -20,8 +20,6 @@ interface ArtistCardProps {
     artistData?: LastFMArtistJSON;
     artistLoading: boolean;
     artistError?: AxiosError;
-    show: boolean;
-    setShowArtistCard: (show: boolean) => void;
     deselectArtist: () => void;
     similarFilter: (artists: string[]) => string[];
 }
@@ -33,8 +31,6 @@ export function ArtistCard({
     artistData,
     artistLoading,
     artistError,
-    show,
-    setShowArtistCard,
     deselectArtist,
     similarFilter,
 }: ArtistCardProps) {
@@ -54,7 +50,7 @@ export function ArtistCard({
         setIsExpanded(false);
         deselectArtist();
     }
-    return !show ? null : (
+    return (
       <AnimatePresence mode="wait">
         <motion.div
           ref={cardRef}
