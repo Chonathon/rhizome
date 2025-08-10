@@ -20,7 +20,7 @@ interface ArtistsForceGraphProps {
 const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLinks, onNodeClick, onNodeMouseOver, onNodeMouseOut, onNodeTap, loading, show, isMobile}) => {
     const [graphData, setGraphData] = useState<GraphData<Artist, NodeLink>>({ nodes: [], links: [] });
     const { theme } = useTheme();
-    const fgRef = useRef<any>();
+    const fgRef = useRef<any>(null);
 
     useEffect(() => {
         if (artists && artistLinks) {
