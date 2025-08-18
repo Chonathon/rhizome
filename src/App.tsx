@@ -217,17 +217,6 @@ function App() {
                   layout
                   // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
                 >
-                  <Search
-                    onGenreSelect={onGenreNodeClick}
-                    onArtistSelect={createSimilarArtistGraph}
-                    currentArtists={currentArtists}
-                    genres={genres}
-                    graphState={graph}
-                    selectedGenre={selectedGenre}
-                    selectedArtist={selectedArtist}
-                    open={searchOpen}
-                    setOpen={setSearchOpen}
-                  />
                 </motion.div>
               </div>
               
@@ -330,6 +319,8 @@ function App() {
                     graphState={graph}
                     selectedGenre={selectedGenre}
                     selectedArtist={selectedArtist}
+                    open={searchOpen}
+                    setOpen={setSearchOpen}
                   />
                 </motion.div>
               </div>
