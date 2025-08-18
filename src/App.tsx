@@ -108,6 +108,17 @@ function App() {
     }
   }, [artistData, canCreateSimilarArtistGraph]);
 
+  useEffect(() => {
+  const down = (e: KeyboardEvent) => {
+    if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      setSearchOpen((prev) => !prev);
+    }
+  }
+  document.addEventListener("keydown", down);
+  return () => document.removeEventListener("keydown", down)
+}, [])
+
   const setArtistFromName = (name: string) => {
     const artist = artists.find((artist) => artist.name === name);
     if (artist) {

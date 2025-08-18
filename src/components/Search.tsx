@@ -48,16 +48,6 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, 
     }
   }, [inputValue, DEBOUNCE_MS]);
 
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen((open) => !open);
-      }
-    }
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down)
-  }, [])
 
   // Filter the searchable items. This is problematic with bands of the same name, for now it just uses the first one in the results
   const filteredSearchableItems = useMemo(() => {
@@ -106,7 +96,7 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, 
           variant="outline"
           aria-label="Search"
           className={`w-full bg-background/90 hover:bg-accent/90 backdrop-blur-xs shadow-md rounded-full justify-between text-left text-md font-normal text-foreground h-[54px]
-            ${isMobile ? "w-full" : ""}`}
+            ${isMobile ? "w-full" : "hidden"}`}
           onClick={() => setOpen(true)}
         >
           <div className="flex gap-2 items-center animate-fade-in">
