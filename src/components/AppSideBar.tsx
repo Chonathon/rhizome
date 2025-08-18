@@ -15,11 +15,12 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React from "react"
-import { Icon, Undo2, Plus } from "lucide-react"
+import { Icon, Undo2, Plus, BadgeIcon } from "lucide-react"
 import { useState } from "react"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
 import { Genre } from "@/types"
+import { Badge } from "./ui/badge"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -48,7 +49,7 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
   return (
     <>
       <Sidebar className="" variant="floating">
-        <SidebarContent className="p-1">
+        <SidebarContent className="p-1 mt-12">
         {selectedGenre ? (
           <>
           {/* <Button
@@ -146,9 +147,38 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
           </>
         ) : (
             <SidebarGroup>
-              <SidebarGroupLabel>Recent Selections</SidebarGroupLabel>
+              {/* <SidebarGroupLabel>Recent Selections</SidebarGroupLabel> */}
               <SidebarGroupContent>
-                {recentSelections.map((selection) => (
+              <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild size="xl">
+                        <a href="">
+                          <span>Search</span>
+                        <Badge
+                          className="text-xs text-muted-foreground"
+                          variant="outline"
+                          >⌘K
+                          </Badge>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild size="xl">
+                        <a href="">
+                          <span>Collection</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={true} size="xl">
+                        <a href="">
+                          <span>Explore</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    
+                  </SidebarMenu>
+                {/* {recentSelections.map((selection) => (
                   <SidebarMenu key={selection.id}>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild>
@@ -158,7 +188,7 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
-                ))}
+                ))} */}
               </SidebarGroupContent>
             </SidebarGroup>
       )}

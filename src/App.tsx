@@ -183,7 +183,7 @@ function App() {
           <Gradient />
         <div className="relative min-h-screen min-w-screen">
           {/* Top Bar */}
-        <div className='fixed z-50 bottom-4 left-4 flex items-center'>
+        <div className='fixed z-50 top-5 left-5 flex items-center'>
             <SidebarTrigger />
           </div>
           <div
