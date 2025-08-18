@@ -26,9 +26,10 @@ interface AppSidebarProps {
   onClick: () => void;
   selectedGenre?: Genre;
   children: React.ReactNode;
+  setSearchOpen: (open: boolean) => void;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { recentSelections } = useRecentSelections()
   console.log("Recent selections in sidebar:", recentSelections);
@@ -151,15 +152,16 @@ export function AppSidebar({ children, onClick, selectedGenre }: AppSidebarProps
               <SidebarGroupContent>
               <SidebarMenu>
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild size="xl">
-                        <a href="">
+                      <SidebarMenuButton asChild size="xl" >
+                        
+                        <button onClick={() => setSearchOpen(true)}>
                           <span>Search</span>
                         <Badge
                           className="text-xs text-muted-foreground"
                           variant="outline"
                           >⌘K
                           </Badge>
-                        </a>
+                        </button>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>

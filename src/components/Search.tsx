@@ -22,14 +22,16 @@ interface SearchProps {
   genres: Genre[];
   selectedGenre?: Genre;
   selectedArtist?: Artist;
+  open: boolean;
+  setOpen: (open: boolean) => void;
 }
 
 
 const DEBOUNCE_MS = 500;
 
-export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, selectedGenre, selectedArtist }: SearchProps) {
+export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, selectedGenre, selectedArtist, open, setOpen }: SearchProps) {
   const isMobile = useMediaQuery({ maxWidth: 640 });
-  const [open, setOpen] = useState<boolean>(false);
+  // const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");
   const [query, setQuery] = useState("");
   const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();

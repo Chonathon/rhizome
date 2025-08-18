@@ -55,6 +55,8 @@ function App() {
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
   const { artistData, artistLoading, artistError } = useArtist(selectedArtist);
+  const [searchOpen, setSearchOpen] = useState(false);
+
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
@@ -178,6 +180,7 @@ function App() {
   return (
     <SidebarProvider>
       <AppSidebar
+        setSearchOpen={setSearchOpen}
         onClick={resetAppState}
         selectedGenre={selectedGenre}>
           <Gradient />
@@ -211,6 +214,8 @@ function App() {
                     graphState={graph}
                     selectedGenre={selectedGenre}
                     selectedArtist={selectedArtist}
+                    open={searchOpen}
+                    setOpen={setSearchOpen}
                   />
                 </motion.div>
               </div>
