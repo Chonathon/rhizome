@@ -214,18 +214,18 @@ function App() {
                       <TabsTrigger 
                       onClick={() => setGraph('genres')}value="genres">Genres</TabsTrigger>
                     <TabsTrigger 
-                    onClick={() => setGraph('artists')} value="artists">Artist</TabsTrigger>
+                    onClick={() => setGraph('artists')} value="artists">Artists</TabsTrigger>
                   </TabsList>
                 </Tabs>
                 { graph === 'artists' && 
                 <div className='flex gap-3'>
-                  <Button variant='outline'>Genre
+                  <Button size='lg' variant='outline'>Genre
                     <ChevronDown />
                   </Button>
-                  <Button variant='outline'>Mood & Activity
+                  <Button size='lg' variant='outline'>Mood & Activity
                     <ChevronDown />
                   </Button>
-                  <Button variant='outline'>Decade
+                  <Button size='lg' variant='outline'>Decade
                     <ChevronDown />
                   </Button>
                 </div>
