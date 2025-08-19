@@ -6,6 +6,14 @@ export interface Genre extends BasicNode {
     fusion_genres: BasicNode[];
     fusion_of: BasicNode[];
     influenced_by: BasicNode[];
+    description?: string;
+    descriptionAI?: boolean;
+    totalListeners?: number;
+    totalPlays?: number;
+    from?: string[];
+    named_after_area?: string[];
+    used_instruments?: string[];
+    badDataFlag?: boolean;
 }
 
 export interface GenresJSON {
@@ -22,8 +30,17 @@ export interface Tag {
 
 export interface Artist extends BasicNode {
     tags: Tag[];
+    genres: string[];
+    listeners: number;
+    playcount: number;
+    similar: string[];
+    bio: LastFMBio;
+    noMBID: boolean;
     location?: string;
     startDate?: string;
+    endDate?: string;
+    image?: string;
+    badDataFlag?: boolean;
 }
 
 export interface ArtistJSON {

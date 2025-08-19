@@ -49,8 +49,7 @@ function App() {
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const [genreMiniView, setGenreMiniView] = useState<boolean>(false);
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
-  const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
-  const { artistData, artistLoading, artistError } = useArtist(selectedArtist);
+  const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
@@ -86,21 +85,21 @@ function App() {
     setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === genreClusterMode)});
   }, [genres, genreLinks, genreClusterMode]);
 
-  useEffect(() => {
-    if (canCreateSimilarArtistGraph && artistData?.similar && selectedArtist && selectedArtist.name === artistData.name) {
-      const similarArtists = [selectedArtist];
-      artistData.similar.forEach((s, i) => {
-        similarArtists.push({ id: Math.floor((Math.random() + i) * 1234567).toString(), name: s, tags: [] });
-      });
-      if (similarArtists.length > 1) {
-        const links = generateSimilarLinks(similarArtists);
-        setCurrentArtists(similarArtists);
-        setCurrentArtistLinks(links);
-        setGraph('similarArtists');
-      }
-      setCanCreateSimilarArtistGraph(false);
-    }
-  }, [artistData, canCreateSimilarArtistGraph]);
+  // useEffect(() => {
+  //   if (canCreateSimilarArtistGraph && artistData?.similar && selectedArtist && selectedArtist.name === artistData.name) {
+  //     const similarArtists = [selectedArtist];
+  //     artistData.similar.forEach((s, i) => {
+  //       similarArtists.push({ id: Math.floor((Math.random() + i) * 1234567).toString(), name: s, tags: [] });
+  //     });
+  //     if (similarArtists.length > 1) {
+  //       const links = generateSimilarLinks(similarArtists);
+  //       setCurrentArtists(similarArtists);
+  //       setCurrentArtistLinks(links);
+  //       setGraph('similarArtists');
+  //     }
+  //     setCanCreateSimilarArtistGraph(false);
+  //   }
+  // }, [artistData, canCreateSimilarArtistGraph]);
 
   const setArtistFromName = (name: string) => {
     const artist = artists.find((artist) => artist.name === name);
@@ -179,9 +178,6 @@ function App() {
   artists,
   artistsLoading,
   artistsError,
-  artistData,
-  artistLoading,
-  artistError,
   graph,
   currentGenres
 });
@@ -285,13 +281,12 @@ function App() {
               selectedArtist={selectedArtist}
               setArtistFromName={setArtistFromName}
               setSelectedArtist={setSelectedArtist}
-              artistData={artistData}
-              artistLoading={artistLoading}
-              artistError={artistError}
               show={showArtistCard}
               setShowArtistCard={setShowArtistCard}
               deselectArtist={deselectArtist}
               similarFilter={similarArtistFilter}
+              artistLoading={false}
+              artistError={false}
             />
             <div className={`flex md:hidden justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
               <ResetButton
