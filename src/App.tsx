@@ -26,6 +26,7 @@ import { useMediaQuery } from 'react-responsive';
 import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
 import {buildGenreTree, filterOutGenreTree, generateSimilarLinks, genreHasChildren} from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
@@ -198,10 +199,10 @@ function App() {
             : " inline-flex flex-col gap-2 items-start"
         }>
           <div className={`md:flex hidden justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
-              <ResetButton
+              {/* <ResetButton
                 onClick={() => resetAppState()}
                 show={graph !== 'genres'}
-              />
+              /> */}
               <motion.div
                 layout
                 // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
@@ -216,6 +217,20 @@ function App() {
                     selectedArtist={selectedArtist}
                 />
               </motion.div>
+                <Tabs 
+                // defaultValue="genres" 
+                value={graph}
+                onValueChange={(val) => setGraph(val as GraphType)}
+                className="w-[400px]">
+                  <TabsList>
+                      <TabsTrigger 
+                      onClick={() => setGraph('genres')}value="genres">Genres</TabsTrigger>
+                    <TabsTrigger 
+                    onClick={() => setGraph('artists')} value="artists">Artist</TabsTrigger>
+                  </TabsList>
+                  {/* <TabsContent value="genre"></TabsContent>
+                  <TabsContent value="artist"></TabsContent> */}
+                </Tabs>
             </div>
             {/* <BreadcrumbHeader
                 selectedGenre={selectedGenre ? selectedGenre.name : undefined}
