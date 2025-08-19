@@ -9,6 +9,7 @@ import useGenres from "@/hooks/useGenres";
 import useArtist from "@/hooks/useArtist";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Artist,
   BasicNode,
@@ -207,7 +208,7 @@ function App() {
           >
             
             {/* Breadcrumb & ListViewPanel Container */}
-              <div
+              {/* <div
                 className={`md:flex hidden justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
                 <ResetButton
                   onClick={() => resetAppState()}
@@ -218,15 +219,15 @@ function App() {
                   // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
                 >
                 </motion.div>
-              </div>
+              </div> */}
               
-            <div
+            {/* <div
               className={
                 isMobile
                   ? "max-w-[calc(100vw-32px)]  inline-flex flex-col gap-2 items-start"
                   : " inline-flex flex-col gap-2 items-start"
               }
-            >
+            > */}
               {/* <BreadcrumbHeader
                     selectedGenre={selectedGenre ? selectedGenre.name : undefined}
                     selectedArtist={selectedArtist}
@@ -247,7 +248,19 @@ function App() {
                     currentGraph={graph}
                     isMobile={isMobile}
                 /> */}
-            </div>
+            {/* </div> */}
+               <Tabs 
+                // defaultValue="genres" 
+                value={graph}
+                onValueChange={(val) => setGraph(val as GraphType)}
+                className="w-[400px]">
+                  <TabsList>
+                      <TabsTrigger 
+                      onClick={() => setGraph('genres')}value="genres">Genres</TabsTrigger>
+                    <TabsTrigger 
+                    onClick={() => setGraph('artists')} value="artists">Artist</TabsTrigger>
+                  </TabsList>
+                </Tabs>
           </div>
           <div className="fixed flex flex-col h-auto right-4 top-4 justify-end gap-3 z-50">
             <ModeToggle />
@@ -322,6 +335,7 @@ function App() {
                     open={searchOpen}
                     setOpen={setSearchOpen}
                   />
+                 
                 </motion.div>
               </div>
             </motion.div>
