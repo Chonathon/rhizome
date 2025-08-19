@@ -1,7 +1,7 @@
 import './App.css'
 import {useEffect, useMemo, useState} from 'react'
 import { GraphControls } from './components/GraphControls'
-import { Waypoints, Undo2 } from 'lucide-react'
+import { Waypoints, Undo2, ChevronDown } from 'lucide-react'
 import { BreadcrumbHeader } from './components/BreadcrumbHeader'
 import { Button, buttonVariants } from "@/components/ui/button"
 import useGenreArtists from "@/hooks/useGenreArtists";
@@ -35,6 +35,7 @@ import DisplayPanel from './components/DisplayPanel';
 import GenrePanel from './components/GenrePanel'
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
+import { ResponsivePanel } from './components/ResponsivePanel'
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -197,63 +198,18 @@ function App() {
         selectedGenre={selectedGenre}>
           <Gradient />
         <div className="relative min-h-screen min-w-screen">
+
           {/* Top Bar */}
         <div className='fixed z-50 top-5 left-5 flex items-center'>
             <SidebarTrigger />
           </div>
-          <div
-            className={
-              "fixed w-auto top-0 left-1/2 -translate-x-1/2 flex justify-center items-center p-4 z-50"
-            }
+          <div className={
+            "fixed w-auto top-0 left-1/2 -translate-x-1/2 flex items-center gap-3 p-4 z-50"
+          }
           >
-            
-            {/* Breadcrumb & ListViewPanel Container */}
-              {/* <div
-                className={`md:flex hidden justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
-                <ResetButton
-                  onClick={() => resetAppState()}
-                  show={graph !== "genres"}
-                />
-                <motion.div
-                  layout
-                  // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
-                >
-                </motion.div>
-              </div> */}
-              
-            {/* <div
-              className={
-                isMobile
-                  ? "max-w-[calc(100vw-32px)]  inline-flex flex-col gap-2 items-start"
-                  : " inline-flex flex-col gap-2 items-start"
-              }
-            > */}
-              {/* <BreadcrumbHeader
-                    selectedGenre={selectedGenre ? selectedGenre.name : undefined}
-                    selectedArtist={selectedArtist}
-                    HomeIcon={Waypoints}
-                    toggleListView={() => setShowListView(!showListView)}
-                    showListView={showListView}
-                    reset={resetAppState}
-                    hideArtistCard={deselectArtist}
-                /> */}
-              {/* <ListViewPanel
-                    genres={genres}
-                    onGenreClick={onGenreNodeClick}
-                    setSelectedArtist={setSelectedArtist}
-                    genreLinksCount={genreLinks.length}
-                    show={showListView && !genresError}
-                    genresLoading={genresLoading}
-                    artistsLoading={artistsLoading}
-                    currentGraph={graph}
-                    isMobile={isMobile}
-                /> */}
-            {/* </div> */}
                <Tabs 
-                // defaultValue="genres" 
                 value={graph}
-                onValueChange={(val) => setGraph(val as GraphType)}
-                className="w-[400px]">
+                onValueChange={(val) => setGraph(val as GraphType)}>
                   <TabsList>
                       <TabsTrigger 
                       onClick={() => setGraph('genres')}value="genres">Genres</TabsTrigger>
@@ -261,7 +217,28 @@ function App() {
                     onClick={() => setGraph('artists')} value="artists">Artist</TabsTrigger>
                   </TabsList>
                 </Tabs>
+                { graph === 'artists' && 
+                <Button variant='outline'>Genre
+                  <ChevronDown />
+                </Button>}
           </div>
+                <GenresForceGraph
+                  graphData={currentGenres}
+                  onNodeClick={onGenreNodeClick}
+                  loading={genresLoading}
+                  show={graph === "genres" && !genresError}
+                  dag={dagMode}
+                  clusterMode={genreClusterMode}
+                />
+                <ArtistsForceGraph
+                  artists={currentArtists}
+                  artistLinks={currentArtistLinks}
+                  loading={artistsLoading}
+                  onNodeClick={onArtistNodeClick}
+                  show={
+                    (graph === "artists" || graph === "similarArtists") && !artistsError
+                  }
+                />
           <div className="fixed flex flex-col h-auto right-4 top-4 justify-end gap-3 z-50">
             <ModeToggle />
             <ClusteringPanel
@@ -273,23 +250,6 @@ function App() {
             <DisplayPanel />
             <GenrePanel genres={genres} genreClusterMode={genreClusterMode} />
           </div>
-          <GenresForceGraph
-            graphData={currentGenres}
-            onNodeClick={onGenreNodeClick}
-            loading={genresLoading}
-            show={graph === "genres" && !genresError}
-            dag={dagMode}
-            clusterMode={genreClusterMode}
-          />
-          <ArtistsForceGraph
-            artists={currentArtists}
-            artistLinks={currentArtistLinks}
-            loading={artistsLoading}
-            onNodeClick={onArtistNodeClick}
-            show={
-              (graph === "artists" || graph === "similarArtists") && !artistsError
-            }
-          />
           <AnimatePresence mode="popLayout">
             <motion.div
               className={`
