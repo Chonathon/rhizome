@@ -204,7 +204,7 @@ function App() {
             <SidebarTrigger />
           </div>
           <div className={
-            "fixed w-auto top-0 left-1/2 -translate-x-1/2 flex items-center gap-3 p-4 z-50"
+            "fixed w-auto top-0 ml-(--sidebar-width) flex items-center gap-3 p-3 z-50"
           }
           >
                <Tabs 
@@ -218,9 +218,18 @@ function App() {
                   </TabsList>
                 </Tabs>
                 { graph === 'artists' && 
-                <Button variant='outline'>Genre
-                  <ChevronDown />
-                </Button>}
+                <div className='flex gap-3'>
+                  <Button variant='outline'>Genre
+                    <ChevronDown />
+                  </Button>
+                  <Button variant='outline'>Mood & Activity
+                    <ChevronDown />
+                  </Button>
+                  <Button variant='outline'>Decade
+                    <ChevronDown />
+                  </Button>
+                </div>
+                }
           </div>
                 <GenresForceGraph
                   graphData={currentGenres}
