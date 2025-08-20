@@ -31,6 +31,7 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import DisplayPanel from './components/DisplayPanel';
 import GenrePanel from './components/GenrePanel'
+import NodeLimiter from './components/NodeLimiter'
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -314,6 +315,7 @@ function App() {
               </motion.div>
             </div>
             
+        <NodeLimiter/>
           </motion.div>
         </AnimatePresence>
     </div>
