@@ -314,11 +314,11 @@ function App() {
                 />
               </motion.div>
             </div>
-            
+{/*             
         <NodeLimiter
         totalNodes={graph === 'genres' ? genres.length : currentArtists.length}
         nodeType={graph === 'genres' ? 'genres' : 'artists'}
-        />
+        /> */}
           </motion.div>
         </AnimatePresence>
     </div>
