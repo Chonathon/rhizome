@@ -50,7 +50,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen }: 
   return (
     <>
       <Sidebar className="" variant="floating">
-        <SidebarContent className="p-1 mt-12">
+        <SidebarContent className="p-1 mt-2">
         {selectedGenre ? (
           <>
           {/* <Button

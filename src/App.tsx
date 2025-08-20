@@ -200,9 +200,9 @@ function App() {
         <div className="relative min-h-screen min-w-screen">
 
           {/* Top Bar */}
-        <div className='fixed z-50 top-5 left-5 flex items-center'>
+        {/* <div className='fixed z-50 top-5 left-5 flex items-center'>
             <SidebarTrigger />
-          </div>
+          </div> */}
           <div className={
             "fixed w-auto top-0 ml-(--sidebar-width) flex items-center gap-3 p-3 z-50"
           }
