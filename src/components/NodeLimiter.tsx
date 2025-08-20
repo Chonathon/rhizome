@@ -1,34 +1,56 @@
-import { useState } from "react"
-import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
-import { Badge } from "./ui/badge"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { SwatchBook } from "lucide-react"
-import { ResponsivePanel } from "@/components/ResponsivePanel"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem
+} from "@/components/ui/dropdown-menu"
+import { Loading } from "./Loading"
 
-export default function DisplayPanel() {
-    const [nodeSize, setNodeSize] = useState(50)
-    const [edgeThickness, setEdgeThickness] = useState(50)
-    const [textFadeThreshold, setTextFadeThreshold] = useState(50)
-    const [showLabels, setShowLabels] = useState(false)
-    const [showArtistImage, setShowArtistImage] = useState(false)
-    const [showUnfollowedArtists, setShowUnfollowedArtists] = useState(false)
+interface NodeLimiterProps {
+  initialValue?: number,
+  onChange?: (value: number[]) => void
+  totalNodes?: number
+  nodeType?: string
+}
+
+export default function NodeLimiter({ initialValue = 200, onChange, totalNodes, nodeType }: NodeLimiterProps) {
+    const [value, setValue] = useState<number[]>([200])
+    useEffect(() => {
+        onChange?.(value)
+    }, [value, onChange])
+    const presets = [1000, 500, 200, 100, 50]
 
     return (
-        <div>
-            <ResponsivePanel
-                trigger={
-                    <Button variant="outline" size="sm">
-                        <SwatchBook className="h-[1.2rem] w-[1.2rem]" />
-                        <span className="sr-only">Display Settings</span>
-                    </Button>
-                }
-                className="w-sm"
-            >
-                <div className="flex flex-col gap-4 p-2 rounded-2xl border border-accent shadow-sm bg-accent dark:dark:bg-background">
-            
-                </div>
-            </ResponsivePanel>
+        <div
+        className="
+        flex gap-2 p-2 items-center
+        rounded-2xl border border-accent dark:border-input shadow-sm bg-accent dark:dark:bg-background backdrop-blur-sm">
+            <p className="text-muted-foreground">Displaying</p>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="outline">{value}</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    {presets.map((preset) => (
+                        <DropdownMenuItem
+                            key={preset}
+                            onClick={() => {
+                                setValue([preset])
+                            }}
+                        >
+                            {preset}
+                        </DropdownMenuItem>
+                    ))}
+                    {/* <DropdownMenuItem>500</DropdownMenuItem>
+                    <DropdownMenuItem>200</DropdownMenuItem>
+                    <DropdownMenuItem>100</DropdownMenuItem>
+                    <DropdownMenuItem>50</DropdownMenuItem> */}
+                </DropdownMenuContent>
+                </DropdownMenu>
+                
+                <p className="text-muted-foreground">of {totalNodes} {nodeType}</p>
         </div>
     )
 }
