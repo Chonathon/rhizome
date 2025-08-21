@@ -66,13 +66,23 @@ export default function ExpandingPanel({
               onClick={() => setOpen(false)}
               aria-pressed={true}
               aria-label="Collapse panel"
-              className="absolute top-2 right-2"
+              className="absolute top-2 right-13"
             >
               {trigger}
               <ChevronsUp className="transition-transform rotate-180" />
               <span className="sr-only">Toggle Panel</span>
             </Button>
-
+            <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleDismiss}
+            aria-pressed={false}
+            aria-label="Dismiss Panel"
+            className="absolute top-2 right-2"
+          >
+            <CircleX className="transition-transform rotate-0" />
+            <span className="sr-only">Close Panel</span>
+          </Button>
             <CardContent className="h-full overflow-auto pt-12">
               {children}
             </CardContent>
