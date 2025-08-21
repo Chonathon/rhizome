@@ -11,7 +11,28 @@ import {AxiosError} from "axios";
 import { useState, useLayoutEffect, useEffect } from "react"
 import { useMediaQuery } from 'react-responsive';
 import { Skeleton } from './ui/skeleton';
+import { SquarePlus, CirclePlay } from 'lucide-react';
 // committment issues
+
+function ArtistActions(){
+
+  return (
+    <div className="flex items-center gap-3 mt-3">
+      <Button
+        variant="default"
+        size="lg"
+        onClick={() => console.log("Add to Collection")}>
+          <CirclePlay /> Play
+      </Button>
+      <Button
+        variant="outline"
+        size="lg"
+        onClick={() => console.log("Add to Collection")}>
+          <SquarePlus /> Add
+      </Button>
+    </div>
+  );
+}
 
 function ArtistInfo({
   variant,
@@ -316,6 +337,7 @@ export default function ArtistCardv2({
                 bio: "text-base"               // slightly larger body copy
               }}
             />
+            <ArtistActions />
           </div>
         </ExpandingPanel>
       </AnimatePresence>
