@@ -13,7 +13,7 @@ import { Skeleton } from './ui/skeleton';
 import { useRef, useLayoutEffect } from "react";
 // committment issues
 
-interface ArtistCardProps {
+interface ArtistCardv2Props {
     selectedArtist?: Artist;
     setArtistFromName: (artist: string) => void;
     setSelectedArtist: (artist: Artist | undefined) => void;
@@ -26,7 +26,7 @@ interface ArtistCardProps {
     similarFilter: (artists: string[]) => string[];
 }
 
-export function ArtistCard({
+export default function ArtistCardv2({
     selectedArtist,
     setArtistFromName,
     setSelectedArtist,
@@ -37,7 +37,7 @@ export function ArtistCard({
     setShowArtistCard,
     deselectArtist,
     similarFilter,
-}: ArtistCardProps) {
+}: ArtistCardv2Props) {
     const [isExpanded, setIsExpanded] = useState(false)
     const [isHovered, setIsHovered] = useState(false)
     const isMobile = useMediaQuery({ maxWidth: 640 });
@@ -56,64 +56,37 @@ export function ArtistCard({
     }
     return !show ? null : (
       <AnimatePresence mode="wait">
-        <motion.div
-          ref={cardRef}
-          style={{ height: artistLoading && cardHeight ? `${cardHeight}px` : "auto"}}
-          layout
-          initial={{ scale: 0.9 }}
-          animate={{ scale: 1 }}
-          exit={{ scale: 0 }}
-          transition={{
-            type: "spring",
-            stiffness: 250,
-            damping: 24,
-            mass: 0.8,
+        <Button
+          className="hover:bg-white/0 absolute top-0 right-0 mt-0 mr-3"
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            onDeselectArtist();
+            setIsExpanded(false);
           }}
-          // TODO: loading animation could use love
-          className={`
-            w-[420px] min-h-[126px] h-auto  p-3 z-50 pb-4
-            bg-stone-50/90 dark:bg-stone-900/90 backdrop-blur-xs shadow-lg rounded-3xl border border-border
-             max-w-full overflow-hidden
-             ${artistLoading && "bg-stone-50/86"}`}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
         >
-          {(isHovered || isMobile) && (
-            <div className="w-full flex justify-end absolute top-0 pr-3">
-              <Button
-                className="hover:bg-white/0"
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  onDeselectArtist();
-                  setIsExpanded(false);
-                }}
-              >
-                <CircleX
-                  className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
-                  size={20}
-                />
-              </Button>
-            </div>
-          )}
-          {/* TODO: this animation isn't working as intented */}
-          <motion.div
-            key={selectedArtist?.name}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{
-              layout: { duration: 0, ease: "easeOut" },
-              opacity: { delay: 0.3, duration: 0.3, ease: "easeOut" },
-            }}
-            layout
-            className={`
-                     
-                    flex items-start gap-3
-                    ${isMobile ? "w-full" : ""}
-                    ${isExpanded ? "flex-col" : ""}
-                    `}
-          >
+          <CircleX
+            className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
+            size={20}
+          />
+        </Button>
+        {/* TODO: this animation isn't working as intented */}
+        <motion.div
+          key={selectedArtist?.name}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{
+            layout: { duration: 0, ease: "easeOut" },
+            opacity: { delay: 0.3, duration: 0.3, ease: "easeOut" },
+          }}
+          layout
+          className={`
+                  flex items-start gap-3
+                  ${isMobile ? "w-full" : ""}
+                  ${isExpanded ? "flex-col" : ""}
+                  `}
+        >
             {/* Dismiss button shouldn't animate with content */}
 
             {/* Artist Image */}
@@ -218,7 +191,6 @@ export function ArtistCard({
               </>
             )}
           </motion.div>
-        </motion.div>
       </AnimatePresence>
     );
 }

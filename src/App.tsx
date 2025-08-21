@@ -24,6 +24,7 @@ import { ResetButton } from "@/components/ResetButton";
 import { ListViewPanel } from "@/components/ListViewPanel";
 import { useMediaQuery } from 'react-responsive';
 import { ArtistCard } from './components/ArtistCard'
+import ArtistCardv2 from './components/ArtistCardv2'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import {buildGenreTree, filterOutGenreTree, generateSimilarLinks, genreHasChildren} from "@/lib/utils";
@@ -282,7 +283,7 @@ function App() {
                 : "bottom-4 items-end"}
             `}
           >
-            <ArtistCard
+            {/* <ArtistCard
               selectedArtist={selectedArtist}
               setArtistFromName={setArtistFromName}
               setSelectedArtist={setSelectedArtist}
@@ -293,20 +294,22 @@ function App() {
               setShowArtistCard={setShowArtistCard}
               deselectArtist={deselectArtist}
               similarFilter={similarArtistFilter}
-            />
+            /> */}
             <ExpandingPanel
 
               summary={
-                <div className="flex items-center gap-3">
-                  {/* <img src={artist.image} alt="" className="size-10 rounded" /> */}
-                  <div>
-                    {/* <div className="font-medium">{artist.name}</div> */}
-                    <div className="text-xs text-foreground">
-                       plays
-                    </div>
-                  </div>
-                  {/* <Badge className="ml-auto">Trending</Badge> */}
-                </div>
+                <ArtistCardv2
+                 selectedArtist={selectedArtist}
+              setArtistFromName={setArtistFromName}
+              setSelectedArtist={setSelectedArtist}
+              artistData={artistData}
+              artistLoading={artistLoading}
+              artistError={artistError}
+              show={showArtistCard}
+              setShowArtistCard={setShowArtistCard}
+              deselectArtist={deselectArtist}
+              similarFilter={similarArtistFilter}
+              />
               }
               sidebarWidth="0"
               desktopPadding={16}
