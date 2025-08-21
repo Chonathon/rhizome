@@ -2,10 +2,10 @@ import {Artist, BasicNode} from '@/types'
 import { LastFMArtistJSON } from '@/types';
 import { motion, AnimatePresence } from "framer-motion";
 import { dummyLastFMArtistData } from '@/DummyDataForDummies'
-import { CircleX } from "lucide-react"
 import { Button, buttonVariants } from "@/components/ui/button";
 import {formatDate, formatNumber} from '@/lib/utils'
 import {Loading} from "@/components/Loading";
+import ExpandingPanel from "@/components/ExpandingPanel";
 import {AxiosError} from "axios";
 import { useState } from "react"
 import { useMediaQuery } from 'react-responsive';
@@ -56,7 +56,7 @@ export default function ArtistCardv2({
     }
     return !show ? null : (
       <AnimatePresence mode="wait">
-        <Button
+        {/* <Button
           className="hover:bg-white/0 absolute top-0 right-0 mt-0 mr-3"
           variant="ghost"
           size="icon"
@@ -69,128 +69,140 @@ export default function ArtistCardv2({
             className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
             size={20}
           />
-        </Button>
+        </Button> */}
         {/* TODO: this animation isn't working as intented */}
-        <motion.div
-          key={selectedArtist?.name}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{
-            layout: { duration: 0, ease: "easeOut" },
-            opacity: { delay: 0.3, duration: 0.3, ease: "easeOut" },
+        <ExpandingPanel
+          sidebarWidth="0"
+          desktopPadding={16}
+          defaultExpanded={false}
+          onOpenChange={(open) => console.log("expanded:", open)}
+          handleDismiss={() => {
+            onDeselectArtist();
+            setIsExpanded(false);
           }}
-          layout
-          className={`
-                  flex items-start gap-3
-                  ${isMobile ? "w-full" : ""}
-                  ${isExpanded ? "flex-col" : ""}
-                  `}
-        >
-            {/* Dismiss button shouldn't animate with content */}
-
-            {/* Artist Image */}
-            {artistError ? (
-              <div className="w-full h-full flex justify-center p-4 min-w-0">
-                <p>Can't find {selectedArtist && selectedArtist.name} 🤔</p>
-              </div>
-            ) : (
-              <>
-                {artistLoading ? (
-                  <>
-                    {/* <Skeleton className={`w-24 h-24 shrink-0 rounded-xl`} /> */}
-                    {/* <Loading /> */}
-                    {/* <div className="flex-1 flex flex-col items-start gap-2 min-w-0 w-full">
-                      <Skeleton className="h-[22px] w-3/4" />
-                      <Skeleton className="h-[18px] w-full" />
-                      <Skeleton className="h-[18px] w-full" />
-                      <div className='w-full pr-32'>
-                        <Skeleton className="h-[18px] w-full" />
-                      </div>
-                    </div> */}
-                  </>
-                ) : (
-                  <>
-                    {artistData?.image && artistData && (
-                      <div
-                        className={`
-                      w-24 h-24 shrink-0 overflow-hidden
-                      rounded-xl border border-border
-                      ${isExpanded ? "w-full h-[200px]" : ""}
+          
+          summary={
+          <motion.div
+            key={selectedArtist?.name}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{
+              layout: { duration: 0, ease: "easeOut" },
+              opacity: { delay: 0.3, duration: 0.3, ease: "easeOut" },
+            }}
+            layout
+            className={`
+                    flex items-start gap-3
+                    ${isMobile ? "w-full" : ""}
+                    ${isExpanded ? "flex-col" : ""}
                     `}
-                      >
-                        <img
-                          className={`w-24 h-24 object-cover
-                        ${isExpanded ? "w-full h-full" : ""}`}
-                          src={artistData.image}
-                          alt={artistData.name}
-                        />
-                      </div>
-                    )}
-                    <div className="flex-1 flex flex-col items-start gap-1 min-w-0">
-                      {/* Artist Name */}
-                      <h2 className="w-full text-md font-semibold">
-                        {artistData && artistData.name}
-                      </h2>
-                      {/* Artist Stats */}
-                      <div className="text-sm">
-                        {artistData && artistData.stats.listeners && (
-                          <h3>
-                            <span className="font-medium">Listeners:</span>{" "}
-                            {formatNumber(artistData.stats.listeners)}
-                          </h3>
-                        )}
-                        <h3>
-                          <span className="font-medium">Founded:</span>{" "}
-                          {selectedArtist && selectedArtist.startDate
-                            ? formatDate(selectedArtist.startDate)
-                            : "Unknown"}{" "}
-                        </h3>
-                        {artistData && artistData.similar && (
-                          <h3>
-                            <span className="font-medium">Similar:</span>{" "}
-                            {similarFilter(artistData.similar)
-                              .slice(0, 3)
-                              .map((name, index, array) => (
-                                <>
-                                  <button
-                                    key={index + name}
-                                    onClick={() => setArtistFromName(name)}
-                                  >
-                                    {name}
-                                  </button>
-                                  {index < array.length - 1 ? ", " : ""}
-                                </>
-                              ))}
-                          </h3>
-                        )}
-                      </div>
-                      <div
-                        className="
-                      w-full
-                      flex flex-col
-                      text-sm
-                      "
-                      >
-                        <p
-                          onClick={() => setIsExpanded((prev) => !prev)}
-                          className={`break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${
-                            isExpanded
-                              ? "text-muted-foreground"
-                              : "line-clamp-3 overflow-hidden"
-                          }`}
+          >
+              {/* Dismiss button shouldn't animate with content */}
+              {/* Artist Image */}
+              {artistError ? (
+                <div className="w-full h-full flex justify-center p-4 min-w-0">
+                  <p>Can't find {selectedArtist && selectedArtist.name} 🤔</p>
+                </div>
+              ) : (
+                <>
+                  {artistLoading ? (
+                    <>
+                      {/* <Skeleton className={`w-24 h-24 shrink-0 rounded-xl`} /> */}
+                      {/* <Loading /> */}
+                      {/* <div className="flex-1 flex flex-col items-start gap-2 min-w-0 w-full">
+                        <Skeleton className="h-[22px] w-3/4" />
+                        <Skeleton className="h-[18px] w-full" />
+                        <Skeleton className="h-[18px] w-full" />
+                        <div className='w-full pr-32'>
+                          <Skeleton className="h-[18px] w-full" />
+                        </div>
+                      </div> */}
+                    </>
+                  ) : (
+                    <>
+                      {artistData?.image && artistData && (
+                        <div
+                          className={`
+                        w-24 h-24 shrink-0 overflow-hidden
+                        rounded-xl border border-border
+                        ${isExpanded ? "w-full h-[200px]" : ""}
+                      `}
                         >
-                          {artistData && artistData.bio
-                            ? artistData.bio.summary
-                            : "No bio"}
-                        </p>
+                          <img
+                            className={`w-24 h-24 object-cover
+                          ${isExpanded ? "w-full h-full" : ""}`}
+                            src={artistData.image}
+                            alt={artistData.name}
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1 flex flex-col items-start gap-1 min-w-0">
+                        {/* Artist Name */}
+                        <h2 className="w-full text-md font-semibold">
+                          {artistData && artistData.name}
+                        </h2>
+                        {/* Artist Stats */}
+                        <div className="text-sm">
+                          {artistData && artistData.stats.listeners && (
+                            <h3>
+                              <span className="font-medium">Listeners:</span>{" "}
+                              {formatNumber(artistData.stats.listeners)}
+                            </h3>
+                          )}
+                          <h3>
+                            <span className="font-medium">Founded:</span>{" "}
+                            {selectedArtist && selectedArtist.startDate
+                              ? formatDate(selectedArtist.startDate)
+                              : "Unknown"}{" "}
+                          </h3>
+                          {artistData && artistData.similar && (
+                            <h3>
+                              <span className="font-medium">Similar:</span>{" "}
+                              {similarFilter(artistData.similar)
+                                .slice(0, 3)
+                                .map((name, index, array) => (
+                                  <>
+                                    <button
+                                      key={index + name}
+                                      onClick={() => setArtistFromName(name)}
+                                    >
+                                      {name}
+                                    </button>
+                                    {index < array.length - 1 ? ", " : ""}
+                                  </>
+                                ))}
+                            </h3>
+                          )}
+                        </div>
+                        <div
+                          className="
+                        w-full
+                        flex flex-col
+                        text-sm
+                        "
+                        >
+                          <p
+                            onClick={() => setIsExpanded((prev) => !prev)}
+                            className={`break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${
+                              isExpanded
+                                ? "text-muted-foreground"
+                                : "line-clamp-3 overflow-hidden"
+                            }`}
+                          >
+                            {artistData && artistData.bio
+                              ? artistData.bio.summary
+                              : "No bio"}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </motion.div>
+                    </>
+                  )}
+                </>
+              )}
+            </motion.div>}
+        >
+        </ExpandingPanel>
       </AnimatePresence>
     );
 }

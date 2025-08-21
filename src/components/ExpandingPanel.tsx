@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ChevronsUp } from "lucide-react";
+import { CircleX } from "lucide-react"
 
 interface ExpandingPanelProps {
   /** Button or element that toggles the panel */
@@ -27,6 +28,8 @@ interface ExpandingPanelProps {
   onOpenChange?: (open: boolean) => void;
   /** Start expanded */
   defaultExpanded?: boolean;
+  /** Optional callback for dismiss/close button */
+  handleDismiss?: React.MouseEventHandler<HTMLButtonElement>;
 }
 
 export default function ExpandingPanel({
@@ -37,6 +40,7 @@ export default function ExpandingPanel({
   desktopPadding = 16,
   onOpenChange,
   defaultExpanded = false,
+  handleDismiss,
 }: ExpandingPanelProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const setOpen = (next: boolean) => {
@@ -52,7 +56,7 @@ export default function ExpandingPanel({
           // Use left instead of width calc to avoid layout bugs; the container fills the remaining width
           style={{ left: sidebarWidth, padding: desktopPadding }}
           role="region"
-          aria-label="Expanding panel"
+        //   aria-label="Expanding panel"
           aria-expanded={true}
         >
           <Card className="h-full w-full bg-background backdrop-blur-3xl transition-all duration-300 ease-out">
@@ -65,7 +69,7 @@ export default function ExpandingPanel({
               className="absolute top-2 right-2"
             >
               {trigger}
-              <ChevronsUp className="ms-2 transition-transform rotate-180" />
+              <ChevronsUp className="transition-transform rotate-180" />
               <span className="sr-only">Toggle Panel</span>
             </Button>
 
@@ -77,20 +81,32 @@ export default function ExpandingPanel({
         document.body
       )
     : (
-        <Card className="w-full w-[420px] transition-all duration-300 ease-out" role="region" aria-label="Expanding panel" aria-expanded={false}>
-          <Button
+        <Card className="transition-all duration-300 ease-out" role="region" aria-label="Expanding panel" aria-expanded={false}>
+          
+          
+            <Button
             variant="ghost"
             size="icon"
             onClick={() => setOpen(true)}
             aria-pressed={false}
             aria-label="Expand panel"
-            className="absolute top-2 right-2"
+            className="absolute top-2 right-13"
           >
             {trigger}
-            <ChevronsUp className="ms-2 transition-transform rotate-0" />
+            <ChevronsUp className="transition-transform rotate-0" />
             <span className="sr-only">Toggle Panel</span>
           </Button>
-
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleDismiss}
+            aria-pressed={false}
+            aria-label="Dismiss Panel"
+            className="absolute top-2 right-2"
+          >
+            <CircleX className="transition-transform rotate-0" />
+            <span className="sr-only">Close Panel</span>
+          </Button>
           <CardContent>
             {summary}
           </CardContent>

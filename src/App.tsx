@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
 import { ListViewPanel } from "@/components/ListViewPanel";
 import { useMediaQuery } from 'react-responsive';
-import { ArtistCard } from './components/ArtistCard'
+// import { ArtistCard } from './components/ArtistCard'
 import ArtistCardv2 from './components/ArtistCardv2'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
@@ -295,9 +295,8 @@ function App() {
               deselectArtist={deselectArtist}
               similarFilter={similarArtistFilter}
             /> */}
-            <ExpandingPanel
 
-              summary={
+
                 <ArtistCardv2
                  selectedArtist={selectedArtist}
               setArtistFromName={setArtistFromName}
@@ -310,38 +309,6 @@ function App() {
               deselectArtist={deselectArtist}
               similarFilter={similarArtistFilter}
               />
-              }
-              sidebarWidth="0"
-              desktopPadding={16}
-              defaultExpanded={false}
-              onOpenChange={(open) => console.log("expanded:", open)}
-            >
-              {/* Expanded content goes here */}
-              <div className="space-y-4">
-                <header className="flex items-start justify-between">
-                  {/* <h2 className="text-xl font-semibold">{artist.name}</h2> */}
-                  <a
-                    href=""
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm underline"
-                  >
-                    View on Last.fm
-                  </a>
-                </header>
-
-                <section className="">
-                  <div>
-                    <h3 className="font-medium mb-2">Top Tracks</h3>
-                    {/* your track list */}
-                  </div>
-                  <div>
-                    <h3 className="font-medium mb-2">Similar Artists</h3>
-                    {/* your similar artists */}
-                  </div>
-                </section>
-              </div>
-            </ExpandingPanel>
             <div className={`flex md:hidden justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
               <ResetButton
                 onClick={() => resetAppState()}
