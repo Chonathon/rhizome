@@ -31,6 +31,7 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import DisplayPanel from './components/DisplayPanel';
 import GenrePanel from './components/GenrePanel'
+import ExpandingPanel from './components/ExpandingPanel'
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -293,6 +294,51 @@ function App() {
               deselectArtist={deselectArtist}
               similarFilter={similarArtistFilter}
             />
+            <ExpandingPanel
+
+              summary={
+                <div className="flex items-center gap-3">
+                  {/* <img src={artist.image} alt="" className="size-10 rounded" /> */}
+                  <div>
+                    {/* <div className="font-medium">{artist.name}</div> */}
+                    <div className="text-xs text-foreground">
+                       plays
+                    </div>
+                  </div>
+                  {/* <Badge className="ml-auto">Trending</Badge> */}
+                </div>
+              }
+              sidebarWidth="0"
+              desktopPadding={16}
+              defaultExpanded={false}
+              onOpenChange={(open) => console.log("expanded:", open)}
+            >
+              {/* Expanded content goes here */}
+              <div className="space-y-4">
+                <header className="flex items-start justify-between">
+                  {/* <h2 className="text-xl font-semibold">{artist.name}</h2> */}
+                  <a
+                    href=""
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm underline"
+                  >
+                    View on Last.fm
+                  </a>
+                </header>
+
+                <section className="">
+                  <div>
+                    <h3 className="font-medium mb-2">Top Tracks</h3>
+                    {/* your track list */}
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-2">Similar Artists</h3>
+                    {/* your similar artists */}
+                  </div>
+                </section>
+              </div>
+            </ExpandingPanel>
             <div className={`flex md:hidden justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
               <ResetButton
                 onClick={() => resetAppState()}
