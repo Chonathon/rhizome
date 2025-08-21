@@ -75,21 +75,6 @@ export default function ArtistCardv2({
     }
     return !show ? null : (
       <AnimatePresence mode="wait">
-        {/* <Button
-          className="hover:bg-white/0 absolute top-0 right-0 mt-0 mr-3"
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            onDeselectArtist();
-            setIsExpanded(false);
-          }}
-        >
-          <CircleX
-            className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
-            size={20}
-          />
-        </Button> */}
-        {/* TODO: this animation isn't working as intented */}
         <ExpandingPanel
           sidebarWidth="0"
           desktopPadding={16}

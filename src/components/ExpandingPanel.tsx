@@ -66,7 +66,7 @@ export default function ExpandingPanel({
               onClick={() => setOpen(false)}
               aria-pressed={true}
               aria-label="Collapse panel"
-              className="absolute top-2 right-13"
+              className="z-20  absolute top-2 right-13"
             >
               {trigger}
               <ChevronsUp className="transition-transform rotate-180" />
@@ -78,7 +78,7 @@ export default function ExpandingPanel({
             onClick={handleDismiss}
             aria-pressed={false}
             aria-label="Dismiss Panel"
-            className="absolute top-2 right-2"
+            className="z-20 absolute top-2 right-2"
           >
             <CircleX className="transition-transform rotate-0" />
             <span className="sr-only">Close Panel</span>
@@ -100,7 +100,7 @@ export default function ExpandingPanel({
             onClick={() => setOpen(true)}
             aria-pressed={false}
             aria-label="Expand panel"
-            className="absolute top-2 right-13"
+            className="z-20 absolute top-2 right-13"
           >
             {trigger}
             <ChevronsUp className="transition-transform rotate-0" />
@@ -112,7 +112,7 @@ export default function ExpandingPanel({
             onClick={handleDismiss}
             aria-pressed={false}
             aria-label="Dismiss Panel"
-            className="absolute top-2 right-2"
+            className="z-20 absolute top-2 right-2"
           >
             <CircleX className="transition-transform rotate-0" />
             <span className="sr-only">Close Panel</span>
