@@ -14,25 +14,7 @@ import { Skeleton } from './ui/skeleton';
 import { SquarePlus, CirclePlay } from 'lucide-react';
 // committment issues
 
-function ArtistActions(){
 
-  return (
-    <div className="flex items-center gap-3 mt-3">
-      <Button
-        variant="default"
-        size="lg"
-        onClick={() => console.log("Add to Collection")}>
-          <CirclePlay /> Play
-      </Button>
-      <Button
-        variant="outline"
-        size="lg"
-        onClick={() => console.log("Add to Collection")}>
-          <SquarePlus /> Add
-      </Button>
-    </div>
-  );
-}
 
 function ArtistInfo({
   variant,
@@ -106,114 +88,132 @@ function ArtistInfo({
       layout
       className={`
         ${variant === "summary" ? "w-[420px]" : "w-full"}
-        flex items-start gap-3
+        flex flex-colitems-start gap-3
         ${isMobile ? "w-full" : ""}
         ${isExpanded ? "flex-col" : ""}
         ${classes?.container ?? ""}
       `}
     >
-      {artistError ? (
-        <div className="w-full h-full flex justify-center p-4 min-w-0">
-          <p>Can't find {selectedArtist && selectedArtist.name} 🤔</p>
-        </div>
-      ) : (
-        <>
-          {artistLoading ? (
-            <></>
-          ) : (
-            <>
-              {/* IMAGE */}
-              {slots?.image ? (
-                slots.image(ctxBase)
-              ) : (
-                artistData?.image && (
-                  <div
-                    className={`
-                      w-24 h-24 shrink-0 overflow-hidden
-                      rounded-xl border border-border
-                      ${isExpanded ? "w-full h-[200px]" : ""}
-                      ${classes?.imageWrapper ?? ""}
-                    `}
-                  >
-                    <img
-                      className={`w-24 h-24 object-cover ${isExpanded ? "w-full h-full" : ""} ${classes?.image ?? ""}`}
-                      src={artistData.image}
-                      alt={artistData.name}
-                    />
-                  </div>
-                )
-              )}
-
-              <div className="flex-1 flex flex-col items-start gap-1 min-w-0">
-                {/* HEADER / TITLE */}
-                {slots?.header ? (
-                  slots.header(ctxBase)
+        {artistError ? (
+          <div className="w-full h-full flex justify-center p-4 min-w-0">
+            <p>Can't find {selectedArtist && selectedArtist.name} 🤔</p>
+          </div>
+        ) : (
+          <>
+            {artistLoading ? (
+              <></>
+            ) : (
+              <>
+                {/* IMAGE */}
+                {slots?.image ? (
+                  slots.image(ctxBase)
                 ) : (
-                  <h2 className={`w-full text-md font-semibold ${classes?.title ?? ""}`}>
-                    {artistData && artistData.name}
-                  </h2>
-                )}
-
-                {/* META */}
-                {slots?.meta ? (
-                  slots.meta({ ...ctxBase, setArtistFromName, similarFilter })
-                ) : (
-                  <div className={`text-sm ${classes?.meta ?? ""}`}>
-                    {artistData && artistData.stats.listeners && (
-                      <h3>
-                        <span className="font-medium">Listeners:</span>{" "}
-                        {formatNumber(artistData.stats.listeners)}
-                      </h3>
-                    )}
-                    <h3>
-                      <span className="font-medium">Founded:</span>{" "}
-                      {selectedArtist && selectedArtist.startDate ? formatDate(selectedArtist.startDate) : "Unknown"}{" "}
-                    </h3>
-                    {artistData && artistData.similar && (
-                      <h3>
-                        <span className="font-medium">Similar:</span>{" "}
-                        {similarFilter(artistData.similar)
-                          .slice(0, 3)
-                          .map((name, index, array) => (
-                            <>
-                              <button key={index + name} onClick={() => setArtistFromName(name)}>
-                                {name}
-                              </button>
-                              {index < array.length - 1 ? ", " : ""}
-                            </>
-                          ))}
-                      </h3>
-                    )}
-                  </div>
-                )}
-
-                {/* BIO */}
-                {slots?.bio ? (
-                  slots.bio(ctxBase)
-                ) : (
-                  <div className="w-full flex flex-col text-sm">
-                    <p
-                      className={`break-words text-muted-foreground ${
-                        variant === "summary"
-                          ? "cursor-pointer hover:text-gray-400 " + (isExpanded ? "text-muted-foreground" : "line-clamp-3 overflow-hidden")
-                          : ""
-                      } ${classes?.bio ?? ""}`}
+                  artistData?.image && (
+                    <div
+                      className={`
+                        w-auto h-full shrink-0 overflow-hidden
+                        rounded-xl border border-border
+                        ${isExpanded ? "w-full h-[200px]" : ""}
+                        ${classes?.imageWrapper ?? ""}
+                        `}
                     >
-                      {artistData && artistData.bio ? artistData.bio.summary : "No bio"}
-                    </p>
-                  </div>
+                      <img
+                        className={`w-full h-[160px] object-cover ${isExpanded ? "w-auto h-full" : ""} ${classes?.image ?? ""}`}
+                        src={artistData.image}
+                        alt={artistData.name}
+                      />
+                    </div>
+                  )
                 )}
-
-                {/* AFTER SLOT */}
-                {slots?.after ? slots.after(ctxBase) : null}
-              </div>
-            </>
-          )}
-        </>
-      )}
+                        
+                <div className="flex-1 flex flex-col items-start gap-1 min-w-0">
+                  {/* HEADER / TITLE */}
+                  {slots?.header ? (
+                    slots.header(ctxBase)
+                  ) : (
+                    <h2 className={`w-full text-md font-semibold ${classes?.title ?? ""}`}>
+                      {artistData && artistData.name}
+                    </h2>
+                  )}
+                  {/* META */}
+                  {slots?.meta ? (
+                    slots.meta({ ...ctxBase, setArtistFromName, similarFilter })
+                  ) : (
+                    <div className={`text-sm ${classes?.meta ?? ""}`}>
+                      {artistData && artistData.stats.listeners && (
+                        <h3>
+                          <span className="font-medium">Listeners:</span>{" "}
+                          {formatNumber(artistData.stats.listeners)}
+                        </h3>
+                      )}
+                      <h3>
+                        <span className="font-medium">Founded:</span>{" "}
+                        {selectedArtist && selectedArtist.startDate ? formatDate(selectedArtist.startDate) : "Unknown"}{" "}
+                      </h3>
+                      {artistData && artistData.similar && (
+                        <h3>
+                          <span className="font-medium">Similar:</span>{" "}
+                          {similarFilter(artistData.similar)
+                            .slice(0, 3)
+                            .map((name, index, array) => (
+                              <>
+                                <button key={index + name} onClick={() => setArtistFromName(name)}>
+                                  {name}
+                                </button>
+                                {index < array.length - 1 ? ", " : ""}
+                              </>
+                            ))}
+                        </h3>
+                      )}
+                    </div>
+                  )}
+                  {/* BIO */}
+                  {/* {slots?.bio ? (
+                    slots.bio(ctxBase)
+                  ) : (
+                    <div className="w-full flex flex-col text-sm">
+                      <p
+                        className={`break-words text-muted-foreground ${
+                          variant === "summary"
+                            ? "cursor-pointer hover:text-gray-400 " + (isExpanded ? "text-muted-foreground" : "line-clamp-3 overflow-hidden")
+                            : ""
+                        } ${classes?.bio ?? ""}`}
+                      >
+                        {artistData && artistData.bio ? artistData.bio.summary : "No bio"}
+                      </p>
+                    </div>
+                  )} */}
+                  <div className="flex gap-3 mt-2 -mx-3">
+                    <Button
+                      variant={`${isExpanded ? "outline" : "ghost"}`}
+                      size={`${isExpanded ? "lg" : "default"}`}
+                      onClick={() => console.log("Add to Collection")}>
+                        <CirclePlay /> Play
+                    </Button>
+                    <Button
+                      variant={`${isExpanded ? "outline" : "ghost"}`}
+                      size={`${isExpanded ? "lg" : "default"}`}
+                      onClick={() => console.log("Add to Collection")}>
+                        <SquarePlus /> Add
+                    </Button>
+                  </div>
+                  {/* AFTER SLOT */}
+                  {slots?.after ? slots.after(ctxBase) : null}
+                </div>
+              </>
+            )}
+          </>
+        )}
+        
     </motion.div>
   );
 }
+
+// function ArtistActions(){
+
+//   return (
+//   );
+// }
 
 interface ArtistCardv2Props {
     selectedArtist?: Artist;
@@ -301,10 +301,11 @@ export default function ArtistCardv2({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ type: "spring", stiffness: 250, damping: 24, mass: 0.8 }}
-              className={`max-w-full overflow-hidden`}
+              className={`max-w-full`}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
+
               <ArtistInfo
                 variant="summary"
                 artistError={artistError}
@@ -316,6 +317,7 @@ export default function ArtistCardv2({
                 setArtistFromName={setArtistFromName}
                 similarFilter={similarFilter}
               />
+              {/* <ArtistActions /> */}
             </motion.div>
           }
         >
@@ -332,12 +334,12 @@ export default function ArtistCardv2({
               similarFilter={similarFilter}
               classes={{
                 container: "gap-4",            // a little more breathing room in expanded
-                imageWrapper: "h-[260px]",     // taller banner image in expanded
+                imageWrapper: "h-[260px] max-w-[540]",     // taller banner image in expanded
                 title: "text-xl",              // larger title in expanded
                 bio: "text-base"               // slightly larger body copy
               }}
             />
-            <ArtistActions />
+            {/* <ArtistActions /> */}
           </div>
         </ExpandingPanel>
       </AnimatePresence>
