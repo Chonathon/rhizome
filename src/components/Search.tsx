@@ -9,7 +9,6 @@ import {Artist, BasicNode, Genre, GraphType} from "@/types";
 import {useEffect, useRef, useState} from "react";
 import { useMemo } from "react";
 import {Loading} from "@/components/Loading";
-import useMBArtistSearch from "@/hooks/useMBArtistSearch";
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useMediaQuery } from "react-responsive";

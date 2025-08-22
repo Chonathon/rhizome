@@ -1,10 +1,9 @@
 import {Artist, BasicNode} from '@/types'
-import { LastFMArtistJSON } from '@/types';
 import { motion, AnimatePresence } from "framer-motion";
 import { dummyLastFMArtistData } from '@/DummyDataForDummies'
 import { CircleX } from "lucide-react"
 import { Button, buttonVariants } from "@/components/ui/button";
-import {formatDate, formatNumber} from '@/lib/utils'
+import {fixWikiImageURL, formatDate, formatNumber} from '@/lib/utils'
 import {Loading} from "@/components/Loading";
 import {AxiosError} from "axios";
 import { useState } from "react"
@@ -147,7 +146,7 @@ export function ArtistCard({
                         <img
                           className={`w-24 h-24 object-cover
                         ${isExpanded ? "w-full h-full" : ""}`}
-                          src={selectedArtist.image}
+                          src={fixWikiImageURL(selectedArtist.image)}
                           alt={selectedArtist.name}
                         />
                       </div>
@@ -175,7 +174,6 @@ export function ArtistCard({
                           <h3>
                             <span className="font-medium">Similar:</span>{" "}
                             {similarFilter(selectedArtist.similar)
-                              .slice(0, 3)
                               .map((name, index, array) => (
                                 <>
                                   <button

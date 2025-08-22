@@ -1,6 +1,6 @@
 import {envBoolean} from "@/lib/utils";
 import {useEffect, useState} from "react";
-import {Artist, Genre, LastFMSearchArtistData} from "@/types";
+import {Artist, Genre} from "@/types";
 import axios, {AxiosError} from "axios";
 
 const url = envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)

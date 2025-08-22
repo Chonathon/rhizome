@@ -16,13 +16,6 @@ export interface Genre extends BasicNode {
     badDataFlag?: boolean;
 }
 
-export interface GenresJSON {
-    count: number;
-    genres: Genre[];
-    links: NodeLink[];
-    date: string;
-}
-
 export interface Tag {
     name: string;
     count: number;
@@ -43,14 +36,6 @@ export interface Artist extends BasicNode {
     badDataFlag?: boolean;
 }
 
-export interface ArtistJSON {
-    count: number;
-    artists: Artist[];
-    links: NodeLink[];
-    date: string;
-    genre: string;
-}
-
 export interface BasicNode {
     id: string;
     name: string;
@@ -59,21 +44,7 @@ export interface BasicNode {
 export interface NodeLink {
     source: string;
     target: string;
-    linkType?: GenreClusterMode;
-}
-
-export interface LastFMArtistJSON extends BasicNode {
-    image: string;
-    ontour: boolean;
-    stats: LastFMStats;
-    bio: LastFMBio;
-    similar: string[];
-    date: string; // this is for caching
-}
-
-export interface LastFMStats {
-    listeners: number;
-    playcount: number;
+    linkType?: LinkType;
 }
 
 export interface LastFMBio {
@@ -84,11 +55,9 @@ export interface LastFMBio {
 
 export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'parentGenre';
 
-export interface LastFMSearchArtistData extends BasicNode {
-    listeners: number;
-}
+export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion' | 'all';
 
-export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion';
+export type LinkType = 'subgenre' | 'influence' | 'fusion' | 'similar';
 
 export interface GenreGraphData {
     nodes: Genre[];
