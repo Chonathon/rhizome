@@ -1,28 +1,23 @@
 import './App.css'
-import {useEffect, useMemo, useState} from 'react'
-import { GraphControls } from './components/GraphControls'
-import { Waypoints, Undo2, ChevronDown } from 'lucide-react'
-import { BreadcrumbHeader } from './components/BreadcrumbHeader'
-import { Button, buttonVariants } from "@/components/ui/button"
+import { useEffect, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { Button } from "@/components/ui/button"
 import useGenreArtists from "@/hooks/useGenreArtists";
 import useGenres from "@/hooks/useGenres";
 import useArtist from "@/hooks/useArtist";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Artist,
-  BasicNode,
   Genre,
-  GenreClusterMode, GenreGraphData,
+  GenreClusterMode,
+  GenreGraphData,
   GraphType,
-  LastFMArtistJSON,
-  LastFMSearchArtistData,
   NodeLink
 } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
-import { ListViewPanel } from "@/components/ListViewPanel";
 import { useMediaQuery } from 'react-responsive';
 import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
@@ -33,14 +28,12 @@ import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
 import GenrePanel from './components/GenrePanel'
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
-import { ResponsivePanel } from './components/ResponsivePanel'
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
-  const [showListView, setShowListView] = useState(false);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
@@ -51,9 +44,8 @@ function App() {
     const storedDagMode = localStorage.getItem('dagMode');
     return storedDagMode ? JSON.parse(storedDagMode) : false;
   });
-  const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
+  const { addRecentSelection } = useRecentSelections();
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
-  const [genreMiniView, setGenreMiniView] = useState<boolean>(false);
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
   const { artistData, artistLoading, artistError } = useArtist(selectedArtist);
@@ -156,8 +148,6 @@ function App() {
     setSelectedGenre(undefined);
     setSelectedArtist(undefined);
     setShowArtistCard(false);
-    setShowListView(false);
-    setGenreMiniView(false);
     setCanCreateSimilarArtistGraph(false);
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
@@ -193,21 +183,7 @@ function App() {
     }
   }
 
-  console.log("App render", {
-  selectedGenre,
-  selectedArtist,
-  genres,
-  genresLoading,
-  genresError,
-  artists,
-  artistsLoading,
-  artistsError,
-  artistData,
-  artistLoading,
-  artistError,
-  graph,
-  currentGenres
-});
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -217,10 +193,6 @@ function App() {
           <Gradient />
         <div className="relative min-h-screen min-w-screen">
 
-          {/* Top Bar */}
-        {/* <div className='fixed z-50 top-5 left-5 flex items-center'>
-            <SidebarTrigger />
-          </div> */}
           <div className={
             "fixed w-auto top-0 ml-(--sidebar-width) flex items-center gap-3 p-3 z-50"
           }
@@ -283,46 +255,7 @@ function App() {
                 show={graph === 'genres' && !genresLoading}
               />
           </div>
-        <GenresForceGraph
-            graphData={currentGenres}
-            onNodeClick={onGenreNodeClick}
-            loading={genresLoading}
-            show={(graph === 'genres') && !genresError}
-            dag={dagMode}
-            clusterMode={genreClusterMode}
-        />
-        <ArtistsForceGraph
-            artists={currentArtists}
-            artistLinks={currentArtistLinks}
-            loading={artistsLoading}
-            onNodeClick={onArtistNodeClick}
-            show={(graph === 'artists' || graph === 'similarArtists') && !artistsError}
-        />
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            className={`
-              fixed left-1/2 transform -translate-x-1/2 z-50
-              flex flex-col gap-4
-              ${isMobile
-                ? "w-full px-4 items-center bottom-4"
-                : "bottom-4 items-end"}
-            `}
-          >
-            <ArtistCard
-              selectedArtist={selectedArtist}
-              setArtistFromName={setArtistFromName}
-              setSelectedArtist={setSelectedArtist}
-              artistData={artistData}
-              artistLoading={artistLoading}
-              artistError={artistError}
-              show={showArtistCard}
-              setShowArtistCard={setShowArtistCard}
-              deselectArtist={deselectArtist}
-              similarFilter={similarArtistFilter}
-            />
-            <DisplayPanel />
-            <GenrePanel genres={genres} genreClusterMode={genreClusterMode} />
-          </div>
+    
           <AnimatePresence mode="popLayout">
             <motion.div
               className={`
