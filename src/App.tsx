@@ -27,7 +27,7 @@ import { useMediaQuery } from 'react-responsive';
 import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
-import {buildGenreTree, generateSimilarLinks, isParentGenre} from "@/lib/utils";
+import {buildGenreTree, filterOutGenreTree, generateSimilarLinks, genreHasChildren} from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
@@ -130,7 +130,7 @@ function App() {
   }
   const onGenreNodeClick = (genre: Genre) => {
     // this code makes the mini genre graph
-    // if (isParentGenre(genre, genreClusterMode)) {
+    // if (genreHasChildren(genre, genreClusterMode)) {
     //   setGenreMiniView(true);
     //   setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
     // }
@@ -161,6 +161,7 @@ function App() {
     setCanCreateSimilarArtistGraph(false);
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
+    setGenreClusterMode('subgenre');
   }
   const deselectArtist = () => {
     setSelectedArtist(undefined);
@@ -173,6 +174,23 @@ function App() {
     setSelectedArtist(artistResult);
     setShowArtistCard(true);
     setCanCreateSimilarArtistGraph(true);
+  }
+  const onParentGenreClick = (genre: Genre) => {
+    setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
+  }
+  const onParentGenreDeselect = (genre: Genre) => {
+    if (currentGenres){
+      setCurrentGenres(filterOutGenreTree(currentGenres, genre, genreClusterMode));
+    }
+  }
+  const onParentGenreReselect = (genre: Genre) => {
+    if (currentGenres){
+      const reselectedGenreData = buildGenreTree(genres, genre, genreClusterMode);
+      setCurrentGenres({
+        nodes: [...currentGenres.nodes, ...reselectedGenreData.nodes],
+        links: [...currentGenres.links, ...reselectedGenreData.links],
+      });
+    }
   }
 
   console.log("App render", {
@@ -249,12 +267,58 @@ function App() {
                   }
                 />
           <div className="fixed flex flex-col h-auto right-4 top-4 justify-end gap-3 z-50">
-            <ModeToggle />
-            <ClusteringPanel
-              clusterMode={genreClusterMode}
-              setClusterMode={setGenreClusterMode}
-              dagMode={dagMode}
-              setDagMode={setDagMode}
+              <ModeToggle />
+              <ClusteringPanel 
+                clusterMode={genreClusterMode} 
+                setClusterMode={setGenreClusterMode} 
+                dagMode={dagMode} 
+                setDagMode={setDagMode} />
+              <DisplayPanel />
+              <GenrePanel
+                genres={genres}
+                onParentClick={onParentGenreClick}
+                genreClusterMode={genreClusterMode}
+                onParentDeselect={onParentGenreDeselect}
+                onParentSelect={onParentGenreReselect}
+                show={graph === 'genres' && !genresLoading}
+              />
+          </div>
+        <GenresForceGraph
+            graphData={currentGenres}
+            onNodeClick={onGenreNodeClick}
+            loading={genresLoading}
+            show={(graph === 'genres') && !genresError}
+            dag={dagMode}
+            clusterMode={genreClusterMode}
+        />
+        <ArtistsForceGraph
+            artists={currentArtists}
+            artistLinks={currentArtistLinks}
+            loading={artistsLoading}
+            onNodeClick={onArtistNodeClick}
+            show={(graph === 'artists' || graph === 'similarArtists') && !artistsError}
+        />
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            className={`
+              fixed left-1/2 transform -translate-x-1/2 z-50
+              flex flex-col gap-4
+              ${isMobile
+                ? "w-full px-4 items-center bottom-4"
+                : "bottom-4 items-end"}
+            `}
+          >
+            <ArtistCard
+              selectedArtist={selectedArtist}
+              setArtistFromName={setArtistFromName}
+              setSelectedArtist={setSelectedArtist}
+              artistData={artistData}
+              artistLoading={artistLoading}
+              artistError={artistError}
+              show={showArtistCard}
+              setShowArtistCard={setShowArtistCard}
+              deselectArtist={deselectArtist}
+              similarFilter={similarArtistFilter}
             />
             <DisplayPanel />
             <GenrePanel genres={genres} genreClusterMode={genreClusterMode} />
