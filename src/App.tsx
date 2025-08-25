@@ -27,6 +27,7 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import DisplayPanel from './components/DisplayPanel';
 import GenrePanel from './components/GenrePanel'
+import NodeLimiter from './components/NodeLimiter'
 import useSimilarArtists from "@/hooks/useSimilarArtists";
 
 function App() {
@@ -332,7 +333,11 @@ function App() {
                 />
               </motion.div>
             </div>
-            
+{/*             
+        <NodeLimiter
+        totalNodes={graph === 'genres' ? genres.length : currentArtists.length}
+        nodeType={graph === 'genres' ? 'genres' : 'artists'}
+        /> */}
           </motion.div>
         </AnimatePresence>
     </div>

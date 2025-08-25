@@ -8,16 +8,17 @@ interface ResponsivePanelProps {
   trigger: React.ReactNode
   children: React.ReactNode
   className?: string
+  side: "left" | "right" | "top" | "bottom"
 }
 
-export function ResponsivePanel({ trigger, children, className }: ResponsivePanelProps) {
+export function ResponsivePanel({ trigger, children, className, side }: ResponsivePanelProps) {
   const isDesktop = useMediaQuery("(min-width: 640px)")
 
   if (isDesktop) {
     return (
       <Popover>
         <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-        <PopoverContent side="left" align="start" className={className}>
+        <PopoverContent side={side} align="start" className={className}>
           {children}
         </PopoverContent>
       </Popover>

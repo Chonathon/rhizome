@@ -53,6 +53,7 @@ export default function GenrePanel({
         </Button>
       }
       className="p-2 overflow-hidden"
+      side="left"
     >
       {/* scrolling container */}
       <div className="overflow-y-auto max-h-120 rounded-2xl border border-accent shadow-sm bg-accent dark:dark:bg-background">

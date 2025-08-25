@@ -29,6 +29,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 </Button>
             }
             className="w-sm"
+            side="left"
         >
             <div className="flex flex-col gap-4 p-2 rounded-2xl border border-accent shadow-sm bg-accent dark:dark:bg-background">
                 {/* Node Size */}

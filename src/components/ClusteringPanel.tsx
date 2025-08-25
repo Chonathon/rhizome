@@ -29,6 +29,7 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
                 </Button>
             }
             className="w-full w-sm"
+            side="left"
         >
             <RadioGroup
                 value={clusterMode}
