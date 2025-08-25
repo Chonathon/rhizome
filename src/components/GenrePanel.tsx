@@ -8,14 +8,14 @@ import { ResponsivePanel } from "@/components/ResponsivePanel";
 import {useEffect, useState} from "react";
 
 export default function GenrePanel({
-  genres,
+  genres = [],
   genreClusterMode,
     onParentClick,
     onParentDeselect,
     onParentSelect,
     show,
 }: {
-  genres: Genre[];
+  genres?: Genre[];
   genreClusterMode: GenreClusterMode;
   onParentClick: (genre: Genre) => void;
   onParentDeselect: (genre: Genre) => void;

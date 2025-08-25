@@ -19,7 +19,7 @@ interface SearchProps {
   onArtistSelect: (artist: Artist) => void;
   graphState: GraphType;
   currentArtists: Artist[];
-  genres: Genre[];
+  genres?: Genre[];
   selectedGenre?: Genre;
   selectedArtist?: Artist;
 }
@@ -27,7 +27,7 @@ interface SearchProps {
 
 const DEBOUNCE_MS = 500;
 
-export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, selectedGenre, selectedArtist }: SearchProps) {
+export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres = [], selectedGenre, selectedArtist }: SearchProps) {
   const isMobile = useMediaQuery({ maxWidth: 640 });
   const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");

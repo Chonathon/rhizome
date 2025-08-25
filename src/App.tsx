@@ -101,7 +101,11 @@ function App() {
     // }
     setCurrentGenres({
       nodes: genres,
-      links: genreClusterMode === 'all' ? genreLinks : genreLinks.filter(l => l.linkType === genreClusterMode),
+      links: genreLinks && genreLinks.length
+          ? genreClusterMode === 'all'
+              ? genreLinks
+              : genreLinks.filter(l => l.linkType === genreClusterMode)
+          : [],
     });
 
   }, [genres, genreLinks, genreClusterMode, genreSizeThreshold]);
@@ -269,7 +273,7 @@ function App() {
                 genreClusterMode={genreClusterMode}
                 onParentDeselect={onParentGenreDeselect}
                 onParentSelect={onParentGenreReselect}
-                show={graph === 'genres' && !genresLoading}
+                show={graph === 'genres' && !genresLoading && !genresError}
               />
           </div>
         <GenresForceGraph
@@ -321,7 +325,7 @@ function App() {
                     onGenreSelect={onGenreNodeClick}
                     onArtistSelect={createSimilarArtistGraph}
                     currentArtists={currentArtists}
-                    genres={genres}
+                    genres={currentGenres?.nodes}
                     graphState={graph}
                     selectedGenre={selectedGenre}
                     selectedArtist={selectedArtist}
