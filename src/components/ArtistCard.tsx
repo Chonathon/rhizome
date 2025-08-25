@@ -1,10 +1,9 @@
 import {Artist, BasicNode} from '@/types'
-import { LastFMArtistJSON } from '@/types';
 import { motion, AnimatePresence } from "framer-motion";
 import { dummyLastFMArtistData } from '@/DummyDataForDummies'
 import { CircleX } from "lucide-react"
 import { Button, buttonVariants } from "@/components/ui/button";
-import {formatDate, formatNumber} from '@/lib/utils'
+import {fixWikiImageURL, formatDate, formatNumber} from '@/lib/utils'
 import {Loading} from "@/components/Loading";
 import {AxiosError} from "axios";
 import { useState } from "react"
@@ -17,9 +16,8 @@ interface ArtistCardProps {
     selectedArtist?: Artist;
     setArtistFromName: (artist: string) => void;
     setSelectedArtist: (artist: Artist | undefined) => void;
-    artistData?: LastFMArtistJSON;
     artistLoading: boolean;
-    artistError?: AxiosError;
+    artistError?: boolean;
     show: boolean;
     setShowArtistCard: (show: boolean) => void;
     deselectArtist: () => void;
@@ -30,7 +28,6 @@ export function ArtistCard({
     selectedArtist,
     setArtistFromName,
     setSelectedArtist,
-    artistData,
     artistLoading,
     artistError,
     show,
@@ -138,7 +135,7 @@ export function ArtistCard({
                   </>
                 ) : (
                   <>
-                    {artistData?.image && artistData && (
+                    {selectedArtist?.image && selectedArtist && (
                       <div
                         className={`
                       w-24 h-24 shrink-0 overflow-hidden
@@ -149,22 +146,22 @@ export function ArtistCard({
                         <img
                           className={`w-24 h-24 object-cover
                         ${isExpanded ? "w-full h-full" : ""}`}
-                          src={artistData.image}
-                          alt={artistData.name}
+                          src={fixWikiImageURL(selectedArtist.image)}
+                          alt={selectedArtist.name}
                         />
                       </div>
                     )}
                     <div className="flex-1 flex flex-col items-start gap-1 min-w-0">
                       {/* Artist Name */}
                       <h2 className="w-full text-md font-semibold">
-                        {artistData && artistData.name}
+                        {selectedArtist && selectedArtist.name}
                       </h2>
                       {/* Artist Stats */}
                       <div className="text-sm">
-                        {artistData && artistData.stats.listeners && (
+                        {selectedArtist && selectedArtist.listeners && (
                           <h3>
                             <span className="font-medium">Listeners:</span>{" "}
-                            {formatNumber(artistData.stats.listeners)}
+                            {formatNumber(selectedArtist.listeners)}
                           </h3>
                         )}
                         <h3>
@@ -173,11 +170,10 @@ export function ArtistCard({
                             ? formatDate(selectedArtist.startDate)
                             : "Unknown"}{" "}
                         </h3>
-                        {artistData && artistData.similar && (
+                        {selectedArtist && selectedArtist.similar && (
                           <h3>
                             <span className="font-medium">Similar:</span>{" "}
-                            {similarFilter(artistData.similar)
-                              .slice(0, 3)
+                            {similarFilter(selectedArtist.similar)
                               .map((name, index, array) => (
                                 <>
                                   <button
@@ -207,8 +203,8 @@ export function ArtistCard({
                               : "line-clamp-3 overflow-hidden"
                           }`}
                         >
-                          {artistData && artistData.bio
-                            ? artistData.bio.summary
+                          {selectedArtist && selectedArtist.bio
+                            ? selectedArtist.bio.summary
                             : "No bio"}
                         </p>
                       </div>

@@ -6,10 +6,16 @@ import { Button } from "@/components/ui/button"
 import { SwatchBook } from "lucide-react"
 import { ResponsivePanel } from "@/components/ResponsivePanel"
 
-export default function DisplayPanel() {
+interface DisplayPanelProps {
+    genreArtistCountThreshold: number;
+    setGenreArtistCountThreshold: (count: number) => void;
+}
+
+export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtistCountThreshold }: DisplayPanelProps) {
     const [nodeSize, setNodeSize] = useState(50)
     const [edgeThickness, setEdgeThickness] = useState(50)
     const [textFadeThreshold, setTextFadeThreshold] = useState(50)
+    //const [genreSizeThreshold, setGenreSizeThreshold] = useState(genreArtistCountThreshold)
     const [showLabels, setShowLabels] = useState(false)
     const [showArtistImage, setShowArtistImage] = useState(false)
     const [showUnfollowedArtists, setShowUnfollowedArtists] = useState(false)
@@ -77,6 +83,23 @@ export default function DisplayPanel() {
                         />
                     </div>
                 </div>
+                {/* Genre Min Size */}
+                {/*<div className="flex items-center justify-start gap-6">*/}
+                {/*    <label htmlFor="genre-min-size" className="w-full text-left text-md font-medium text-gray-900 dark:text-gray-100">Genre Min Size</label>*/}
+                {/*    <div className="w-full flex items-center gap-2">*/}
+                {/*        <Badge variant="outline" className="w-12 p-1 text-center">{genreArtistCountThreshold}</Badge>*/}
+                {/*        <Slider*/}
+                {/*            id="genre-min-size-slider"*/}
+                {/*            aria-labelledby="genre-min-size"*/}
+                {/*            value={[genreArtistCountThreshold]}*/}
+                {/*            onValueChange={([value]) => setGenreArtistCountThreshold(value)}*/}
+                {/*            min={0}*/}
+                {/*            max={120}*/}
+                {/*            step={1}*/}
+                {/*            className="w-full"*/}
+                {/*        />*/}
+                {/*    </div>*/}
+                {/*</div>*/}
                 <fieldset className="flex flex-col gap-4">
                     <legend className="sr-only">Display options</legend>
                     <div className="flex items-center justify-between">
