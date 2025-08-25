@@ -6,13 +6,14 @@ export interface Genre extends BasicNode {
     fusion_genres: BasicNode[];
     fusion_of: BasicNode[];
     influenced_by: BasicNode[];
-}
-
-export interface GenresJSON {
-    count: number;
-    genres: Genre[];
-    links: NodeLink[];
-    date: string;
+    description?: string;
+    descriptionAI?: boolean;
+    totalListeners?: number;
+    totalPlays?: number;
+    from?: string[];
+    named_after_area?: string[];
+    used_instruments?: string[];
+    badDataFlag?: boolean;
 }
 
 export interface Tag {
@@ -22,16 +23,17 @@ export interface Tag {
 
 export interface Artist extends BasicNode {
     tags: Tag[];
+    genres: string[];
+    listeners: number;
+    playcount: number;
+    similar: string[];
+    bio: LastFMBio;
+    noMBID: boolean;
     location?: string;
     startDate?: string;
-}
-
-export interface ArtistJSON {
-    count: number;
-    artists: Artist[];
-    links: NodeLink[];
-    date: string;
-    genre: string;
+    endDate?: string;
+    image?: string;
+    badDataFlag?: boolean;
 }
 
 export interface BasicNode {
@@ -42,21 +44,7 @@ export interface BasicNode {
 export interface NodeLink {
     source: string;
     target: string;
-    linkType?: GenreClusterMode;
-}
-
-export interface LastFMArtistJSON extends BasicNode {
-    image: string;
-    ontour: boolean;
-    stats: LastFMStats;
-    bio: LastFMBio;
-    similar: string[];
-    date: string; // this is for caching
-}
-
-export interface LastFMStats {
-    listeners: number;
-    playcount: number;
+    linkType?: LinkType;
 }
 
 export interface LastFMBio {
@@ -67,11 +55,9 @@ export interface LastFMBio {
 
 export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'parentGenre';
 
-export interface LastFMSearchArtistData extends BasicNode {
-    listeners: number;
-}
+export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion' | 'all';
 
-export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion';
+export type LinkType = 'subgenre' | 'influence' | 'fusion' | 'similar';
 
 export interface GenreGraphData {
     nodes: Genre[];

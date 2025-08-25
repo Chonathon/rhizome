@@ -7,17 +7,17 @@ const url = envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
     ? import.meta.env.VITE_LOCALHOST
     : import.meta.env.VITE_SERVER_URL || `https://rhizome-server-production.up.railway.app`;
 
-const useGenreArtists = (genre?: string) => {
+const useGenreArtists = (genreID?: string) => {
     const [artists, setArtists] = useState<Artist[]>([]);
     const [artistLinks, setArtistLinks] = useState<NodeLink[]>([]);
     const [artistsLoading, setArtistsLoading] = useState(false);
     const [artistsError, setArtistsError] = useState<AxiosError>();
 
     const fetchArtists = async () => {
-        if (genre) {
+        if (genreID) {
             setArtistsLoading(true);
             try {
-                const response = await axios.get(`${url}/artists/"${genre}"`);
+                const response = await axios.get(`${url}/artists/${genreID}`);
                 setArtists(response.data.artists);
                 setArtistLinks(response.data.links);
             } catch (err) {
@@ -31,7 +31,7 @@ const useGenreArtists = (genre?: string) => {
 
     useEffect(() => {
         fetchArtists();
-    }, [genre]);
+    }, [genreID]);
 
     return { artists, artistsLoading, artistsError, artistLinks };
 }

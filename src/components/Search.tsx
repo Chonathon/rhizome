@@ -9,10 +9,10 @@ import {Artist, BasicNode, Genre, GraphType} from "@/types";
 import {useEffect, useRef, useState} from "react";
 import { useMemo } from "react";
 import {Loading} from "@/components/Loading";
-import useMBArtistSearch from "@/hooks/useMBArtistSearch";
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useMediaQuery } from "react-responsive";
+import useSearch from "@/hooks/useSearch";
 
 interface SearchProps {
   onGenreSelect: (genre: Genre) => void;
@@ -33,7 +33,7 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, 
   const [inputValue, setInputValue] = useState<string>("");
   const [query, setQuery] = useState("");
   const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
-  const { mbSearchResults, mbSearchLoading, mbSearchError } = useMBArtistSearch(query);
+  const { searchResults, searchLoading, searchError } = useSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Debouncing
@@ -60,14 +60,14 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, 
   // Filter the searchable items. This is problematic with bands of the same name, for now it just uses the first one in the results
   const filteredSearchableItems = useMemo(() => {
     const seenNames = new Set<string>();
-    return [...currentArtists, ...mbSearchResults, ...genres].filter((item) => {
+    return [...currentArtists, ...searchResults, ...genres].filter((item) => {
       if (!item.name.toLowerCase().includes(inputValue.toLowerCase())) return false;
       if (seenNames.has(item.name)) return false;
       seenNames.add(item.name);
       return true;
     }
     )},
-      [genres, mbSearchResults, currentArtists]
+      [genres, searchResults, currentArtists]
   );
 
   // Clears the selection on remount
@@ -141,7 +141,7 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres, 
             ref={inputRef}
         />
         <CommandList>
-          {mbSearchLoading && <Loading />}
+          {searchLoading && <Loading />}
           <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>
           {recentSelections.length > 0 && (
             <CommandGroup heading="Recent Selections">

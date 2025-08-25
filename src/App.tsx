@@ -6,17 +6,13 @@ import { BreadcrumbHeader } from './components/BreadcrumbHeader'
 import { Button, buttonVariants } from "@/components/ui/button"
 import useGenreArtists from "@/hooks/useGenreArtists";
 import useGenres from "@/hooks/useGenres";
-import useArtist from "@/hooks/useArtist";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
   Artist,
-  BasicNode,
   Genre,
   GenreClusterMode, GenreGraphData,
   GraphType,
-  LastFMArtistJSON,
-  LastFMSearchArtistData,
   NodeLink
 } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,11 +22,12 @@ import { useMediaQuery } from 'react-responsive';
 import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
-import {buildGenreTree, filterOutGenreTree, generateSimilarLinks, genreHasChildren} from "@/lib/utils";
+import { buildGenreTree, filterOutGenreTree, generateSimilarLinks } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import DisplayPanel from './components/DisplayPanel';
 import GenrePanel from './components/GenrePanel'
+import useSimilarArtists from "@/hooks/useSimilarArtists";
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -48,9 +45,12 @@ function App() {
   });
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const [genreMiniView, setGenreMiniView] = useState<boolean>(false);
+  const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
+  const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
-  const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.name : undefined);
-  const { artistData, artistLoading, artistError } = useArtist(selectedArtist);
+  const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
+  const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
+
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
@@ -83,15 +83,31 @@ function App() {
   }, [artists]);
 
   useEffect(() => {
-    setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === genreClusterMode)});
-  }, [genres, genreLinks, genreClusterMode]);
+    // Genre node filtering logic (by artistCount)
+    // if (genreSizeThreshold > 0) {
+    //   const filteredGenres = genres.filter(g => g.artistCount >= genreSizeThreshold);
+    //   const genreSet = new Set(filteredGenres.map(genre => genre.id));
+    //   const filteredLinks = genreLinks.filter((nodeLink) => {
+    //     return nodeLink.linkType === genreClusterMode && genreSet.has(nodeLink.source) && genreSet.has(nodeLink.target)
+    //   });
+    //   console.log(filteredLinks.length)
+    //   setCurrentGenres({
+    //     nodes: filteredGenres,
+    //     links: filteredLinks,
+    //   });
+    // }
+    // else {
+    //   setCurrentGenres({ nodes: genres, links: genreLinks.filter(l => l.linkType === genreClusterMode) });
+    // }
+    setCurrentGenres({
+      nodes: genres,
+      links: genreClusterMode === 'all' ? genreLinks : genreLinks.filter(l => l.linkType === genreClusterMode),
+    });
+
+  }, [genres, genreLinks, genreClusterMode, genreSizeThreshold]);
 
   useEffect(() => {
-    if (canCreateSimilarArtistGraph && artistData?.similar && selectedArtist && selectedArtist.name === artistData.name) {
-      const similarArtists = [selectedArtist];
-      artistData.similar.forEach((s, i) => {
-        similarArtists.push({ id: Math.floor((Math.random() + i) * 1234567).toString(), name: s, tags: [] });
-      });
+    if (canCreateSimilarArtistGraph) {
       if (similarArtists.length > 1) {
         const links = generateSimilarLinks(similarArtists);
         setCurrentArtists(similarArtists);
@@ -100,13 +116,12 @@ function App() {
       }
       setCanCreateSimilarArtistGraph(false);
     }
-  }, [artistData, canCreateSimilarArtistGraph]);
+  }, [similarArtists]);
 
   const setArtistFromName = (name: string) => {
-    const artist = artists.find((artist) => artist.name === name);
+    const artist = currentArtists.find((a) => a.name === name);
     if (artist) {
-      setSelectedArtist(artist);
-      setShowArtistCard(true);
+      onArtistNodeClick(artist);
     }
   }
   const onGenreNodeClick = (genre: Genre) => {
@@ -131,8 +146,7 @@ function App() {
     setGraph('genres');
     setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === genreClusterMode)});
     setSelectedGenre(undefined);
-    setSelectedArtist(undefined);
-    setShowArtistCard(false);
+    deselectArtist();
     setShowListView(false);
     setGenreMiniView(false);
     setCanCreateSimilarArtistGraph(false);
@@ -143,12 +157,14 @@ function App() {
   const deselectArtist = () => {
     setSelectedArtist(undefined);
     setShowArtistCard(false);
+    setSelectedArtistNoGenre(undefined);
   }
   const similarArtistFilter = (similarArtists: string[]) => {
     return similarArtists.filter(s => currentArtists.some(a => a.name === s));
   }
   const createSimilarArtistGraph = (artistResult: Artist) => {
     setSelectedArtist(artistResult);
+    setSelectedArtistNoGenre(artistResult);
     setShowArtistCard(true);
     setCanCreateSimilarArtistGraph(true);
   }
@@ -179,9 +195,6 @@ function App() {
   artists,
   artistsLoading,
   artistsError,
-  artistData,
-  artistLoading,
-  artistError,
   graph,
   currentGenres
 });
@@ -246,7 +259,10 @@ function App() {
                 setClusterMode={setGenreClusterMode} 
                 dagMode={dagMode} 
                 setDagMode={setDagMode} />
-              <DisplayPanel />
+              <DisplayPanel
+                genreArtistCountThreshold={genreSizeThreshold}
+                setGenreArtistCountThreshold={setGenreSizeThreshold}
+              />
               <GenrePanel
                 genres={genres}
                 onParentClick={onParentGenreClick}
@@ -285,13 +301,12 @@ function App() {
               selectedArtist={selectedArtist}
               setArtistFromName={setArtistFromName}
               setSelectedArtist={setSelectedArtist}
-              artistData={artistData}
-              artistLoading={artistLoading}
-              artistError={artistError}
               show={showArtistCard}
               setShowArtistCard={setShowArtistCard}
               deselectArtist={deselectArtist}
               similarFilter={similarArtistFilter}
+              artistLoading={false}
+              artistError={false}
             />
             <div className={`flex md:hidden justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
               <ResetButton

@@ -6,8 +6,6 @@ import {
   Genre,
   GenreClusterMode,
   GenreGraphData,
-  LastFMArtistJSON,
-  LastFMSearchArtistData,
   NodeLink
 } from "@/types";
 
@@ -42,7 +40,7 @@ export const generateArtistLinks = (artist: Artist, similarCount: number) => {
 export const generateSimilarLinks = (artists: Artist[]) => {
   const links: NodeLink[] = [];
   for (let i = 1; i < artists.length; i++) {
-    links.push({ source: artists[0].id, target: artists[i].id });
+    links.push({ source: artists[0].id, target: artists[i].id, linkType: 'similar' });
   }
   return links;
 }
@@ -168,3 +166,11 @@ export const clusterColors = [
   "#be5046",
   "#a9a1e1",
 ];
+
+export const fixWikiImageURL = (url: string) => {
+  if (url.startsWith('https://commons.wikimedia.org/wiki/File:')) {
+    const filename = url.substring(url.lastIndexOf('/') + 1);
+    return 'https://commons.wikimedia.org/wiki/Special:Redirect/file/' + filename;
+  }
+  return url;
+}
