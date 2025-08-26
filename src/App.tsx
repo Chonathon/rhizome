@@ -1,23 +1,22 @@
 import './App.css'
-import {useEffect, useMemo, useState} from 'react'
-import { GraphControls } from './components/GraphControls'
-import { Waypoints, Undo2 } from 'lucide-react'
-import { BreadcrumbHeader } from './components/BreadcrumbHeader'
-import { Button, buttonVariants } from "@/components/ui/button"
+import { useEffect, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { Button } from "@/components/ui/button"
 import useGenreArtists from "@/hooks/useGenreArtists";
 import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Artist,
   Genre,
-  GenreClusterMode, GenreGraphData,
+  GenreClusterMode,
+  GenreGraphData,
   GraphType,
   NodeLink
 } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
-import { ListViewPanel } from "@/components/ListViewPanel";
 import { useMediaQuery } from 'react-responsive';
 import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
@@ -25,15 +24,17 @@ import { Search } from './components/Search';
 import { buildGenreTree, filterOutGenreTree, generateSimilarLinks } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
+import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
 import GenrePanel from './components/GenrePanel'
 import NodeLimiter from './components/NodeLimiter'
 import useSimilarArtists from "@/hooks/useSimilarArtists";
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/AppSideBar"
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
-  const [showListView, setShowListView] = useState(false);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
@@ -44,14 +45,15 @@ function App() {
     const storedDagMode = localStorage.getItem('dagMode');
     return storedDagMode ? JSON.parse(storedDagMode) : false;
   });
+  const { addRecentSelection } = useRecentSelections();
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const [genreMiniView, setGenreMiniView] = useState<boolean>(false);
   const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
-
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
@@ -123,6 +125,17 @@ function App() {
     }
   }, [similarArtists]);
 
+  useEffect(() => {
+  const down = (e: KeyboardEvent) => {
+    if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      setSearchOpen((prev) => !prev);
+    }
+  }
+  document.addEventListener("keydown", down);
+  return () => document.removeEventListener("keydown", down)
+}, [])
+
   const setArtistFromName = (name: string) => {
     const artist = currentArtists.find((a) => a.name === name);
     if (artist) {
@@ -137,11 +150,15 @@ function App() {
     // }
     setSelectedGenre(genre);
     setGraph('artists');
+    addRecentSelection(genre);
+    console.log("Genre selected:", genre);
   }
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
       setSelectedArtist(artist);
       setShowArtistCard(true);
+      addRecentSelection(artist);
+      console.log("Artist selected:", artist);
     }
     if (graph === 'similarArtists') {
       createSimilarArtistGraph(artist);
@@ -152,7 +169,6 @@ function App() {
     setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === genreClusterMode)});
     setSelectedGenre(undefined);
     deselectArtist();
-    setShowListView(false);
     setGenreMiniView(false);
     setCanCreateSimilarArtistGraph(false);
     setCurrentArtists([]);
@@ -191,72 +207,60 @@ function App() {
     }
   }
 
-  console.log("App render", {
-  selectedGenre,
-  selectedArtist,
-  genres,
-  genresLoading,
-  genresError,
-  artists,
-  artistsLoading,
-  artistsError,
-  graph,
-  currentGenres
-});
   return (
-    <div className="relative min-h-screen min-w-screen">
-       <Gradient/>
-       {/* Top Bar */}
-      <div className={
-        'fixed top-0 left-0 flex w-full justify-between items-center p-4 z-50'}>
-        {/* Breadcrumb & ListViewPanel Container */}
-        <div className={
-          isMobile
-            ? "max-w-[calc(100vw-32px)]  inline-flex flex-col gap-2 items-start"
-            : " inline-flex flex-col gap-2 items-start"
-        }>
-          <div className={`md:flex hidden justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
-              <ResetButton
-                onClick={() => resetAppState()}
-                show={graph !== 'genres'}
-              />
-              <motion.div
-                layout
-                // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
-              >
-                <Search
-                    onGenreSelect={onGenreNodeClick}
-                    onArtistSelect={createSimilarArtistGraph}
-                    currentArtists={currentArtists}
-                    genres={genres}
-                    graphState={graph}
-                    selectedGenre={selectedGenre}
-                    selectedArtist={selectedArtist}
+    <SidebarProvider>
+      <AppSidebar
+        setSearchOpen={setSearchOpen}
+        onClick={resetAppState}
+        selectedGenre={selectedGenre}>
+          <Gradient />
+        <div className="relative min-h-screen min-w-screen">
+
+          <div className={
+            "fixed w-auto top-0 ml-(--sidebar-width) flex items-center gap-3 p-3 z-50"
+          }
+          >
+               <Tabs
+                value={graph}
+                onValueChange={(val) => setGraph(val as GraphType)}>
+                  <TabsList>
+                      <TabsTrigger
+                      onClick={() => setGraph('genres')}value="genres">Genres</TabsTrigger>
+                    <TabsTrigger
+                    onClick={() => setGraph('artists')} value="artists">Artists</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                { graph === 'artists' &&
+                <div className='flex gap-3'>
+                  <Button size='lg' variant='outline'>Genre
+                    <ChevronDown />
+                  </Button>
+                  <Button size='lg' variant='outline'>Mood & Activity
+                    <ChevronDown />
+                  </Button>
+                  <Button size='lg' variant='outline'>Decade
+                    <ChevronDown />
+                  </Button>
+                </div>
+                }
+          </div>
+                <GenresForceGraph
+                  graphData={currentGenres}
+                  onNodeClick={onGenreNodeClick}
+                  loading={genresLoading}
+                  show={graph === "genres" && !genresError}
+                  dag={dagMode}
+                  clusterMode={genreClusterMode}
                 />
-              </motion.div>
-            </div>
-            {/* <BreadcrumbHeader
-                selectedGenre={selectedGenre ? selectedGenre.name : undefined}
-                selectedArtist={selectedArtist}
-                HomeIcon={Waypoints}
-                toggleListView={() => setShowListView(!showListView)}
-                showListView={showListView}
-                reset={resetAppState}
-                hideArtistCard={deselectArtist}
-            /> */}
-            {/* <ListViewPanel
-                genres={genres}
-                onGenreClick={onGenreNodeClick}
-                setSelectedArtist={setSelectedArtist}
-                genreLinksCount={genreLinks.length}
-                show={showListView && !genresError}
-                genresLoading={genresLoading}
-                artistsLoading={artistsLoading}
-                currentGraph={graph}
-                isMobile={isMobile}
-            /> */}
-            </div>
-      </div>
+                <ArtistsForceGraph
+                  artists={currentArtists}
+                  artistLinks={currentArtistLinks}
+                  loading={artistsLoading}
+                  onNodeClick={onArtistNodeClick}
+                  show={
+                    (graph === "artists" || graph === "similarArtists") && !artistsError
+                  }
+                />
           <div className="fixed flex flex-col h-auto right-4 top-4 justify-end gap-3 z-50">
               <ModeToggle />
               <ClusteringPanel 
@@ -277,52 +281,41 @@ function App() {
                 show={graph === 'genres' && !genresLoading && !genresError}
               />
           </div>
-        <GenresForceGraph
-            graphData={currentGenres}
-            onNodeClick={onGenreNodeClick}
-            loading={genresLoading}
-            show={(graph === 'genres') && !genresError}
-            dag={dagMode}
-            clusterMode={genreClusterMode}
-        />
-        <ArtistsForceGraph
-            artists={currentArtists}
-            artistLinks={currentArtistLinks}
-            loading={artistsLoading}
-            onNodeClick={onArtistNodeClick}
-            show={(graph === 'artists' || graph === 'similarArtists') && !artistsError}
-        />
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            className={`
-              fixed left-1/2 transform -translate-x-1/2 z-50
-              flex flex-col gap-4
-              ${isMobile
-                ? "w-full px-4 items-center bottom-4"
-                : "bottom-4 items-end"}
-            `}
-          >
-            <ArtistCard
-              selectedArtist={selectedArtist}
-              setArtistFromName={setArtistFromName}
-              setSelectedArtist={setSelectedArtist}
-              show={showArtistCard}
-              setShowArtistCard={setShowArtistCard}
-              deselectArtist={deselectArtist}
-              similarFilter={similarArtistFilter}
-              artistLoading={false}
-              artistError={false}
-            />
-            <div className={`flex md:hidden justify-center gap-3 ${graph !== 'genres' ? 'w-full' : ''}`}>
-              <ResetButton
-                onClick={() => resetAppState()}
-                show={graph !== 'genres'}
+
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              className={`
+                  fixed left-1/2 transform -translate-x-1/2 z-50
+                  flex flex-col gap-4
+                  ${
+                    isMobile
+                      ? "w-full px-4 items-center bottom-4"
+                      : "bottom-4 items-end"
+                  }
+                `}
+            >
+              <ArtistCard
+                selectedArtist={selectedArtist}
+                setArtistFromName={setArtistFromName}
+                setSelectedArtist={setSelectedArtist}
+                artistLoading={false}
+                artistError={false}
+                show={showArtistCard}
+                setShowArtistCard={setShowArtistCard}
+                deselectArtist={deselectArtist}
+                similarFilter={similarArtistFilter}
               />
-              <motion.div
-                layout
-                // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
-              >
-                <Search
+              <div
+                className={`flex md:hidden justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
+                <ResetButton
+                  onClick={() => resetAppState()}
+                  show={graph !== "genres"}
+                />
+                <motion.div
+                  layout
+                  // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
+                >
+                  <Search
                     onGenreSelect={onGenreNodeClick}
                     onArtistSelect={createSimilarArtistGraph}
                     currentArtists={currentArtists}
@@ -330,18 +323,23 @@ function App() {
                     graphState={graph}
                     selectedGenre={selectedGenre}
                     selectedArtist={selectedArtist}
-                />
-              </motion.div>
-            </div>
-{/*             
+                    open={searchOpen}
+                    setOpen={setSearchOpen}
+                  />
+
+                </motion.div>
+              </div>
+                {/*
         <NodeLimiter
         totalNodes={graph === 'genres' ? genres.length : currentArtists.length}
         nodeType={graph === 'genres' ? 'genres' : 'artists'}
         /> */}
-          </motion.div>
-        </AnimatePresence>
-    </div>
-  )
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </AppSidebar>
+    </SidebarProvider>
+  );
 }
 
 export default App
