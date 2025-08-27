@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronsUpDown, Check } from "lucide-react";
 import { Genre, GenreClusterMode, GraphType } from "@/types";
 import { isTopLevelGenre } from "@/lib/utils";
 import { Collapsible, 
@@ -83,7 +83,7 @@ export default function GenresFilter({
       trigger={
         
           <Button size='lg' variant='outline'>{`Genres (${totalSelected})`}
-            <ChevronDown />
+            <ChevronsUpDown />
           </Button>
       }
       className="p-0 overflow-hidden"
@@ -97,7 +97,7 @@ export default function GenresFilter({
         />
         <CommandList>
           <CommandEmpty>No genres found.</CommandEmpty>
-          <CommandGroup heading="Genres">
+          <CommandGroup>
             {filtered.map((genre) => {
               const index = topLevelGenres.findIndex((g) => g.id === genre.id);
               const isSelected = index >= 0 ? checked[index] : false;
@@ -107,24 +107,26 @@ export default function GenresFilter({
                     >
                   <div className="flex w-full items-center justify-between">
                     <CommandItem
-                    className="flex items-center gap-2"
+                    key={genre.id}
+                    className="flex w-full items-center gap-2"
                     onSelect={() => toggleGenre(genre)}
                     >
                       <Check className={isSelected ? "opacity-100" : "opacity-0"} />
                       <span>{genre.name}</span>
                     </CommandItem>
-                    <CollapsibleTrigger className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 hover:bg-accent">
-                      <ChevronDown className="size-4" />
+                    <CollapsibleTrigger >
+                      <ChevronsUpDown className="size-4" />
                     </CollapsibleTrigger>
                   </div>
                   <CollapsibleContent>
-                    <div className="pl-8">
+                    <div className="pl-9">
                       {getChildGenres(genre).map((child) => (
                         <CommandItem
                           key={child.id}
                           onSelect={() => onParentClick(child)}
                           className="flex items-center gap-2"
                         >
+                          <Check className={isSelected ? "opacity-100" : "opacity-0"} />
                           <span>{child.name}</span>
                         </CommandItem>
                       ))}
