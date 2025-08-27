@@ -114,8 +114,13 @@ export default function GenresFilter({
                       <Check className={isSelected ? "opacity-100" : "opacity-0"} />
                       <span>{genre.name}</span>
                     </CommandItem>
-                    <CollapsibleTrigger >
-                      <ChevronsUpDown className="size-4" />
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                      >
+                        <ChevronsUpDown />
+                      </Button>
                     </CollapsibleTrigger>
                   </div>
                   <CollapsibleContent>
