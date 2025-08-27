@@ -234,12 +234,12 @@ function App() {
                 { graph === 'artists' &&
                 <div className='flex gap-3'>
                    <GenresFilter 
-                genres={genres}
-                onParentClick={onParentGenreClick}
-                genreClusterMode={genreClusterMode}
-                onParentDeselect={onParentGenreDeselect}
-                onParentSelect={onParentGenreReselect}
-                graphType={graph}
+                    genres={genres}
+                    onParentClick={onParentGenreClick}
+                    genreClusterMode={genreClusterMode}
+                    onParentDeselect={onParentGenreDeselect}
+                    onParentSelect={onParentGenreReselect}
+                    graphType={graph}
               />
 
                   <Button size='lg' variant='outline'>Mood & Activity

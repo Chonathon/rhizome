@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { Genre, GenreClusterMode, GraphType } from "@/types";
 import {clusterColors, isTopLevelGenre} from "@/lib/utils";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
@@ -73,43 +73,42 @@ export default function GenresFilter({
         <div className="flex flex-col gap-0.5 py-2 pl-4 pr-2">
           {/* Checkbox Items */}
           {genres
-            // .filter((genre) => isTopLevelGenre(genre, genreClusterMode))
+            .filter((genre) => isTopLevelGenre(genre, genreClusterMode))
             .map((genre: Genre, index: number) => (
-              <Label
-                key={genre.id}
-                htmlFor={genre.id}
-                className="text-md text-foreground flex items-center gap-2 py-2 cursor-pointer"
-              >
-                <Checkbox
-                    checked={checked[index]}
-                    id={genre.id}
-                    onCheckedChange={() => onCheckboxChange(genre, index)}
-                />
-
-                {/* colored dot */}
-
-                <span
-                    className="w-full"
-                    //onClick={() => onGenreClick(genre, index)}
-                >
-                  {genre.name}
-                </span>
-                <Button
-                  variant="ghost"
-                  className="p-2"
-                  // TODO: Add click handler to change cluster/genre color
-                >
-                  <span
-                    className="
-                      p-2 w-4 h-4 shrink-0
-                      rounded-full inline-block"
-                    style={{
-                      backgroundColor:
-                        clusterColors[index % clusterColors.length],
-                    }}
-                  />
-                </Button>
-              </Label>
+              <Collapsible>
+                
+                  <Label
+                    key={genre.id}
+                    htmlFor={genre.id}
+                    className="text-foreground flex items-center gap-2 py-2 cursor-pointer"
+                  >
+                    <Checkbox
+                        checked={checked[index]}
+                        id={genre.id}
+                        onCheckedChange={() => onCheckboxChange(genre, index)}
+                    />
+                    {/* colored dot */}
+                    <span
+                        className="w-full"
+                        onClick={() => onGenreClick(genre, index)}
+                    >
+                      {genre.name}
+                    </span>
+                    <CollapsibleTrigger>
+                      <Button
+                        variant="ghost"
+                        className="p-2"
+                        // TODO: Add click handler to change cluster/genre color
+                      >
+                        <ChevronsUpDown />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </Label>
+                {/* </CollapsibleContent> */}
+                      <CollapsibleContent>
+                      <p>Children</p>
+                      </CollapsibleContent>
+              </Collapsible>
             ))}
         </div>
         {/* overflow gradient */}
