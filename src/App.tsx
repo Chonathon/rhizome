@@ -26,11 +26,12 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
-import GenrePanel from './components/GenrePanel'
+// import GenrePanel from './components/GenrePanel'r'
 import NodeLimiter from './components/NodeLimiter'
 import useSimilarArtists from "@/hooks/useSimilarArtists";
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
+import GenresFilter from './components/GenresFilter';
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -232,9 +233,15 @@ function App() {
                 </Tabs>
                 { graph === 'artists' &&
                 <div className='flex gap-3'>
-                  <Button size='lg' variant='outline'>Genre
-                    <ChevronDown />
-                  </Button>
+                   <GenresFilter 
+                genres={genres}
+                onParentClick={onParentGenreClick}
+                genreClusterMode={genreClusterMode}
+                onParentDeselect={onParentGenreDeselect}
+                onParentSelect={onParentGenreReselect}
+                graphType={graph}
+              />
+
                   <Button size='lg' variant='outline'>Mood & Activity
                     <ChevronDown />
                   </Button>
@@ -272,14 +279,14 @@ function App() {
                 genreArtistCountThreshold={genreSizeThreshold}
                 setGenreArtistCountThreshold={setGenreSizeThreshold}
               />
-              <GenrePanel
+              {/* <GenrePanel
                 genres={genres}
                 onParentClick={onParentGenreClick}
                 genreClusterMode={genreClusterMode}
                 onParentDeselect={onParentGenreDeselect}
                 onParentSelect={onParentGenreReselect}
                 show={graph === 'genres' && !genresLoading && !genresError}
-              />
+              /> */}
           </div>
 
           <AnimatePresence mode="popLayout">
