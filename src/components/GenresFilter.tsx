@@ -39,12 +39,6 @@ export default function GenresFilter({
   // Local state for mock child genres (since they are not part of `genres`)
   const [childChecked, setChildChecked] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    if (genres){
-      setChecked(new Array(genres.length).fill(true));
-    }
-  }, [genres, genreClusterMode]);
-
   const onCheckboxChange = (genre: Genre, index: number) => {
     if (checked[index]) {
       onParentDeselect(genre);
@@ -54,10 +48,11 @@ export default function GenresFilter({
     setChecked(checked.map((c, i) => i === index ? !c : c));
   }
 
-  const onGenreClick = (genre: Genre, index: number) => {
-    onParentClick(genre);
-    setChecked(checked.map((c, i) => i === index));
-  }
+  // const onGenreClick = (genre: Genre, index: number) => {
+  //   onParentClick(genre);
+  //   setChecked(checked.map((c, i) => i === index));
+  // }
+
 
 // Temporary: generate fake child genres for any parent so UI always shows nested checkboxes
 const getChildGenres = (parent: Genre) => {
@@ -65,6 +60,20 @@ const getChildGenres = (parent: Genre) => {
     { id: `${parent.id}-child-a`, name: `death ${parent.name}` } as Genre,
     { id: `${parent.id}-child-b`, name: `post ${parent.name}` } as Genre,
   ];
+};
+
+// Helpers to compute parent ↔ child checkbox state
+const getChildIds = (parent: Genre) => getChildGenres(parent).map((c) => `child-${c.id}`);
+
+const computeParentCheckedState = (parent: Genre): boolean | "indeterminate" => {
+  const ids = getChildIds(parent);
+  if (!ids.length) return false;
+  const states = ids.map((id) => !!childChecked[id]);
+  const all = states.every(Boolean);
+  const none = states.every((s) => !s);
+  if (all) return true;
+  if (none) return false;
+  return "indeterminate";
 };
 
   return graphType !== "artists" ? null : (
@@ -93,9 +102,27 @@ const getChildGenres = (parent: Genre) => {
                     className="w-full flex items-center py-1 cursor-pointer gap-2"
                   >
                     <Checkbox
-                      checked={checked[index]}
+                      checked={computeParentCheckedState(genre)}
                       id={genre.id}
-                      onCheckedChange={() => onCheckboxChange(genre, index)}
+                      onCheckedChange={(next) => {
+                        const ids = getChildIds(genre);
+                        // Update all children to the parent's next state (true/false)
+                        setChildChecked((prev) => {
+                          const draft = { ...prev };
+                          ids.forEach((id) => {
+                            draft[id] = !!next;
+                          });
+                          return draft;
+                        });
+                        // Maintain legacy parent array for upstream callbacks
+                        setChecked((prev) => prev.map((c, i) => (i === index ? !!next : c)));
+                        if (next) {
+                          onParentSelect(genre);
+                        } else {
+                          onParentDeselect(genre);
+                        }
+                      }}
+                      aria-checked={computeParentCheckedState(genre) === "indeterminate" ? "mixed" : undefined}
                     />
                     {genre.name}
                   </Label>
@@ -130,9 +157,17 @@ const getChildGenres = (parent: Genre) => {
                           <Checkbox
                             id={childId}
                             checked={!!childChecked[childId]}
-                            onCheckedChange={() =>
-                              setChildChecked((prev) => ({ ...prev, [childId]: !prev[childId] }))
-                            }
+                            onCheckedChange={() => {
+                              setChildChecked((prev) => {
+                                const next = !prev[childId];
+                                const updated = { ...prev, [childId]: next };
+                                return updated;
+                              });
+                              // After toggling a child, update parent boolean in `checked[]` to true if all children now selected, false otherwise
+                              const siblingIds = getChildIds(genre);
+                              const willBeAllSelected = siblingIds.every((id) => id === childId ? !childChecked[childId] : !!childChecked[id]);
+                              setChecked((prev) => prev.map((c, i) => (i === index ? willBeAllSelected : c)));
+                            }}
                           />
                           {child.name}
                         </Label>
@@ -143,8 +178,9 @@ const getChildGenres = (parent: Genre) => {
               </Collapsible>
             ))}
         </div>
-        {/* overflow gradient */}
       </div>
+        {/* overflow gradient */}
+        {/* TODO: make overflow gradient a reusable component */}
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white/80 to-transparent dark:from-black/27" />
     </ResponsivePanel>
   );
