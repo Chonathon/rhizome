@@ -1,11 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { ChevronDown, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
 import { Genre, GenreClusterMode, GraphType } from "@/types";
-import {clusterColors, isTopLevelGenre} from "@/lib/utils";
+import { isTopLevelGenre } from "@/lib/utils";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
-import {useEffect, useState} from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Command,
   CommandEmpty,
@@ -13,13 +11,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import type { CheckedState } from "@radix-ui/react-checkbox";
+} from "@/components/ui/command";
 
 export default function GenresFilter({
   genres = [],
@@ -36,60 +28,42 @@ export default function GenresFilter({
   onParentSelect: (genre: Genre) => void;
   graphType: GraphType;
 }) {
-  const [checked, setChecked] = useState<boolean[]>([]);
-  // Local state for mock child genres
-  const [childChecked, setChildChecked] = useState<Record<string, boolean>>({});
+  const topLevelGenres = useMemo(
+    () => genres.filter((g) => isTopLevelGenre(g, genreClusterMode)),
+    [genres, genreClusterMode]
+  );
 
-  // Keep the parent `checked` array length in sync with top-level genre count
+  const [checked, setChecked] = useState<boolean[]>([]);
+  const [query, setQuery] = useState<string>("");
+
+  // Keep the `checked` array length in sync with top-level genre count
   useEffect(() => {
-    const count = genres.filter((g) => isTopLevelGenre(g, genreClusterMode)).length;
+    const count = topLevelGenres.length;
     setChecked((prev) => {
       if (prev.length === count) return prev;
       return Array(count).fill(false);
     });
-  }, [genres, genreClusterMode]);
+  }, [topLevelGenres]);
 
-  const onCheckboxChange = (genre: Genre, index: number) => {
-    if (checked[index]) {
-      onParentDeselect(genre);
-    } else {
+  const filtered = useMemo(() => {
+    if (!query) return topLevelGenres;
+    const q = query.toLowerCase();
+    return topLevelGenres.filter((g) => g.name.toLowerCase().includes(q));
+  }, [query, topLevelGenres]);
+
+  const toggleGenre = (genre: Genre) => {
+    const index = topLevelGenres.findIndex((g) => g.id === genre.id);
+    if (index < 0) return;
+    const nextSelected = !checked[index];
+    setChecked((prev) => prev.map((c, i) => (i === index ? !c : c)));
+    if (nextSelected) {
       onParentSelect(genre);
+    } else {
+      onParentDeselect(genre);
     }
-    setChecked(checked.map((c, i) => i === index ? !c : c));
-  }
+  };
 
-  // const onGenreClick = (genre: Genre, index: number) => {
-  //   onParentClick(genre);
-  //   setChecked(checked.map((c, i) => i === index));
-  // }
-
-
-// Temporary: generate fake child genres for any parent so UI always shows nested checkboxes
-const getChildGenres = (parent: Genre) => {
-  return [
-    { id: `${parent.id}-child-a`, name: `death ${parent.name}` } as Genre,
-    { id: `${parent.id}-child-b`, name: `post ${parent.name}` } as Genre,
-    { id: `${parent.id}-child-c`, name: `industrial ${parent.name}` } as Genre,
-    { id: `${parent.id}-child-d`, name: `black ${parent.name}` } as Genre,
-  ];
-};
-
-// Helpers to compute parent-child checkbox state
-const getChildIds = (parent: Genre) => getChildGenres(parent).map((c) => `child-${c.id}`);
-
-const computeParentCheckedState = (parent: Genre): CheckedState => {
-  const ids = getChildIds(parent);
-  if (!ids.length) return false;
-  const states = ids.map((id) => !!childChecked[id]);
-  const all = states.every(Boolean);
-  const none = states.every((s) => !s);
-  if (all) return true;
-  if (none) return false;
-  return "indeterminate";
-};
-const parentSelected = checked.filter(Boolean).length;
-const childSelected = Object.values(childChecked).filter(Boolean).length;
-const totalSelected = parentSelected + childSelected;
+  const totalSelected = checked.filter(Boolean).length;
 
   return graphType !== "artists" ? null : (
     <ResponsivePanel
@@ -99,114 +73,35 @@ const totalSelected = parentSelected + childSelected;
             <ChevronDown />
           </Button>
       }
-      className="p-2 overflow-hidden"
+      className="p-0 overflow-hidden"
       side="bottom"
     >
-      {/* scrolling container */}
-      <div className="overflow-y-auto max-h-120 rounded-2xl border border-accent shadow-sm bg-accent dark:bg-background">
-        <div className="flex flex-col gap-0.5 py-2 pl-4 pr-2">
-          {/* Checkbox Items */}
-          {genres
-            .filter((genre) => isTopLevelGenre(genre, genreClusterMode))
-            .map((genre: Genre, index: number) => (
-              <Collapsible key={genre.id} className="w-full flex flex-col">
-                {/* Row: parent checkbox + toggle */}
-                <div className="flex w-full items-center">
-                  <Label
-                    htmlFor={genre.id}
-                    className="w-full flex items-center py-1 cursor-pointer gap-2"
-                  >
-                    <Checkbox
-                      checked={computeParentCheckedState(genre)}
-                      id={genre.id}
-                      onCheckedChange={(next: CheckedState) => {
-                        // Coerce the tri-state into a boolean we can apply to all children
-                        const isChecked = next === true;
-                        const ids = getChildIds(genre);
-
-                        // Update children to match the parent
-                        setChildChecked((prev) => {
-                          const draft = { ...prev } as Record<string, boolean>;
-                          ids.forEach((id) => {
-                            draft[id] = isChecked;
-                          });
-                          return draft;
-                        });
-
-                        // Maintain legacy parent array for upstream callbacks
-                        setChecked((prev) => prev.map((c, i) => (i === index ? isChecked : c)));
-
-                        if (isChecked) {
-                          onParentSelect(genre);
-                        } else {
-                          onParentDeselect(genre);
-                        }
-                      }}
-                      aria-checked={computeParentCheckedState(genre) === "indeterminate" ? "mixed" : undefined}
-                    />
-                    {genre.name}
-                  </Label>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Toggle subgenres for ${genre.name}`}
-                    >
-                      {/* TODO: Add nested button to deselect all checkboxes.
-                                - Show button on hover
-                                - Display count in button if more than 1 checkbox is selected
-                                - Only show if at least one checkbox is selected
-                      */}
-                      <ChevronsUpDown />
-                    </Button>
-                  </CollapsibleTrigger>
-                </div>
-
-                {/* Nested subgenres */}
-                <CollapsibleContent className="py-2 pl-6 space-y-1">
-                  {(() => {
-                    const children = getChildGenres(genre);
-                    if (!children.length) {
-                      return (
-                        <Label>No subgenres</Label>
-                      );
-                    }
-                    return children.map((child) => {
-                      const childId = `child-${child.id}`;
-                      return (
-                        <Label
-                          key={child.id}
-                          htmlFor={childId}
-                          className="flex items-center py-3 cursor-pointer"
-                        >
-                          <Checkbox
-                            id={childId}
-                            checked={!!childChecked[childId]}
-                            onCheckedChange={() => {
-                              setChildChecked((prev) => {
-                                const next = !prev[childId];
-                                const updated = { ...prev, [childId]: next };
-                                return updated;
-                              });
-                              // After toggling a child, update parent boolean in `checked[]` to true if all children now selected, false otherwise
-                              const siblingIds = getChildIds(genre);
-                              const willBeAllSelected = siblingIds.every((id) => id === childId ? !childChecked[childId] : !!childChecked[id]);
-                              setChecked((prev) => prev.map((c, i) => (i === index ? willBeAllSelected : c)));
-                            }}
-                          />
-                          {child.name}
-                        </Label>
-                      );
-                    });
-                  })()}
-                </CollapsibleContent>
-              </Collapsible>
-            ))}
-        </div>
-      </div>
-        {/* overflow gradient */}
-        {/* TODO: make overflow gradient a reusable component */}
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white/80 to-transparent dark:from-black/27" />
+      <Command>
+        <CommandInput
+          placeholder="Filter genres..."
+          value={query}
+          onValueChange={setQuery}
+        />
+        <CommandList>
+          <CommandEmpty>No genres found.</CommandEmpty>
+          <CommandGroup heading="Genres">
+            {filtered.map((genre) => {
+              const index = topLevelGenres.findIndex((g) => g.id === genre.id);
+              const isSelected = index >= 0 ? checked[index] : false;
+              return (
+                <CommandItem
+                  key={genre.id}
+                  onSelect={() => toggleGenre(genre)}
+                  className="flex items-center gap-2"
+                >
+                  <Check className={isSelected ? "opacity-100" : "opacity-0"} />
+                  <span>{genre.name}</span>
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        </CommandList>
+      </Command>
     </ResponsivePanel>
   );
 }
