@@ -36,6 +36,8 @@ export default function GenresFilter({
   graphType: GraphType;
 }) {
   const [checked, setChecked] = useState<boolean[]>([]);
+  // Local state for mock child genres (since they are not part of `genres`)
+  const [childChecked, setChildChecked] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (genres){
@@ -57,6 +59,14 @@ export default function GenresFilter({
     setChecked(checked.map((c, i) => i === index));
   }
 
+// Temporary: generate fake child genres for any parent so UI always shows nested checkboxes
+const getChildGenres = (parent: Genre) => {
+  return [
+    { id: `${parent.id}-child-a`, name: `death ${parent.name}` } as Genre,
+    { id: `${parent.id}-child-b`, name: `post ${parent.name}` } as Genre,
+  ];
+};
+
   return graphType !== "artists" ? null : (
     <ResponsivePanel
       trigger={
@@ -75,39 +85,61 @@ export default function GenresFilter({
           {genres
             .filter((genre) => isTopLevelGenre(genre, genreClusterMode))
             .map((genre: Genre, index: number) => (
-              <Collapsible>
-                
+              <Collapsible key={genre.id} className="w-full flex flex-col">
+                {/* Row: parent checkbox + toggle */}
+                <div className="flex w-full items-center">
                   <Label
-                    key={genre.id}
                     htmlFor={genre.id}
-                    className="text-foreground flex items-center gap-2 py-2 cursor-pointer"
+                    className="w-full flex items-center py-1 cursor-pointer gap-2"
                   >
                     <Checkbox
-                        checked={checked[index]}
-                        id={genre.id}
-                        onCheckedChange={() => onCheckboxChange(genre, index)}
+                      checked={checked[index]}
+                      id={genre.id}
+                      onCheckedChange={() => onCheckboxChange(genre, index)}
                     />
-                    {/* colored dot */}
-                    <span
-                        className="w-full"
-                        onClick={() => onGenreClick(genre, index)}
-                    >
-                      {genre.name}
-                    </span>
-                    <CollapsibleTrigger>
-                      <Button
-                        variant="ghost"
-                        className="p-2"
-                        // TODO: Add click handler to change cluster/genre color
-                      >
-                        <ChevronsUpDown />
-                      </Button>
-                    </CollapsibleTrigger>
+                    {genre.name}
                   </Label>
-                {/* </CollapsibleContent> */}
-                      <CollapsibleContent>
-                      <p>Children</p>
-                      </CollapsibleContent>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Toggle subgenres for ${genre.name}`}
+                    >
+                      <ChevronsUpDown />
+                    </Button>
+                  </CollapsibleTrigger>
+                </div>
+
+                {/* Nested subgenres */}
+                <CollapsibleContent className="py-2 pl-6 space-y-1">
+                  {(() => {
+                    const children = getChildGenres(genre);
+                    if (!children.length) {
+                      return (
+                        <Label>No subgenres</Label>
+                      );
+                    }
+                    return children.map((child) => {
+                      const childId = `child-${child.id}`;
+                      return (
+                        <Label
+                          key={child.id}
+                          htmlFor={childId}
+                          className="flex items-center py-2 cursor-pointer"
+                        >
+                          <Checkbox
+                            id={childId}
+                            checked={!!childChecked[childId]}
+                            onCheckedChange={() =>
+                              setChildChecked((prev) => ({ ...prev, [childId]: !prev[childId] }))
+                            }
+                          />
+                          {child.name}
+                        </Label>
+                      );
+                    });
+                  })()}
+                </CollapsibleContent>
               </Collapsible>
             ))}
         </div>
