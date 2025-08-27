@@ -37,7 +37,7 @@ export default function GenresFilter({
   graphType: GraphType;
 }) {
   const [checked, setChecked] = useState<boolean[]>([]);
-  // Local state for mock child genres (since they are not part of `genres`)
+  // Local state for mock child genres
   const [childChecked, setChildChecked] = useState<Record<string, boolean>>({});
 
   // Keep the parent `checked` array length in sync with top-level genre count
@@ -69,10 +69,12 @@ const getChildGenres = (parent: Genre) => {
   return [
     { id: `${parent.id}-child-a`, name: `death ${parent.name}` } as Genre,
     { id: `${parent.id}-child-b`, name: `post ${parent.name}` } as Genre,
+    { id: `${parent.id}-child-c`, name: `industrial ${parent.name}` } as Genre,
+    { id: `${parent.id}-child-d`, name: `black ${parent.name}` } as Genre,
   ];
 };
 
-// Helpers to compute parent ↔ child checkbox state
+// Helpers to compute parent-child checkbox state
 const getChildIds = (parent: Genre) => getChildGenres(parent).map((c) => `child-${c.id}`);
 
 const computeParentCheckedState = (parent: Genre): CheckedState => {
@@ -85,12 +87,15 @@ const computeParentCheckedState = (parent: Genre): CheckedState => {
   if (none) return false;
   return "indeterminate";
 };
+const parentSelected = checked.filter(Boolean).length;
+const childSelected = Object.values(childChecked).filter(Boolean).length;
+const totalSelected = parentSelected + childSelected;
 
   return graphType !== "artists" ? null : (
     <ResponsivePanel
       trigger={
         
-          <Button size='lg' variant='outline'>Genre
+          <Button size='lg' variant='outline'>{`Genres (${totalSelected})`}
             <ChevronDown />
           </Button>
       }
@@ -167,7 +172,7 @@ const computeParentCheckedState = (parent: Genre): CheckedState => {
                         <Label
                           key={child.id}
                           htmlFor={childId}
-                          className="flex items-center py-2 cursor-pointer"
+                          className="flex items-center py-3 cursor-pointer"
                         >
                           <Checkbox
                             id={childId}
