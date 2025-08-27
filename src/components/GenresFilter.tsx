@@ -19,6 +19,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import type { CheckedState } from "@radix-ui/react-checkbox";
 
 export default function GenresFilter({
   genres = [],
@@ -38,6 +39,15 @@ export default function GenresFilter({
   const [checked, setChecked] = useState<boolean[]>([]);
   // Local state for mock child genres (since they are not part of `genres`)
   const [childChecked, setChildChecked] = useState<Record<string, boolean>>({});
+
+  // Keep the parent `checked` array length in sync with top-level genre count
+  useEffect(() => {
+    const count = genres.filter((g) => isTopLevelGenre(g, genreClusterMode)).length;
+    setChecked((prev) => {
+      if (prev.length === count) return prev;
+      return Array(count).fill(false);
+    });
+  }, [genres, genreClusterMode]);
 
   const onCheckboxChange = (genre: Genre, index: number) => {
     if (checked[index]) {
@@ -65,7 +75,7 @@ const getChildGenres = (parent: Genre) => {
 // Helpers to compute parent ↔ child checkbox state
 const getChildIds = (parent: Genre) => getChildGenres(parent).map((c) => `child-${c.id}`);
 
-const computeParentCheckedState = (parent: Genre): boolean | "indeterminate" => {
+const computeParentCheckedState = (parent: Genre): CheckedState => {
   const ids = getChildIds(parent);
   if (!ids.length) return false;
   const states = ids.map((id) => !!childChecked[id]);
@@ -88,7 +98,7 @@ const computeParentCheckedState = (parent: Genre): boolean | "indeterminate" => 
       side="bottom"
     >
       {/* scrolling container */}
-      <div className="overflow-y-auto max-h-120 rounded-2xl border border-accent shadow-sm bg-accent dark:dark:bg-background">
+      <div className="overflow-y-auto max-h-120 rounded-2xl border border-accent shadow-sm bg-accent dark:bg-background">
         <div className="flex flex-col gap-0.5 py-2 pl-4 pr-2">
           {/* Checkbox Items */}
           {genres
@@ -104,19 +114,24 @@ const computeParentCheckedState = (parent: Genre): boolean | "indeterminate" => 
                     <Checkbox
                       checked={computeParentCheckedState(genre)}
                       id={genre.id}
-                      onCheckedChange={(next) => {
+                      onCheckedChange={(next: CheckedState) => {
+                        // Coerce the tri-state into a boolean we can apply to all children
+                        const isChecked = next === true;
                         const ids = getChildIds(genre);
-                        // Update all children to the parent's next state (true/false)
+
+                        // Update children to match the parent
                         setChildChecked((prev) => {
-                          const draft = { ...prev };
+                          const draft = { ...prev } as Record<string, boolean>;
                           ids.forEach((id) => {
-                            draft[id] = !!next;
+                            draft[id] = isChecked;
                           });
                           return draft;
                         });
+
                         // Maintain legacy parent array for upstream callbacks
-                        setChecked((prev) => prev.map((c, i) => (i === index ? !!next : c)));
-                        if (next) {
+                        setChecked((prev) => prev.map((c, i) => (i === index ? isChecked : c)));
+
+                        if (isChecked) {
                           onParentSelect(genre);
                         } else {
                           onParentDeselect(genre);
