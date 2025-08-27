@@ -14,6 +14,11 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 export default function GenresFilter({
   genres = [],
@@ -66,8 +71,9 @@ export default function GenresFilter({
       {/* scrolling container */}
       <div className="overflow-y-auto max-h-120 rounded-2xl border border-accent shadow-sm bg-accent dark:dark:bg-background">
         <div className="flex flex-col gap-0.5 py-2 pl-4 pr-2">
+          {/* Checkbox Items */}
           {genres
-            .filter((genre) => isTopLevelGenre(genre, genreClusterMode))
+            // .filter((genre) => isTopLevelGenre(genre, genreClusterMode))
             .map((genre: Genre, index: number) => (
               <Label
                 key={genre.id}
