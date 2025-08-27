@@ -152,6 +152,11 @@ const totalSelected = parentSelected + childSelected;
                       size="icon"
                       aria-label={`Toggle subgenres for ${genre.name}`}
                     >
+                      {/* TODO: Add nested button to deselect all checkboxes.
+                                - Show button on hover
+                                - Display count in button if more than 1 checkbox is selected
+                                - Only show if at least one checkbox is selected
+                      */}
                       <ChevronsUpDown />
                     </Button>
                   </CollapsibleTrigger>
