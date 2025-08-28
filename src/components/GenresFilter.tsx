@@ -12,6 +12,7 @@ import {
 } from "@radix-ui/react-collapsible";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTriStateSelection } from "@/hooks/useTriStateSelection";
 import {
   Command,
   CommandEmpty,
@@ -50,35 +51,41 @@ export default function GenresFilter({
     return m;
   }, [topLevelGenres]);
 
-  // Track selected children per parent id. Using Set makes toggling O(1).
-  const [selectedChildren, setSelectedChildren] = useState<Record<string, Set<string>>>({});
-  // Track whether a parent is selected (independent of its children).
-  const [parentSelected, setParentSelected] = useState<Record<string, boolean>>({});
-
-  // Keep selection maps in sync when the set of top-level genres changes.
-  // Preserves previous selections for stable keys.
-  useEffect(() => {
-    setSelectedChildren((prev) => {
-      const next: Record<string, Set<string>> = {};
-      for (const g of topLevelGenres) {
-        next[g.id] = prev[g.id] ?? new Set<string>();
-      }
-      return next;
-    });
-    setParentSelected((prev) => {
-      const next: Record<string, boolean> = {};
-      for (const g of topLevelGenres) {
-        next[g.id] = prev[g.id] ?? false;
-      }
-      return next;
-    });
-    // Reset collapsible open state when the top-level set changes.
-    setOpenMap(defaultOpenMap);
-  }, [topLevelGenres]);
-
-  // Search query and collapsible open/closed state.
+  // Search query (declared early so selection logic can reference it)
   const [query, setQuery] = useState("");
+
+  // Placeholder: generate example child subgenres for each parent.
+  const getChildGenres = (parent: Genre) => {
+    return [
+      { id: `${parent.id}-child-a`, name: `death ${parent.name}` } as Genre,
+      { id: `${parent.id}-child-b`, name: `post ${parent.name}` } as Genre,
+      { id: `${parent.id}-child-c`, name: `industrial ${parent.name}` } as Genre,
+      { id: `${parent.id}-child-d`, name: `black ${parent.name}` } as Genre,
+    ];
+  };
+
+  // Tri-state selection logic is handled by a reusable hook.
+  const {
+    parentSelected,
+    selectedChildren,
+    getParentState,
+    toggleParent,
+    toggleChild,
+  } = useTriStateSelection(topLevelGenres, (p) => getChildGenres(p), {
+    // While searching, do not bulk-toggle children when a parent is toggled.
+    bulkToggleChildren: !query.trim(),
+    onParentSelect: onParentSelect,
+    onParentDeselect: onParentDeselect,
+    onChildClick: (child) => onParentClick(child as Genre),
+  });
+
+  // Collapsible open/closed state.
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(defaultOpenMap);
+
+  // Reset collapsible open state when the top-level set changes.
+  useEffect(() => {
+    setOpenMap(defaultOpenMap);
+  }, [defaultOpenMap]);
 
   // When searching, auto-open parents that match or have matching children.
   // Clearing the query resets to default closed state.
@@ -107,77 +114,12 @@ export default function GenresFilter({
     });
   }, [query, topLevelGenres]);
 
-  // Placeholder: generate example child subgenres for each parent.
-  const getChildGenres = (parent: Genre) => {
-    return [
-      { id: `${parent.id}-child-a`, name: `death ${parent.name}` } as Genre,
-      { id: `${parent.id}-child-b`, name: `post ${parent.name}` } as Genre,
-      { id: `${parent.id}-child-c`, name: `industrial ${parent.name}` } as Genre,
-      { id: `${parent.id}-child-d`, name: `black ${parent.name}` } as Genre,
-    ];
-  };
-
-  type TriState = "unchecked" | "indeterminate" | "checked";
+  
 
   // Determine the parent's tri-state based on its own selection and child selections.
-  const getParentState = (parent: Genre): TriState => {
-    const children = getChildGenres(parent);
-    const sel = selectedChildren[parent.id] ?? new Set<string>();
-    const isParent = parentSelected[parent.id] ?? false;
-    if (!isParent) return "unchecked";
-    // Show a full check when either all children are selected or none are selected (parent-only)
-    if (sel.size === children.length || sel.size === 0) return "checked";
-    return "indeterminate"; // parent is selected and some, but not all, children are selected
-  };
-
-  // Toggle a parent: mark the parent selected and select/deselect all its children.
-  const toggleParent = (parent: Genre) => {
-    const children = getChildGenres(parent);
-    const currentlySelected = parentSelected[parent.id] ?? false;
-    const nextSelected = !currentlySelected;
-
-    setParentSelected((prev) => ({ ...prev, [parent.id]: nextSelected }));
-
-    // When a search query is active, toggling a parent should not bulk
-    // select/deselect its children. Only toggle the parent selection.
-    if (!query.trim()) {
-      setSelectedChildren((prev) => {
-        const copy = { ...prev };
-        copy[parent.id] = new Set<string>(nextSelected ? children.map((c) => c.id) : []);
-        return copy;
-      });
-    }
-
-    if (nextSelected) onParentSelect(parent);
-    else onParentDeselect(parent);
-  };
-
   // Read-only helper to check if a given child is selected under a parent.
   const isChildSelected = (parent: Genre, childId: string) => {
     return selectedChildren[parent.id]?.has(childId) ?? false;
-  };
-
-  // Toggle a child within a parent. If any child is selected, mark the parent as selected.
-  // Also forwards the click event via onParentClick to external handlers.
-  const toggleChild = (parent: Genre, child: Genre) => {
-    let newSize = 0;
-    setSelectedChildren((prev) => {
-      const copy = { ...prev };
-      const set = new Set<string>(copy[parent.id] ?? []);
-      if (set.has(child.id)) set.delete(child.id);
-      else set.add(child.id);
-      copy[parent.id] = set;
-      newSize = set.size;
-      return copy;
-    });
-
-    // If any child is selected, ensure the parent is marked selected.
-    if (newSize > 0) {
-      setParentSelected((prev) => ({ ...prev, [parent.id]: true }));
-    }
-
-    // Keep existing click behavior for child items
-    onParentClick(child);
   };
 
   // Show count of selected parents next to the trigger button.
