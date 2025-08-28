@@ -41,6 +41,7 @@ export default function GenresFilter({
 
   // Track selected children per parent id. Use Set for O(1) toggles.
   const [selectedChildren, setSelectedChildren] = useState<Record<string, Set<string>>>({});
+  const [parentSelected, setParentSelected] = useState<Record<string, boolean>>({});
 
   // Keep selection keys in sync with the visible top-level list, preserving prior picks
   useEffect(() => {
@@ -48,6 +49,13 @@ export default function GenresFilter({
       const next: Record<string, Set<string>> = {};
       for (const g of topLevelGenres) {
         next[g.id] = prev[g.id] ?? new Set<string>();
+      }
+      return next;
+    });
+    setParentSelected((prev) => {
+      const next: Record<string, boolean> = {};
+      for (const g of topLevelGenres) {
+        next[g.id] = prev[g.id] ?? false;
       }
       return next;
     });
@@ -68,22 +76,27 @@ export default function GenresFilter({
   const getParentState = (parent: Genre): TriState => {
     const children = getChildGenres(parent);
     const sel = selectedChildren[parent.id] ?? new Set<string>();
-    if (sel.size === 0) return "unchecked";
-    if (sel.size === children.length) return "checked";
-    return "indeterminate";
+    const isParent = parentSelected[parent.id] ?? false;
+    if (!isParent) return "unchecked";
+    // Show a full check when either all children are selected or none are selected (parent-only)
+    if (sel.size === children.length || sel.size === 0) return "checked";
+    return "indeterminate"; // parent is selected and some, but not all, children are selected
   };
 
   const toggleParent = (parent: Genre) => {
     const children = getChildGenres(parent);
-    const nextState = getParentState(parent) === "checked" ? "unchecked" : "checked";
+    const currentlySelected = parentSelected[parent.id] ?? false;
+    const nextSelected = !currentlySelected;
+
+    setParentSelected((prev) => ({ ...prev, [parent.id]: nextSelected }));
+
     setSelectedChildren((prev) => {
       const copy = { ...prev };
-      copy[parent.id] = new Set<string>(
-        nextState === "checked" ? children.map((c) => c.id) : []
-      );
+      copy[parent.id] = new Set<string>(nextSelected ? children.map((c) => c.id) : []);
       return copy;
     });
-    if (nextState === "checked") onParentSelect(parent);
+
+    if (nextSelected) onParentSelect(parent);
     else onParentDeselect(parent);
   };
 
@@ -92,19 +105,27 @@ export default function GenresFilter({
   };
 
   const toggleChild = (parent: Genre, child: Genre) => {
+    let newSize = 0;
     setSelectedChildren((prev) => {
       const copy = { ...prev };
       const set = new Set<string>(copy[parent.id] ?? []);
       if (set.has(child.id)) set.delete(child.id);
       else set.add(child.id);
       copy[parent.id] = set;
+      newSize = set.size;
       return copy;
     });
+
+    // If any child is selected, ensure the parent is marked selected.
+    if (newSize > 0) {
+      setParentSelected((prev) => ({ ...prev, [parent.id]: true }));
+    }
+
     // Keep existing click behavior for child items
     onParentClick(child);
   };
 
-  const totalSelected = topLevelGenres.reduce((acc, g) => acc + (getParentState(g) !== "unchecked" ? 1 : 0), 0);
+  const totalSelected = topLevelGenres.reduce((acc, g) => acc + ((parentSelected[g.id] ?? false ? 1 : 0)), 0);
 
   if (graphType !== "artists") return null;
 
