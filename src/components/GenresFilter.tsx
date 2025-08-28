@@ -141,7 +141,7 @@ export default function GenresFilter({
                     <div className="flex items-center gap-2">
                       {state === "checked" && <Check className="opacity-100" />}
                       {state === "indeterminate" && <Minus className="opacity-100" />}
-                      {state === "unchecked" && <Check className="opacity-0" />}
+                      {state === "unchecked" && <Check className="hidden" />}
                       <span>{genre.name}</span>
                     </div>
                     <CollapsibleTrigger asChild>
@@ -168,7 +168,7 @@ export default function GenresFilter({
                             onSelect={() => toggleChild(genre, child)}
                             className="flex items-center gap-2"
                           >
-                            <Check className={childChecked ? "opacity-100" : "opacity-0"} />
+                            <Check className={childChecked ? "" : "hidden"} />
                             <span>{child.name}</span>
                           </CommandItem>
                         );
