@@ -170,9 +170,9 @@ export default function GenresFilter({
           {hasAnySelection ? (
             <Button
               size="icon"
-              variant="ghost"
+              variant="secondary"
               aria-label="Clear all filters"
-              className="-m-3"
+              className="-m-1.5 w-7 h-7"
               onMouseDown={(e) => e.preventDefault()}
               onClick={(e) => { e.stopPropagation(); clearAll(); }}
             >
