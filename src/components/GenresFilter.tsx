@@ -118,11 +118,6 @@ export default function GenresFilter({
       className="p-0 overflow-hidden"
       side="bottom"
     >
-      {/**
-       * Lean on cmdk for query handling and filtering:
-       * - Do not keep external `query` state
-       * - Render all items with a meaningful `value` for matching
-       */}
       <Command>
         <CommandInput placeholder="Filter genres..." />
         <CommandList>
