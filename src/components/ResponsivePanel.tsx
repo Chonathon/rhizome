@@ -9,14 +9,15 @@ interface ResponsivePanelProps {
   children: React.ReactNode
   className?: string
   side: "left" | "right" | "top" | "bottom"
+  onOpenChange?: (open: boolean) => void
 }
 
-export function ResponsivePanel({ trigger, children, className, side }: ResponsivePanelProps) {
+export function ResponsivePanel({ trigger, children, className, side, onOpenChange }: ResponsivePanelProps) {
   const isDesktop = useMediaQuery("(min-width: 640px)")
 
   if (isDesktop) {
     return (
-      <Popover>
+      <Popover onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>{trigger}</PopoverTrigger>
         <PopoverContent side={side} align="start" className={className}>
           {children}
@@ -26,7 +27,7 @@ export function ResponsivePanel({ trigger, children, className, side }: Responsi
   }
 
   return (
-    <Drawer>
+    <Drawer onOpenChange={onOpenChange}>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       <DrawerContent className={cn("")}>
         {children}

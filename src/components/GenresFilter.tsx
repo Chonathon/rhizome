@@ -8,7 +8,7 @@ import {
   CollapsibleTrigger,
 } from "@radix-ui/react-collapsible";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Command,
   CommandEmpty,
@@ -70,6 +70,16 @@ export default function GenresFilter({
 
   const [query, setQuery] = useState("");
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(defaultOpenMap);
+
+  // Build an open map that opens parents with any selected children
+  const computeOpenMapFromSelection = useCallback(() => {
+    const next: Record<string, boolean> = {};
+    for (const g of topLevelGenres) {
+      const sel = selectedChildren[g.id];
+      next[g.id] = !!(sel && sel.size > 0);
+    }
+    return next;
+  }, [topLevelGenres, selectedChildren]);
 
   useEffect(() => {
     const q = query.trim().toLowerCase();
@@ -160,7 +170,10 @@ export default function GenresFilter({
 
   return (
     <ResponsivePanel
-      onOpenChange={() => setOpenMap(defaultOpenMap)}
+      onOpenChange={(open) => {
+        // When the panel opens with no active search, open parents with selected children.
+        if (open && !query.trim()) setOpenMap(computeOpenMapFromSelection());
+      }}
       trigger={
         <Button size="lg" variant="outline">{`Genres (${totalSelected})`}
           <ChevronDown />
@@ -205,7 +218,7 @@ export default function GenresFilter({
                     </CollapsibleTrigger>
                   </CommandItem>
                   <CollapsibleContent>
-                    <div className={query ? "pl-0" : "pl-8"}>
+                    <div className={query ? "" : "pl-8"}>
                       {getChildGenres(genre).map((child) => {
                         const childChecked = isChildSelected(genre, child.id);
                         return (
@@ -213,7 +226,7 @@ export default function GenresFilter({
                             key={child.id}
                             value={child.name}
                             onSelect={() => toggleChild(genre, child)}
-                            className={`flex items-center gap-2 ${query ? "pl-0" : ""}`}
+                            className={`flex items-center gap-2 `}
                           >
                             <Check className={childChecked ? "" : "hidden"} />
                             <span>{child.name}</span>
