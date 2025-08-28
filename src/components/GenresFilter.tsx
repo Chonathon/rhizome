@@ -157,10 +157,10 @@ export default function GenresFilter({
       if (open) setOpenMap(defaultOpenMap);
     }}
       trigger={
-        <Button size="lg" variant="outline">
+        <Button size="lg" variant="outline" className={`${hasAnySelection ? "px-4" : ""}`}>
           {`Genres${hasAnySelection ? ` (${totalSelected})` : ""}`}
           {hasAnySelection ? (
-            <Button 
+            <Button
               size="icon"
               variant="ghost"
               aria-label="Clear all filters"
