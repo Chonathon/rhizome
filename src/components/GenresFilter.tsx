@@ -144,8 +144,14 @@ export default function GenresFilter({
     return selectedChildren[parent.id]?.has(childId) ?? false;
   };
 
-  // Show count of selected parents next to the trigger button.
-  const totalSelected = topLevelGenres.reduce((acc, g) => acc + ((parentSelected[g.id] ?? false ? 1 : 0)), 0);
+  // Show count of selected parents + selected children next to the trigger button.
+  const totalSelected = useMemo(() => {
+    return topLevelGenres.reduce((acc, g) => {
+      const parentCount = parentSelected[g.id] ? 1 : 0;
+      const childCount = selectedChildren[g.id]?.size ?? 0;
+      return acc + parentCount + childCount;
+    }, 0);
+  }, [topLevelGenres, parentSelected, selectedChildren]);
 
   if (graphType !== "artists") return null;
 
@@ -158,17 +164,20 @@ export default function GenresFilter({
     }}
       trigger={
         <Button size="lg" variant="outline" className={`${hasAnySelection ? "px-4" : ""}`}>
-          {`Genres${hasAnySelection ? ` (${totalSelected})` : ""}`}
+          {`Genres
+          
+          `}
           {hasAnySelection ? (
             <Button
               size="icon"
               variant="ghost"
               aria-label="Clear all filters"
-              className="-m-4"
+              className="-m-3"
               onMouseDown={(e) => e.preventDefault()}
               onClick={(e) => { e.stopPropagation(); clearAll(); }}
             >
-              <X />
+              {/* */}
+              {totalSelected > 1 ? `${totalSelected}` : <X /> }
               
             </Button>
           ) : (
