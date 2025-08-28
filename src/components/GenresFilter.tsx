@@ -11,7 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@radix-ui/react-collapsible";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Command,
   CommandEmpty,
@@ -82,11 +82,16 @@ export default function GenresFilter({
 
   // When searching, auto-open parents that match or have matching children.
   // Clearing the query resets to default closed state.
+  const listRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const q = query.trim().toLowerCase();
     if (q === "") {
       // Reset to default open state when the search is cleared
       setOpenMap(defaultOpenMap);
+      // Also reset scroll to top so users see the first items again
+      // after clearing their input.
+      listRef.current?.scrollTo({ top: 0 });
       return;
     }
     // Open only parents that have a matching parent name or at least one matching child
@@ -133,11 +138,15 @@ export default function GenresFilter({
 
     setParentSelected((prev) => ({ ...prev, [parent.id]: nextSelected }));
 
-    setSelectedChildren((prev) => {
-      const copy = { ...prev };
-      copy[parent.id] = new Set<string>(nextSelected ? children.map((c) => c.id) : []);
-      return copy;
-    });
+    // When a search query is active, toggling a parent should not bulk
+    // select/deselect its children. Only toggle the parent selection.
+    if (!query.trim()) {
+      setSelectedChildren((prev) => {
+        const copy = { ...prev };
+        copy[parent.id] = new Set<string>(nextSelected ? children.map((c) => c.id) : []);
+        return copy;
+      });
+    }
 
     if (nextSelected) onParentSelect(parent);
     else onParentDeselect(parent);
@@ -177,23 +186,23 @@ export default function GenresFilter({
   if (graphType !== "artists") return null;
 
   return (
+    // ResponsivePanel + Command = ComboBox
     <ResponsivePanel
-      onOpenChange={(open) => {
-        // Default collapsibles to closed when the panel opens.
-        if (open) setOpenMap(defaultOpenMap);
-      }}
-      trigger={
-        <Button size="lg" variant="outline">{`Genres (${totalSelected})`}
+    onOpenChange={(open) => {
+      // Default collapsibles to closed when the panel opens.
+      if (open) setOpenMap(defaultOpenMap);
+    }}
+    trigger={
+      <Button size="lg" variant="outline">{`Genres (${totalSelected})`}
           <ChevronDown />
         </Button>
       }
       className="p-0 overflow-hidden"
       side="bottom"
-    >
-      {/* Command palette-like UI: input, grouped items, and filtering */}
+      >
       <Command>
         <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
-        <CommandList>
+        <CommandList ref={listRef} key={query.trim() ? "searching" : "empty"}>
           <CommandEmpty>No genres found.</CommandEmpty>
           <CommandGroup>
             {topLevelGenres.map((genre) => {
@@ -214,7 +223,7 @@ export default function GenresFilter({
                       {state === "unchecked" && <Check className="hidden" />}
                       <span>{genre.name}</span>
                     </div>
-                    <CollapsibleTrigger asChild>
+                    {query ? "" : <CollapsibleTrigger asChild>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -225,7 +234,7 @@ export default function GenresFilter({
                       >
                         <ChevronsUpDown />
                       </Button>
-                    </CollapsibleTrigger>
+                    </CollapsibleTrigger>}
                   </CommandItem>
                   <CollapsibleContent>
                     <div className={query ? "" : "pl-8"}>
