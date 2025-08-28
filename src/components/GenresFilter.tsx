@@ -2,7 +2,7 @@
 // with tri-state selection (unchecked / indeterminate / checked). Parents can
 // be toggled as a whole, or individual child subgenres can be toggled.
 import { Button } from "@/components/ui/button";
-import { ChevronsUpDown, Check, ChevronDown, Minus } from "lucide-react";
+import { ChevronsUpDown, Check, ChevronDown, Minus, X } from "lucide-react";
 import { Genre, GenreClusterMode, GraphType } from "@/types";
 import { isTopLevelGenre } from "@/lib/utils";
 import {
@@ -68,6 +68,8 @@ export default function GenresFilter({
   const {
     parentSelected,
     selectedChildren,
+    setParentSelected,
+    setSelectedChildren,
     getParentState,
     toggleParent,
     toggleChild,
@@ -90,6 +92,26 @@ export default function GenresFilter({
   // When searching, auto-open parents that match or have matching children.
   // Clearing the query resets to default closed state.
   const listRef = useRef<HTMLDivElement | null>(null);
+
+  // Computed: Any selection active?
+  const hasAnySelection = topLevelGenres.some((g) => parentSelected[g.id] ?? false);
+
+  // Clear all selections for all parents/children
+  const clearAll = () => {
+    const previouslySelected = topLevelGenres.filter((g) => parentSelected[g.id]);
+    // Notify external deselect handlers for parents that were selected
+    previouslySelected.forEach((g) => onParentDeselect(g));
+    setParentSelected((prev) => {
+      const next: Record<string, boolean> = {};
+      for (const g of topLevelGenres) next[g.id] = false;
+      return next;
+    });
+    setSelectedChildren((prev) => {
+      const next: Record<string, Set<string>> = {};
+      for (const g of topLevelGenres) next[g.id] = new Set<string>();
+      return next;
+    });
+  };
 
   useEffect(() => {
     const q = query.trim().toLowerCase();
@@ -134,9 +156,24 @@ export default function GenresFilter({
       // Default collapsibles to closed when the panel opens.
       if (open) setOpenMap(defaultOpenMap);
     }}
-    trigger={
-      <Button size="lg" variant="outline">{`Genres (${totalSelected})`}
-          <ChevronDown />
+      trigger={
+        <Button size="lg" variant="outline">
+          {`Genres${hasAnySelection ? ` (${totalSelected})` : ""}`}
+          {hasAnySelection ? (
+            <Button 
+              size="icon"
+              variant="ghost"
+              aria-label="Clear all filters"
+              className="-m-4"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => { e.stopPropagation(); clearAll(); }}
+            >
+              <X />
+              
+            </Button>
+          ) : (
+            <ChevronDown />
+          )}
         </Button>
       }
       className="p-0 overflow-hidden"
