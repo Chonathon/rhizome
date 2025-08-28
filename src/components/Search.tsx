@@ -68,10 +68,10 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
       // Wait for next tick after remount and selection
       requestAnimationFrame(() => {
         if (inputRef.current) {
-          const input = inputRef.current;
+          const input = inputRef.current; 
           const length = input.value.length;
           input.setSelectionRange(length, length);
-        }
+        } 
       });
     }
   }, [open, filteredSearchableItems.length]);

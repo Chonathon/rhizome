@@ -153,7 +153,7 @@ export default function GenresFilter({
                     </CollapsibleTrigger>
                   </CommandItem>
                   <CollapsibleContent>
-                    <div className="pl-9">
+                    <div className="pl-8">
                       {getChildGenres(genre).map((child) => {
                         const childChecked = isChildSelected(genre, child.id);
                         return (
