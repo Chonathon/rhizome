@@ -207,10 +207,17 @@ function App() {
       });
     }
   }
+  const onLinkedGenreClick = (genreID: string) => {
+    const newGenre = genres.find((g) => g.id === genreID);
+    if (newGenre) {
+      onGenreNodeClick(newGenre);
+    }
+  }
 
   return (
     <SidebarProvider>
       <AppSidebar
+          onLinkedGenreClick={onLinkedGenreClick}
         setSearchOpen={setSearchOpen}
         onClick={resetAppState}
         selectedGenre={selectedGenre}>
