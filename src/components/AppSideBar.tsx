@@ -25,28 +25,16 @@ import RhizomeLogo from "@/assets/RhizomeLogo.svg"
 
 interface AppSidebarProps {
   onClick: () => void;
+  onLinkedGenreClick: (genreID: string) => void;
   selectedGenre?: Genre;
   children: React.ReactNode;
   setSearchOpen: (open: boolean) => void;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { recentSelections } = useRecentSelections()
   console.log("Recent selections in sidebar:", recentSelections);
-
-  const genreRelationships = {
-    description: `The genre emerged in the early 1980s as musicians began fusing the double bass drumming and complex guitar stylings of the new wave of British heavy metal (NWOBHM) with the speed and aggression of hardcore punk and the technicality of progressive rock. Philosophically, thrash metal developed as a backlash against both the conservatism of the Reagan era and the much more moderate, pop-influenced, and widely accessible heavy metal subgenre of glam metal which also developed concurrently in the 1980s. Derived genres include crossover thrash, a fusion of thrash metal and hardcore punk.
-    
-    The early thrash metal movement revolved around independent record labels, including Megaforce, Metal Blade, Combat, Roadrunner, and Noise, and the underground tape trading industry in both Europe and North America. The genre was commercially successful from approximately 1985 through 1991, bringing prominence to Metallica, Slayer, Megadeth, and Anthrax, all grouped together as the "Big Four" of U.S. thrash metal. Other bands, such as Overkill, Metal Church, Nuclear Assault, Flotsam and Jetsam, and Bay Area acts Exodus, Testament and Death Angel, never achieved the same level of success as the "Big Four" but had also developed a strong following in the metal community, through MTV's Headbangers Ball or otherwise. Some of the most popular international thrash metal bands from this era were Brazil's Sepultura, Canada's Voivod and Annihilator, Switzerland's Coroner, England's Onslaught, and the genre's German "Big Four": Kreator, Destruction, Sodom, and Tankard.
-
-    The thrash metal genre had declined in popularity by the mid-1990s, due to the commercial success of numerous genres such as alternative rock, grunge, and later pop-punk and nu metal. In response, some bands either disbanded or moved away from their thrash metal roots and more towards groove metal or alternative metal. The genre has seen a resurgence in popularity since the 2000s, with the arrival of various bands such as Bonded by Blood, Evile, Hatchet, Havok, Lamb of God, Municipal Waste, and Warbringer, who have all been credited for leading the so-called "thrash metal revival" scene.`,
-    subgenreOf: ["metal"],
-    subgenres: ["technical thrash metal"],
-    fusionGenres: ["crossover thrash"],
-    influencedBy: ["hardcore punk", "nwobhm", "speed metal"],
-    influencedGenres: ["groove metal", "stenchcore"],
-  }
 
   return (
     <>
@@ -70,82 +58,114 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen }: 
                     ? "text-muted-foreground"
                     : "line-clamp-3 overflow-hidden"
                 }`}
-              >{genreRelationships.description}</p>
+              >{selectedGenre.description}</p>
               
             </SidebarHeader>
               <div className="flex flex-col gap-4">
-                {genreRelationships.subgenreOf.map((subgenreOf, index) => (
-                  <SidebarGroup key={`subgenreOf-${index}`}>
-                    <SidebarGroupLabel>Subgenre of</SidebarGroupLabel>
-                    <SidebarGroupContent>
+                {selectedGenre.subgenre_of.length > 0 && (
+                    <SidebarGroup>
+                      <SidebarGroupLabel>Subgenre of</SidebarGroupLabel>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {selectedGenre.subgenre_of.map((subgenreOf, index) => (
+                              <SidebarMenuItem key={`subgenreOf-${index}`}>
+                                <SidebarMenuButton asChild onClick={() => onLinkedGenreClick(subgenreOf.id)}>
+                                  <a>
+                                    <span>{subgenreOf.name}</span>
+                                  </a>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                          ))}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </SidebarGroup>
+                )}
+
+                {selectedGenre.subgenres.length > 0 && (
+                    <SidebarGroup>
+                      <SidebarGroupLabel>Subgenres</SidebarGroupLabel>
                       <SidebarMenu>
-                        <SidebarMenuItem>
-                          <SidebarMenuButton asChild>
-                            <a href="">
-                              <span>{subgenreOf}</span>
-                            </a>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
+                        {selectedGenre.subgenres.map((subgenre, index) => (
+                            <SidebarMenuItem key={`subgenre-${index}`}>
+                              <SidebarMenuButton asChild onClick={() => onLinkedGenreClick(subgenre.id)}>
+                                <a>
+                                  <span>{subgenre.name}</span>
+                                </a>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
                       </SidebarMenu>
-                    </SidebarGroupContent>
-                  </SidebarGroup>
-                ))}
-                {genreRelationships.subgenres.map((subgenre, index) => (
-                  <SidebarGroup key={`subgenre-${index}`}>
-                    <SidebarGroupLabel>subgenres</SidebarGroupLabel>
-                    <SidebarMenu>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild>
-                          <a href="">
-                            <span>{subgenre}</span>
-                          </a>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    </SidebarMenu>
-                  </SidebarGroup>
-                ))}
-                {genreRelationships.fusionGenres.map((fusion, index) => (
-                  <SidebarGroup key={`fusion-${index}`}>
-                    <SidebarGroupLabel>Fusions</SidebarGroupLabel>
-                    <SidebarMenu>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild>
-                          <a href="">
-                            <span>{fusion}</span>
-                          </a>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    </SidebarMenu>
-                  </SidebarGroup>
-                ))}
-                {genreRelationships.influencedBy.map((influencedBy, index) => (
-                  <SidebarGroup key={`influencedBy-${index}`}>
-                    <SidebarGroupLabel>Influenced by</SidebarGroupLabel>
-                    <SidebarMenu>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild>
-                          <a href="">
-                            <span>{influencedBy}</span>
-                          </a>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    </SidebarMenu>
-                  </SidebarGroup>
-                ))}
-                {genreRelationships.influencedGenres.map((influencedGenres, index) => (
-                  <SidebarGroup key={`influencedGenre-${index}`}>
-                    <SidebarGroupLabel>Influenced</SidebarGroupLabel>
-                    <SidebarMenu>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild>
-                          <a href="">
-                            <span>{influencedGenres}</span>
-                          </a>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    </SidebarMenu>
-                  </SidebarGroup>
-                ))}
+                    </SidebarGroup>
+                )}
+
+                {selectedGenre.fusion_of.length > 0 && (
+                    <SidebarGroup>
+                      <SidebarGroupLabel>Fusion of</SidebarGroupLabel>
+                      <SidebarMenu>
+                        {selectedGenre.fusion_of.map((fusionOf, index) => (
+                            <SidebarMenuItem key={`fusion-${index}`}>
+                              <SidebarMenuButton asChild>
+                                <a>
+                                  <span>{fusionOf.name}</span>
+                                </a>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    </SidebarGroup>
+                )}
+
+                {selectedGenre.fusion_genres.length > 0 && (
+                    <SidebarGroup>
+                      <SidebarGroupLabel>Fusion genres</SidebarGroupLabel>
+                      <SidebarMenu>
+                        {selectedGenre.fusion_genres.map((fusion, index) => (
+                            <SidebarMenuItem key={`fusion-${index}`}>
+                              <SidebarMenuButton asChild onClick={() => onLinkedGenreClick(fusion.id)}>
+                                <a>
+                                  <span>{fusion.name}</span>
+                                </a>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    </SidebarGroup>
+                )}
+
+                {selectedGenre.influenced_by.length > 0 && (
+                    <SidebarGroup>
+                      <SidebarGroupLabel>Influenced by</SidebarGroupLabel>
+                      <SidebarMenu>
+                        {selectedGenre.influenced_by.map((influencedBy, index) => (
+                            <SidebarMenuItem key={`influencedBy-${index}`}>
+                              <SidebarMenuButton asChild onClick={() => onLinkedGenreClick(influencedBy.id)}>
+                                <a>
+                                  <span>{influencedBy.name}</span>
+                                </a>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    </SidebarGroup>
+                )}
+
+                {selectedGenre.influenced_genres.length > 0 && (
+                    <SidebarGroup>
+                      <SidebarGroupLabel>Influenced</SidebarGroupLabel>
+                      <SidebarMenu>
+                        {selectedGenre.influenced_genres.map((influencedGenres, index) => (
+                            <SidebarMenuItem key={`influencedGenre-${index}`}>
+                              <SidebarMenuButton asChild onClick={() => onLinkedGenreClick(influencedGenres.id)}>
+                                <a>
+                                  <span>{influencedGenres.name}</span>
+                                </a>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    </SidebarGroup>
+                )}
+
               </div>
 
           </>
