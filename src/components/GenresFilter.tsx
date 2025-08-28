@@ -1,3 +1,6 @@
+// GenresFilter renders a searchable, collapsible list of top-level genres
+// with tri-state selection (unchecked / indeterminate / checked). Parents can
+// be toggled as a whole, or individual child subgenres can be toggled.
 import { Button } from "@/components/ui/button";
 import { ChevronsUpDown, Check, ChevronDown, Minus } from "lucide-react";
 import { Genre, GenreClusterMode, GraphType } from "@/types";
@@ -8,7 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@radix-ui/react-collapsible";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Command,
   CommandEmpty,
@@ -18,6 +21,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 
+// Props control available genres, clustering mode, and external selection callbacks.
 export default function GenresFilter({
   genres = [],
   genreClusterMode,
@@ -33,23 +37,26 @@ export default function GenresFilter({
   onParentSelect: (genre: Genre) => void;
   graphType: GraphType;
 }) {
-  // Compute the set of top level genres per current cluster mode
+  // Compute the set of top-level genres based on the current cluster mode.
   const topLevelGenres = useMemo(
     () => genres.filter((g) => isTopLevelGenre(g, genreClusterMode)),
     [genres, genreClusterMode]
   );
 
+  // Default all collapsibles closed. Map is keyed by parent genre id.
   const defaultOpenMap = useMemo(() => {
     const m: Record<string, boolean> = {};
     for (const g of topLevelGenres) m[g.id] = false; // all closed by default
     return m;
   }, [topLevelGenres]);
 
-  // Track selected children per parent id. Use Set for O(1) toggles.
+  // Track selected children per parent id. Using Set makes toggling O(1).
   const [selectedChildren, setSelectedChildren] = useState<Record<string, Set<string>>>({});
+  // Track whether a parent is selected (independent of its children).
   const [parentSelected, setParentSelected] = useState<Record<string, boolean>>({});
 
-  // Keep selection keys in sync with the visible top-level list, preserving prior picks
+  // Keep selection maps in sync when the set of top-level genres changes.
+  // Preserves previous selections for stable keys.
   useEffect(() => {
     setSelectedChildren((prev) => {
       const next: Record<string, Set<string>> = {};
@@ -65,22 +72,16 @@ export default function GenresFilter({
       }
       return next;
     });
+    // Reset collapsible open state when the top-level set changes.
     setOpenMap(defaultOpenMap);
   }, [topLevelGenres]);
 
+  // Search query and collapsible open/closed state.
   const [query, setQuery] = useState("");
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(defaultOpenMap);
 
-  // Build an open map that opens parents with any selected children
-  const computeOpenMapFromSelection = useCallback(() => {
-    const next: Record<string, boolean> = {};
-    for (const g of topLevelGenres) {
-      const sel = selectedChildren[g.id];
-      next[g.id] = !!(sel && sel.size > 0);
-    }
-    return next;
-  }, [topLevelGenres, selectedChildren]);
-
+  // When searching, auto-open parents that match or have matching children.
+  // Clearing the query resets to default closed state.
   useEffect(() => {
     const q = query.trim().toLowerCase();
     if (q === "") {
@@ -101,6 +102,7 @@ export default function GenresFilter({
     });
   }, [query, topLevelGenres]);
 
+  // Placeholder: generate example child subgenres for each parent.
   const getChildGenres = (parent: Genre) => {
     return [
       { id: `${parent.id}-child-a`, name: `death ${parent.name}` } as Genre,
@@ -112,6 +114,7 @@ export default function GenresFilter({
 
   type TriState = "unchecked" | "indeterminate" | "checked";
 
+  // Determine the parent's tri-state based on its own selection and child selections.
   const getParentState = (parent: Genre): TriState => {
     const children = getChildGenres(parent);
     const sel = selectedChildren[parent.id] ?? new Set<string>();
@@ -122,6 +125,7 @@ export default function GenresFilter({
     return "indeterminate"; // parent is selected and some, but not all, children are selected
   };
 
+  // Toggle a parent: mark the parent selected and select/deselect all its children.
   const toggleParent = (parent: Genre) => {
     const children = getChildGenres(parent);
     const currentlySelected = parentSelected[parent.id] ?? false;
@@ -139,10 +143,13 @@ export default function GenresFilter({
     else onParentDeselect(parent);
   };
 
+  // Read-only helper to check if a given child is selected under a parent.
   const isChildSelected = (parent: Genre, childId: string) => {
     return selectedChildren[parent.id]?.has(childId) ?? false;
   };
 
+  // Toggle a child within a parent. If any child is selected, mark the parent as selected.
+  // Also forwards the click event via onParentClick to external handlers.
   const toggleChild = (parent: Genre, child: Genre) => {
     let newSize = 0;
     setSelectedChildren((prev) => {
@@ -164,6 +171,7 @@ export default function GenresFilter({
     onParentClick(child);
   };
 
+  // Show count of selected parents next to the trigger button.
   const totalSelected = topLevelGenres.reduce((acc, g) => acc + ((parentSelected[g.id] ?? false ? 1 : 0)), 0);
 
   if (graphType !== "artists") return null;
@@ -171,8 +179,8 @@ export default function GenresFilter({
   return (
     <ResponsivePanel
       onOpenChange={(open) => {
-        // When the panel opens with no active search, open parents with selected children.
-        if (open && !query.trim()) setOpenMap(computeOpenMapFromSelection());
+        // Default collapsibles to closed when the panel opens.
+        if (open) setOpenMap(defaultOpenMap);
       }}
       trigger={
         <Button size="lg" variant="outline">{`Genres (${totalSelected})`}
@@ -182,6 +190,7 @@ export default function GenresFilter({
       className="p-0 overflow-hidden"
       side="bottom"
     >
+      {/* Command palette-like UI: input, grouped items, and filtering */}
       <Command>
         <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
         <CommandList>
@@ -191,6 +200,7 @@ export default function GenresFilter({
               const state = getParentState(genre);
               const isOpen = openMap[genre.id] ?? false;
               return (
+                // Each top-level genre is a collapsible row with a trigger to open child items
                 <Collapsible key={genre.id} open={isOpen} onOpenChange={(open) => setOpenMap((prev) => ({ ...prev, [genre.id]: open }))}>
                   <CommandItem
                     // `value` is what cmdk uses for built-in filtering
