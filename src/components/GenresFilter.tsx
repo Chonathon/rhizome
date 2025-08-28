@@ -148,7 +148,10 @@ export default function GenresFilter({
           <CommandEmpty>No genres found.</CommandEmpty>
           <CommandGroup>
             {topLevelGenres.map((genre) => {
-              const state = getParentState(genre);
+              // In search mode, treat the list as flat: if the parent is selected, show a full check.
+              const state = query.trim()
+                ? ((parentSelected[genre.id] ? "checked" : "unchecked") as "checked" | "unchecked")
+                : getParentState(genre);
               const isOpen = openMap[genre.id] ?? false;
               return (
                 // Each top-level genre is a collapsible row with a trigger to open child items
