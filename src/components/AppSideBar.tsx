@@ -21,6 +21,7 @@ import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
 import { Genre } from "@/types"
 import { Badge } from "./ui/badge"
+import RhizomeLogo from "@/assets/RhizomeLogo.svg"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -51,13 +52,14 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen }: 
     <>
       <Sidebar className="" variant="floating">
         <SidebarContent className="p-1 mt-2">
-        {selectedGenre ? (
-          <>
+          
           {/* <Button
             variant="ghost"
             size="icon"
             onClick={onClick}
-          ><Undo2 /></Button> */}
+          ><RhizomeLogo /></Button> */}
+        {selectedGenre ? (
+          <>
             <SidebarHeader className="mb-2">
               <span>{selectedGenre.name}</span>
               <p
@@ -69,6 +71,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen }: 
                     : "line-clamp-3 overflow-hidden"
                 }`}
               >{genreRelationships.description}</p>
+              
             </SidebarHeader>
               <div className="flex flex-col gap-4">
                 {genreRelationships.subgenreOf.map((subgenreOf, index) => (
@@ -150,6 +153,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen }: 
             <SidebarGroup>
               {/* <SidebarGroupLabel>Recent Selections</SidebarGroupLabel> */}
               <SidebarGroupContent>
+                <div className="w-full p-3 -mt-3.5 -ml-1.5 mb-3"><button><img src={RhizomeLogo} alt="Rhizome Logo" className="h-9 w-auto mx-auto" onClick={onClick}/></button></div>
               <SidebarMenu>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild size="xl" >
