@@ -39,6 +39,12 @@ export default function GenresFilter({
     [genres, genreClusterMode]
   );
 
+  const defaultOpenMap = useMemo(() => {
+    const m: Record<string, boolean> = {};
+    for (const g of topLevelGenres) m[g.id] = false; // all closed by default
+    return m;
+  }, [topLevelGenres]);
+
   // Track selected children per parent id. Use Set for O(1) toggles.
   const [selectedChildren, setSelectedChildren] = useState<Record<string, Set<string>>>({});
   const [parentSelected, setParentSelected] = useState<Record<string, boolean>>({});
@@ -59,8 +65,31 @@ export default function GenresFilter({
       }
       return next;
     });
+    setOpenMap(defaultOpenMap);
   }, [topLevelGenres]);
 
+  const [query, setQuery] = useState("");
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>(defaultOpenMap);
+
+  useEffect(() => {
+    const q = query.trim().toLowerCase();
+    if (q === "") {
+      // Reset to default open state when the search is cleared
+      setOpenMap(defaultOpenMap);
+      return;
+    }
+    // Open only parents that have a matching parent name or at least one matching child
+    setOpenMap((prev) => {
+      const next: Record<string, boolean> = {};
+      for (const g of topLevelGenres) {
+        const parentMatch = g.name.toLowerCase().includes(q);
+        const childMatch = getChildGenres(g)
+          .some((c) => c.name.toLowerCase().includes(q));
+        next[g.id] = parentMatch || childMatch;
+      }
+      return next;
+    });
+  }, [query, topLevelGenres]);
 
   const getChildGenres = (parent: Genre) => {
     return [
@@ -131,6 +160,7 @@ export default function GenresFilter({
 
   return (
     <ResponsivePanel
+      onOpenChange={() => setOpenMap(defaultOpenMap)}
       trigger={
         <Button size="lg" variant="outline">{`Genres (${totalSelected})`}
           <ChevronDown />
@@ -140,14 +170,15 @@ export default function GenresFilter({
       side="bottom"
     >
       <Command>
-        <CommandInput placeholder="Filter genres..." />
+        <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
         <CommandList>
           <CommandEmpty>No genres found.</CommandEmpty>
           <CommandGroup>
             {topLevelGenres.map((genre) => {
               const state = getParentState(genre);
+              const isOpen = openMap[genre.id] ?? false;
               return (
-                <Collapsible key={genre.id}>
+                <Collapsible key={genre.id} open={isOpen} onOpenChange={(open) => setOpenMap((prev) => ({ ...prev, [genre.id]: open }))}>
                   <CommandItem
                     // `value` is what cmdk uses for built-in filtering
                     value={genre.name}
@@ -174,7 +205,7 @@ export default function GenresFilter({
                     </CollapsibleTrigger>
                   </CommandItem>
                   <CollapsibleContent>
-                    <div className="pl-8">
+                    <div className={query ? "pl-0" : "pl-8"}>
                       {getChildGenres(genre).map((child) => {
                         const childChecked = isChildSelected(genre, child.id);
                         return (
@@ -182,7 +213,7 @@ export default function GenresFilter({
                             key={child.id}
                             value={child.name}
                             onSelect={() => toggleChild(genre, child)}
-                            className="flex items-center gap-2"
+                            className={`flex items-center gap-2 ${query ? "pl-0" : ""}`}
                           >
                             <Check className={childChecked ? "" : "hidden"} />
                             <span>{child.name}</span>

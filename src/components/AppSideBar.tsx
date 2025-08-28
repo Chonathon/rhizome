@@ -21,6 +21,7 @@ import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
 import { Genre } from "@/types"
 import { Badge } from "./ui/badge"
+import RhizomeLogo from "@/assets/RhizomeLogo.svg"
 
 interface AppSidebarProps {
   onClick: () => void;
