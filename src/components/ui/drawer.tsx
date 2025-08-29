@@ -43,35 +43,22 @@ function DrawerOverlay({
   )
 }
 
-type DrawerContentProps = React.ComponentProps<typeof DrawerPrimitive.Content> & {
-  // When true, the bottom drawer variant spans edge-to-edge (no bottom gap/margins)
-  bottomFullWidth?: boolean
-}
-
 function DrawerContent({
   className,
   children,
-  bottomFullWidth,
   ...props
-}: DrawerContentProps) {
+}: React.ComponentProps<typeof DrawerPrimitive.Content>) {
   return (
     <DrawerPortal data-slot="drawer-portal">
       <DrawerOverlay />
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(
-          "group/drawer-content pb-.5 fixed z-50 flex h-auto flex-col border-transparent overflow-hidden",
-          // Padding: remove horizontal padding in full-bleed mode
-          bottomFullWidth ? "px-0 py-0" : "px-2 md:py-2",
+          "group/drawer-content pb-.5 fixed z-50 flex h-auto px-2 flex-col md:py-2 border-transparent overflow-hidden",
           // Remove default focus outline/ring from the drawer container
           "outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0",
           "data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-lg",
-          // Bottom drawer default (floating with margins)
-          !bottomFullWidth &&
-            "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-2 data-[vaul-drawer-direction=bottom]:mt-2 data-[vaul-drawer-direction=bottom]:max-h-[80vh] data-[vaul-drawer-direction=bottom]:rounded-3xl",
-          // Bottom drawer full-width, edge-to-edge variant
-          bottomFullWidth &&
-            "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100vh] data-[vaul-drawer-direction=bottom]:rounded-t-3xl",
+          "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-2 data-[vaul-drawer-direction=bottom]:mt-2 data-[vaul-drawer-direction=bottom]:max-h-[100vh] data-[vaul-drawer-direction=bottom]:rounded-3xl",
           "data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=right]:sm:max-w-sm",
           "data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-full data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=left]:sm:max-w-sm",
           className
@@ -79,12 +66,7 @@ function DrawerContent({
         {...props}
       >
         <div>
-          <div
-            className={cn(
-              "bg-stone-300 mx-auto mt-2 mb-2 hidden h-1 w-[64px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block",
-              bottomFullWidth && "hidden"
-            )}
-          />
+          <div className="bg-stone-300 mx-auto mt-2 mb-2 hidden h-1 w-[64px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         </div>
         {children}
       </DrawerPrimitive.Content>
