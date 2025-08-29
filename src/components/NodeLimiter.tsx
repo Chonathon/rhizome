@@ -10,17 +10,26 @@ import { Loading } from "./Loading"
 
 interface NodeLimiterProps {
   initialValue?: number,
-  onChange?: (value: number[]) => void
+  onChange: (value: number) => void
   totalNodes?: number
   nodeType?: string
 }
 
+const ALL_PRESETS = [20000, 10000, 5000, 1000, 500, 200, 100, 50]
+
 export default function NodeLimiter({ initialValue = 200, onChange, totalNodes, nodeType }: NodeLimiterProps) {
-    const [value, setValue] = useState<number[]>([200])
+    const [value, setValue] = useState<number>(initialValue);
+    const [presets, setPresets] = useState<number[]>(ALL_PRESETS);
+    const onValueChange = (newValue: number) => {
+        setValue(newValue);
+        onChange(newValue);
+    }
+
     useEffect(() => {
-        onChange?.(value)
-    }, [value, onChange])
-    const presets = [1000, 500, 200, 100, 50]
+        if (totalNodes) {
+            setPresets(ALL_PRESETS.filter(p => p < totalNodes));
+        }
+    }, [totalNodes]);
 
     return (
         <div
@@ -33,11 +42,16 @@ export default function NodeLimiter({ initialValue = 200, onChange, totalNodes, 
                     <Button size="sm" variant="outline">{value}</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                    {totalNodes && (
+                        <DropdownMenuItem onClick={() => onValueChange(totalNodes)}>
+                            {totalNodes}
+                        </DropdownMenuItem>
+                    )}
                     {presets.map((preset) => (
                         <DropdownMenuItem
                             key={preset}
                             onClick={() => {
-                                setValue([preset])
+                                onValueChange(preset)
                             }}
                         >
                             {preset}

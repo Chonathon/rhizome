@@ -32,6 +32,9 @@ import useSimilarArtists from "@/hooks/useSimilarArtists";
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
 
+const DEFAULT_NODE_COUNT = 2000;
+const DEFAULT_CLUSTER_MODE = 'subgenre';
+
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
@@ -40,7 +43,7 @@ function App() {
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
-  const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode>('subgenre');
+  const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode>(DEFAULT_CLUSTER_MODE);
   const [dagMode, setDagMode] = useState<boolean>(() => {
     const storedDagMode = localStorage.getItem('dagMode');
     return storedDagMode ? JSON.parse(storedDagMode) : false;
@@ -51,6 +54,7 @@ function App() {
   const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [nodeCount, setNodeCount] = useState<number>(0);
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
@@ -86,32 +90,35 @@ function App() {
   }, [artists]);
 
   useEffect(() => {
-    // Genre node filtering logic (by artistCount)
-    // if (genreSizeThreshold > 0) {
-    //   const filteredGenres = genres.filter(g => g.artistCount >= genreSizeThreshold);
-    //   const genreSet = new Set(filteredGenres.map(genre => genre.id));
-    //   const filteredLinks = genreLinks.filter((nodeLink) => {
-    //     return nodeLink.linkType === genreClusterMode && genreSet.has(nodeLink.source) && genreSet.has(nodeLink.target)
-    //   });
-    //   console.log(filteredLinks.length)
-    //   setCurrentGenres({
-    //     nodes: filteredGenres,
-    //     links: filteredLinks,
-    //   });
-    // }
-    // else {
-    //   setCurrentGenres({ nodes: genres, links: genreLinks.filter(l => l.linkType === genreClusterMode) });
-    // }
-    setCurrentGenres({
-      nodes: genres,
-      links: genreLinks && genreLinks.length
-          ? genreClusterMode === 'all'
-              ? genreLinks
-              : genreLinks.filter(l => l.linkType === genreClusterMode)
-          : [],
-    });
+    const links = genreLinks && genreLinks.length
+            ? genreClusterMode === 'all'
+                ? genreLinks
+                : genreLinks.filter(l => l.linkType === genreClusterMode)
+            : [];
+    console.log(links.length)
+    if (genres && genres.length && nodeCount < genres.length) {
+      const filteredGenres = genres
+          .toSorted((a, b) => b.artistCount - a.artistCount)
+          .slice(0, nodeCount);
+      const genreSet = new Set(filteredGenres.map(genre => genre.id));
+      const filteredLinks = links.filter(l => genreSet.has(l.source) && genreSet.has(l.target));
+      console.log(filteredLinks.length)
+      setCurrentGenres({
+        nodes: filteredGenres,
+        links: filteredLinks,
+      });
+    } else {
+      setCurrentGenres({
+        nodes: genres,
+        links: links,
+      });
+    }
+  }, [nodeCount]);
 
-  }, [genres, genreLinks, genreClusterMode, genreSizeThreshold]);
+  useEffect(() => {
+    onGenreClusterModeChange(DEFAULT_CLUSTER_MODE);
+    setNodeCount(genres.length);
+  }, [genres, genreLinks]);
 
   useEffect(() => {
     if (canCreateSimilarArtistGraph) {
@@ -166,14 +173,14 @@ function App() {
   }
   const resetAppState = () => {
     setGraph('genres');
-    setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === genreClusterMode)});
+    setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === DEFAULT_CLUSTER_MODE)});
     setSelectedGenre(undefined);
     deselectArtist();
     setGenreMiniView(false);
     setCanCreateSimilarArtistGraph(false);
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
-    setGenreClusterMode('subgenre');
+    setGenreClusterMode(DEFAULT_CLUSTER_MODE);
   }
   const deselectArtist = () => {
     setSelectedArtist(undefined);
@@ -205,6 +212,19 @@ function App() {
         links: [...currentGenres.links, ...reselectedGenreData.links],
       });
     }
+  }
+  const onGenreClusterModeChange = (newMode: GenreClusterMode) => {
+    setGenreClusterMode(newMode);
+    if (currentGenres) {
+      setCurrentGenres({ nodes: currentGenres.nodes, links: filterLinksByClusterMode(newMode) });
+    }
+  }
+  const filterLinksByClusterMode = (newMode: GenreClusterMode) => {
+    return genreLinks && genreLinks.length
+        ? newMode === 'all'
+            ? genreLinks
+            : genreLinks.filter(l => l.linkType === newMode)
+        : [];
   }
 
   return (
@@ -265,7 +285,7 @@ function App() {
               <ModeToggle />
               <ClusteringPanel 
                 clusterMode={genreClusterMode} 
-                setClusterMode={setGenreClusterMode} 
+                setClusterMode={onGenreClusterModeChange}
                 dagMode={dagMode} 
                 setDagMode={setDagMode} />
               <DisplayPanel
@@ -329,11 +349,13 @@ function App() {
 
                 </motion.div>
               </div>
-                {/*
-        <NodeLimiter
-        totalNodes={graph === 'genres' ? genres.length : currentArtists.length}
-        nodeType={graph === 'genres' ? 'genres' : 'artists'}
-        /> */}
+
+              <NodeLimiter
+                totalNodes={graph === 'genres' ? genres.length : currentArtists.length}
+                nodeType={graph === 'genres' ? 'genres' : 'artists'}
+                initialValue={nodeCount}
+                onChange={setNodeCount}
+              />
             </motion.div>
           </AnimatePresence>
         </div>
