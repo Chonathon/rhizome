@@ -45,16 +45,18 @@ export function GenreCard({
     return (
       <h3 className="flex flex-col items-start gap-1 mb-3">
         <span className="text-sm text-muted-foreground">{label}:</span>{' '}
-        {items.map((node, i) => (
-          <div >
-            {onLinkedGenreClick ? (
-              <Button variant="link" size="sm" key={node.id} onClick={() => onLinkedGenreClick(node.id)}>{node.name}</Button>
-            ) : (
-              <span key={node.id}>{node.name}</span>
-            )}
-            {i < items.length - 1 ? ', ' : ''}
-          </div>
-        ))}
+        <div className='flex items-center gap-1 flex-wrap'>
+          {items.map((node, i) => (
+            <>
+              {onLinkedGenreClick ? (
+                <Button variant="link" size="sm" key={node.id} onClick={() => onLinkedGenreClick(node.id)}>{node.name}</Button>
+              ) : (
+                <span key={node.id}>{node.name}</span>
+              )}
+              {i < items.length - 1 ? ' · ' : ''}
+            </>
+          ))}
+        </div>
       </h3>
     )
   }
