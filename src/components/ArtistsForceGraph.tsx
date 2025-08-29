@@ -1,10 +1,9 @@
-import {Artist, BasicNode, NodeLink} from "@/types";
-import React, {useEffect, useState} from "react";
+import {Artist, BasicNode, Genre, NodeLink} from "@/types";
+import React, {useEffect, useMemo, useState} from "react";
 import ForceGraph, {GraphData} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
 
-// Needs more props like the view/filtering controls
 interface ArtistsForceGraphProps {
     artists: Artist[];
     artistLinks: NodeLink[];
@@ -14,26 +13,32 @@ interface ArtistsForceGraphProps {
 }
 
 const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLinks, onNodeClick, loading, show}) => {
-    const [graphData, setGraphData] = useState<GraphData<Artist, NodeLink>>({ nodes: [], links: [] });
     const { theme } = useTheme();
 
-    useEffect(() => {
-        if (artists && artistLinks) {
-            setGraphData(
-                {
-                    nodes: artists,
-                    links: artistLinks
-                }
-            );
-        }
+    const preparedData: GraphData<Artist, NodeLink> = useMemo(() => {
+        if (!artists || !artistLinks) return { nodes: [], links: [] };
 
+        // Clone nodes shallowly so FG's runtime props don't leak back upstream.
+        const nodes = artists.map(n => ({ ...n }));
+        // Clone links and normalize source/target to ids if FG already mutated them.
+        const links = artistLinks.map((l) => {
+            const src: any = (l as any).source;
+            const tgt: any = (l as any).target;
+            return {
+                source: typeof src === 'string' ? src : src?.id,
+                target: typeof tgt === 'string' ? tgt : tgt?.id,
+                linkType: l.linkType,
+            } as NodeLink;
+        });
+
+        return { nodes, links };
     }, [artists, artistLinks]);
 
     return !show ? null : loading ? (<div className="flex-1 h-[calc(100vh-104px)] w-full">
         <Loading />
     </div>) : (
         (<ForceGraph
-            graphData={graphData}
+            graphData={preparedData}
             linkVisibility={true}
             linkColor={'#666666'}
             linkCurvature={0.2}

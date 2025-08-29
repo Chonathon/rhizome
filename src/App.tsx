@@ -8,10 +8,10 @@ import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Artist,
+  Artist, ArtistNodeLimitType,
   Genre,
   GenreClusterMode,
-  GenreGraphData,
+  GenreGraphData, GenreNodeLimitType,
   GraphType,
   NodeLink
 } from "@/types";
@@ -32,6 +32,9 @@ import useSimilarArtists from "@/hooks/useSimilarArtists";
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
 
+const DEFAULT_NODE_COUNT = 2000;
+const DEFAULT_CLUSTER_MODE = 'subgenre';
+
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
@@ -40,7 +43,7 @@ function App() {
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
-  const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode>('subgenre');
+  const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode>(DEFAULT_CLUSTER_MODE);
   const [dagMode, setDagMode] = useState<boolean>(() => {
     const storedDagMode = localStorage.getItem('dagMode');
     return storedDagMode ? JSON.parse(storedDagMode) : false;
@@ -51,6 +54,10 @@ function App() {
   const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>('artistCount');
+  const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>('listeners');
+  const [genreNodeCount, setGenreNodeCount] = useState<number>(0);
+  const [artistNodeCount, setArtistNodeCount] = useState<number>(0);
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
@@ -81,37 +88,14 @@ function App() {
   }, [showArtistCard]);
 
   useEffect(() => {
-    setCurrentArtists(artists);
-    setCurrentArtistLinks(artistLinks);
+    const nodeCount = Math.min(artists.length, DEFAULT_NODE_COUNT);
+    onArtistNodeCountChange(nodeCount);
   }, [artists]);
 
   useEffect(() => {
-    // Genre node filtering logic (by artistCount)
-    // if (genreSizeThreshold > 0) {
-    //   const filteredGenres = genres.filter(g => g.artistCount >= genreSizeThreshold);
-    //   const genreSet = new Set(filteredGenres.map(genre => genre.id));
-    //   const filteredLinks = genreLinks.filter((nodeLink) => {
-    //     return nodeLink.linkType === genreClusterMode && genreSet.has(nodeLink.source) && genreSet.has(nodeLink.target)
-    //   });
-    //   console.log(filteredLinks.length)
-    //   setCurrentGenres({
-    //     nodes: filteredGenres,
-    //     links: filteredLinks,
-    //   });
-    // }
-    // else {
-    //   setCurrentGenres({ nodes: genres, links: genreLinks.filter(l => l.linkType === genreClusterMode) });
-    // }
-    setCurrentGenres({
-      nodes: genres,
-      links: genreLinks && genreLinks.length
-          ? genreClusterMode === 'all'
-              ? genreLinks
-              : genreLinks.filter(l => l.linkType === genreClusterMode)
-          : [],
-    });
-
-  }, [genres, genreLinks, genreClusterMode, genreSizeThreshold]);
+    const nodeCount = genres.length;
+    onGenreNodeCountChange(nodeCount);
+  }, [genres, genreLinks]);
 
   useEffect(() => {
     if (canCreateSimilarArtistGraph) {
@@ -151,14 +135,12 @@ function App() {
     setSelectedGenre(genre);
     setGraph('artists');
     addRecentSelection(genre);
-    console.log("Genre selected:", genre);
   }
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
       setSelectedArtist(artist);
       setShowArtistCard(true);
       addRecentSelection(artist);
-      console.log("Artist selected:", artist);
     }
     if (graph === 'similarArtists') {
       createSimilarArtistGraph(artist);
@@ -166,14 +148,14 @@ function App() {
   }
   const resetAppState = () => {
     setGraph('genres');
-    setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === genreClusterMode)});
+    setCurrentGenres({nodes: genres, links: genreLinks.filter(link => link.linkType === DEFAULT_CLUSTER_MODE)});
     setSelectedGenre(undefined);
     deselectArtist();
     setGenreMiniView(false);
     setCanCreateSimilarArtistGraph(false);
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
-    setGenreClusterMode('subgenre');
+    setGenreClusterMode(DEFAULT_CLUSTER_MODE);
   }
   const deselectArtist = () => {
     setSelectedArtist(undefined);
@@ -206,12 +188,71 @@ function App() {
       });
     }
   }
+  const onGenreClusterModeChange = (newMode: GenreClusterMode) => {
+    setGenreClusterMode(newMode);
+    if (currentGenres) {
+      setCurrentGenres({ nodes: currentGenres.nodes, links: filterLinksByClusterMode(newMode) });
+    }
+  }
+  const filterLinksByClusterMode = (newMode: GenreClusterMode) => {
+    return genreLinks && genreLinks.length
+        ? newMode === 'all'
+            ? genreLinks
+            : genreLinks.filter(l => l.linkType === newMode)
+        : [];
+  }
+  const onGenreNodeCountChange = (count: number) => {
+    setGenreNodeCount(count);
+    if (genres && genres.length && count < genres.length) {
+      const filteredGenres = genres
+          .toSorted((a, b) => b[genreNodeLimitType] - a[genreNodeLimitType])
+          .slice(0, count);
+      const genreSet = new Set(filteredGenres.map(genre => genre.id));
+      const filteredLinks = genreLinks.filter(l => {
+        return genreSet.has(l.source) && genreSet.has(l.target) && l.linkType === genreClusterMode;
+      });
+      setCurrentGenres({
+        nodes: filteredGenres,
+        links: filteredLinks,
+      });
+    } else {
+      setCurrentGenres({ nodes: genres, links: filterLinksByClusterMode(genreClusterMode) });
+    }
+  }
+  const onArtistNodeCountChange = (count: number) => {
+    setArtistNodeCount(count);
+    if (artists && artists.length && count < artists.length) {
+      const filteredArtists = artists
+          .toSorted((a, b) => b[artistNodeLimitType] - a[artistNodeLimitType])
+          .slice(0, count);
+      const artistSet = new Set(filteredArtists.map(artist => artist.id));
+      const filteredLinks = artistLinks.filter(l => {
+        return artistSet.has(l.source) && artistSet.has(l.target);
+      });
+      setCurrentArtists(filteredArtists);
+      setCurrentArtistLinks(filteredLinks);
+    } else {
+      setCurrentArtists(artists);
+      setCurrentArtistLinks(artistLinks);
+    }
+  }
+  const showGenreNodeLimiter = () => {
+    if (graph === 'genres') {
+      return !!genres && !genresLoading && !genresError;
+    } else return false;
+  }
+  const showArtistNodeLimiter = () => {
+    if (graph === 'artists') {
+      return !!artists && !artistsLoading && !artistsError;
+    } else return false;
+  }
   const onLinkedGenreClick = (genreID: string) => {
     const newGenre = genres.find((g) => g.id === genreID);
     if (newGenre) {
       onGenreNodeClick(newGenre);
     }
   }
+
 
   return (
     <SidebarProvider>
@@ -232,7 +273,7 @@ function App() {
                 onValueChange={(val) => setGraph(val as GraphType)}>
                   <TabsList>
                       <TabsTrigger
-                      onClick={() => setGraph('genres')}value="genres">Genres</TabsTrigger>
+                      onClick={() => setGraph('genres')} value="genres">Genres</TabsTrigger>
                     <TabsTrigger
                     onClick={() => setGraph('artists')} value="artists">Artists</TabsTrigger>
                   </TabsList>
@@ -272,7 +313,7 @@ function App() {
               <ModeToggle />
               <ClusteringPanel 
                 clusterMode={genreClusterMode} 
-                setClusterMode={setGenreClusterMode} 
+                setClusterMode={onGenreClusterModeChange}
                 dagMode={dagMode} 
                 setDagMode={setDagMode} />
               <DisplayPanel
@@ -336,11 +377,20 @@ function App() {
 
                 </motion.div>
               </div>
-                {/*
-        <NodeLimiter
-        totalNodes={graph === 'genres' ? genres.length : currentArtists.length}
-        nodeType={graph === 'genres' ? 'genres' : 'artists'}
-        /> */}
+              <NodeLimiter
+                  totalNodes={genres.length}
+                  nodeType={'genres'}
+                  initialValue={genreNodeCount}
+                  onChange={onGenreNodeCountChange}
+                  show={showGenreNodeLimiter()}
+              />
+              <NodeLimiter
+                totalNodes={artists.length}
+                nodeType={'artists'}
+                initialValue={artistNodeCount}
+                onChange={onArtistNodeCountChange}
+                show={showArtistNodeLimiter()}
+              />
             </motion.div>
           </AnimatePresence>
         </div>
