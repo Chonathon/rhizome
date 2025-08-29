@@ -32,7 +32,7 @@ const buttonVariants = cva(
       // Negative margins to offset padding in link variants
       { variant: "link", size: "default", className: "-mx-4 -my-2 has-[>svg]:-mx-3" },
       { variant: "link", size: "sm", className: "-m-3 has-[>svg]:-mx-2.5" },
-      { variant: "link", size: "lg", className: "-m-6 has-[>svg]:-mx-4" },
+      { variant: "link", size: "lg", className: " text-md -m-6 has-[>svg]:-mx-4" },
     ],
     defaultVariants: {
       variant: "default",
