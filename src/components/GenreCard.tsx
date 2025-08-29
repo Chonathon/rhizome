@@ -67,8 +67,9 @@ export function GenreCard({
 
       thumbnail={
         <div className={`w-24 h-24 shrink-0 overflow-hidden rounded-xl border border-border ${isExpanded ? 'w-full h-[200px]' : ''}`}>
+          {/* replace with color of node */}
           <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500/30 to-indigo-500/30 dark:from-purple-500/20 dark:to-indigo-500/20`}> 
-            <span className="text-2xl font-semibold">{initial}</span>
+            <span className="text-3xl font-semibold">{initial}</span>
           </div>
         </div>
       }
