@@ -119,15 +119,20 @@ export function GenreCard({
               </div>
             </div>
             {/* Content */}
-            <div className="w-full flex flex-col gap-4 ">
+            <div className="w-full flex flex-col gap-6 ">
               <div>
                 <h2 className="text-xl font-semibold">{selectedGenre?.name}</h2>
-            
+                <p
+                  onClick={() => setIsExpanded(prev => !prev)}
+                  className={` mt-3 break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                >
+                  {selectedGenre?.description || 'No description'}
+                </p>
               </div>
                 {/* Top Artists */}
                 {topArtists.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <span className="text-md font-semibold">Top Artists:</span>
+                    <span className="text-md font-semibold">Top Artists</span>
                     <div className="flex flex-wrap items-center gap-1.5">
                       {topArtists.map((artist) => (
                         <Badge
@@ -140,16 +145,17 @@ export function GenreCard({
                         </Badge>
                       ))}
                     </div>
-                  </div>
-                )}
                 <Button
                   disabled={genreLoading}
                   size="lg"
                   variant="secondary"
                   onClick={() => selectedGenre && allArtists(selectedGenre)}
+                  className='mt-2 self-start'
                 >
                   <SquareArrowUp />All Artists
                 </Button>
+                  </div>
+                )}
             
               {/* Related */}
               {genreError && <p>Can’t find {selectedGenre?.name} 🤔</p>}
@@ -187,14 +193,6 @@ export function GenreCard({
                       </h3>
                     )}
               </div>
-            
-            
-              <p
-                onClick={() => setIsExpanded(prev => !prev)}
-                className={` mt-3 break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
-              >
-                {selectedGenre?.description || 'No description'}
-              </p>
             </div>
           </div>
         </div>
