@@ -147,7 +147,7 @@ export function GenreCard({
                     className="h-full w-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar"
                   >
                     {slides.map((chunk, idx) => (
-                      <div key={idx} className="snap-center shrink-0 w-full h-full p-1 grid grid-cols-2 grid-rows-2 gap-1">
+                      <div key={idx} className="snap-center shrink-0 w-full h-full grid grid-cols-2 grid-rows-2 gap-1">
                         {chunk.map((artist, i) => {
                           const spanClasses = [
                             "col-span-1 row-span-2", // 0: big left spans two rows
@@ -168,8 +168,8 @@ export function GenreCard({
                                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                                   loading="lazy"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-70" />
-                                <span className="absolute left-1.5 bottom-1.5 text-xs text-white drop-shadow-sm">{artist.name}</span>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
+                                <span className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm">{artist.name}</span>
                               </button>
                             </div>
                           )
