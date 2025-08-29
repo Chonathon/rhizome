@@ -31,6 +31,7 @@ import NodeLimiter from './components/NodeLimiter'
 import useSimilarArtists from "@/hooks/useSimilarArtists";
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
+import { GenreCard } from './components/GenreCard';
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -301,7 +302,18 @@ function App() {
                   }
                 `}
             >
-              <GenreCard
+              <GenreCard 
+                selectedGenre={selectedGenre}
+                show={graph === 'artists' && !!selectedGenre}
+                genreLoading={artistsLoading}
+                deselectGenre={() => {
+                  setSelectedGenre(undefined);
+                  setGraph('genres');
+                  setCurrentArtists([]);
+                  setCurrentArtistLinks([]);
+                }}
+                onSelectGenre={onLinkedGenreClick}
+              />
               <ArtistCard
                 selectedArtist={selectedArtist}
                 setArtistFromName={setArtistFromName}
