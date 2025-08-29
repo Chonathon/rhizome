@@ -236,13 +236,6 @@ function App() {
       setCurrentArtistLinks(artistLinks);
     }
   }
-  const onNodeCountChange = (count: number) => {
-    if (graph === 'genres') {
-
-    } else if (graph === 'artists') {
-
-    }
-  }
   const showGenreNodeLimiter = () => {
     if (graph === 'genres') {
       return !!genres && !genresLoading && !genresError;
@@ -253,10 +246,18 @@ function App() {
       return !!artists && !artistsLoading && !artistsError;
     } else return false;
   }
+  const onLinkedGenreClick = (genreID: string) => {
+    const newGenre = genres.find((g) => g.id === genreID);
+    if (newGenre) {
+      onGenreNodeClick(newGenre);
+    }
+  }
+
 
   return (
     <SidebarProvider>
       <AppSidebar
+          onLinkedGenreClick={onLinkedGenreClick}
         setSearchOpen={setSearchOpen}
         onClick={resetAppState}
         selectedGenre={selectedGenre}>
