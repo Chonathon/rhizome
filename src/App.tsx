@@ -150,6 +150,7 @@ function App() {
     //   setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
     // }
     setSelectedGenre(genre);
+    setShowArtistCard(false); // ensure only one card visible
     addRecentSelection(genre);
     console.log("Genre selected:", genre);
   }
@@ -163,6 +164,7 @@ function App() {
   // For clicking on a genre node in the Genres graph: only show the GenreCard, do not switch graphs
   const onGenreNodePreview = (genre: Genre) => {
     setSelectedGenre(genre);
+    setShowArtistCard(false); // ensure only one card visible
     addRecentSelection(genre);
     console.log("Genre preview:", genre);
   }
@@ -316,7 +318,7 @@ function App() {
             >
               <GenreCard 
                 selectedGenre={selectedGenre}
-                show={graph === 'genres' && !!selectedGenre}
+                show={graph === 'genres' && !!selectedGenre && !showArtistCard}
                 genreLoading={artistsLoading}
                 deselectGenre={() => {
                   setSelectedGenre(undefined);
