@@ -43,17 +43,17 @@ export function GenreCard({
     if (!nodes || nodes.length === 0) return null
     const items = nodes.slice(0, limitRelated)
     return (
-      <h3>
-        <span className="font-medium">{label}:</span>{' '}
+      <h3 className="flex flex-col items-start gap-1 mb-3">
+        <span className="text-sm text-muted-foreground">{label}:</span>{' '}
         {items.map((node, i) => (
-          <>
+          <div >
             {onLinkedGenreClick ? (
               <Button variant="link" size="sm" key={node.id} onClick={() => onLinkedGenreClick(node.id)}>{node.name}</Button>
             ) : (
               <span key={node.id}>{node.name}</span>
             )}
             {i < items.length - 1 ? ', ' : ''}
-          </>
+          </div>
         ))}
       </h3>
     )
