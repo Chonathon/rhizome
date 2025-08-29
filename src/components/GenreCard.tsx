@@ -1,4 +1,4 @@
-import { BasicNode, Genre } from '@/types'
+import { BasicNode, Genre, Artist } from '@/types'
 import { formatNumber } from '@/lib/utils'
 import { useEffect, useState } from "react"
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
@@ -19,6 +19,7 @@ interface GenreCardProps {
   onSelectGenre?: (name: string) => void;
   onLinkedGenreClick: (genreID: string) => void;
   limitRelated?: number;
+  onTopArtistClick?: (artist: Artist) => void;
 }
 
 export function GenreCard({
@@ -31,6 +32,7 @@ export function GenreCard({
   onSelectGenre,
   onLinkedGenreClick,
   limitRelated = 5,
+  onTopArtistClick,
 }: GenreCardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [open, setOpen] = useState(false)
@@ -134,16 +136,18 @@ export function GenreCard({
                   <div className="flex flex-col gap-2">
                     <span className="text-md font-semibold">Top Artists</span>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      {topArtists.map((artist) => (
-                        <Badge
-                          key={artist.id}
-                          variant="outline"
-                          className=""
-                          title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
-                        >
+                    {topArtists.map((artist) => (
+                      <Badge
+                        key={artist.id}
+                        asChild
+                        variant="outline"
+                        title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
+                      >
+                        <button type="button" onClick={() => onTopArtistClick?.(artist)} className="cursor-pointer">
                           {artist.name}
-                        </Badge>
-                      ))}
+                        </button>
+                      </Badge>
+                    ))}
                     </div>
                 <Button
                   disabled={genreLoading}

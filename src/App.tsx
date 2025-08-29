@@ -168,6 +168,13 @@ function App() {
     addRecentSelection(genre);
     console.log("Genre preview:", genre);
   }
+  const onTopArtistClick = (artist: Artist) => {
+    // Switch to artists graph and select the clicked artist
+    setGraph('artists');
+    setSelectedArtist(artist);
+    setShowArtistCard(true);
+    addRecentSelection(artist);
+  }
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
       setSelectedArtist(artist);
@@ -321,6 +328,7 @@ function App() {
                 onLinkedGenreClick={onLinkedGenreClick}
                 show={graph === 'genres' && !!selectedGenre && !showArtistCard}
                 genreLoading={artistsLoading}
+                onTopArtistClick={onTopArtistClick}
                 deselectGenre={() => {
                   setSelectedGenre(undefined);
                   setGraph('genres');
