@@ -200,9 +200,9 @@ export function GenreCard({
                     <div className="absolute inset-0 pointer-events-none">
                       {canPrev && (
                         <Button
-                          className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2"
+                          className="pointer-events-auto h-full absolute rounded-none bg-background left-0 top-1/2 -translate-y-1/2"
                           variant="ghost"
-                          size="icon"
+                          size="sm"
                           onClick={() => scrollByWidth('prev')}
                           aria-label="Previous"
                         >
@@ -211,7 +211,7 @@ export function GenreCard({
                       )}
                       {canNext && (
                         <Button
-                          className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2"
+                          className="pointer-events-auto h-full absolute rounded-none bg-background right-0 top-1/2 -translate-y-1/2"
                           variant="ghost"
                           size="icon"
                           onClick={() => scrollByWidth('next')}
