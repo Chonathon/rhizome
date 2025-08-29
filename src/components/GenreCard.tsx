@@ -167,7 +167,7 @@ export function GenreCard({
     >
       <DrawerContent
         className={`w-full h-full rounded-l-3xl
-          ${isDesktop ? 'max-w-sm px-2' : isSmallScreen ? 'h-[35vh]' : ''}`}
+          ${isDesktop ? 'max-w-sm px-2' : isSmallScreen ? 'h-[35vh]' : 'h-[35vh]'}`}
       >
         {/* Sidebar-styled container */}
         <div className={`relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0
