@@ -63,7 +63,8 @@ export function GenreCard({
     )
   }
 
-  const isDesktop = useMediaQuery("(min-width: 640px)")
+  const isDesktop = useMediaQuery("(min-width: 1200px)")
+  const isSmallScreen = useMediaQuery("(min-width: 768px)")
 
   const initial = selectedGenre?.name?.[0]?.toUpperCase() ?? '?'
 
@@ -97,10 +98,12 @@ export function GenreCard({
       modal={false}
     >
       <DrawerContent
-        className="sm:p-2 sm-h-full rounded-l-3xl bg-transparent border-transparent sm:w-[320px]"
+        className={`sm:p-2 w-full h-full rounded-l-3xl bg-transparent border-transparent
+          ${isDesktop ? 'max-w-sm' : isSmallScreen ? 'h-[30vh]' : 'h-[30vh]'}`}
       >
         {/* Sidebar-styled container */}
-        <div className="relative px-3 space-y-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm flex h-full w-full flex-col overflow-y-auto">
+        <div className={`relative px-3 space-y-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm flexh-full w-full flex-col overflow-y-auto
+          ${isSmallScreen ? 'pl-4' : 'py-2'}`}>
           {/* Close button */}
           <div className="flex justify-end -mb-1">
             <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
@@ -115,7 +118,7 @@ export function GenreCard({
           </div>
 
           {/* Content */}
-          <div className="w-full flex flex-col gap-2">
+          <div className="w-full flex flex-col gap-4">
             <div>
               <h2 className="text-xl font-semibold">{selectedGenre?.name}</h2>
                 
