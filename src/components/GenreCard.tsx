@@ -13,6 +13,7 @@ interface GenreCardProps {
   genreError?: boolean;
   deselectGenre: () => void;
   onSelectGenre?: (name: string) => void;
+  onLinkedGenreClick: (genreID: string) => void;
   limitRelated?: number;
 }
 
@@ -24,6 +25,7 @@ export function GenreCard({
   allArtists,
   deselectGenre,
   onSelectGenre,
+  onLinkedGenreClick,
   limitRelated = 5,
 }: GenreCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -42,7 +44,7 @@ export function GenreCard({
         {names.map((name, i) => (
           <>
             {onSelectGenre ? (
-              <button key={name} onClick={() => onSelectGenre(name)}>{name}</button>
+              <button key={name} onClick={() => onLinkedGenreClick(name)}>{name}</button>
             ) : (
               <span key={name}>{name}</span>
             )}
@@ -68,7 +70,7 @@ export function GenreCard({
       thumbnail={
         <div className={`w-24 h-24 shrink-0 overflow-hidden rounded-xl border border-border ${isExpanded ? 'w-full h-[200px]' : ''}`}>
           {/* replace with color of node */}
-          <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500/30 to-indigo-500/30 dark:from-purple-500/20 dark:to-indigo-500/20`}> 
+          <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-300/30 to-indigo-300/30 dark:from-purple-400/20 dark:to-indigo-400/20`}> 
             <span className="text-3xl font-semibold">{initial}</span>
           </div>
         </div>
@@ -94,9 +96,11 @@ export function GenreCard({
               {formatNumber(selectedGenre.totalPlays)}
             </h3>
           )}
+          {relatedLine('Subgenre of', selectedGenre?.subgenre_of)}
           {relatedLine('Subgenres', selectedGenre?.subgenres)}
           {relatedLine('Influenced by', selectedGenre?.influenced_by)}
           {relatedLine('Influences', selectedGenre?.influenced_genres)}
+          {relatedLine('Fusion of', selectedGenre?.fusion_genres)}
         </>
       }
       description={

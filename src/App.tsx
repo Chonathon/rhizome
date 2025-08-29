@@ -318,6 +318,7 @@ function App() {
             >
               <GenreCard 
                 selectedGenre={selectedGenre}
+                onLinkedGenreClick={onLinkedGenreClick}
                 show={graph === 'genres' && !!selectedGenre && !showArtistCard}
                 genreLoading={artistsLoading}
                 deselectGenre={() => {
