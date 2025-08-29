@@ -9,15 +9,16 @@ import {
 import { Loading } from "./Loading"
 
 interface NodeLimiterProps {
-  initialValue?: number,
-  onChange: (value: number) => void
-  totalNodes?: number
-  nodeType?: string
+  initialValue: number;
+  onChange: (value: number) => void;
+  totalNodes: number;
+  nodeType: string;
+  show: boolean;
 }
 
-const ALL_PRESETS = [20000, 10000, 5000, 1000, 500, 200, 100, 50]
+const ALL_PRESETS = [20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50]
 
-export default function NodeLimiter({ initialValue = 200, onChange, totalNodes, nodeType }: NodeLimiterProps) {
+export default function NodeLimiter({ initialValue, onChange, totalNodes, nodeType, show }: NodeLimiterProps) {
     const [value, setValue] = useState<number>(initialValue);
     const [presets, setPresets] = useState<number[]>(ALL_PRESETS);
     const onValueChange = (newValue: number) => {
@@ -31,7 +32,11 @@ export default function NodeLimiter({ initialValue = 200, onChange, totalNodes, 
         }
     }, [totalNodes]);
 
-    return (
+    useEffect(() => {
+        setValue(initialValue);
+    }, [initialValue]);
+
+    return show ? (
         <div
         className="
         flex gap-2 p-2 items-center
@@ -66,5 +71,5 @@ export default function NodeLimiter({ initialValue = 200, onChange, totalNodes, 
                 
                 <p className="text-muted-foreground">of {totalNodes} {nodeType}</p>
         </div>
-    )
+    ) : null;
 }

@@ -63,3 +63,11 @@ export interface GenreGraphData {
     nodes: Genre[];
     links: NodeLink[];
 }
+
+type KeysOfType<T, V> = {
+    [K in keyof T]-?: T[K] extends V ? K : never
+}[keyof T];
+
+export type GenreNodeLimitType = KeysOfType<Genre, number>;
+
+export type ArtistNodeLimitType = KeysOfType<Artist, number>;

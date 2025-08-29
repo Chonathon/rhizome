@@ -23,6 +23,25 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const { theme } = useTheme();
 
+    const preparedData: GraphData<Genre, NodeLink> = useMemo(() => {
+        if (!graphData) return { nodes: [], links: [] };
+
+        // Clone nodes shallowly so FG's runtime props don't leak back upstream.
+        const nodes = graphData.nodes.map(n => ({ ...n }));
+        // Clone links and normalize source/target to ids if FG already mutated them.
+        const links = graphData.links.map((l) => {
+            const src: any = (l as any).source;
+            const tgt: any = (l as any).target;
+            return {
+                source: typeof src === 'string' ? src : src?.id,
+                target: typeof tgt === 'string' ? tgt : tgt?.id,
+                linkType: l.linkType,
+            } as NodeLink;
+        });
+
+        return { nodes, links };
+    }, [graphData]);
+
     useEffect(() => {
         if (graphData) {
             if (fgRef.current) {
@@ -91,7 +110,6 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         ctx.arc(nodeX, nodeY, radius + 24, 0, 2 * Math.PI, false); // node pointer area
         ctx.fill();
     }
-    
 
     return !show ? null : loading ? <Loading /> : (
         <ForceGraph
@@ -99,7 +117,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
              d3AlphaDecay={0.01}     // Length forces are active; smaller → slower cooling
              d3VelocityDecay={.75}    // How springy tugs feel; smaller → more inertia
             cooldownTime={20000} // How long to run the simulation before stopping
-            graphData={graphData}
+            graphData={preparedData}
             dagMode={dag ? 'radialin' : undefined}
             dagLevelDistance={200}
             linkCurvature={dag ? 0 : 0.5}

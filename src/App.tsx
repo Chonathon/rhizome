@@ -8,10 +8,10 @@ import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Artist,
+  Artist, ArtistNodeLimitType,
   Genre,
   GenreClusterMode,
-  GenreGraphData,
+  GenreGraphData, GenreNodeLimitType,
   GraphType,
   NodeLink
 } from "@/types";
@@ -54,7 +54,10 @@ function App() {
   const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [nodeCount, setNodeCount] = useState<number>(0);
+  const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>('artistCount');
+  const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>('listeners');
+  const [genreNodeCount, setGenreNodeCount] = useState<number>(0);
+  const [artistNodeCount, setArtistNodeCount] = useState<number>(0);
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
   const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
@@ -85,39 +88,13 @@ function App() {
   }, [showArtistCard]);
 
   useEffect(() => {
-    setCurrentArtists(artists);
-    setCurrentArtistLinks(artistLinks);
+    const nodeCount = Math.min(artists.length, DEFAULT_NODE_COUNT);
+    onArtistNodeCountChange(nodeCount);
   }, [artists]);
 
   useEffect(() => {
-    const links = genreLinks && genreLinks.length
-            ? genreClusterMode === 'all'
-                ? genreLinks
-                : genreLinks.filter(l => l.linkType === genreClusterMode)
-            : [];
-    console.log(links.length)
-    if (genres && genres.length && nodeCount < genres.length) {
-      const filteredGenres = genres
-          .toSorted((a, b) => b.artistCount - a.artistCount)
-          .slice(0, nodeCount);
-      const genreSet = new Set(filteredGenres.map(genre => genre.id));
-      const filteredLinks = links.filter(l => genreSet.has(l.source) && genreSet.has(l.target));
-      console.log(filteredLinks.length)
-      setCurrentGenres({
-        nodes: filteredGenres,
-        links: filteredLinks,
-      });
-    } else {
-      setCurrentGenres({
-        nodes: genres,
-        links: links,
-      });
-    }
-  }, [nodeCount]);
-
-  useEffect(() => {
-    onGenreClusterModeChange(DEFAULT_CLUSTER_MODE);
-    setNodeCount(genres.length);
+    const nodeCount = genres.length;
+    onGenreNodeCountChange(nodeCount);
   }, [genres, genreLinks]);
 
   useEffect(() => {
@@ -158,14 +135,12 @@ function App() {
     setSelectedGenre(genre);
     setGraph('artists');
     addRecentSelection(genre);
-    console.log("Genre selected:", genre);
   }
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
       setSelectedArtist(artist);
       setShowArtistCard(true);
       addRecentSelection(artist);
-      console.log("Artist selected:", artist);
     }
     if (graph === 'similarArtists') {
       createSimilarArtistGraph(artist);
@@ -226,6 +201,62 @@ function App() {
             : genreLinks.filter(l => l.linkType === newMode)
         : [];
   }
+  const onGenreNodeCountChange = (count: number) => {
+    setGenreNodeCount(count);
+    if (genres && genres.length && count < genres.length) {
+      const filteredGenres = genres
+          .toSorted((a, b) => b[genreNodeLimitType] - a[genreNodeLimitType])
+          .slice(0, count);
+      const genreSet = new Set(filteredGenres.map(genre => genre.id));
+      const filteredLinks = genreLinks.filter(l => {
+        return genreSet.has(l.source) && genreSet.has(l.target) && l.linkType === genreClusterMode;
+      });
+      setCurrentGenres({
+        nodes: filteredGenres,
+        links: filteredLinks,
+      });
+    } else {
+      setCurrentGenres({ nodes: genres, links: filterLinksByClusterMode(genreClusterMode) });
+    }
+  }
+  const onArtistNodeCountChange = (count: number) => {
+    setArtistNodeCount(count);
+    if (artists && artists.length && count < artists.length) {
+      const filteredArtists = artists
+          .toSorted((a, b) => b[artistNodeLimitType] - a[artistNodeLimitType])
+          .slice(0, count);
+      const artistSet = new Set(filteredArtists.map(artist => artist.id));
+      const filteredLinks = artistLinks.filter(l => {
+        return artistSet.has(l.source) && artistSet.has(l.target);
+      });
+      setCurrentArtists(filteredArtists);
+      setCurrentArtistLinks(filteredLinks);
+    } else {
+      setCurrentArtists(artists);
+      setCurrentArtistLinks(artistLinks);
+    }
+  }
+  const onNodeCountChange = (count: number) => {
+    if (graph === 'genres') {
+
+    } else if (graph === 'artists') {
+
+    }
+  }
+  const showGenreNodeLimiter = () => {
+    if (graph === 'genres') {
+      return !!genres && !genresLoading && !genresError;
+    } else return false;
+  }
+  const showArtistNodeLimiter = () => {
+    if (graph === 'artists') {
+      return !!artists && !artistsLoading && !artistsError;
+    } else return false;
+  }
+  const onGraphTabSwitch = (graphType: GraphType) => {
+    setGraph(graphType);
+
+  }
 
   return (
     <SidebarProvider>
@@ -245,7 +276,7 @@ function App() {
                 onValueChange={(val) => setGraph(val as GraphType)}>
                   <TabsList>
                       <TabsTrigger
-                      onClick={() => setGraph('genres')}value="genres">Genres</TabsTrigger>
+                      onClick={() => setGraph('genres')} value="genres">Genres</TabsTrigger>
                     <TabsTrigger
                     onClick={() => setGraph('artists')} value="artists">Artists</TabsTrigger>
                   </TabsList>
@@ -349,12 +380,19 @@ function App() {
 
                 </motion.div>
               </div>
-
               <NodeLimiter
-                totalNodes={graph === 'genres' ? genres.length : currentArtists.length}
-                nodeType={graph === 'genres' ? 'genres' : 'artists'}
-                initialValue={nodeCount}
-                onChange={setNodeCount}
+                  totalNodes={genres.length}
+                  nodeType={'genres'}
+                  initialValue={genreNodeCount}
+                  onChange={onGenreNodeCountChange}
+                  show={showGenreNodeLimiter()}
+              />
+              <NodeLimiter
+                totalNodes={artists.length}
+                nodeType={'artists'}
+                initialValue={artistNodeCount}
+                onChange={onArtistNodeCountChange}
+                show={showArtistNodeLimiter()}
               />
             </motion.div>
           </AnimatePresence>
