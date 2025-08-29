@@ -8,7 +8,7 @@ import { useTheme } from "next-themes";
 
 interface GenresForceGraphProps {
     graphData?: GenreGraphData;
-    onNodeClick?: (genre: Genre) => void;
+    onNodeClick: (genre: Genre) => void;
     loading: boolean;
     show: boolean;
     dag: boolean;
@@ -105,7 +105,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
             linkCurvature={dag ? 0 : 0.5}
             linkColor={() => theme === "dark" ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.18)'}
             linkWidth={1}
-            onNodeClick={(node) => onNodeClick && onNodeClick(node as Genre)}
+            onNodeClick={node => onNodeClick(node)}
             nodeCanvasObject={nodeCanvasObject}
             nodeCanvasObjectMode={() => 'replace'}
             nodeVal={(node: Genre) => calculateRadius(node.artistCount)}
