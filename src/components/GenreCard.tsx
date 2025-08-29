@@ -37,6 +37,7 @@ export function GenreCard({
 }: GenreCardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [open, setOpen] = useState(false)
+  const [fullBleed, setFullBleed] = useState(false)
 
   const onDismiss = () => {
     setIsExpanded(false)
@@ -160,18 +161,37 @@ export function GenreCard({
       onOpenChange={(next) => {
         setOpen(next)
         if (!next) onDismiss()
+        if (next) setFullBleed(false)
       }}
       direction={isDesktop ? "right" : "bottom"}
       dismissible={true}
       modal={false}
     >
       <DrawerContent
-        className={`w-full h-full rounded-l-3xl
-          ${isDesktop ? 'max-w-sm px-2' : isSmallScreen ? 'h-[35vh]' : 'h-[35vh]'}`}
+        bottomFullWidth={!isDesktop && fullBleed}
+        className={`w-full h-full ${isDesktop ? 'rounded-l-3xl' : 'rounded-t-3xl'}
+          ${isDesktop
+            ? 'max-w-sm px-2'
+            : fullBleed
+              ? 'h-[90vh]'
+              : 'h-[35vh]'}
+        `}
       >
         {/* Sidebar-styled container */}
-        <div className={`relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0
-          ${isDesktop ? 'pl-4' : 'py-1'}`}>
+        <div
+          onClick={(e) => {
+            // Avoid expanding when tapping explicit controls like the close button
+            const target = e.target as HTMLElement
+            const isControl = target.closest('button, a, [role="button"], [data-stop-expand]')
+            if (!isDesktop && !isControl) setFullBleed(prev => !prev)
+          }}
+          className={`relative bg-sidebar backdrop-blur-sm shadow-sm h-full w-full overflow-clip flex flex-col min-h-0
+            ${isDesktop
+              ? 'pl-4 px-3 border border-sidebar-border rounded-3xl'
+              : fullBleed
+                ? 'px-0 border-0 rounded-none py-0'
+                : 'px-3 border border-sidebar-border rounded-3xl py-1'
+            }`}>
           {/* Close button */}
             <div className="flex justify-end -mx-2.5 -mb-1">
               <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
