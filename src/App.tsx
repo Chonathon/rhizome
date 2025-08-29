@@ -153,6 +153,13 @@ function App() {
     addRecentSelection(genre);
     console.log("Genre selected:", genre);
   }
+  // Trigger full artist view for a genre from UI (e.g., GenreCard "All Artists")
+  const onShowAllArtists = (genre: Genre) => {
+    setSelectedGenre(genre);
+    setGraph('artists');
+    addRecentSelection(genre);
+    console.log("Show all artists for genre:", genre);
+  }
   // For clicking on a genre node in the Genres graph: only show the GenreCard, do not switch graphs
   const onGenreNodePreview = (genre: Genre) => {
     setSelectedGenre(genre);
@@ -318,7 +325,7 @@ function App() {
                   setCurrentArtistLinks([]);
                 }}
                 onSelectGenre={onLinkedGenreClick}
-                allArtists={onGenreNodeClick}
+                allArtists={onShowAllArtists}
               />
               <ArtistCard
                 selectedArtist={selectedArtist}
