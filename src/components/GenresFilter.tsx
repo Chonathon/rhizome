@@ -164,21 +164,19 @@ export default function GenresFilter({
     }}
       trigger={
         <Button size="lg" variant="outline" className={`${hasAnySelection ? "px-4" : ""}`}>
-          {`Genres
-          
-          `}
+          {`Genres`}
           {hasAnySelection ? (
             <Button
               size="icon"
               variant="secondary"
               aria-label="Clear all filters"
-              className="-m-1.5 w-7 h-7"
+              className="-m-1.5 w-7 h-7 group"
               onMouseDown={(e) => e.preventDefault()}
               onClick={(e) => { e.stopPropagation(); clearAll(); }}
+              title="Clear all filters"
             >
-              {/* */}
-              {totalSelected > 1 ? `${totalSelected}` : <X /> }
-              
+              <span className="group-hover:hidden text-xs leading-none">{totalSelected}</span>
+              <X className="hidden group-hover:block h-4 w-4" />
             </Button>
           ) : (
             <ChevronDown />
