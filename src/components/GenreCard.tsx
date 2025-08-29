@@ -88,6 +88,10 @@ export function GenreCard({
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const [canPrev, setCanPrev] = useState(false)
   const [canNext, setCanNext] = useState(false)
+  // Mobile carousel refs/state (for non-desktop rendering below Top Artists)
+  const mobileScrollerRef = useRef<HTMLDivElement | null>(null)
+  const [mCanPrev, setMCanPrev] = useState(false)
+  const [mCanNext, setMCanNext] = useState(false)
   const scrollByWidth = (dir: 'prev' | 'next') => {
     const el = scrollerRef.current
     if (!el) return
@@ -102,6 +106,22 @@ export function GenreCard({
     const maxScrollLeft = Math.max(0, scrollWidth - clientWidth)
     setCanPrev(scrollLeft > 1)
     setCanNext(scrollLeft < maxScrollLeft - 1)
+  }
+
+  const scrollByWidthMobile = (dir: 'prev' | 'next') => {
+    const el = mobileScrollerRef.current
+    if (!el) return
+    const delta = dir === 'next' ? el.clientWidth : -el.clientWidth
+    el.scrollBy({ left: delta, behavior: 'smooth' })
+  }
+
+  const updateMobileCarouselNav = () => {
+    const el = mobileScrollerRef.current
+    if (!el) return
+    const { scrollLeft, scrollWidth, clientWidth } = el
+    const maxScrollLeft = Math.max(0, scrollWidth - clientWidth)
+    setMCanPrev(scrollLeft > 1)
+    setMCanNext(scrollLeft < maxScrollLeft - 1)
   }
 
   // Auto-open the sheet when a genre is selected and show is true
@@ -120,11 +140,16 @@ export function GenreCard({
       // Ensure nav state matches reset position
       requestAnimationFrame(updateCarouselNav)
     }
+    if (mobileScrollerRef?.current) {
+      mobileScrollerRef.current.scrollTo({ left: 0, behavior: 'auto' })
+      requestAnimationFrame(updateMobileCarouselNav)
+    }
   }, [selectedGenre?.id])
 
   useEffect(() => {
     // Recalculate nav availability when slides change
     requestAnimationFrame(updateCarouselNav)
+    requestAnimationFrame(updateMobileCarouselNav)
   }, [slides.length])
 
   if (!show) return null
@@ -137,7 +162,7 @@ export function GenreCard({
         if (!next) onDismiss()
       }}
       direction={isDesktop ? "right" : "bottom"}
-      dismissible={false}
+      dismissible={true}
       modal={false}
     >
       <DrawerContent
@@ -267,6 +292,76 @@ export function GenreCard({
                 >
                   <SquareArrowUp />All Artists
                 </Button>
+                  </div>
+                )}
+
+                {/* Mobile Thumbnail / Carousel (non-desktop) */}
+                {!isDesktop && slides.length >= 1 && imageArtists.length >= 2 && (
+                  <div className="w-full overflow-hidden border-y border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none">
+                    <div className="relative w-full h-full">
+                      <div
+                        ref={mobileScrollerRef}
+                        onScroll={updateMobileCarouselNav}
+                        className="h-full w-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar"
+                      >
+                        {slides.map((chunk, idx) => (
+                          <div key={idx} className="snap-center shrink-0 w-full h-full grid grid-cols-2 grid-rows-2 gap-1">
+                            {chunk.map((artist, i) => {
+                              const spanClasses = [
+                                "col-span-1 row-span-2",
+                                "col-span-1 row-span-1",
+                                "col-span-1 row-span-1",
+                              ][i] || "col-span-1 row-span-1"
+                              return (
+                                <div key={artist.id} className={`${spanClasses} relative overflow-hidden rounded-md`}>
+                                  <button
+                                    type="button"
+                                    onClick={() => onTopArtistClick?.(artist)}
+                                    title={artist.name}
+                                    className="group block w-full h-full focus:outline-none"
+                                  >
+                                    <img
+                                      src={(artist.image as string)}
+                                      alt={artist.name}
+                                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
+                                    <span className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm">{artist.name}</span>
+                                  </button>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                      {slides.length > 1 && (mCanPrev || mCanNext) && (
+                        <div className="absolute inset-0 pointer-events-none">
+                          {mCanPrev && (
+                            <Button
+                              className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => scrollByWidthMobile('prev')}
+                              aria-label="Previous"
+                            >
+                              <ChevronLeft />
+                            </Button>
+                          )}
+                          {mCanNext && (
+                            <Button
+                              className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => scrollByWidthMobile('next')}
+                              aria-label="Next"
+                            >
+                              <ChevronRight />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
             
