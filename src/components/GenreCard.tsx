@@ -141,12 +141,12 @@ export function GenreCard({
       modal={false}
     >
       <DrawerContent
-        className={`sm:p-2 w-full h-full rounded-l-3xl bg-transparent border-transparent
-          ${isDesktop ? 'max-w-sm' : isSmallScreen ? 'h-[35vh]' : ''}`}
+        className={`w-full h-full rounded-l-3xl
+          ${isDesktop ? 'max-w-sm px-2' : isSmallScreen ? 'h-[35vh]' : ''}`}
       >
         {/* Sidebar-styled container */}
         <div className={`relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0
-          ${isDesktop ? 'pl-4' : 'py-2'}`}>
+          ${isDesktop ? 'pl-4' : 'py-1'}`}>
           {/* Close button */}
             <div className="flex justify-end -mx-2.5 -mb-1">
               <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
