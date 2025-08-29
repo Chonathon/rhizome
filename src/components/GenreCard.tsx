@@ -1,4 +1,4 @@
-import { Genre } from '@/types'
+import { BasicNode, Genre } from '@/types'
 import { formatNumber } from '@/lib/utils'
 import { useState } from "react"
 import GraphCard from "./GraphCard";
@@ -35,20 +35,20 @@ export function GenreCard({
     deselectGenre()
   }
 
-  const relatedLine = (label: string, nodes?: { name: string }[]) => {
+  const relatedLine = (label: string, nodes?: BasicNode[]) => {
     if (!nodes || nodes.length === 0) return null
-    const names = nodes.slice(0, limitRelated).map(n => n.name)
+    const items = nodes.slice(0, limitRelated)
     return (
       <h3>
         <span className="font-medium">{label}:</span>{' '}
-        {names.map((name, i) => (
+        {items.map((node, i) => (
           <>
-            {onSelectGenre ? (
-              <button key={name} onClick={() => onLinkedGenreClick(name)}>{name}</button>
+            {onLinkedGenreClick ? (
+              <button key={node.id} onClick={() => onLinkedGenreClick(node.id)}>{node.name}</button>
             ) : (
-              <span key={name}>{name}</span>
+              <span key={node.id}>{node.name}</span>
             )}
-            {i < names.length - 1 ? ', ' : ''}
+            {i < items.length - 1 ? ', ' : ''}
           </>
         ))}
       </h3>
@@ -100,7 +100,7 @@ export function GenreCard({
           {relatedLine('Subgenres', selectedGenre?.subgenres)}
           {relatedLine('Influenced by', selectedGenre?.influenced_by)}
           {relatedLine('Influences', selectedGenre?.influenced_genres)}
-          {relatedLine('Fusion of', selectedGenre?.fusion_genres)}
+          {relatedLine('Fusion of', selectedGenre?.fusion_of)}
         </>
       }
       description={
