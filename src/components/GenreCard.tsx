@@ -113,7 +113,7 @@ export function GenreCard({
       }
       actions={
         <Button 
-          variant="ghost" className="-mx-2.5" size="sm" 
+          variant="secondary" className="" size="lg" 
           onClick={() => selectedGenre && allArtists(selectedGenre)} >
           <SquareArrowUp />All Artists</Button>
       }
