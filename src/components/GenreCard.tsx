@@ -30,7 +30,7 @@ export function GenreCard({
   onLinkedGenreClick,
   limitRelated = 5,
 }: GenreCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
   const [open, setOpen] = useState(false)
 
   const onDismiss = () => {
@@ -86,31 +86,27 @@ export function GenreCard({
       modal={false}
     >
       <DrawerContent
-        className="p-2 sm:p-2 rounded-l-3xl bg-transparent border-transparent !w-[320px]"
+        className="p-2 sm:p-2 rounded-l-3xl bg-transparent border-transparent w-[320px]"
       >
         {/* Sidebar-styled container */}
-        <div className="relative bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm flex h-full w-full flex-col overflow-hidden">
+        <div className="relative px-3 space-y-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm flex h-full w-full flex-col overflow-hidden">
           {/* Close button */}
-          <div className="absolute top-2 right-2 z-10">
+          <div className="flex justify-end -mb-1">
             <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
               <X className="size-4" />
             </Button>
           </div>
           {/* Thumbnail full-width when expanded */}
-          <div className={`w-full overflow-hidden border-b border-sidebar-border ${isExpanded ? 'h-[200px]' : 'h-[120px]'}`}>
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-300/30 to-indigo-300/30 dark:from-purple-400/20 dark:to-indigo-400/20">
+          <div className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px]`}>
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
               <span className="text-4xl font-semibold">{initial}</span>
             </div>
           </div>
 
           {/* Content */}
-          <div className="flex flex-col gap-2 p-4">
+          <div className="w-full flex flex-col">
             <h2 className="text-lg font-semibold">{selectedGenre?.name}</h2>
-
-            <div className="text-sm space-y-1">
-            {genreError && <p>Can’t find {selectedGenre?.name} 🤔</p>}
-            {!genreError && (
-              <>
+              <div className="text-sm">
                 {typeof selectedGenre?.artistCount === 'number' && (
                   <h3>
                     <span className="font-medium">Artists:</span>{' '}
@@ -129,22 +125,8 @@ export function GenreCard({
                     {formatNumber(selectedGenre.totalPlays)}
                   </h3>
                 )}
-                {relatedLine('Subgenre of', selectedGenre?.subgenre_of)}
-                {relatedLine('Subgenres', selectedGenre?.subgenres)}
-                {relatedLine('Influenced by', selectedGenre?.influenced_by)}
-                {relatedLine('Influences', selectedGenre?.influenced_genres)}
-                {relatedLine('Fusion of', selectedGenre?.fusion_of)}
-              </>
-            )}
-            </div>
-            <p
-              onClick={() => setIsExpanded(prev => !prev)}
-              className={`break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
-            >
-              {selectedGenre?.description || 'No description'}
-            </p>
-
-            <div className="pt-2">
+              </div>
+            <div className="mt-3">
               <Button
                 disabled={genreLoading}
                 variant="secondary"
@@ -154,6 +136,28 @@ export function GenreCard({
                 <SquareArrowUp />All Artists
               </Button>
             </div>
+
+            <div className="text-sm space-y-1 mt-3">
+            {genreError && <p>Can’t find {selectedGenre?.name} 🤔</p>}
+            {!genreError && (
+              <>
+                {relatedLine('Subgenre of', selectedGenre?.subgenre_of)}
+                {relatedLine('Subgenres', selectedGenre?.subgenres)}
+                {relatedLine('Influenced by', selectedGenre?.influenced_by)}
+                {relatedLine('Influences', selectedGenre?.influenced_genres)}
+                {relatedLine('Fusion of', selectedGenre?.fusion_of)}
+              </>
+            )}
+            </div>
+            
+            
+            <p
+              onClick={() => setIsExpanded(prev => !prev)}
+              className={` mt-3 break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+            >
+              {selectedGenre?.description || 'No description'}
+            </p>
+
           </div>
         </div>
       </DrawerContent>
