@@ -102,99 +102,100 @@ export function GenreCard({
           ${isDesktop ? 'max-w-sm' : isSmallScreen ? 'h-[30vh]' : 'h-[30vh]'}`}
       >
         {/* Sidebar-styled container */}
-        <div className={`relative px-3 space-y-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm flexh-full w-full flex-col overflow-y-auto
+        <div className={`relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0
           ${isSmallScreen ? 'pl-4' : 'py-2'}`}>
           {/* Close button */}
-          <div className="flex justify-end -mb-1">
-            <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
-              <X />
-            </Button>
-          </div>
-          {/* Thumbnail full-width when expanded */}
-          <div className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px]`}>
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
-              <span className="text-4xl font-semibold">{initial}</span>
+            <div className="flex justify-end -mb-1">
+              <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
+                <X />
+              </Button>
             </div>
-          </div>
-
-          {/* Content */}
-          <div className="w-full flex flex-col gap-4">
-            <div>
-              <h2 className="text-xl font-semibold">{selectedGenre?.name}</h2>
-                
+            {/* Scrolling Container */}
+          <div className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar'>
+            {/* Thumbnail */}
+            <div className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none`}>
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
+                <span className="text-4xl font-semibold">{initial}</span>
+              </div>
             </div>
-              {/* Top Artists */}
-              {topArtists.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <span className="text-md font-semibold">Top Artists:</span>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {topArtists.map((artist) => (
-                      <Badge
-                        key={artist.id}
-                        variant="outline"
-                        className=""
-                        title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
-                      >
-                        {artist.name}
-                      </Badge>
-                    ))}
+            {/* Content */}
+            <div className="w-full flex flex-col gap-4 ">
+              <div>
+                <h2 className="text-xl font-semibold">{selectedGenre?.name}</h2>
+            
+              </div>
+                {/* Top Artists */}
+                {topArtists.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-md font-semibold">Top Artists:</span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {topArtists.map((artist) => (
+                        <Badge
+                          key={artist.id}
+                          variant="outline"
+                          className=""
+                          title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
+                        >
+                          {artist.name}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
+                )}
+                <Button
+                  disabled={genreLoading}
+                  size="lg"
+                  variant="secondary"
+                  onClick={() => selectedGenre && allArtists(selectedGenre)}
+                >
+                  <SquareArrowUp />All Artists
+                </Button>
+            
+              {/* Related */}
+              {genreError && <p>Can’t find {selectedGenre?.name} 🤔</p>}
+              {!genreError && (
+                <div className='flex flex-col gap-2'>
+                  <text className='text-md font-semibold'>Related</text>
+                  <>
+                    {relatedLine('Subgenre of', selectedGenre?.subgenre_of)}
+                    {relatedLine('Subgenres', selectedGenre?.subgenres)}
+                    {relatedLine('Influenced by', selectedGenre?.influenced_by)}
+                    {relatedLine('Influences', selectedGenre?.influenced_genres)}
+                    {relatedLine('Fusion of', selectedGenre?.fusion_of)}
+                  </>
                 </div>
               )}
-              <Button
-                disabled={genreLoading}
-                size="lg"
-                variant="secondary"
-                onClick={() => selectedGenre && allArtists(selectedGenre)}
-              >
-                <SquareArrowUp />All Artists
-              </Button>
-
-            <div>
-            {genreError && <p>Can’t find {selectedGenre?.name} 🤔</p>}
-            {!genreError && (
-              <div className='flex flex-col gap-2'>
-                <text className='text-md font-semibold'>Related</text>
-                <>
-                  {relatedLine('Subgenre of', selectedGenre?.subgenre_of)}
-                  {relatedLine('Subgenres', selectedGenre?.subgenres)}
-                  {relatedLine('Influenced by', selectedGenre?.influenced_by)}
-                  {relatedLine('Influences', selectedGenre?.influenced_genres)}
-                  {relatedLine('Fusion of', selectedGenre?.fusion_of)}
-                </>
+              {/* Stats */}
+              <div className="flex flex-col gap-2">
+                <text className='text-md font-semibold'>Stats</text>
+                    {typeof selectedGenre?.artistCount === 'number' && (
+                      <h3>
+                        <span className="text-md text-muted-foreground">Artists:</span>{' '}
+                        {formatNumber(selectedGenre.artistCount)}
+                      </h3>
+                    )}
+                    {typeof selectedGenre?.totalListeners === 'number' && (
+                      <h3>
+                        <span className="text-md text-muted-foreground">Listeners:</span>{' '}
+                        {formatNumber(selectedGenre.totalListeners)}
+                      </h3>
+                    )}
+                    {typeof selectedGenre?.totalPlays === 'number' && (
+                      <h3>
+                        <span className="text-md text-muted-foreground">Plays:</span>{' '}
+                        {formatNumber(selectedGenre.totalPlays)}
+                      </h3>
+                    )}
               </div>
-            )}
-            <div className="flex flex-col gap-2">
-                  {/* {typeof selectedGenre?.artistCount === 'number' && (
-                    <h3>
-                      <span className="font-medium">Artists:</span>{' '}
-                      {formatNumber(selectedGenre.artistCount)}
-                    </h3>
-                  )} */}
-                  <text className='text-md font-semibold'>Stats</text>
-                  {typeof selectedGenre?.totalListeners === 'number' && (
-                    <h3>
-                      <span className="">Listeners:</span>{' '}
-                      {formatNumber(selectedGenre.totalListeners)}
-                    </h3>
-                  )}
-                  {/* {typeof selectedGenre?.totalPlays === 'number' && (
-                    <h3>
-                      <span className="font-medium">Plays:</span>{' '}
-                      {formatNumber(selectedGenre.totalPlays)}
-                    </h3>
-                  )} */}
-                </div>
+            
+            
+              <p
+                onClick={() => setIsExpanded(prev => !prev)}
+                className={` mt-3 break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+              >
+                {selectedGenre?.description || 'No description'}
+              </p>
             </div>
-            
-            
-            <p
-              onClick={() => setIsExpanded(prev => !prev)}
-              className={` mt-3 break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
-            >
-              {selectedGenre?.description || 'No description'}
-            </p>
-
           </div>
         </div>
       </DrawerContent>
