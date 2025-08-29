@@ -1,5 +1,5 @@
 import {Genre, GenreClusterMode, GenreGraphData, NodeLink} from "@/types";
-import React, {useEffect, useState, useRef, useMemo, use} from "react";
+import React, {useEffect, useRef, useMemo} from "react";
 import ForceGraph, {ForceGraphMethods, GraphData, NodeObject} from "react-force-graph-2d";
 import {Loading} from "./Loading";
 import {forceCollide} from 'd3-force';
@@ -22,6 +22,28 @@ const estimateLabelWidth = (name: string) => name.length * (LABEL_FONT_SIZE * 0.
 const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode }) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const { theme } = useTheme();
+
+    // IMPORTANT: react-force-graph mutates the input graphData object in-place
+    // (e.g., replacing link.source/target ids with the actual node objects, adding x/y/vx/vy).
+    // To avoid corrupting our app state, make a detached, memoized copy for the renderer only.
+    const preparedData: GraphData<Genre, NodeLink> = useMemo(() => {
+        if (!graphData) return { nodes: [], links: [] };
+
+        // Clone nodes shallowly so FG's runtime props don't leak back upstream.
+        const nodes = graphData.nodes.map(n => ({ ...n }));
+        // Clone links and normalize source/target to ids if FG already mutated them.
+        const links = graphData.links.map((l) => {
+            const src: any = (l as any).source;
+            const tgt: any = (l as any).target;
+            return {
+                source: typeof src === 'string' ? src : src?.id,
+                target: typeof tgt === 'string' ? tgt : tgt?.id,
+                linkType: l.linkType,
+            } as NodeLink;
+        });
+
+        return { nodes, links };
+    }, [graphData]);
 
     useEffect(() => {
         if (graphData) {
@@ -99,7 +121,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
              d3AlphaDecay={0.01}     // Length forces are active; smaller → slower cooling
              d3VelocityDecay={.75}    // How springy tugs feel; smaller → more inertia
             cooldownTime={20000} // How long to run the simulation before stopping
-            graphData={graphData}
+            graphData={preparedData}
             dagMode={dag ? 'radialin' : undefined}
             dagLevelDistance={200}
             linkCurvature={dag ? 0 : 0.5}

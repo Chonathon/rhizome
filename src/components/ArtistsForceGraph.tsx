@@ -18,14 +18,19 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
     const { theme } = useTheme();
 
     useEffect(() => {
-        if (artists && artistLinks) {
-            setGraphData(
-                {
-                    nodes: artists,
-                    links: artistLinks
-                }
-            );
-        }
+        if (!artists || !artistLinks) return;
+        // Detach copies to avoid FG mutating upstream state
+        const nodes = artists.map(a => ({ ...a }));
+        const links = artistLinks.map(l => {
+            const src: any = (l as any).source;
+            const tgt: any = (l as any).target;
+            return {
+                source: typeof src === 'string' ? src : src?.id,
+                target: typeof tgt === 'string' ? tgt : tgt?.id,
+                linkType: l.linkType,
+            } as NodeLink;
+        });
+        setGraphData({ nodes, links });
 
     }, [artists, artistLinks]);
 
