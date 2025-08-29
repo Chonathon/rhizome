@@ -101,11 +101,11 @@ export function GenreCard({
     >
       <DrawerContent
         className={`sm:p-2 w-full h-full rounded-l-3xl bg-transparent border-transparent
-          ${isDesktop ? 'max-w-sm' : isSmallScreen ? 'h-[30vh]' : 'h-[30vh]'}`}
+          ${isDesktop ? 'max-w-sm' : isSmallScreen ? 'h-[35vh]' : ''}`}
       >
         {/* Sidebar-styled container */}
         <div className={`relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0
-          ${isSmallScreen ? 'pl-4' : 'py-2'}`}>
+          ${isDesktop ? 'pl-4' : 'py-2'}`}>
           {/* Close button */}
             <div className="flex justify-end -mb-1">
               <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
@@ -115,7 +115,8 @@ export function GenreCard({
             {/* Scrolling Container */}
           <div className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar'>
             {/* Thumbnail */}
-            <div className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none`}>
+            <div className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none
+              ${isDesktop ? '' : 'hidden'}`}>
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
                 <span className="text-4xl font-semibold">{initial}</span>
               </div>

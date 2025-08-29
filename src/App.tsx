@@ -243,7 +243,7 @@ function App() {
         onClick={resetAppState}
         selectedGenre={selectedGenre}>
           <Gradient />
-        <div className="relative min-h-screen min-w-screen">
+        <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
 
           <div className={
             "fixed w-auto top-0 ml-(--sidebar-width) flex items-center gap-3 p-3 z-50"
