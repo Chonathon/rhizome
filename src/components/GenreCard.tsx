@@ -178,11 +178,11 @@ export function GenreCard({
                     ))}
                   </div>
                   {slides.length > 1 && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => scrollByWidth('prev')} aria-label="Previous">
+                    <div className="absolute top-1/2 -translate-y-1/2 flex gap-1">
+                      <Button className="absolute top-1/2 -translate-y-1/2 left-2" variant="ghost" size="icon" onClick={() => scrollByWidth('prev')} aria-label="Previous">
                         <ChevronLeft />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => scrollByWidth('next')} aria-label="Next">
+                      <Button className="absolute top-1/2 -translate-y-1/2 right-2" variant="ghost" size="icon" onClick={() => scrollByWidth('next')} aria-label="Next">
                         <ChevronRight />
                       </Button>
                     </div>
