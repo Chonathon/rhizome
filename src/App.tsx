@@ -253,10 +253,6 @@ function App() {
       return !!artists && !artistsLoading && !artistsError;
     } else return false;
   }
-  const onGraphTabSwitch = (graphType: GraphType) => {
-    setGraph(graphType);
-
-  }
 
   return (
     <SidebarProvider>
