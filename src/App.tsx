@@ -150,9 +150,14 @@ function App() {
     //   setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
     // }
     setSelectedGenre(genre);
-    setGraph('artists');
     addRecentSelection(genre);
     console.log("Genre selected:", genre);
+  }
+  // For clicking on a genre node in the Genres graph: only show the GenreCard, do not switch graphs
+  const onGenreNodePreview = (genre: Genre) => {
+    setSelectedGenre(genre);
+    addRecentSelection(genre);
+    console.log("Genre preview:", genre);
   }
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
@@ -254,7 +259,7 @@ function App() {
           </div>
                 <GenresForceGraph
                   graphData={currentGenres}
-                  onNodeClick={onGenreNodeClick}
+                  onNodeClick={onGenreNodePreview}
                   loading={genresLoading}
                   show={graph === "genres" && !genresError}
                   dag={dagMode}
@@ -304,7 +309,7 @@ function App() {
             >
               <GenreCard 
                 selectedGenre={selectedGenre}
-                show={graph === 'artists' && !!selectedGenre}
+                show={graph === 'genres' && !!selectedGenre}
                 genreLoading={artistsLoading}
                 deselectGenre={() => {
                   setSelectedGenre(undefined);
@@ -313,6 +318,7 @@ function App() {
                   setCurrentArtistLinks([]);
                 }}
                 onSelectGenre={onLinkedGenreClick}
+                allArtists={onGenreNodeClick}
               />
               <ArtistCard
                 selectedArtist={selectedArtist}

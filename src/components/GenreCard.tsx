@@ -2,9 +2,12 @@ import { Genre } from '@/types'
 import { formatNumber } from '@/lib/utils'
 import { useState } from "react"
 import GraphCard from "./GraphCard";
+import { Button } from './ui/button';
+import { SquareArrowUp } from 'lucide-react';
 
 interface GenreCardProps {
   selectedGenre?: Genre;
+  allArtists: (genre: Genre) => void
   show: boolean;
   genreLoading: boolean;
   genreError?: boolean;
@@ -18,6 +21,7 @@ export function GenreCard({
   show,
   genreLoading,
   genreError,
+  allArtists,
   deselectGenre,
   onSelectGenre,
   limitRelated = 5,
@@ -102,7 +106,12 @@ export function GenreCard({
           {selectedGenre?.description || 'No description'}
         </p>
       }
-      // actions can be provided later via actions prop
+      actions={
+        <Button 
+          variant="ghost" className="-mx-2.5" size="sm" 
+          onClick={() => selectedGenre && allArtists(selectedGenre)} >
+          <SquareArrowUp />All Artists</Button>
+      }
     />
   )
 }
