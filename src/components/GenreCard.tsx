@@ -4,9 +4,10 @@ import { useEffect, useState } from "react"
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
-import { SquareArrowUp, X } from 'lucide-react';
+import { SquareArrowUp, X, XCircle } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge } from './ui/badge';
+
 
 
 interface GenreCardProps {
@@ -107,7 +108,7 @@ export function GenreCard({
         <div className={`relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0
           ${isDesktop ? 'pl-4' : 'py-2'}`}>
           {/* Close button */}
-            <div className="flex justify-end -mb-1">
+            <div className="flex justify-end -mx-2.5 -mb-1">
               <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
                 <X />
               </Button>
