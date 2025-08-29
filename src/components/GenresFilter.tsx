@@ -219,6 +219,7 @@ export default function GenresFilter({
                         variant="ghost"
                         size="sm"
                         type="button"
+                        className="-mr-2 -my-2"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={(e) => e.stopPropagation()}
                         aria-label="Toggle subgenres"
