@@ -47,6 +47,7 @@ export function ArtistCard({
         dismissible
         onDismiss={onDeselectArtist}
         contentKey={selectedArtist?.name}
+        stacked={isExpanded}
       
         thumbnail={
           selectedArtist?.image && selectedArtist ? (

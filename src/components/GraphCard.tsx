@@ -12,6 +12,8 @@ export interface GraphCardProps {
   onDismiss?: () => void;
   contentKey?: string | number | undefined;
   className?: string;
+  contentClassName?: string;
+  stacked?: boolean;
   // Content slots
   thumbnail?: ReactNode;
   title?: ReactNode;
@@ -28,6 +30,8 @@ export function GraphCard({
   onDismiss,
   contentKey,
   className,
+  contentClassName,
+  stacked = false,
   thumbnail,
   title,
   meta,
@@ -91,7 +95,7 @@ export function GraphCard({
             opacity: { delay: 0.3, duration: 0.3, ease: "easeOut" },
           }}
           layout
-          className="flex items-start gap-3"
+          className={`flex items-start gap-3 ${stacked ? "flex-col" : ""} ${contentClassName ?? ""}`}
         >
           {error ? (
             <div className="w-full h-full flex justify-center p-4 min-w-0">{error}</div>
@@ -115,4 +119,3 @@ export function GraphCard({
 }
 
 export default GraphCard;
-

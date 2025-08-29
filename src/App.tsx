@@ -301,6 +301,7 @@ function App() {
                   }
                 `}
             >
+              <GenreCard
               <ArtistCard
                 selectedArtist={selectedArtist}
                 setArtistFromName={setArtistFromName}
