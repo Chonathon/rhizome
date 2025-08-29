@@ -86,11 +86,22 @@ export function GenreCard({
   const chunk = <T,>(arr: T[], size: number) => Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size))
   const slides = useMemo(() => chunk(imageArtists, 3), [imageArtists])
   const scrollerRef = useRef<HTMLDivElement | null>(null)
+  const [canPrev, setCanPrev] = useState(false)
+  const [canNext, setCanNext] = useState(false)
   const scrollByWidth = (dir: 'prev' | 'next') => {
     const el = scrollerRef.current
     if (!el) return
     const delta = dir === 'next' ? el.clientWidth : -el.clientWidth
     el.scrollBy({ left: delta, behavior: 'smooth' })
+  }
+
+  const updateCarouselNav = () => {
+    const el = scrollerRef.current
+    if (!el) return
+    const { scrollLeft, scrollWidth, clientWidth } = el
+    const maxScrollLeft = Math.max(0, scrollWidth - clientWidth)
+    setCanPrev(scrollLeft > 1)
+    setCanNext(scrollLeft < maxScrollLeft - 1)
   }
 
   // Auto-open the sheet when a genre is selected and show is true
@@ -106,8 +117,15 @@ export function GenreCard({
   useEffect(() => {
     if (scrollerRef?.current) {
       scrollerRef.current.scrollTo({ left: 0, behavior: 'auto' })
+      // Ensure nav state matches reset position
+      requestAnimationFrame(updateCarouselNav)
     }
   }, [selectedGenre?.id])
+
+  useEffect(() => {
+    // Recalculate nav availability when slides change
+    requestAnimationFrame(updateCarouselNav)
+  }, [slides.length])
 
   if (!show) return null
 
@@ -144,6 +162,7 @@ export function GenreCard({
                 <div className="relative w-full h-full">
                   <div
                     ref={scrollerRef}
+                    onScroll={updateCarouselNav}
                     className="h-full w-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar"
                   >
                     {slides.map((chunk, idx) => (
@@ -177,14 +196,30 @@ export function GenreCard({
                       </div>
                     ))}
                   </div>
-                  {slides.length > 1 && (
-                    <div className="absolute top-1/2 -translate-y-1/2 flex gap-1">
-                      <Button className="absolute top-1/2 -translate-y-1/2 left-2" variant="ghost" size="icon" onClick={() => scrollByWidth('prev')} aria-label="Previous">
-                        <ChevronLeft />
-                      </Button>
-                      <Button className="absolute top-1/2 -translate-y-1/2 right-2" variant="ghost" size="icon" onClick={() => scrollByWidth('next')} aria-label="Next">
-                        <ChevronRight />
-                      </Button>
+                  {slides.length > 1 && (canPrev || canNext) && (
+                    <div className="absolute inset-0 pointer-events-none">
+                      {canPrev && (
+                        <Button
+                          className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => scrollByWidth('prev')}
+                          aria-label="Previous"
+                        >
+                          <ChevronLeft />
+                        </Button>
+                      )}
+                      {canNext && (
+                        <Button
+                          className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => scrollByWidth('next')}
+                          aria-label="Next"
+                        >
+                          <ChevronRight />
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
