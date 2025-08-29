@@ -151,9 +151,9 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
                       e.stopPropagation();
                       removeRecentSelection(selection.id);
                     }}
-                    // className="h-auto p-1"
+                    className="-m-2"
                   >
-                    <X className="h-4 w-4 text-muted-foreground" />
+                    <X />
                   </Button>
                 </CommandItem>
               ))}
