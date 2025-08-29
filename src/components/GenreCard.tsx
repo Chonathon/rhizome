@@ -1,10 +1,10 @@
 import { BasicNode, Genre, Artist } from '@/types'
 import { formatNumber } from '@/lib/utils'
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
-import { SquareArrowUp, X, XCircle } from 'lucide-react';
+import { SquareArrowUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge } from './ui/badge';
 
@@ -78,6 +78,21 @@ export function GenreCard({
     .sort((a, b) => (b.listeners ?? 0) - (a.listeners ?? 0))
     .slice(0, 8)
 
+  // Prepare images for a bento carousel (desktop thumbnail area)
+  const imageArtists = useMemo(
+    () => (topArtists ?? []).filter(a => typeof a.image === 'string' && a.image.trim().length > 0),
+    [topArtists]
+  )
+  const chunk = <T,>(arr: T[], size: number) => Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size))
+  const slides = useMemo(() => chunk(imageArtists, 3), [imageArtists])
+  const scrollerRef = useRef<HTMLDivElement | null>(null)
+  const scrollByWidth = (dir: 'prev' | 'next') => {
+    const el = scrollerRef.current
+    if (!el) return
+    const delta = dir === 'next' ? el.clientWidth : -el.clientWidth
+    el.scrollBy({ left: delta, behavior: 'smooth' })
+  }
+
   // Auto-open the sheet when a genre is selected and show is true
   useEffect(() => {
     if (show && selectedGenre) {
@@ -86,6 +101,13 @@ export function GenreCard({
       setOpen(false)
     }
   }, [show, selectedGenre])
+
+  // Reset carousel scroll position when a new genre is selected
+  useEffect(() => {
+    if (scrollerRef?.current) {
+      scrollerRef.current.scrollTo({ left: 0, behavior: 'auto' })
+    }
+  }, [selectedGenre?.id])
 
   if (!show) return null
 
@@ -115,12 +137,62 @@ export function GenreCard({
             </div>
             {/* Scrolling Container */}
           <div className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar'>
-            {/* Thumbnail */}
+            {/* Thumbnail / Bento Carousel (desktop only) */}
             <div className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none
               ${isDesktop ? '' : 'hidden'}`}>
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
-                <span className="text-4xl font-semibold">{initial}</span>
-              </div>
+              {slides.length >= 1 && imageArtists.length >= 2 ? (
+                <div className="relative w-full h-full">
+                  <div
+                    ref={scrollerRef}
+                    className="h-full w-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar"
+                  >
+                    {slides.map((chunk, idx) => (
+                      <div key={idx} className="snap-center shrink-0 w-full h-full p-1 grid grid-cols-2 grid-rows-2 gap-1">
+                        {chunk.map((artist, i) => {
+                          const spanClasses = [
+                            "col-span-1 row-span-2", // 0: big left spans two rows
+                            "col-span-1 row-span-1", // 1: top-right
+                            "col-span-1 row-span-1", // 2: bottom-right
+                          ][i] || "col-span-1 row-span-1"
+                          return (
+                            <div key={artist.id} className={`${spanClasses} relative overflow-hidden rounded-md`}>
+                              <button
+                                type="button"
+                                onClick={() => onTopArtistClick?.(artist)}
+                                title={artist.name}
+                                className="group block w-full h-full focus:outline-none"
+                              >
+                                <img
+                                  src={(artist.image as string)}
+                                  alt={artist.name}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                                  loading="lazy"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-70" />
+                                <span className="absolute left-1.5 bottom-1.5 text-xs text-white drop-shadow-sm">{artist.name}</span>
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                  {slides.length > 1 && (
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => scrollByWidth('prev')} aria-label="Previous">
+                        <ChevronLeft />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => scrollByWidth('next')} aria-label="Next">
+                        <ChevronRight />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
+                  <span className="text-4xl font-semibold">{initial}</span>
+                </div>
+              )}
             </div>
             {/* Content */}
             <div className="w-full flex flex-col gap-6 ">
@@ -145,9 +217,9 @@ export function GenreCard({
                         variant="outline"
                         title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
                       >
-                        <button type="button" onClick={() => onTopArtistClick?.(artist)} className="cursor-pointer">
+                        <Button variant="ghost" size="sm" onClick={() => onTopArtistClick?.(artist)} className="cursor-pointer">
                           {artist.name}
-                        </button>
+                        </Button>
                       </Badge>
                     ))}
                     </div>
