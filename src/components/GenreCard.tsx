@@ -44,7 +44,7 @@ export function GenreCard({
         {items.map((node, i) => (
           <>
             {onLinkedGenreClick ? (
-              <button key={node.id} onClick={() => onLinkedGenreClick(node.id)}>{node.name}</button>
+              <Button variant="link" size="sm" key={node.id} onClick={() => onLinkedGenreClick(node.id)}>{node.name}</Button>
             ) : (
               <span key={node.id}>{node.name}</span>
             )}
