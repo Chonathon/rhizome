@@ -155,10 +155,20 @@ export function GenreCard({
     requestAnimationFrame(updateMobileCarouselNav)
   }, [slides.length])
 
+  // Ensure consistent snap height when resizing to mobile while open
+  useEffect(() => {
+    if (!isDesktop && open) {
+      setActiveSnap(SNAPS[0])
+    }
+  }, [isDesktop, open])
+
   if (!show) return null
+
+  const drawerKey = isDesktop ? 'desktop' : 'mobile'
 
   return (
     <Drawer
+      key={drawerKey}
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
