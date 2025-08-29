@@ -2,6 +2,7 @@ import {Artist} from '@/types'
 import {fixWikiImageURL, formatDate, formatNumber} from '@/lib/utils'
 import { useState } from "react"
 import GraphCard from "./GraphCard";
+import { Button } from './ui/button';
 // committment issues
 
 interface ArtistCardProps {
@@ -88,9 +89,9 @@ export function ArtistCard({
                 <span className="font-medium">Similar:</span>{" "}
                 {similarFilter(selectedArtist.similar).map((name, index, array) => (
                   <>
-                    <button key={index + name} onClick={() => setArtistFromName(name)}>
+                    <Button variant="link" size="sm" key={index + name} onClick={() => setArtistFromName(name)}>
                       {name}
-                    </button>
+                    </Button>
                     {index < array.length - 1 ? ", " : ""}
                   </>
                 ))}
