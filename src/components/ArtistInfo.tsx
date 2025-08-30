@@ -96,12 +96,11 @@ export function ArtistInfo({
                       
                     
                      <Button
-                      size="lg"
-                      variant="secondary"
+                      size="xl"
+                      variant="outline"
                       // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                      className='self-start'
                     >
-                      <CirclePlay />Add Artist
+                      <CirclePlay size={24}/>Add Artist
                     </Button>
                 {isDesktop && (
                   <p
