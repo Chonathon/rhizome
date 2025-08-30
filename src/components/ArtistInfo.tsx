@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay } from "lucide-react";
+import { CirclePlay, SquarePlus } from "lucide-react";
 
 interface ArtistInfoProps {
   selectedArtist?: Artist;
@@ -92,15 +92,24 @@ export function ArtistInfo({
               {/* Content */}
               <div className="w-full flex flex-col gap-6">
                 <div className={`flex
-                    ${isDesktop ? 'flex-col gap-3' : 'flex-row items-center justify-between'}`}>
+                    ${isDesktop ? 'flex-col gap-3' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
                       
                     
                      <Button
-                      size="xl"
-                      variant="outline"
+                      size={isDesktop ? "lg" : "xl"}
+                      variant="default"
                       // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                      className={isDesktop ? 'self-start' : 'flex-1'}
                     >
-                      <CirclePlay size={24}/>Add Artist
+                      <CirclePlay size={24}/>Play
+                    </Button>
+                     <Button
+                      size={isDesktop ? "lg" : "xl"}
+                      variant="secondary"
+                      // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                      className={isDesktop ? 'self-start' : 'flex-1'}
+                    >
+                      <SquarePlus size={24}/>Add
                     </Button>
                 {isDesktop && (
                   <p
