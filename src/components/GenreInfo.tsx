@@ -7,11 +7,11 @@ import { SquareArrowUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge } from './ui/badge';
 import { DrawerTitle } from "@/components/ui/drawer";
-import { ResponsiveDetailPanel } from "@/components/ResponsiveDetailPanel";
+import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 
 
 
-interface GenreCardProps {
+interface GenreInfoProps {
   selectedGenre?: Genre;
   allArtists: (genre: Genre) => void
   show: boolean;
@@ -24,7 +24,7 @@ interface GenreCardProps {
   onTopArtistClick?: (artist: Artist) => void;
 }
 
-export function GenreCard({
+export function GenreInfo({
   selectedGenre,
   show,
   genreLoading,
@@ -35,7 +35,7 @@ export function GenreCard({
   onLinkedGenreClick,
   limitRelated = 5,
   onTopArtistClick,
-}: GenreCardProps) {
+}: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(true)
 
@@ -145,7 +145,7 @@ export function GenreCard({
   if (!show) return null
   
   return (
-    <ResponsiveDetailPanel
+    <ResponsiveDrawer
       show={!!(show && selectedGenre)}
       onDismiss={onDismiss}
       bodyClassName=""
@@ -415,8 +415,8 @@ export function GenreCard({
           </>
         )
       }}
-    </ResponsiveDetailPanel>
+    </ResponsiveDrawer>
   )
 }
 
-export default GenreCard;
+export default GenreInfo;

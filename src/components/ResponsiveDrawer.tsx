@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 type DrawerDirection = "left" | "right" | "top" | "bottom";
 
-export interface ResponsiveDetailPanelProps {
+export interface ResponsiveDrawerProps {
   show: boolean;
   onDismiss: () => void;
   children: React.ReactNode | ((ctx: { isDesktop: boolean; isAtMaxSnap: boolean }) => React.ReactNode);
@@ -21,7 +21,7 @@ export interface ResponsiveDetailPanelProps {
  * Responsive panel that renders a side drawer on desktop and a bottom sheet on mobile.
  * Encapsulates snap-point behavior and exposes whether the mobile sheet is fully expanded.
  */
-export function ResponsiveDetailPanel({
+export function ResponsiveDrawer({
   show,
   onDismiss,
   children,
@@ -31,7 +31,7 @@ export function ResponsiveDetailPanel({
   snapPoints = [0.28, 0.9],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 1200px)",
-}: ResponsiveDetailPanelProps) {
+}: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
   const [open, setOpen] = useState(false);
   const [activeSnap, setActiveSnap] = useState<number | string | null>(snapPoints[0] ?? 0.9);
@@ -132,4 +132,5 @@ export function ResponsiveDetailPanel({
   );
 }
 
-export default ResponsiveDetailPanel;
+export default ResponsiveDrawer;
+

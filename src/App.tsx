@@ -31,7 +31,7 @@ import NodeLimiter from './components/NodeLimiter'
 import useSimilarArtists from "@/hooks/useSimilarArtists";
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
-import { GenreCard } from './components/GenreCard';
+import { GenreInfo } from './components/GenreInfo';
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -154,14 +154,14 @@ function App() {
     addRecentSelection(genre);
     console.log("Genre selected:", genre);
   }
-  // Trigger full artist view for a genre from UI (e.g., GenreCard "All Artists")
+  // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
   const onShowAllArtists = (genre: Genre) => {
     setSelectedGenre(genre);
     setGraph('artists');
     addRecentSelection(genre);
     console.log("Show all artists for genre:", genre);
   }
-  // For clicking on a genre node in the Genres graph: only show the GenreCard, do not switch graphs
+  // For clicking on a genre node in the Genres graph: only show the GenreInfo, do not switch graphs
   const onGenreNodePreview = (genre: Genre) => {
     setSelectedGenre(genre);
     setShowArtistCard(false); // ensure only one card visible
@@ -323,7 +323,7 @@ function App() {
                   }
                 `}
             >
-              <GenreCard 
+              <GenreInfo 
                 selectedGenre={selectedGenre}
                 onLinkedGenreClick={onLinkedGenreClick}
                 show={graph === 'genres' && !!selectedGenre && !showArtistCard}
