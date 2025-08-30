@@ -6,7 +6,7 @@ import { DrawerTitle } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { X } from "lucide-react";
+import { X, CirclePlay } from "lucide-react";
 
 interface ArtistInfoProps {
   selectedArtist?: Artist;
@@ -100,12 +100,50 @@ export function ArtistInfo({
 
               {/* Content */}
               <div className="w-full flex flex-col gap-6">
-                <div
+                <div className={`flex
+                    ${isDesktop ? 'flex-col gap-3' : 'flex-row items-center justify-between'}`}>
+                      
+                    <DrawerTitle className='lg:text-xl'>{selectedArtist?.name}</DrawerTitle>
+                     <Button
+                      size="lg"
+                      variant="secondary"
+                      // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                      className='self-start'
+                    >
+                      <CirclePlay />Add Artist
+                    </Button>
+                {isDesktop && (
+                  <p
+                    onClick={() => setDesktopExpanded((prev) => !prev)}
+                    className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                  >
+                    {selectedArtist?.bio?.summary || 'No description'}
+                  </p>
+                )}
+                  </div>
+                   {!isDesktop && (
+                    <p
+                      className={`break-words text-muted-foreground ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                    >
+                      {selectedArtist?.bio?.summary || 'No description'}
+                    </p>
+                   )}
+                
+                
+                {/* <div
                   className={`flex gap-2 flex-col ${
                     isDesktop ? "gap-3" : ""
                   }`}
                 >
                   <DrawerTitle className="lg:text-xl">{selectedArtist?.name}</DrawerTitle>
+                  {!isDesktop && <Button
+                      size="lg"
+                      variant="secondary"
+                      // onClick={console.log("Add Artist")}
+                      className=''
+                    >
+                      <CirclePlay />Add Artist
+                    </Button>}
                 <p
                   onClick={() => isDesktop && setDesktopExpanded((prev) => !prev)}
                   className={`break-words text-muted-foreground ${
@@ -117,7 +155,7 @@ export function ArtistInfo({
                   {selectedArtist?.bio?.summary || "No bio"}
                 </p>
                 </div>
-
+ */}
 
                 {/* Mobile Thumbnail */}
                 {!isDesktop && (
