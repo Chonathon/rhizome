@@ -101,12 +101,23 @@ export function ArtistInfo({
               {/* Content */}
               <div className="w-full flex flex-col gap-6">
                 <div
-                  className={`flex ${
-                    isDesktop ? "flex-col gap-3" : "flex-row items-center justify-between"
+                  className={`flex gap-2 flex-col ${
+                    isDesktop ? "gap-3" : ""
                   }`}
                 >
                   <DrawerTitle className="lg:text-xl">{selectedArtist?.name}</DrawerTitle>
+                <p
+                  onClick={() => isDesktop && setDesktopExpanded((prev) => !prev)}
+                  className={`break-words text-muted-foreground ${
+                    isDesktop
+                      ? "cursor-pointer hover:text-gray-400"
+                      : "cursor-default"
+                  } ${isExpanded ? "text-muted-foreground" : "line-clamp-3 overflow-hidden"}`}
+                >
+                  {selectedArtist?.bio?.summary || "No bio"}
+                </p>
                 </div>
+
 
                 {/* Mobile Thumbnail */}
                 {!isDesktop && (
@@ -127,16 +138,7 @@ export function ArtistInfo({
                 )}
 
                 {/* Description */}
-                <p
-                  onClick={() => isDesktop && setDesktopExpanded((prev) => !prev)}
-                  className={`break-words text-muted-foreground ${
-                    isDesktop
-                      ? "cursor-pointer hover:text-gray-400"
-                      : "cursor-default"
-                  } ${isExpanded ? "text-muted-foreground" : "line-clamp-3 overflow-hidden"}`}
-                >
-                  {selectedArtist?.bio?.summary || "No bio"}
-                </p>
+                
 
                 {/* Similar Artists */}
                 {selectedArtist?.similar && selectedArtist.similar.length > 0 && (
