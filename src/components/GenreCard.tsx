@@ -1,7 +1,7 @@
 import { BasicNode, Genre, Artist } from '@/types'
 import { formatNumber } from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
 import { SquareArrowUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -185,7 +185,7 @@ export function GenreCard({
       } : {})}
     >
       <DrawerContent
-        className={`max-w-[420px] h-full ${isDesktop ? 'max-w-sm px-2' : ''}`}
+        className={`w-full h-full ${isDesktop ? 'max-w-sm px-2' : ''}`}
       >
         {/* Sidebar-styled container */}
         <div
@@ -200,7 +200,7 @@ export function GenreCard({
             }
           }}
           className={`relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0
-          ${isDesktop ? 'pl-4' : 'py-1'}`}>
+            ${isDesktop ? 'pl-4' : 'py-1'}`}>
           {/* Close button */}
             <div className="flex justify-end -mx-2.5 -mb-1">
               <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
@@ -209,7 +209,7 @@ export function GenreCard({
             </div>
             {/* Scrolling Container */}
           <div className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar'>
-            {/* Thumbnail / Bento Carousel (desktop only) */}
+            {/* Thumbnail / Bento Carousel */}
             <div className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none
               ${isDesktop ? '' : 'hidden'}`}>
               {slides.length >= 1 && imageArtists.length >= 2 ? (
@@ -286,7 +286,7 @@ export function GenreCard({
             {/* Content */}
             <div className="w-full flex flex-col gap-6 ">
               <div>
-                <h2 className="text-xl font-semibold">{selectedGenre?.name}</h2>
+                <DrawerTitle >{selectedGenre?.name}</DrawerTitle>
                 <p
                   onClick={() => setIsExpanded(prev => !prev)}
                   className={` mt-3 break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
