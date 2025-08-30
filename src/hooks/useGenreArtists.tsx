@@ -12,6 +12,8 @@ const useGenreArtists = (genreID?: string) => {
     const [artistLinks, setArtistLinks] = useState<NodeLink[]>([]);
     const [artistsLoading, setArtistsLoading] = useState(false);
     const [artistsError, setArtistsError] = useState<AxiosError>();
+    const [artistsDataFlagLoading, setArtistsDataFlagLoading] = useState<boolean>(false);
+    const [artistsDataFlagError, setArtistsDataFlagError] = useState<AxiosError>();
 
     const fetchArtists = async () => {
         if (genreID) {
@@ -33,7 +35,24 @@ const useGenreArtists = (genreID?: string) => {
         fetchArtists();
     }, [genreID]);
 
-    return { artists, artistsLoading, artistsError, artistLinks };
+    const flagBadArtistData = async (artistID: string, reason = '') => {
+        setArtistsDataFlagLoading(true);
+        let success = false;
+        try {
+            const response = await axios.put(`${url}/artists/bdflag/${artistID}/${reason}`);
+            if (response.status === 200) {
+                success = true;
+            }
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setArtistsDataFlagError(err);
+            }
+        }
+        setArtistsDataFlagLoading(false);
+        return success;
+    }
+
+    return { artists, artistsLoading, artistsError, artistLinks, flagBadArtistData, artistsDataFlagLoading, artistsDataFlagError };
 }
 
 export default useGenreArtists;

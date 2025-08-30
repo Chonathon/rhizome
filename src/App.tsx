@@ -59,7 +59,15 @@ function App() {
   const [genreNodeCount, setGenreNodeCount] = useState<number>(0);
   const [artistNodeCount, setArtistNodeCount] = useState<number>(0);
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
-  const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
+  const {
+    artists,
+    artistLinks,
+    artistsLoading,
+    artistsError,
+    flagBadArtistData,
+    artistsDataFlagLoading,
+    artistsDataFlagError
+  } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
@@ -250,6 +258,44 @@ function App() {
     const newGenre = genres.find((g) => g.id === genreID);
     if (newGenre) {
       onGenreNodeClick(newGenre);
+    }
+  }
+  const onBadDataGenreClick = () => {
+    if (selectedGenre && !selectedGenre.badDataFlag) {
+
+    } else {
+
+    }
+  }
+  const flipBadGenreFlag = () => {
+    if (selectedGenre) {
+
+    }
+  }
+  const onBadDataArtistClick = () => {
+    if ((selectedArtist && !selectedArtist.badDataFlag) || (selectedArtistNoGenre && !selectedArtistNoGenre.badDataFlag)) {
+      //open bad data flag reason form
+      flipBadArtistFlag('artist bad data');
+
+    } else {
+      flipBadArtistFlag('');
+    }
+  }
+  const flipBadArtistFlag = async (badDataReason: string) => {
+    if (selectedArtist) {
+      const success = await flagBadArtistData(selectedArtist.id, badDataReason);
+      if (success) {
+        const updatedSelected = {...selectedArtist, badDataFlag: !selectedArtist.badDataFlag, badDataReason};
+        setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtist.id), updatedSelected]);
+        setSelectedArtist(updatedSelected);
+      }
+    } else if (selectedArtistNoGenre) {
+      const success = await flagBadArtistData(selectedArtistNoGenre.id, badDataReason);
+      if (success) {
+        const updatedSelected = {...selectedArtistNoGenre, badDataFlag: !selectedArtistNoGenre.badDataFlag, badDataReason};
+        setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtistNoGenre.id), updatedSelected]);
+        setSelectedArtistNoGenre(updatedSelected);
+      }
     }
   }
 
