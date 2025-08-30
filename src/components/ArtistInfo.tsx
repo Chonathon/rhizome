@@ -91,26 +91,28 @@ export function ArtistInfo({
 
               {/* Content */}
               <div className="w-full flex flex-col gap-6">
-                <div className={`flex flex-row 
-                    ${isDesktop ? 'gap-3' : 'items-center justify-between gap-3 mt-3'}`}>
+                <div className={`flex  flex-col gap-6
+                    ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
                       
                     
-                     <Button
-                      size={isDesktop ? "lg" : "xl"}
-                      variant="default"
-                      // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                      className={isDesktop ? 'self-start' : 'flex-1'}
-                    >
-                      <CirclePlay size={24}/>Play
-                    </Button>
-                     <Button
-                      size={isDesktop ? "lg" : "xl"}
-                      variant="secondary"
-                      // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                      className={isDesktop ? 'self-start' : 'flex-1'}
-                    >
-                      <SquarePlus size={24}/>Add
-                    </Button>
+                     <div className="flex gap-3 w-full">
+                       <Button
+                        size={isDesktop ? "lg" : "xl"}
+                        variant="default"
+                        // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                        className={isDesktop ? 'self-start' : 'flex-1'}
+                                           >
+                        <CirclePlay size={24}/>Play
+                                           </Button>
+                       <Button
+                        size={isDesktop ? "lg" : "xl"}
+                        variant="secondary"
+                        // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                        className={isDesktop ? 'self-start' : 'flex-1'}
+                                           >
+                        <SquarePlus size={24}/>Add
+                                           </Button>
+                     </div>
                 {isDesktop && (
                   <p
                     onClick={() => setDesktopExpanded((prev) => !prev)}

@@ -241,15 +241,15 @@ export function GenreInfo({
             {/* Content */}
             <div className="w-full flex flex-col gap-6 ">
 
-                  <div className={`flex
-                    ${isDesktop ? 'flex-col gap-3' : 'flex-row items-center justify-between'}`}>
+                  <div className={`flex flex-row 
+                    ${isDesktop ? 'gap-3' : 'items-center justify-between gap-3 mt-3'}`}>
                     
                     {!isDesktop && <Button
                       disabled={genreLoading}
-                      size="lg"
+                      size="xl"
                       variant="secondary"
                       onClick={() => selectedGenre && allArtists(selectedGenre)}
-                      className=''
+                      className='flex-1'
                     >
                       <SquareArrowUp />All Artists
                     </Button>}
@@ -365,6 +365,7 @@ export function GenreInfo({
                 >
                   <SquareArrowUp />All Artists
                 </Button>
+                
                   </div>
                 )}
 
