@@ -91,8 +91,8 @@ export function ArtistInfo({
 
               {/* Content */}
               <div className="w-full flex flex-col gap-6">
-                <div className={`flex
-                    ${isDesktop ? 'flex-col gap-3' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
+                <div className={`flex flex-row 
+                    ${isDesktop ? 'gap-3' : 'items-center justify-between gap-3 mt-3'}`}>
                       
                     
                      <Button
