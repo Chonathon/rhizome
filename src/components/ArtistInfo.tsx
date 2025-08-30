@@ -56,6 +56,12 @@ export function ArtistInfo({
       onDismiss={onDismiss}
       bodyClassName=""
       snapPoints={[0.28, 0.9]}
+      headerTitle={selectedArtist?.name}
+      headerSubtitle={
+        typeof selectedArtist?.listeners === "number"
+          ? `${formatNumber(selectedArtist.listeners)} Listeners`
+          : undefined
+      }
     >
       {({ isDesktop, isAtMaxSnap }) => {
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
@@ -103,7 +109,9 @@ export function ArtistInfo({
                 <div className={`flex
                     ${isDesktop ? 'flex-col gap-3' : 'flex-row items-center justify-between'}`}>
                       
-                    <DrawerTitle className='lg:text-xl'>{selectedArtist?.name}</DrawerTitle>
+                    {isDesktop && (
+                      <DrawerTitle className='lg:text-xl'>{selectedArtist?.name}</DrawerTitle>
+                    )}
                      <Button
                       size="lg"
                       variant="secondary"

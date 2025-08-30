@@ -150,6 +150,12 @@ export function GenreInfo({
       onDismiss={onDismiss}
       bodyClassName=""
       snapPoints={[0.28, 0.9]}
+      headerTitle={selectedGenre?.name}
+      headerSubtitle={
+        typeof selectedGenre?.totalListeners === 'number'
+          ? `${formatNumber(selectedGenre.totalListeners)} Listeners`
+          : undefined
+      }
     >
       {({ isDesktop, isAtMaxSnap }) => {
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
@@ -247,7 +253,9 @@ export function GenreInfo({
                   <div className={`flex
                     ${isDesktop ? 'flex-col gap-3' : 'flex-row items-center justify-between'}`}>
                       
-                    <DrawerTitle className='lg:text-xl'>{selectedGenre?.name}</DrawerTitle>
+                    {isDesktop && (
+                      <DrawerTitle className='lg:text-xl'>{selectedGenre?.name}</DrawerTitle>
+                    )}
                     {!isDesktop && <Button
                       disabled={genreLoading}
                       size="lg"

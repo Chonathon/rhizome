@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
+import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,11 @@ export interface ResponsiveDrawerProps {
   snapPoints?: number[];
   clickToCycleSnap?: boolean;
   desktopQuery?: string;
+  showMobileHandle?: boolean;
+  handleHeightPx?: number;
+  showMobileHeader?: boolean;
+  headerTitle?: React.ReactNode;
+  headerSubtitle?: React.ReactNode;
 }
 
 /**
@@ -31,6 +37,11 @@ export function ResponsiveDrawer({
   snapPoints = [0.28, 0.9],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 1200px)",
+  showMobileHandle = false,
+  handleHeightPx = 28,
+  showMobileHeader = true,
+  headerTitle,
+  headerSubtitle,
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
   const [open, setOpen] = useState(false);
@@ -73,13 +84,8 @@ export function ResponsiveDrawer({
     return activeSnapIndex === snapPoints.length - 1;
   }, [activeSnapIndex, isDesktop, snapPoints.length]);
 
-  const onContainerClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
+  const cycleSnap = () => {
     if (isDesktop || !clickToCycleSnap) return;
-    const target = e.target as HTMLElement;
-    const isControl = target.closest(
-      'button, a, [role="button"], [data-stop-expand]'
-    );
-    if (isControl) return;
     const idx = activeSnapIndex;
     const nextIdx = idx === snapPoints.length - 1 ? 0 : Math.max(0, idx + 1);
     setActiveSnap(snapPoints[nextIdx] ?? snapPoints[0]);
@@ -111,10 +117,6 @@ export function ResponsiveDrawer({
     >
       <DrawerContent
         className={cn("w-full h-full", isDesktop ? "max-w-sm px-2" : "", contentClassName)}
-        onClick={onContainerClick}
-        onClickCapture={onContainerClick}
-        onPointerUp={onContainerClick as unknown as React.PointerEventHandler}
-        onTouchEnd={onContainerClick as unknown as React.TouchEventHandler}
       >
         <div
           className={cn(
@@ -123,6 +125,62 @@ export function ResponsiveDrawer({
             bodyClassName,
           )}
         >
+          {/* Optional mobile header with cycle + title/subtitle + close (inside panel) */}
+          {!isDesktop && showMobileHeader && (
+            <DrawerHeader className="pt-1 pb-2 px-1">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label={isAtMaxSnap ? "Collapse" : "Expand"}
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-full hover:bg-accent text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (clickToCycleSnap) {
+                      const idx = activeSnapIndex;
+                      const nextIdx = idx === snapPoints.length - 1 ? 0 : Math.max(0, idx + 1);
+                      setActiveSnap(snapPoints[nextIdx] ?? snapPoints[0]);
+                    }
+                  }}
+                >
+                  {isAtMaxSnap ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                </button>
+                <div className="flex-1 text-center">
+                  {headerTitle && (
+                    <DrawerTitle className="leading-tight text-base">{headerTitle}</DrawerTitle>
+                  )}
+                  {headerSubtitle && (
+                    <DrawerDescription className="text-xs">{headerSubtitle}</DrawerDescription>
+                  )}
+                </div>
+                <DrawerClose asChild>
+                  <button
+                    type="button"
+                    aria-label="Close"
+                    className="h-8 w-8 inline-flex items-center justify-center rounded-full hover:bg-accent text-foreground"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </DrawerClose>
+              </div>
+            </DrawerHeader>
+          )}
+          {/* Mobile handle area: conventional tap target to cycle snaps */}
+          {!isDesktop && showMobileHandle && clickToCycleSnap && (
+            <div className="w-full flex items-center justify-center select-none">
+              <button
+                type="button"
+                aria-label={isAtMaxSnap ? "Collapse" : "Expand"}
+                className="relative mt-0 mb-2 h-7 w-full flex items-center justify-center focus:outline-none"
+                style={{ height: `${handleHeightPx}px` }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cycleSnap();
+                }}
+              >
+                <span className="pointer-events-none block h-1 w-16 rounded-full bg-muted" />
+              </button>
+            </div>
+          )}
           {typeof children === "function"
             ? children({ isDesktop, isAtMaxSnap })
             : children}
@@ -133,4 +191,3 @@ export function ResponsiveDrawer({
 }
 
 export default ResponsiveDrawer;
-
