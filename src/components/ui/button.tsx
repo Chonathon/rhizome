@@ -25,7 +25,7 @@ const buttonVariants = cva(
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
         sm: "h-8 rounded-full gap-1.5 px-3 has-[>svg]:px-2.5",
         lg: "h-10 rounded-full px-6 has-[>svg]:px-4",
-        xl: "h-auto py-[10px] flex-col gap-2 rounded-xl px-6 has-[>svg]:px-4",
+        xl: "h-auto py-[10px] flex-col gap-2 text-md rounded-lg px-6 has-[>svg]:px-4 [&_svg:not([class*='size-'])]:size-5",
         icon: "size-10 rounded-full",
       },
     },
