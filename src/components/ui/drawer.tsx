@@ -79,7 +79,14 @@ function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="drawer-header"
       className={cn(
-        "flex flex-col gap-0.5 p-4 group-data-[vaul-drawer-direction=bottom]/drawer-content:text-center group-data-[vaul-drawer-direction=top]/drawer-content:text-center md:gap-1.5 md:text-left",
+        // Sticky header so actions/title remain visible while content scrolls
+        "sticky top-0 z-20",
+        // Visual styling and alignment
+        "flex flex-col gap-0.5 p-4 md:gap-1.5",
+        // Background + subtle separator to sit above content
+        "bg-sidebar/95 backdrop-blur supports-[backdrop-filter]:bg-sidebar/80 border-b border-sidebar-border",
+        // Text alignment rules by drawer direction
+        "group-data-[vaul-drawer-direction=bottom]/drawer-content:text-center group-data-[vaul-drawer-direction=top]/drawer-content:text-center md:text-left",
         className
       )}
       {...props}
