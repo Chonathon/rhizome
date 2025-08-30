@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
 import { ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
@@ -133,10 +134,10 @@ export function ResponsiveDrawer({
               <div className="flex items-start gap-1">
                 {/* Cycle button only on mobile */}
                 {!isDesktop && (
-                  <button
-                    type="button"
+                  <Button
                     aria-label={isAtMaxSnap ? "Collapse" : "Expand"}
-                    className="h-8 w-8 mt-0.5 inline-flex items-center justify-center rounded-full hover:bg-accent text-foreground"
+                    variant={"secondary"}
+                    size={"icon"}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (clickToCycleSnap) {
@@ -147,24 +148,24 @@ export function ResponsiveDrawer({
                     }}
                   >
                     {isAtMaxSnap ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
-                  </button>
+                  </Button>
                 )}
                 <div className={cn("flex-1", isDesktop ? "text-left" : "text-center") }>
                   {headerTitle && (
-                    <DrawerTitle className={cn("leading-tight", isDesktop ? "text-2xl lg:text-3xl" : "text-base")}>{headerTitle}</DrawerTitle>
+                    <DrawerTitle className={cn("leading-tight text-base", isDesktop ? "text-2xl" : "text-xl")}>{headerTitle}</DrawerTitle>
                   )}
                   {headerSubtitle && (
                     <DrawerDescription className={cn(isDesktop ? "text-sm" : "text-xs")}>{headerSubtitle}</DrawerDescription>
                   )}
                 </div>
                 <DrawerClose asChild>
-                  <button
-                    type="button"
+                  <Button
                     aria-label="Close"
-                    className="h-8 w-8 mt-0.5 inline-flex items-center justify-center rounded-full hover:bg-accent text-foreground"
+                    variant="secondary"
+                    size={"icon"}
                   >
-                    <X className="h-5 w-5" />
-                  </button>
+                    <X />
+                  </Button>
                 </DrawerClose>
               </div>
             </DrawerHeader>
