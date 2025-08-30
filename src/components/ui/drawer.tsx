@@ -65,9 +65,10 @@ function DrawerContent({
         )}
         {...props}
       >
-        <div>
+        {/* Handle (Not in Use) */}
+        {/* <div>
           <div className="bg-stone-300 mx-auto mt-2 mb-2 hidden h-1 w-[64px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
-        </div>
+        </div> */}
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>
