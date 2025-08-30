@@ -185,7 +185,7 @@ export function GenreCard({
       } : {})}
     >
       <DrawerContent
-        className={`w-full h-full ${isDesktop ? 'rounded-l-3xl' : 'rounded-t-3xl'} ${isDesktop ? 'max-w-sm px-2' : ''}`}
+        className={`max-w-[420px] h-full ${isDesktop ? 'max-w-sm px-2' : ''}`}
       >
         {/* Sidebar-styled container */}
         <div
