@@ -18,7 +18,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
 import { useMediaQuery } from 'react-responsive';
-import { ArtistCard } from './components/ArtistCard'
+import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import { buildGenreTree, filterOutGenreTree, generateSimilarLinks } from "@/lib/utils";
@@ -338,14 +338,12 @@ function App() {
                 onSelectGenre={onLinkedGenreClick}
                 allArtists={onShowAllArtists}
               />
-              <ArtistCard
+              <ArtistInfo
                 selectedArtist={selectedArtist}
                 setArtistFromName={setArtistFromName}
-                setSelectedArtist={setSelectedArtist}
                 artistLoading={false}
                 artistError={false}
                 show={showArtistCard}
-                setShowArtistCard={setShowArtistCard}
                 deselectArtist={deselectArtist}
                 similarFilter={similarArtistFilter}
               />
