@@ -1,7 +1,7 @@
 import { BasicNode, Genre, Artist } from '@/types'
 import { formatNumber } from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle, DrawerHeader } from "@/components/ui/drawer";
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
 import { SquareArrowUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -38,7 +38,7 @@ export function GenreCard({
   const [isExpanded, setIsExpanded] = useState(true)
   const [open, setOpen] = useState(false)
   // Mobile bottom drawer snap point control (using Vaul's snap points)
-  const SNAPS: number[] = [0.35, 0.9]
+  const SNAPS: number[] = [0.28, 0.9]
   const [activeSnap, setActiveSnap] = useState<number | string | null>(SNAPS[0])
 
   const onDismiss = () => {
@@ -155,6 +155,14 @@ export function GenreCard({
     requestAnimationFrame(updateMobileCarouselNav)
   }, [slides.length])
 
+  // Bottom drawer: auto-expand description at largest snap, collapse at smaller
+  useEffect(() => {
+    if (!isDesktop) {
+      const isMaxSnap = SNAPS.findIndex((s) => s === activeSnap) === SNAPS.length - 1
+      setIsExpanded(isMaxSnap)
+    }
+  }, [activeSnap, isDesktop])
+
   // Ensure consistent snap height when resizing to mobile while open
   useEffect(() => {
     if (!isDesktop && open) {
@@ -199,16 +207,21 @@ export function GenreCard({
               setActiveSnap(SNAPS[nextIdx])
             }
           }}
+          // Container
           className={`relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0
-            ${isDesktop ? 'pl-4' : 'py-1'}`}>
+            ${isDesktop ? 'pl-4' : 'py-3'}`}>
+          
           {/* Close button */}
+            {isDesktop && isSmallScreen &&
             <div className="flex justify-end -mx-2.5 -mb-1">
               <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
                 <X />
               </Button>
-            </div>
+            </div>}
+            
             {/* Scrolling Container */}
-          <div className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar'>
+            <div className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar'>
+            
             {/* Thumbnail / Bento Carousel */}
             <div className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none
               ${isDesktop ? '' : 'hidden'}`}>
@@ -285,46 +298,34 @@ export function GenreCard({
             </div>
             {/* Content */}
             <div className="w-full flex flex-col gap-6 ">
-              <div>
-                <DrawerTitle >{selectedGenre?.name}</DrawerTitle>
-                <p
-                  onClick={() => setIsExpanded(prev => !prev)}
-                  className={` mt-3 break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+
+                  <div className={`flex
+                    ${isDesktop ? 'flex-col gap-3' : 'flex-row items-center justify-between'}`}>
+                      
+                    <DrawerTitle className='lg:text-xl'>{selectedGenre?.name}</DrawerTitle>
+                    {!isDesktop && <Button
+                      disabled={genreLoading}
+                      size="lg"
+                      variant="secondary"
+                      onClick={() => selectedGenre && allArtists(selectedGenre)}
+                      className=''
+                    >
+                      <SquareArrowUp />All Artists
+                    </Button>}
+                {isDesktop && <p
+                  onClick={isDesktop ? (() => setIsExpanded(prev => !prev)) : undefined}
+                  className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
                 >
                   {selectedGenre?.description || 'No description'}
-                </p>
-              </div>
-                {/* Top Artists */}
-                {topArtists.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <span className="text-md font-semibold">Top Artists</span>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                    {topArtists.map((artist) => (
-                      <Badge
-                        key={artist.id}
-                        asChild
-                        variant="outline"
-                        title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
-                      >
-                        <Button variant="ghost" size="sm" onClick={() => onTopArtistClick?.(artist)} className="cursor-pointer">
-                          {artist.name}
-                        </Button>
-                      </Badge>
-                    ))}
-                    </div>
-                <Button
-                  disabled={genreLoading}
-                  size="lg"
-                  variant="secondary"
-                  onClick={() => selectedGenre && allArtists(selectedGenre)}
-                  className='mt-2 self-start'
-                >
-                  <SquareArrowUp />All Artists
-                </Button>
+                </p>}
                   </div>
-                )}
-
-                {/* Mobile Thumbnail / Carousel (non-desktop) */}
+                   {!isDesktop && <p
+                  onClick={isDesktop ? (() => setIsExpanded(prev => !prev)) : undefined}
+                  className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                >
+                  {selectedGenre?.description || 'No description'}
+                </p>}
+                 {/* Mobile Thumbnail / Carousel (non-desktop) */}
                 {!isDesktop && slides.length >= 1 && imageArtists.length >= 2 && (
                   <div className="w-full overflow-hidden border-y border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none">
                     <div className="relative w-full h-full">
@@ -393,6 +394,37 @@ export function GenreCard({
                     </div>
                   </div>
                 )}
+                {/* Top Artists */}
+                {topArtists.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-md font-semibold">Top Artists</span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                    {topArtists.map((artist) => (
+                      <Badge
+                        key={artist.id}
+                        asChild
+                        variant="outline"
+                        title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
+                      >
+                        <Button variant="ghost" size="sm" onClick={() => onTopArtistClick?.(artist)} className="cursor-pointer">
+                          {artist.name}
+                        </Button>
+                      </Badge>
+                    ))}
+                    </div>
+                <Button
+                  disabled={genreLoading}
+                  size="lg"
+                  variant="secondary"
+                  onClick={() => selectedGenre && allArtists(selectedGenre)}
+                  className='mt-2 self-start'
+                >
+                  <SquareArrowUp />All Artists
+                </Button>
+                  </div>
+                )}
+
+               
             
               {/* Related */}
               {genreError && <p>Can’t find {selectedGenre?.name} 🤔</p>}
