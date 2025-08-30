@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Artist } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DrawerTitle } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { X, CirclePlay } from "lucide-react";
+import { CirclePlay } from "lucide-react";
 
 interface ArtistInfoProps {
   selectedArtist?: Artist;
@@ -29,7 +28,6 @@ export function ArtistInfo({
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 1200px)");
-  const isSmallScreen = useMediaQuery("(min-width: 768px)");
 
   const onDismiss = () => {
     deselectArtist();
@@ -67,20 +65,7 @@ export function ArtistInfo({
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
         return (
           <>
-            {/* Close button */}
-            {isDesktop && isSmallScreen && (
-              <div className="flex justify-end -mx-2.5 -mb-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onDismiss}
-                  aria-label="Close artist"
-                  disabled={artistLoading}
-                >
-                  <X />
-                </Button>
-              </div>
-            )}
+            
 
             {/* Scrolling Container */}
             <div className="w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar">
@@ -109,9 +94,7 @@ export function ArtistInfo({
                 <div className={`flex
                     ${isDesktop ? 'flex-col gap-3' : 'flex-row items-center justify-between'}`}>
                       
-                    {isDesktop && (
-                      <DrawerTitle className='lg:text-xl'>{selectedArtist?.name}</DrawerTitle>
-                    )}
+                    
                      <Button
                       size="lg"
                       variant="secondary"

@@ -19,6 +19,7 @@ export interface ResponsiveDrawerProps {
   showMobileHandle?: boolean;
   handleHeightPx?: number;
   showMobileHeader?: boolean;
+  showHeaderOnDesktop?: boolean;
   headerTitle?: React.ReactNode;
   headerSubtitle?: React.ReactNode;
 }
@@ -40,6 +41,7 @@ export function ResponsiveDrawer({
   showMobileHandle = false,
   handleHeightPx = 28,
   showMobileHeader = true,
+  showHeaderOnDesktop = true,
   headerTitle,
   headerSubtitle,
 }: ResponsiveDrawerProps) {
@@ -125,38 +127,41 @@ export function ResponsiveDrawer({
             bodyClassName,
           )}
         >
-          {/* Optional mobile header with cycle + title/subtitle + close (inside panel) */}
-          {!isDesktop && showMobileHeader && (
-            <DrawerHeader className="pt-1 pb-2 px-1">
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  aria-label={isAtMaxSnap ? "Collapse" : "Expand"}
-                  className="h-8 w-8 inline-flex items-center justify-center rounded-full hover:bg-accent text-foreground"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (clickToCycleSnap) {
-                      const idx = activeSnapIndex;
-                      const nextIdx = idx === snapPoints.length - 1 ? 0 : Math.max(0, idx + 1);
-                      setActiveSnap(snapPoints[nextIdx] ?? snapPoints[0]);
-                    }
-                  }}
-                >
-                  {isAtMaxSnap ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
-                </button>
-                <div className="flex-1 text-center">
+          {/* Header (mobile + desktop) inside panel */}
+          {((!isDesktop && showMobileHeader) || (isDesktop && showHeaderOnDesktop)) && (
+            <DrawerHeader className={cn("px-1", isDesktop ? "pt-2 pb-3" : "pt-1 pb-2") }>
+              <div className="flex items-start gap-1">
+                {/* Cycle button only on mobile */}
+                {!isDesktop && (
+                  <button
+                    type="button"
+                    aria-label={isAtMaxSnap ? "Collapse" : "Expand"}
+                    className="h-8 w-8 mt-0.5 inline-flex items-center justify-center rounded-full hover:bg-accent text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (clickToCycleSnap) {
+                        const idx = activeSnapIndex;
+                        const nextIdx = idx === snapPoints.length - 1 ? 0 : Math.max(0, idx + 1);
+                        setActiveSnap(snapPoints[nextIdx] ?? snapPoints[0]);
+                      }
+                    }}
+                  >
+                    {isAtMaxSnap ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                  </button>
+                )}
+                <div className={cn("flex-1", isDesktop ? "text-left" : "text-center") }>
                   {headerTitle && (
-                    <DrawerTitle className="leading-tight text-base">{headerTitle}</DrawerTitle>
+                    <DrawerTitle className={cn("leading-tight", isDesktop ? "text-2xl lg:text-3xl" : "text-base")}>{headerTitle}</DrawerTitle>
                   )}
                   {headerSubtitle && (
-                    <DrawerDescription className="text-xs">{headerSubtitle}</DrawerDescription>
+                    <DrawerDescription className={cn(isDesktop ? "text-sm" : "text-xs")}>{headerSubtitle}</DrawerDescription>
                   )}
                 </div>
                 <DrawerClose asChild>
                   <button
                     type="button"
                     aria-label="Close"
-                    className="h-8 w-8 inline-flex items-center justify-center rounded-full hover:bg-accent text-foreground"
+                    className="h-8 w-8 mt-0.5 inline-flex items-center justify-center rounded-full hover:bg-accent text-foreground"
                   >
                     <X className="h-5 w-5" />
                   </button>

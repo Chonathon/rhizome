@@ -3,10 +3,9 @@ import { formatNumber } from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
-import { SquareArrowUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SquareArrowUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge } from './ui/badge';
-import { DrawerTitle } from "@/components/ui/drawer";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 
 
@@ -66,7 +65,6 @@ export function GenreInfo({
   }
 
   const isDesktop = useMediaQuery("(min-width: 1200px)")
-  const isSmallScreen = useMediaQuery("(min-width: 768px)")
 
   const initial = selectedGenre?.name?.[0]?.toUpperCase() ?? '?'
 
@@ -161,14 +159,7 @@ export function GenreInfo({
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
         return (
           <>
-            {/* Close button */}
-            {isDesktop && isSmallScreen && (
-              <div className="flex justify-end -mx-2.5 -mb-1">
-                <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
-                  <X />
-                </Button>
-              </div>
-            )}
+            
 
             {/* Scrolling Container */}
             <div className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar'>
@@ -252,10 +243,7 @@ export function GenreInfo({
 
                   <div className={`flex
                     ${isDesktop ? 'flex-col gap-3' : 'flex-row items-center justify-between'}`}>
-                      
-                    {isDesktop && (
-                      <DrawerTitle className='lg:text-xl'>{selectedGenre?.name}</DrawerTitle>
-                    )}
+                    
                     {!isDesktop && <Button
                       disabled={genreLoading}
                       size="lg"
