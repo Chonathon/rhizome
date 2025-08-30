@@ -1,12 +1,13 @@
 import { BasicNode, Genre, Artist } from '@/types'
 import { formatNumber } from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Drawer, DrawerContent, DrawerTitle, DrawerHeader } from "@/components/ui/drawer";
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
 import { SquareArrowUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge } from './ui/badge';
+import { DrawerTitle } from "@/components/ui/drawer";
+import { ResponsiveDetailPanel } from "@/components/ResponsiveDetailPanel";
 
 
 
@@ -35,15 +36,10 @@ export function GenreCard({
   limitRelated = 5,
   onTopArtistClick,
 }: GenreCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [open, setOpen] = useState(false)
-  // Mobile bottom drawer snap point control (using Vaul's snap points)
-  const SNAPS: number[] = [0.28, 0.9]
-  const [activeSnap, setActiveSnap] = useState<number | string | null>(SNAPS[0])
+  // On desktop, allow manual toggling of description; on mobile use snap state from panel
+  const [desktopExpanded, setDesktopExpanded] = useState(true)
 
   const onDismiss = () => {
-    setIsExpanded(false)
-    setOpen(false)
     deselectGenre()
   }
 
@@ -127,15 +123,6 @@ export function GenreCard({
     setMCanNext(scrollLeft < maxScrollLeft - 1)
   }
 
-  // Auto-open the sheet when a genre is selected and show is true
-  useEffect(() => {
-    if (show && selectedGenre) {
-      setOpen(true)
-    } else {
-      setOpen(false)
-    }
-  }, [show, selectedGenre])
-
   // Reset carousel scroll position when a new genre is selected
   useEffect(() => {
     if (scrollerRef?.current) {
@@ -155,70 +142,28 @@ export function GenreCard({
     requestAnimationFrame(updateMobileCarouselNav)
   }, [slides.length])
 
-  // Bottom drawer: auto-expand description at largest snap, collapse at smaller
-  useEffect(() => {
-    if (!isDesktop) {
-      const isMaxSnap = SNAPS.findIndex((s) => s === activeSnap) === SNAPS.length - 1
-      setIsExpanded(isMaxSnap)
-    }
-  }, [activeSnap, isDesktop])
-
-  // Ensure consistent snap height when resizing to mobile while open
-  useEffect(() => {
-    if (!isDesktop && open) {
-      setActiveSnap(SNAPS[0])
-    }
-  }, [isDesktop, open])
-
   if (!show) return null
-
-  const drawerKey = isDesktop ? 'desktop' : 'mobile'
-
+  
   return (
-    <Drawer
-      key={drawerKey}
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (!next) onDismiss()
-        if (next && !isDesktop) setActiveSnap(SNAPS[0])
-      }}
-      direction={isDesktop ? "right" : "bottom"}
-      dismissible={true}
-      modal={false}
-      {...(!isDesktop ? {
-        snapPoints: SNAPS,
-        activeSnapPoint: activeSnap,
-        setActiveSnapPoint: setActiveSnap,
-      } : {})}
+    <ResponsiveDetailPanel
+      show={!!(show && selectedGenre)}
+      onDismiss={onDismiss}
+      bodyClassName=""
+      snapPoints={[0.28, 0.9]}
     >
-      <DrawerContent
-        className={`w-full h-full ${isDesktop ? 'max-w-sm px-2' : ''}`}
-      >
-        {/* Sidebar-styled container */}
-        <div
-          onClick={(e) => {
-            // Avoid expanding when tapping explicit controls like the close button
-            const target = e.target as HTMLElement
-            const isControl = target.closest('button, a, [role="button"], [data-stop-expand]')
-            if (!isDesktop && !isControl) {
-              const idx = SNAPS.findIndex((s) => s === activeSnap)
-              const nextIdx = idx === SNAPS.length - 1 ? 0 : idx + 1
-              setActiveSnap(SNAPS[nextIdx])
-            }
-          }}
-          // Container
-          className={`relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0
-            ${isDesktop ? 'pl-4' : 'py-3'}`}>
-          
-          {/* Close button */}
-            {isDesktop && isSmallScreen &&
-            <div className="flex justify-end -mx-2.5 -mb-1">
-              <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
-                <X />
-              </Button>
-            </div>}
-            
+      {({ isDesktop, isAtMaxSnap }) => {
+        const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
+        return (
+          <>
+            {/* Close button */}
+            {isDesktop && isSmallScreen && (
+              <div className="flex justify-end -mx-2.5 -mb-1">
+                <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Close genre">
+                  <X />
+                </Button>
+              </div>
+            )}
+
             {/* Scrolling Container */}
             <div className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar'>
             
@@ -312,19 +257,22 @@ export function GenreCard({
                     >
                       <SquareArrowUp />All Artists
                     </Button>}
-                {isDesktop && <p
-                  onClick={isDesktop ? (() => setIsExpanded(prev => !prev)) : undefined}
-                  className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
-                >
-                  {selectedGenre?.description || 'No description'}
-                </p>}
+                {isDesktop && (
+                  <p
+                    onClick={() => setDesktopExpanded((prev) => !prev)}
+                    className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                  >
+                    {selectedGenre?.description || 'No description'}
+                  </p>
+                )}
                   </div>
-                   {!isDesktop && <p
-                  onClick={isDesktop ? (() => setIsExpanded(prev => !prev)) : undefined}
-                  className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
-                >
-                  {selectedGenre?.description || 'No description'}
-                </p>}
+                   {!isDesktop && (
+                    <p
+                      className={`break-words text-muted-foreground ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                    >
+                      {selectedGenre?.description || 'No description'}
+                    </p>
+                   )}
                  {/* Mobile Thumbnail / Carousel (non-desktop) */}
                 {!isDesktop && slides.length >= 1 && imageArtists.length >= 2 && (
                   <div className="w-full overflow-hidden border-y border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none">
@@ -464,9 +412,10 @@ export function GenreCard({
               </div>
             </div>
           </div>
-        </div>
-      </DrawerContent>
-    </Drawer>
+          </>
+        )
+      }}
+    </ResponsiveDetailPanel>
   )
 }
 
