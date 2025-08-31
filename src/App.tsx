@@ -262,10 +262,10 @@ function App() {
         onClick={resetAppState}
         selectedGenre={selectedGenre}>
           <Gradient />
-        <div className="relative min-h-screen min-w-screen">
+        <div className="min-h-screen min-w-screen">
 
           <div className={
-            "fixed w-auto top-0 ml-(--sidebar-width) flex items-center gap-3 p-3 z-50"
+            "fixed top-0 left-3 z-50 flex items-center gap-3 p-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
           }
           >
                <Tabs
