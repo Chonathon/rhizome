@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, DrawerHandle } from "@/components/ui/drawer";
 import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -23,6 +23,17 @@ export interface ResponsiveDrawerProps {
   showHeaderOnDesktop?: boolean;
   headerTitle?: React.ReactNode;
   headerSubtitle?: React.ReactNode;
+  /**
+   * Only allow dragging via the handle when content is scrolled (not at top).
+   * Prevents accidental snap when scrolling. Mobile only.
+   * @default true
+   */
+  lockDragToHandleWhenScrolled?: boolean;
+  /**
+   * Selector for the scroll container inside the drawer. If not found, falls back to the card container.
+   * @default '[data-drawer-scroll]'
+   */
+  scrollContainerSelector?: string;
 }
 
 /**
@@ -45,10 +56,15 @@ export function ResponsiveDrawer({
   showHeaderOnDesktop = true,
   headerTitle,
   headerSubtitle,
+  lockDragToHandleWhenScrolled = true,
+  scrollContainerSelector = '[data-drawer-scroll]',
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
   const [open, setOpen] = useState(false);
   const [activeSnap, setActiveSnap] = useState<number | string | null>(snapPoints[0] ?? 0.9);
+  const [isScrollAtTop, setIsScrollAtTop] = useState(true);
+  const cardRef = React.useRef<HTMLDivElement | null>(null);
+  const scrollElRef = React.useRef<HTMLElement | null>(null);
 
   // keep open state in sync with `show`
   useEffect(() => {
@@ -65,6 +81,30 @@ export function ResponsiveDrawer({
       setActiveSnap(snapPoints[0] ?? 0.9);
     }
   }, [isDesktop, open, snapPoints]);
+
+  // Track whether the scroll container is at the very top to gate dragging.
+  React.useEffect(() => {
+    if (isDesktop || !open) return;
+    const card = cardRef.current;
+    if (!card) return;
+    let el: HTMLElement | null = null;
+    try {
+      el = (card.querySelector(scrollContainerSelector) as HTMLElement) ?? card;
+    } catch {
+      el = card;
+    }
+    scrollElRef.current = el;
+    const handleScroll = () => {
+      const atTop = (el?.scrollTop ?? 0) <= 0;
+      setIsScrollAtTop((prev) => (prev !== atTop ? atTop : prev));
+    };
+    // Initialize
+    handleScroll();
+    el.addEventListener('scroll', handleScroll, { passive: true } as AddEventListenerOptions);
+    return () => {
+      el?.removeEventListener('scroll', handleScroll as any);
+    };
+  }, [isDesktop, open, scrollContainerSelector]);
 
   // Map current snap value to closest index for robust comparisons
   const activeSnapIndex = useMemo(() => {
@@ -108,6 +148,7 @@ export function ResponsiveDrawer({
         if (next && !isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
       }}
       direction={isDesktop ? directionDesktop : "bottom"}
+      handleOnly={!isDesktop && lockDragToHandleWhenScrolled && !isScrollAtTop}
       dismissible={true}
       modal={false}
       {...(!isDesktop
@@ -127,7 +168,13 @@ export function ResponsiveDrawer({
             isDesktop ? "pl-4" : "py-3",
             bodyClassName,
           )}
+          ref={cardRef}
         >
+          {!isDesktop && lockDragToHandleWhenScrolled && (
+            <div className="w-full flex items-center justify-center select-none">
+              <DrawerHandle className="mt-1 mb-1" />
+            </div>
+          )}
           {/* Header (mobile + desktop) inside panel */}
           {((!isDesktop && showMobileHeader) || (isDesktop && showHeaderOnDesktop)) && (
             <DrawerHeader className={cn("px-1", isDesktop ? "pt-2 pb-3" : "pt-1 pb-2") }>
@@ -170,8 +217,8 @@ export function ResponsiveDrawer({
               </div>
             </DrawerHeader>
           )}
-          {/* Mobile handle area: conventional tap target to cycle snaps */}
-          {!isDesktop && showMobileHandle && clickToCycleSnap && (
+          {/* Optional tap target to cycle snaps (disabled when locking to handle) */}
+          {!isDesktop && showMobileHandle && clickToCycleSnap && !lockDragToHandleWhenScrolled && (
             <div className="w-full flex items-center justify-center select-none">
               <button
                 type="button"

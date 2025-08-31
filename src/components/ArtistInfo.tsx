@@ -68,7 +68,7 @@ export function ArtistInfo({
             
 
             {/* Scrolling Container */}
-            <div className="w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar">
+            <div data-drawer-scroll className="w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar">
               {/* Thumbnail */}
               <div
                 className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none ${
