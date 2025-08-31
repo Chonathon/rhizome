@@ -265,7 +265,7 @@ function App() {
         <div className="min-h-screen min-w-screen">
 
           <div className={
-            "fixed top-0 left-3 z-50 flex items-center gap-3 p-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
+            "fixed top-0 left-3 z-50 flex flex-col  items-start lg:flex-row gap-3 p-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
           }
           >
                <Tabs
