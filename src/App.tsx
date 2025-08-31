@@ -279,14 +279,14 @@ function App() {
                   </TabsList>
                 </Tabs>
                 { graph === 'artists' &&
-                <div className='flex gap-3'>
-                  <Button size='lg' variant='outline'>Genre
+                <div className='flex flex-col sm:flex-row gap-3'>
+                  <Button size='lg' className='self-start' variant='outline'>Genre
                     <ChevronDown />
                   </Button>
-                  <Button size='lg' variant='outline'>Mood & Activity
+                  <Button size='lg' className='self-start' variant='outline'>Mood & Activity
                     <ChevronDown />
                   </Button>
-                  <Button size='lg' variant='outline'>Decade
+                  <Button size='lg' className='self-start' variant='outline'>Decade
                     <ChevronDown />
                   </Button>
                 </div>
