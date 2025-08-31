@@ -309,6 +309,23 @@ function App() {
                     (graph === "artists" || graph === "similarArtists") && !artistsError
                   }
                 />
+
+          {!isMobile && <div className='z-20 fixed bottom-4 right-4'>
+            <NodeLimiter
+                totalNodes={genres.length}
+                nodeType={'genres'}
+                initialValue={genreNodeCount}
+                onChange={onGenreNodeCountChange}
+                show={showGenreNodeLimiter()}
+            />
+            <NodeLimiter
+              totalNodes={artists.length}
+              nodeType={'artists'}
+              initialValue={artistNodeCount}
+              onChange={onArtistNodeCountChange}
+              show={showArtistNodeLimiter()}
+            />
+          </div>}
           <div className="fixed flex flex-col h-auto right-4 top-4 justify-end gap-3 z-50">
               <ModeToggle />
               <ClusteringPanel 
@@ -329,6 +346,7 @@ function App() {
                 show={graph === 'genres' && !genresLoading && !genresError}
               />
           </div>
+          
 
           <AnimatePresence mode="popLayout">
             <motion.div
@@ -377,20 +395,6 @@ function App() {
 
                 </motion.div>
               </div>
-              <NodeLimiter
-                  totalNodes={genres.length}
-                  nodeType={'genres'}
-                  initialValue={genreNodeCount}
-                  onChange={onGenreNodeCountChange}
-                  show={showGenreNodeLimiter()}
-              />
-              <NodeLimiter
-                totalNodes={artists.length}
-                nodeType={'artists'}
-                initialValue={artistNodeCount}
-                onChange={onArtistNodeCountChange}
-                show={showArtistNodeLimiter()}
-              />
             </motion.div>
           </AnimatePresence>
         </div>
