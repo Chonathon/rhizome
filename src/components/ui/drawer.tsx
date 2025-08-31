@@ -54,7 +54,7 @@ function DrawerContent({
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(
-          "group/drawer-content pb-.5 fixed z-50 flex h-auto px-2 flex-col md:py-2 border-transparent overflow-hidden",
+          "group/drawer-content pb-.5 fixed z-50 flex h-auto flex-col md:py-2 border-transparent overflow-hidden",
           // Remove default focus outline/ring from the drawer container
           "outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0",
           "data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-lg",
