@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, DrawerHandle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, 
+  // DrawerHandle
+ } from "@/components/ui/drawer";
 import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -172,7 +174,7 @@ export function ResponsiveDrawer({
         >
           {!isDesktop && lockDragToHandleWhenScrolled && (
             <div className="w-full flex items-center justify-center select-none">
-              <DrawerHandle className="mt-1 mb-1" />
+              {/* <DrawerHandle className="mt-1 mb-1" /> */}
             </div>
           )}
           {/* Header (mobile + desktop) inside panel */}
