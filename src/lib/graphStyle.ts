@@ -1,8 +1,8 @@
 // Shared helpers for graph styling and label behavior
 
 export const LABEL_FONT_SIZE = 12;
-export const DEFAULT_LABEL_FADE_START = 7;
-export const DEFAULT_LABEL_FADE_END = 1;
+export const DEFAULT_LABEL_FADE_START = .02;
+export const DEFAULT_LABEL_FADE_END = .1;
 
 export const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
