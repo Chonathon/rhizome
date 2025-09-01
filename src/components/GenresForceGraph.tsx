@@ -5,7 +5,7 @@ import {Loading} from "./Loading";
 import {forceCollide} from 'd3-force';
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
-import { clusterColors } from "@/lib/utils";
+import { buildGenreRootColorMap, clusterColors } from "@/lib/utils";
 
 interface GenresForceGraphProps {
     graphData?: GenreGraphData;
@@ -14,13 +14,14 @@ interface GenresForceGraphProps {
     show: boolean;
     dag: boolean;
     clusterMode: GenreClusterMode;
+    colorMap?: Map<string, string>;
 }
 
 // Helper to estimate label width based on name length and font size
 const LABEL_FONT_SIZE = 12;
 const estimateLabelWidth = (name: string) => name.length * (LABEL_FONT_SIZE * 0.6);
 
-const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode }) => {
+const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode, colorMap: externalColorMap }) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const { theme } = useTheme();
 
@@ -43,10 +44,11 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         return { nodes, links };
     }, [graphData]);
 
-    // Compute a color per top-level parent and propagate to descendants
+    // Compute a color per top-level parent and propagate to descendants, unless provided
     const nodeColorById = useMemo(() => {
-        const colorMap = new Map<string, string>();
-        if (!preparedData.nodes.length) return colorMap;
+        if (externalColorMap) return externalColorMap;
+        const map = new Map<string, string>();
+        if (!preparedData.nodes.length) return map;
 
         // Build parents map: childId -> Set(parentIds)
         const parents = new Map<string, Set<string>>();
@@ -75,31 +77,31 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
             .filter(Boolean)
             .sort((a, b) => a.name.localeCompare(b.name));
         sortedRoots.forEach((n, i) => {
-            colorMap.set(n.id, clusterColors[i % clusterColors.length]);
+            map.set(n.id, clusterColors[i % clusterColors.length]);
         });
 
         // For others, walk up to nearest root to inherit color
         const getRootColor = (id: string, hopGuard = 0): string | undefined => {
-            if (colorMap.has(id)) return colorMap.get(id);
+            if (map.has(id)) return map.get(id);
             if (hopGuard > 1000) return undefined; // safety
             const p = parents.get(id);
             if (!p || p.size === 0) return undefined;
             // deterministically choose the lexicographically smallest parent
             const parentId = Array.from(p).sort()[0];
             const color = getRootColor(parentId, hopGuard + 1);
-            if (color) colorMap.set(id, color);
+            if (color) map.set(id, color);
             return color;
         };
         nodeIds.forEach(id => {
-            if (!colorMap.has(id)) {
+            if (!map.has(id)) {
                 const c = getRootColor(id);
-                if (!c) colorMap.set(id, theme === 'dark' ? '#8a80ff' : '#4a4a4a');
+                if (!c) map.set(id, theme === 'dark' ? '#8a80ff' : '#4a4a4a');
             }
         });
 
-        return colorMap;
+        return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [preparedData.nodes, preparedData.links, theme]);
+    }, [externalColorMap, preparedData.nodes, preparedData.links, theme]);
 
     useEffect(() => {
         if (graphData) {
