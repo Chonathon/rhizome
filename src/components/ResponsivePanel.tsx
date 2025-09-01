@@ -19,7 +19,8 @@ export function ResponsivePanel({
   children, 
   className, 
   side, 
-  headerTitle }: ResponsivePanelProps) {
+  headerTitle }: ResponsivePanelProps) 
+{
   const isDesktop = useMediaQuery("(min-width: 640px)")
 
   if (isDesktop) {
