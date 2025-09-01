@@ -25,9 +25,16 @@ const buttonVariants = cva(
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
         sm: "h-8 rounded-full gap-1.5 px-3 has-[>svg]:px-2.5",
         lg: "h-10 rounded-full px-6 has-[>svg]:px-4",
+        xl: "h-auto py-[10px] flex-col gap-2 text-md rounded-lg px-6 has-[>svg]:px-4 [&_svg:not([class*='size-'])]:size-5",
         icon: "size-10 rounded-full",
       },
     },
+    compoundVariants: [
+      // Negative margins to offset padding in link variants
+      { variant: "link", size: "default", className: "-mx-4 -my-2 has-[>svg]:-mx-3" },
+      { variant: "link", size: "sm", className: "-m-3 has-[>svg]:-mx-2.5" },
+      { variant: "link", size: "lg", className: " text-md -m-6 has-[>svg]:-mx-4" },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",
