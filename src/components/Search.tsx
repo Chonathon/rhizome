@@ -68,10 +68,10 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
       // Wait for next tick after remount and selection
       requestAnimationFrame(() => {
         if (inputRef.current) {
-          const input = inputRef.current; 
+          const input = inputRef.current;
           const length = input.value.length;
           input.setSelectionRange(length, length);
-        } 
+        }
       });
     }
   }, [open, filteredSearchableItems.length]);
@@ -102,18 +102,18 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
           <div className="flex gap-2 items-center animate-fade-in">
             <SearchIcon size={20}></SearchIcon>
             {selectedGenre ? (
-              selectedGenre.name
+              <span className="">{selectedGenre.name}</span>
             ) : selectedArtist ? (
-              selectedArtist.name
+              <span>{selectedArtist.name}</span>
             ) : (
               <div className="flex text-muted-foreground items-center gap-2">
-                Search
-              {isMobile ? 
-                "" : <Badge
-                className="text-xs text-muted-foreground"
-                variant="outline"
-                >⌘K
-                </Badge>}
+                <span>Search</span>
+                          {isMobile ? 
+                          "" : <Badge
+                          className="text-xs text-muted-foreground"
+                          variant="outline"
+                          >⌘K
+                          </Badge>}
               </div>
             )}
           </div>
@@ -143,7 +143,7 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
                   onSelect={() => onItemSelect(selection)}
                   className="flex items-center justify-between"
                   >
-                  {selection.name}
+                  <span>{selection.name}</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -151,9 +151,9 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
                       e.stopPropagation();
                       removeRecentSelection(selection.id);
                     }}
-                    className="-m-2"
+                    className="h-auto p-1"
                   >
-                    <X />
+                    <X className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </CommandItem>
               ))}
@@ -167,7 +167,7 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
                             }}
                             className="flex items-center justify-between"
                           >
-                            {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                            <span>{theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}</span>
                     
                           </CommandItem>
                   </CommandGroup>
@@ -180,7 +180,7 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
                         onSelect={() => onItemSelect(item)}
                         className="flex items-center justify-between"
                     >
-                      {item.name}
+                      <span>{item.name}</span>
                       <Badge variant="secondary">{isGenre(item) ? 'genre' : 'artist'}</Badge>
                     </CommandItem>
                 ))}
