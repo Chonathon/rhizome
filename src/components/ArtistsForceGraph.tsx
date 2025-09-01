@@ -3,6 +3,7 @@ import React, {useEffect, useMemo, useRef} from "react";
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
+import { ensureContrastOnLight } from "@/lib/utils";
 import * as d3 from 'd3-force';
 
 interface ArtistsForceGraphProps {
@@ -37,7 +38,6 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
     }, [artists, artistLinks]);
 
     const fgRef = useRef<ForceGraphMethods<Artist, NodeLink> | undefined>(undefined);
-    const imgCache = useRef<Map<string, HTMLImageElement>>(new Map());
 
     useEffect(() => {
         if (fgRef.current) {
@@ -70,7 +70,11 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
             linkColor={(l: any) => {
                 const src = typeof l.source === 'string' ? l.source : l.source?.id;
                 const artist = preparedData.nodes.find(n => n.id === src);
-                const c = artist ? getArtistColor(artist) : (theme === 'dark' ? '#ffffff' : '#000000');
+                let c = artist ? getArtistColor(artist) : (theme === 'dark' ? '#ffffff' : '#000000');
+                if (theme !== 'dark') {
+                    // darken for contrast in light mode (links are translucent)
+                    c = ensureContrastOnLight(c);
+                }
                 // add 50% alpha via 80 hex
                 return c + '80';
             }}
@@ -80,78 +84,41 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
             nodeCanvasObject={(node, ctx, globalScale) => {
                 const x = node.x || 0;
                 const y = node.y || 0;
-                const radius = 16; // circle radius in px
                 const artist = node as Artist;
-                const accent = getArtistColor(artist);
+                let accent = getArtistColor(artist);
+                if (theme !== 'dark') accent = ensureContrastOnLight(accent);
 
-                // draw circular image if available
-                const imgUrl = (node as any).image as string | undefined;
-                let drewImage = false;
-                if (imgUrl) {
-                    let img = imgCache.current.get(imgUrl);
-                    if (!img) {
-                        img = new Image();
-                        img.crossOrigin = 'anonymous';
-                        img.onload = () => fgRef.current?.d3ReheatSimulation();
-                        img.src = imgUrl;
-                        imgCache.current.set(imgUrl, img);
-                    }
-                    if (img.complete && img.naturalWidth > 0) {
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
-                        ctx.closePath();
-                        ctx.clip();
-                        const size = radius * 2;
-                        const imgRatio = img.naturalWidth / img.naturalHeight;
-                        let drawW = size, drawH = size;
-                        if (imgRatio > 1) { // wider
-                            drawH = size;
-                            drawW = size * imgRatio;
-                        } else {
-                            drawW = size;
-                            drawH = size / imgRatio;
-                        }
-                        const dx = x - drawW / 2;
-                        const dy = y - drawH / 2;
-                        ctx.drawImage(img, dx, dy, drawW, drawH);
-                        ctx.restore();
-                        drewImage = true;
-                    }
-                }
-
-                if (!drewImage) {
-                    ctx.beginPath();
-                    ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
-                    ctx.fillStyle = theme === 'dark' ? '#333' : '#ddd';
-                    ctx.fill();
-                }
-
-                // colored ring/border
-                ctx.beginPath();
-                ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
-                ctx.strokeStyle = accent;
-                ctx.lineWidth = Math.max(2, 2 / globalScale);
-                ctx.stroke();
-
-                // label
+                // draw label only (no visible node)
                 const label = node.name;
                 const fontSize = 12 / globalScale;
                 ctx.font = `${fontSize}px Geist`;
+                const textWidth = ctx.measureText(label).width;
+                const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.3);
+
+                // subtle halo for readability
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'top';
-                ctx.fillStyle = theme === 'dark' ? '#ffffff' : '#000000';
-                ctx.fillText(label, x, y + radius + 2);
+                ctx.textBaseline = 'middle';
+                ctx.lineWidth = Math.max(2, 2 / globalScale);
+                ctx.strokeStyle = theme === 'dark' ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.75)';
+                ctx.strokeText(label, x, y);
+
+                // colored text
+                ctx.fillStyle = accent;
+                ctx.fillText(label, x, y);
+
+                // store bounds for pointer hit area
+                (node as any).__bckgDimensions = bckgDimensions;
             }}
             nodePointerAreaPaint={(node, color, ctx, globalScale) => {
-                const radius = 16;
-                const x = node.x || 0;
-                const y = node.y || 0;
                 ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
-                ctx.fill();
-                }}
+                const [width = 0, height = 0] = (node as any).__bckgDimensions || [0, 0];
+                const minSize = 24 / globalScale; // minimum touch size
+                const w = Math.max(width, minSize);
+                const h = Math.max(height, minSize);
+                const x = (node.x || 0) - w / 2;
+                const y = (node.y || 0) - h / 2;
+                ctx.fillRect(x, y, w, h);
+            }}
         />)
     )
 }
