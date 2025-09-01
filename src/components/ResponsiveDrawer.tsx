@@ -1,0 +1,248 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, 
+  // DrawerHandle
+ } from "@/components/ui/drawer";
+import { ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { cn } from "@/lib/utils";
+
+type DrawerDirection = "left" | "right" | "top" | "bottom";
+
+export interface ResponsiveDrawerProps {
+  show: boolean;
+  onDismiss: () => void;
+  children: React.ReactNode | ((ctx: { isDesktop: boolean; isAtMaxSnap: boolean }) => React.ReactNode);
+  contentClassName?: string;
+  bodyClassName?: string;
+  directionDesktop?: Extract<DrawerDirection, "left" | "right">;
+  snapPoints?: number[];
+  clickToCycleSnap?: boolean;
+  desktopQuery?: string;
+  showMobileHandle?: boolean;
+  handleHeightPx?: number;
+  showMobileHeader?: boolean;
+  showHeaderOnDesktop?: boolean;
+  headerTitle?: React.ReactNode;
+  headerSubtitle?: React.ReactNode;
+  /**
+   * Only allow dragging via the handle when content is scrolled (not at top).
+   * Prevents accidental snap when scrolling. Mobile only.
+   * @default true
+   */
+  lockDragToHandleWhenScrolled?: boolean;
+  /**
+   * Selector for the scroll container inside the drawer. If not found, falls back to the card container.
+   * @default '[data-drawer-scroll]'
+   */
+  scrollContainerSelector?: string;
+}
+
+/**
+ * Responsive panel that renders a side drawer on desktop and a bottom sheet on mobile.
+ * Encapsulates snap-point behavior and exposes whether the mobile sheet is fully expanded.
+ */
+export function ResponsiveDrawer({
+  show,
+  onDismiss,
+  children,
+  contentClassName,
+  bodyClassName,
+  directionDesktop = "right",
+  snapPoints = [0.28, 0.9],
+  clickToCycleSnap = true,
+  desktopQuery = "(min-width: 1200px)",
+  showMobileHandle = false,
+  handleHeightPx = 28,
+  showMobileHeader = true,
+  showHeaderOnDesktop = true,
+  headerTitle,
+  headerSubtitle,
+  lockDragToHandleWhenScrolled = true,
+  scrollContainerSelector = '[data-drawer-scroll]',
+}: ResponsiveDrawerProps) {
+  const isDesktop = useMediaQuery(desktopQuery);
+  const [open, setOpen] = useState(false);
+  const [activeSnap, setActiveSnap] = useState<number | string | null>(snapPoints[0] ?? 0.9);
+  const [isScrollAtTop, setIsScrollAtTop] = useState(true);
+  const cardRef = React.useRef<HTMLDivElement | null>(null);
+  const scrollElRef = React.useRef<HTMLElement | null>(null);
+
+  // keep open state in sync with `show`
+  useEffect(() => {
+    if (show) {
+      setOpen(true);
+    } else {
+      setOpen(false);
+    }
+  }, [show]);
+
+  // Ensure consistent snap height when resizing to mobile while open
+  useEffect(() => {
+    if (!isDesktop && open) {
+      setActiveSnap(snapPoints[0] ?? 0.9);
+    }
+  }, [isDesktop, open, snapPoints]);
+
+  // Track whether the scroll container is at the very top to gate dragging.
+  React.useEffect(() => {
+    if (isDesktop || !open) return;
+    const card = cardRef.current;
+    if (!card) return;
+    let el: HTMLElement | null = null;
+    try {
+      el = (card.querySelector(scrollContainerSelector) as HTMLElement) ?? card;
+    } catch {
+      el = card;
+    }
+    scrollElRef.current = el;
+    const handleScroll = () => {
+      const atTop = (el?.scrollTop ?? 0) <= 0;
+      setIsScrollAtTop((prev) => (prev !== atTop ? atTop : prev));
+    };
+    // Initialize
+    handleScroll();
+    el.addEventListener('scroll', handleScroll, { passive: true } as AddEventListenerOptions);
+    return () => {
+      el?.removeEventListener('scroll', handleScroll as any);
+    };
+  }, [isDesktop, open, scrollContainerSelector]);
+
+  // Map current snap value to closest index for robust comparisons
+  const activeSnapIndex = useMemo(() => {
+    const value = typeof activeSnap === "string" ? parseFloat(activeSnap) : activeSnap ?? 0;
+    if (typeof value !== "number" || snapPoints.length === 0) return -1;
+    let bestIdx = 0;
+    let bestDist = Math.abs(snapPoints[0] - value);
+    for (let i = 1; i < snapPoints.length; i++) {
+      const d = Math.abs(snapPoints[i] - value);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  }, [activeSnap, snapPoints]);
+
+  const isAtMaxSnap = useMemo(() => {
+    if (isDesktop) return true;
+    return activeSnapIndex === snapPoints.length - 1;
+  }, [activeSnapIndex, isDesktop, snapPoints.length]);
+
+  const cycleSnap = () => {
+    if (isDesktop || !clickToCycleSnap) return;
+    const idx = activeSnapIndex;
+    const nextIdx = idx === snapPoints.length - 1 ? 0 : Math.max(0, idx + 1);
+    setActiveSnap(snapPoints[nextIdx] ?? snapPoints[0]);
+  };
+
+  if (!show) return null;
+
+  const drawerKey = isDesktop ? "desktop" : "mobile";
+
+  return (
+    <Drawer
+      key={drawerKey}
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) onDismiss();
+        if (next && !isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
+      }}
+      direction={isDesktop ? directionDesktop : "bottom"}
+      handleOnly={!isDesktop && lockDragToHandleWhenScrolled && !isScrollAtTop}
+      dismissible={true}
+      modal={false}
+      {...(!isDesktop
+        ? {
+            snapPoints,
+            activeSnapPoint: activeSnap,
+            setActiveSnapPoint: setActiveSnap,
+          }
+        : {})}
+    >
+      <DrawerContent
+        className={cn("w-full h-full", isDesktop ? "max-w-sm px-2" : "", contentClassName)}
+      >
+        <div
+          className={cn(
+            "relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0",
+            isDesktop ? "pl-4" : "py-3",
+            bodyClassName,
+          )}
+          ref={cardRef}
+        >
+          {!isDesktop && lockDragToHandleWhenScrolled && (
+            <div className="w-full flex items-center justify-center select-none">
+              {/* <DrawerHandle className="mt-1 mb-1" /> */}
+            </div>
+          )}
+          {/* Header (mobile + desktop) inside panel */}
+          {((!isDesktop && showMobileHeader) || (isDesktop && showHeaderOnDesktop)) && (
+            <DrawerHeader className={cn("px-1", isDesktop ? "pt-2 pb-3" : "pt-1 pb-2") }>
+              <div className="flex items-start gap-1">
+                {/* Cycle button only on mobile */}
+                {!isDesktop && (
+                  <Button
+                    aria-label={isAtMaxSnap ? "Collapse" : "Expand"}
+                    variant={"secondary"}
+                    size={"icon"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (clickToCycleSnap) {
+                        const idx = activeSnapIndex;
+                        const nextIdx = idx === snapPoints.length - 1 ? 0 : Math.max(0, idx + 1);
+                        setActiveSnap(snapPoints[nextIdx] ?? snapPoints[0]);
+                      }
+                    }}
+                  >
+                    {isAtMaxSnap ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                  </Button>
+                )}
+                <div className={cn("flex-1", isDesktop ? "text-left" : "text-center") }>
+                  {headerTitle && (
+                    <DrawerTitle className={cn("leading-tight text-base", isDesktop ? "text-2xl" : "text-xl")}>{headerTitle}</DrawerTitle>
+                  )}
+                  {headerSubtitle && (
+                    <DrawerDescription className={cn(isDesktop ? "text-sm" : "text-xs")}>{headerSubtitle}</DrawerDescription>
+                  )}
+                </div>
+                <DrawerClose asChild>
+                  <Button
+                    aria-label="Close"
+                    variant="secondary"
+                    size={"icon"}
+                  >
+                    <X />
+                  </Button>
+                </DrawerClose>
+              </div>
+            </DrawerHeader>
+          )}
+          {/* Optional tap target to cycle snaps (disabled when locking to handle) */}
+          {!isDesktop && showMobileHandle && clickToCycleSnap && !lockDragToHandleWhenScrolled && (
+            <div className="w-full flex items-center justify-center select-none">
+              <button
+                type="button"
+                aria-label={isAtMaxSnap ? "Collapse" : "Expand"}
+                className="relative mt-0 mb-2 h-7 w-full flex items-center justify-center focus:outline-none"
+                style={{ height: `${handleHeightPx}px` }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cycleSnap();
+                }}
+              >
+                <span className="pointer-events-none block h-1 w-16 rounded-full bg-muted" />
+              </button>
+            </div>
+          )}
+          {typeof children === "function"
+            ? children({ isDesktop, isAtMaxSnap })
+            : children}
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+export default ResponsiveDrawer;

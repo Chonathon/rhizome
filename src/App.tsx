@@ -18,7 +18,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
 import { useMediaQuery } from 'react-responsive';
-import { ArtistCard } from './components/ArtistCard'
+import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import { buildGenreRootColorMap, buildGenreTree, filterOutGenreTree, generateSimilarLinks } from "@/lib/utils";
@@ -26,11 +26,13 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
-import GenrePanel from './components/GenrePanel'
+// import GenrePanel from './components/GenrePanel'r'
 import NodeLimiter from './components/NodeLimiter'
 import useSimilarArtists from "@/hooks/useSimilarArtists";
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
+import { GenreInfo } from './components/GenreInfo';
+import GenresFilter from './components/GenresFilter';
 
 const DEFAULT_NODE_COUNT = 2000;
 const DEFAULT_CLUSTER_MODE = 'subgenre';
@@ -140,8 +142,29 @@ function App() {
     //   setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
     // }
     setSelectedGenre(genre);
+    setShowArtistCard(false); // ensure only one card visible
+    addRecentSelection(genre);
+  }
+  // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
+  const onShowAllArtists = (genre: Genre) => {
+    setSelectedGenre(genre);
     setGraph('artists');
     addRecentSelection(genre);
+    console.log("Show all artists for genre:", genre);
+  }
+  // For clicking on a genre node in the Genres graph: only show the GenreInfo, do not switch graphs
+  const onGenreNodePreview = (genre: Genre) => {
+    setSelectedGenre(genre);
+    setShowArtistCard(false); // ensure only one card visible
+    addRecentSelection(genre);
+    console.log("Genre preview:", genre);
+  }
+  const onTopArtistClick = (artist: Artist) => {
+    // Switch to artists graph and select the clicked artist
+    setGraph('artists');
+    setSelectedArtist(artist);
+    setShowArtistCard(true);
+    addRecentSelection(artist);
   }
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
@@ -269,8 +292,7 @@ function App() {
         onClick={resetAppState}
         selectedGenre={selectedGenre}>
           <Gradient />
-        <div className="min-h-screen min-w-screen">
-
+        <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
           <div className={
             "fixed top-0 left-3 z-50 flex flex-col  items-start lg:flex-row gap-3 p-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
           }
@@ -286,11 +308,17 @@ function App() {
                   </TabsList>
                 </Tabs>
                 { graph === 'artists' &&
-                <div className='flex flex-col sm:flex-row gap-3'>
-                  <Button size='lg' className='self-start' variant='outline'>Genre
-                    <ChevronDown />
-                  </Button>
-                  <Button size='lg' className='self-start' variant='outline'>Mood & Activity
+                <div className='flex gap-3'>
+                   <GenresFilter 
+                    genres={genres}
+                    onParentClick={onParentGenreClick}
+                    genreClusterMode={genreClusterMode}
+                    onParentDeselect={onParentGenreDeselect}
+                    onParentSelect={onParentGenreReselect}
+                    graphType={graph}
+              />
+
+                  <Button size='lg' variant='outline'>Mood & Activity
                     <ChevronDown />
                   </Button>
                   <Button size='lg' className='self-start' variant='outline'>Decade
@@ -301,7 +329,7 @@ function App() {
           </div>
                 <GenresForceGraph
                   graphData={currentGenres}
-                  onNodeClick={onGenreNodeClick}
+                  onNodeClick={onGenreNodePreview}
                   loading={genresLoading}
                   show={graph === "genres" && !genresError}
                   dag={dagMode}
@@ -346,14 +374,14 @@ function App() {
                 genreArtistCountThreshold={genreSizeThreshold}
                 setGenreArtistCountThreshold={setGenreSizeThreshold}
               />
-              <GenrePanel
+              {/* <GenrePanel
                 genres={genres}
                 onParentClick={onParentGenreClick}
                 genreClusterMode={genreClusterMode}
                 onParentDeselect={onParentGenreDeselect}
                 onParentSelect={onParentGenreReselect}
                 show={graph === 'genres' && !genresLoading && !genresError}
-              />
+              /> */}
           </div>
           
 
@@ -369,14 +397,27 @@ function App() {
                   }
                 `}
             >
-              <ArtistCard
+              <GenreInfo 
+                selectedGenre={selectedGenre}
+                onLinkedGenreClick={onLinkedGenreClick}
+                show={graph === 'genres' && !!selectedGenre && !showArtistCard}
+                genreLoading={artistsLoading}
+                onTopArtistClick={onTopArtistClick}
+                deselectGenre={() => {
+                  setSelectedGenre(undefined);
+                  setGraph('genres');
+                  setCurrentArtists([]);
+                  setCurrentArtistLinks([]);
+                }}
+                onSelectGenre={onLinkedGenreClick}
+                allArtists={onShowAllArtists}
+              />
+              <ArtistInfo
                 selectedArtist={selectedArtist}
                 setArtistFromName={setArtistFromName}
-                setSelectedArtist={setSelectedArtist}
                 artistLoading={false}
                 artistError={false}
                 show={showArtistCard}
-                setShowArtistCard={setShowArtistCard}
                 deselectArtist={deselectArtist}
                 similarFilter={similarArtistFilter}
               />
