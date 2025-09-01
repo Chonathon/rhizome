@@ -3,7 +3,7 @@ import { formatNumber } from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
-import { SquareArrowUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import {SquareArrowUp, ChevronLeft, ChevronRight, Flag, FlagOff} from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge } from './ui/badge';
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
@@ -21,6 +21,7 @@ interface GenreInfoProps {
   onLinkedGenreClick: (genreID: string) => void;
   limitRelated?: number;
   onTopArtistClick?: (artist: Artist) => void;
+  onBadDataClick: () => void;
 }
 
 export function GenreInfo({
@@ -34,6 +35,7 @@ export function GenreInfo({
   onLinkedGenreClick,
   limitRelated = 5,
   onTopArtistClick,
+    onBadDataClick,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(true)
@@ -244,15 +246,40 @@ export function GenreInfo({
                   <div className={`flex flex-row 
                     ${isDesktop ? 'gap-3' : 'items-center justify-between gap-3 mt-3'}`}>
                     
-                    {!isDesktop && <Button
-                      disabled={genreLoading}
-                      size="xl"
-                      variant="secondary"
-                      onClick={() => selectedGenre && allArtists(selectedGenre)}
-                      className='flex-1'
-                    >
-                      <SquareArrowUp />All Artists
-                    </Button>}
+                    {!isDesktop &&
+                        <>
+                          <Button
+                              disabled={genreLoading}
+                              size="xl"
+                              variant="secondary"
+                              onClick={() => selectedGenre && allArtists(selectedGenre)}
+                              className='flex-1'
+                          >
+                            <SquareArrowUp />All Artists
+                          </Button>
+                          <Button
+                              className="hover:bg-white/0"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                onBadDataClick();
+                              }}
+                          >
+                            {selectedGenre?.badDataFlag ? (
+                                <Flag
+                                    className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
+                                    size={20}
+                                />
+                            ) : (
+                                <FlagOff
+                                    className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
+                                    size={20}
+                                />
+                            )}
+                          </Button>
+                        </>
+
+                    }
                 {isDesktop && (
                   <p
                     onClick={() => setDesktopExpanded((prev) => !prev)}
@@ -356,16 +383,39 @@ export function GenreInfo({
                       </Badge>
                     ))}
                     </div>
-                <Button
-                  disabled={genreLoading}
-                  size="lg"
-                  variant="secondary"
-                  onClick={() => selectedGenre && allArtists(selectedGenre)}
-                  className='mt-2 self-start'
-                >
-                  <SquareArrowUp />All Artists
-                </Button>
-                
+                    <div className='flex gap-4'>
+                      <Button
+                          disabled={genreLoading}
+                          size="lg"
+                          variant="secondary"
+                          onClick={() => selectedGenre && allArtists(selectedGenre)}
+                          className='mt-2 self-start'
+                      >
+                        <SquareArrowUp />All Artists
+                      </Button>
+                      <Button
+                          className="hover:bg-white/0 mt-2 self-start"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            onBadDataClick();
+                          }}
+                      >
+                        {selectedGenre?.badDataFlag ? (
+                            <Flag
+                                className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
+                                size={20}
+                            />
+                        ) : (
+                            <FlagOff
+                                className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
+                                size={20}
+                            />
+                        )}
+
+                      </Button>
+                    </div>
+
                   </div>
                 )}
 

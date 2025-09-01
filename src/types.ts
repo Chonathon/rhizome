@@ -14,6 +14,7 @@ export interface Genre extends BasicNode {
     named_after_area?: string[];
     used_instruments?: string[];
     badDataFlag?: boolean;
+    badDataReason?: string;
 }
 
 export interface Tag {
@@ -34,6 +35,7 @@ export interface Artist extends BasicNode {
     endDate?: string;
     image?: string;
     badDataFlag?: boolean;
+    badDataReason?: string;
 }
 
 export interface BasicNode {

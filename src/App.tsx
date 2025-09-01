@@ -60,8 +60,24 @@ function App() {
   const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>('listeners');
   const [genreNodeCount, setGenreNodeCount] = useState<number>(0);
   const [artistNodeCount, setArtistNodeCount] = useState<number>(0);
-  const { genres, genreLinks, genresLoading, genresError } = useGenres();
-  const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
+  const {
+    genres,
+    genreLinks,
+    genresLoading,
+    genresError,
+    flagBadGenreData,
+    genresDataFlagLoading,
+    genresDataFlagError
+  } = useGenres();
+  const {
+    artists,
+    artistLinks,
+    artistsLoading,
+    artistsError,
+    flagBadArtistData,
+    artistsDataFlagLoading,
+    artistsDataFlagError
+  } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
 
@@ -282,6 +298,50 @@ function App() {
       onGenreNodeClick(newGenre);
     }
   }
+  const onBadDataGenreClick = () => {
+    if (selectedGenre && !selectedGenre.badDataFlag) {
+      //open bad data flag reason form
+      flipBadGenreFlag('genre bad data');
+    } else {
+      flipBadGenreFlag('none');
+    }
+  }
+  const flipBadGenreFlag = async (badDataReason: string) => {
+    if (selectedGenre && currentGenres) {
+      const success = await flagBadGenreData(badDataReason);
+      if (success) {
+        const updatedGenre = {...selectedGenre, badDataFlag: !selectedGenre.badDataFlag, badDataReason};
+        setSelectedGenre(updatedGenre);
+        // note this doesn't set `genres`, so a browser refresh is needed if genres are filtered after this to reflect the genre's flag
+        setCurrentGenres({ nodes: [...currentGenres.nodes.filter(n => n.id !== updatedGenre.id), updatedGenre], links: currentGenres.links });
+      }
+    }
+  }
+  const onBadDataArtistClick = () => {
+    if ((selectedArtist && !selectedArtist.badDataFlag) || (selectedArtistNoGenre && !selectedArtistNoGenre.badDataFlag)) {
+      //open bad data flag reason form
+      flipBadArtistFlag('artist bad data');
+    } else {
+      flipBadArtistFlag('none');
+    }
+  }
+  const flipBadArtistFlag = async (badDataReason: string) => {
+    if (selectedArtist) {
+      const success = await flagBadArtistData(selectedArtist.id, badDataReason);
+      if (success) {
+        const updatedSelected = {...selectedArtist, badDataFlag: !selectedArtist.badDataFlag, badDataReason};
+        setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtist.id), updatedSelected]);
+        setSelectedArtist(updatedSelected);
+      }
+    } else if (selectedArtistNoGenre) {
+      const success = await flagBadArtistData(selectedArtistNoGenre.id, badDataReason);
+      if (success) {
+        const updatedSelected = {...selectedArtistNoGenre, badDataFlag: !selectedArtistNoGenre.badDataFlag, badDataReason};
+        setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtistNoGenre.id), updatedSelected]);
+        setSelectedArtistNoGenre(updatedSelected);
+      }
+    }
+  }
 
 
   return (
@@ -411,6 +471,7 @@ function App() {
                 }}
                 onSelectGenre={onLinkedGenreClick}
                 allArtists={onShowAllArtists}
+                onBadDataClick={onBadDataGenreClick}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
@@ -420,6 +481,7 @@ function App() {
                 show={showArtistCard}
                 deselectArtist={deselectArtist}
                 similarFilter={similarArtistFilter}
+                onBadDataClick={onBadDataArtistClick}
               />
               <div
                 className={`flex md:hidden justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>

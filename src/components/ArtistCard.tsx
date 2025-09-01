@@ -15,6 +15,7 @@ interface ArtistCardProps {
     setShowArtistCard: (show: boolean) => void;
     deselectArtist: () => void;
     similarFilter: (artists: string[]) => string[];
+    onBadDataClick: () => void;
 }
 
 export function ArtistCard({
@@ -27,6 +28,7 @@ export function ArtistCard({
     setShowArtistCard,
     deselectArtist,
     similarFilter,
+    onBadDataClick,
 }: ArtistCardProps) {
     const [isExpanded, setIsExpanded] = useState(false)
     // Card expansion is toggled via description click
@@ -49,7 +51,7 @@ export function ArtistCard({
         onDismiss={onDeselectArtist}
         contentKey={selectedArtist?.name}
         stacked={isExpanded}
-      
+
         thumbnail={
           selectedArtist?.image && selectedArtist ? (
             <div

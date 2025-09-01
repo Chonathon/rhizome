@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus } from "lucide-react";
+import {CirclePlay, Flag, FlagOff, SquarePlus} from "lucide-react";
 
 interface ArtistInfoProps {
   selectedArtist?: Artist;
@@ -15,6 +15,7 @@ interface ArtistInfoProps {
   deselectArtist: () => void;
   setArtistFromName: (name: string) => void;
   similarFilter: (artists: string[]) => string[];
+  onBadDataClick: () => void;
 }
 
 export function ArtistInfo({
@@ -25,6 +26,7 @@ export function ArtistInfo({
   deselectArtist,
   setArtistFromName,
   similarFilter,
+    onBadDataClick,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 1200px)");
@@ -112,6 +114,27 @@ export function ArtistInfo({
                                            >
                         <SquarePlus size={24}/>Add
                                            </Button>
+                       <Button
+                           className="hover:bg-white/0"
+                           variant="ghost"
+                           size="icon"
+                           onClick={() => {
+                             onBadDataClick();
+                           }}
+                       >
+                         {selectedArtist?.badDataFlag ? (
+                             <Flag
+                                 className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
+                                 size={20}
+                             />
+                         ) : (
+                             <FlagOff
+                                 className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
+                                 size={20}
+                             />
+                         )}
+
+                       </Button>
                      </div>
                 {isDesktop && (
                   <p
