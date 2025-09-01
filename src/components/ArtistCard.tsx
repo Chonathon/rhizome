@@ -1,7 +1,7 @@
 import {Artist, BasicNode} from '@/types'
 import { motion, AnimatePresence } from "framer-motion";
 import { dummyLastFMArtistData } from '@/DummyDataForDummies'
-import { CircleX } from "lucide-react"
+import { CircleX, Flag, FlagOff } from "lucide-react"
 import { Button, buttonVariants } from "@/components/ui/button";
 import {fixWikiImageURL, formatDate, formatNumber} from '@/lib/utils'
 import {Loading} from "@/components/Loading";
@@ -22,6 +22,7 @@ interface ArtistCardProps {
     setShowArtistCard: (show: boolean) => void;
     deselectArtist: () => void;
     similarFilter: (artists: string[]) => string[];
+    onBadDataClick: () => void;
 }
 
 export function ArtistCard({
@@ -34,6 +35,7 @@ export function ArtistCard({
     setShowArtistCard,
     deselectArtist,
     similarFilter,
+    onBadDataClick,
 }: ArtistCardProps) {
     const [isExpanded, setIsExpanded] = useState(false)
     const [isHovered, setIsHovered] = useState(false)
@@ -77,7 +79,28 @@ export function ArtistCard({
         >
           {(isHovered || isMobile) && (
             <div className="w-full flex justify-end absolute top-0 pr-3">
-              <Button
+                <Button
+                    className="hover:bg-white/0"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                        onBadDataClick();
+                    }}
+                >
+                    {selectedArtist?.badDataFlag ? (
+                        <Flag
+                            className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
+                            size={20}
+                        />
+                    ) : (
+                        <FlagOff
+                            className=" fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5"
+                            size={20}
+                        />
+                    )}
+
+                </Button>
+                <Button
                 className="hover:bg-white/0"
                 variant="ghost"
                 size="icon"

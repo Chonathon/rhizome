@@ -12,6 +12,8 @@ const useGenres = () => {
     const [genreLinks, setGenreLinks] = useState<NodeLink[]>([]);
     const [genresLoading, setGenresLoading] = useState(true);
     const [genresError, setGenresError] = useState<AxiosError>();
+    const [genresDataFlagLoading, setGenresDataFlagLoading] = useState(false);
+    const [genresDataFlagError, setGenresDataFlagError] = useState<AxiosError>();
 
     const fetchGenres = async () => {
         setGenresLoading(true);
@@ -31,7 +33,24 @@ const useGenres = () => {
         fetchGenres();
     }, []);
 
-    return { genres, genreLinks, genresLoading, genresError };
+    const flagBadGenreData = async (genreID: string, reason = 'none') => {
+        setGenresDataFlagLoading(true);
+        let success = false;
+        try {
+            const response = await axios.put(`${url}/genres/bdflag/${genreID}/${reason}`);
+            if (response.status === 200) {
+                success = true;
+            }
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setGenresDataFlagError(err);
+            }
+        }
+        setGenresDataFlagLoading(false);
+        return success;
+    }
+
+    return { genres, genreLinks, genresLoading, genresError, flagBadGenreData, genresDataFlagLoading, genresDataFlagError };
 }
 
 export default useGenres;

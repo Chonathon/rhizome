@@ -35,7 +35,7 @@ const useGenreArtists = (genreID?: string) => {
         fetchArtists();
     }, [genreID]);
 
-    const flagBadArtistData = async (artistID: string, reason = '') => {
+    const flagBadArtistData = async (artistID: string, reason = 'none') => {
         setArtistsDataFlagLoading(true);
         let success = false;
         try {
