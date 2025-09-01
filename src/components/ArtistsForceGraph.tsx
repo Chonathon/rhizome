@@ -18,9 +18,30 @@ interface ArtistsForceGraphProps {
     curvedLinksAbove?: number;
     // Curvature amount to use when under the threshold.
     curvedLinkCurvature?: number;
+    // Hide links when zoomed out below this k (0..1 typical). Default 0.35.
+    hideLinksBelowZoom?: number;
+    // When link count exceeds this, hide links until zoomed in past hideLinksBelowZoom*1.25. Default 6000.
+    maxLinksToShow?: number;
+    // Minimum label size (in pixels) to draw. Default 8.
+    minLabelPx?: number;
+    // Minimum size at which to draw the halo stroke. Default 13.
+    strokeMinPx?: number;
 }
 
-const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLinks, onNodeClick, loading, show, genreColorMap, curvedLinksAbove = 1500, curvedLinkCurvature = 0.2}) => {
+const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
+    artists,
+    artistLinks,
+    onNodeClick,
+    loading,
+    show,
+    genreColorMap,
+    curvedLinksAbove = 1500,
+    curvedLinkCurvature = 0.2,
+    hideLinksBelowZoom = 0.35,
+    maxLinksToShow = 6000,
+    minLabelPx = 8,
+    strokeMinPx = 13,
+}) => {
     const { theme } = useTheme();
 
     const preparedData: GraphData<Artist, NodeLink> = useMemo(() => {
@@ -44,6 +65,7 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
 
     const fgRef = useRef<ForceGraphMethods<Artist, NodeLink> | undefined>(undefined);
     const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+    const zoomRef = useRef<number>(1);
 
     useEffect(() => {
         if (fgRef.current) {
@@ -126,7 +148,13 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
         (<ForceGraph
             ref={fgRef as any}
             graphData={preparedData}
-            linkVisibility={true}
+            linkVisibility={(l: any) => {
+                const k = zoomRef.current || 1;
+                const many = preparedData.links.length > maxLinksToShow;
+                if (k < hideLinksBelowZoom) return false;
+                if (many && k < hideLinksBelowZoom * 1.25) return false;
+                return true;
+            }}
             linkColor={(l: any) => {
                 const src = typeof l.source === 'string' ? l.source : l.source?.id;
                 const c = (src && colorById.get(src)) || (theme === 'dark' ? '#ffffff' : '#000000');
@@ -136,6 +164,11 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
             onNodeClick={onNodeClick}
             nodeColor={() => 'rgba(0,0,0,0)'}
             nodeCanvasObjectMode={() => 'replace'}
+            d3AlphaDecay={0.02}
+            d3VelocityDecay={0.85}
+            cooldownTime={10000}
+            autoPauseRedraw={true}
+            onZoom={({ k }) => { zoomRef.current = k; }}
             nodeCanvasObject={(node, ctx, globalScale) => {
                 const x = node.x || 0;
                 const y = node.y || 0;
@@ -145,6 +178,7 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
                 // draw label only (no visible node)
                 const label = node.name;
                 const fontSize = fontSizeFor(artist, globalScale);
+                if (fontSize < minLabelPx) return;
                 ctx.font = `${fontSize}px Geist`;
                 const baseWidth = baseLabelWidthById.get(artist.id) ?? (label.length * 12 * 0.6);
                 const textWidth = baseWidth * (fontSize / 12);
@@ -153,9 +187,11 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({artists, artistLin
                 // subtle halo for readability
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.lineWidth = Math.max(1, fontSize / 6);
-                ctx.strokeStyle = theme === 'dark' ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.75)';
-                ctx.strokeText(label, x, y);
+                if (fontSize >= strokeMinPx) {
+                    ctx.lineWidth = Math.max(0.75, fontSize / 7);
+                    ctx.strokeStyle = theme === 'dark' ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.6)';
+                    ctx.strokeText(label, x, y);
+                }
 
                 // colored text
                 ctx.fillStyle = accent;
