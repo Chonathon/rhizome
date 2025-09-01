@@ -9,20 +9,34 @@ import {
 import { Loading } from "./Loading"
 
 interface NodeLimiterProps {
-  initialValue?: number,
-  onChange?: (value: number[]) => void
-  totalNodes?: number
-  nodeType?: string
+  initialValue: number;
+  onChange: (value: number) => void;
+  totalNodes: number;
+  nodeType: string;
+  show: boolean;
 }
 
-export default function NodeLimiter({ initialValue = 200, onChange, totalNodes, nodeType }: NodeLimiterProps) {
-    const [value, setValue] = useState<number[]>([200])
-    useEffect(() => {
-        onChange?.(value)
-    }, [value, onChange])
-    const presets = [1000, 500, 200, 100, 50]
+const ALL_PRESETS = [20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50]
 
-    return (
+export default function NodeLimiter({ initialValue, onChange, totalNodes, nodeType, show }: NodeLimiterProps) {
+    const [value, setValue] = useState<number>(initialValue);
+    const [presets, setPresets] = useState<number[]>(ALL_PRESETS);
+    const onValueChange = (newValue: number) => {
+        setValue(newValue);
+        onChange(newValue);
+    }
+
+    useEffect(() => {
+        if (totalNodes) {
+            setPresets(ALL_PRESETS.filter(p => p < totalNodes));
+        }
+    }, [totalNodes]);
+
+    useEffect(() => {
+        setValue(initialValue);
+    }, [initialValue]);
+
+    return show ? (
         <div
         className="
         flex gap-2 p-2 items-center
@@ -33,11 +47,16 @@ export default function NodeLimiter({ initialValue = 200, onChange, totalNodes, 
                     <Button size="sm" variant="outline">{value}</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                    {totalNodes && (
+                        <DropdownMenuItem onClick={() => onValueChange(totalNodes)}>
+                            {totalNodes}
+                        </DropdownMenuItem>
+                    )}
                     {presets.map((preset) => (
                         <DropdownMenuItem
                             key={preset}
                             onClick={() => {
-                                setValue([preset])
+                                onValueChange(preset)
                             }}
                         >
                             {preset}
@@ -52,5 +71,5 @@ export default function NodeLimiter({ initialValue = 200, onChange, totalNodes, 
                 
                 <p className="text-muted-foreground">of {totalNodes} {nodeType}</p>
         </div>
-    )
+    ) : null;
 }
