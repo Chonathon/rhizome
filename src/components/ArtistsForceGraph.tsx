@@ -20,6 +20,10 @@ interface ArtistsForceGraphProps {
     curvedLinkCurvature?: number;
     // Hide links when zoomed out below this k (0..1 typical). Default 0.35.
     hideLinksBelowZoom?: number;
+    // Label fade-in start/end zoom thresholds.
+    // Below start → fully transparent, above end → fully opaque.
+    labelFadeInStart?: number; // Default 0.7
+    labelFadeInEnd?: number;   // Default 1.1
     // When link count exceeds this, hide links until zoomed in past hideLinksBelowZoom*1.25. Default 6000.
     maxLinksToShow?: number;
     // Minimum label size (in pixels) to draw. Default 8.
@@ -38,6 +42,8 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     curvedLinksAbove = 1500,
     curvedLinkCurvature = 0.2,
     hideLinksBelowZoom = 0.35,
+    labelFadeInStart = 0.7,
+    labelFadeInEnd = 1.1,
     maxLinksToShow = 6000,
     minLabelPx = 8,
     strokeMinPx = 13,
@@ -64,7 +70,6 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     }, [artists, artistLinks]);
 
     const fgRef = useRef<ForceGraphMethods<Artist, NodeLink> | undefined>(undefined);
-    const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null);
     const zoomRef = useRef<number>(1);
 
     useEffect(() => {
@@ -76,13 +81,6 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
         }
     }, [preparedData]);
 
-    useEffect(() => {
-        if (!measureCtxRef.current && typeof document !== 'undefined') {
-            const c = document.createElement('canvas');
-            measureCtxRef.current = c.getContext('2d');
-        }
-    }, []);
-
     // Precompute listener range (log-scaled) for sizing
     const listenerScale = useMemo(() => {
         const vals = preparedData.nodes.map(a => Math.max(1, a.listeners || 1));
@@ -93,31 +91,20 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
         return { minLog, maxLog };
     }, [preparedData]);
 
-    const fontSizeFor = (artist: Artist, globalScale: number) => {
+    // Match GenresForceGraph: fixed label font size
+    const LABEL_FONT_SIZE = 12;
+
+    // Node radius based on listeners (log-scaled)
+    const radiusFor = (artist: Artist) => {
         const { minLog, maxLog } = listenerScale;
         const v = Math.log10(Math.max(1, artist.listeners || 1));
         const t = (v - minLog) / Math.max(1e-6, (maxLog - minLog));
-        const minPx = 9; // small label
-        const maxPx = 16; // big label
-        return (minPx + t * (maxPx - minPx)) / globalScale;
+        const rMin = 2.5;
+        const rMax = 9.5;
+        return rMin + t * (rMax - rMin);
     };
 
-    // Cache baseline label widths at 12px for each artist; scale linearly per frame
-    const baseLabelWidthById = useMemo(() => {
-        const m = new Map<string, number>();
-        const ctx = measureCtxRef.current;
-        const baseFontPx = 12;
-        if (ctx) ctx.font = `${baseFontPx}px Geist`;
-        preparedData.nodes.forEach(a => {
-            if (ctx) {
-                m.set(a.id, ctx.measureText(a.name).width);
-            } else {
-                // fallback estimate if context not ready
-                m.set(a.id, a.name.length * baseFontPx * 0.6);
-            }
-        });
-        return m;
-    }, [preparedData.nodes]);
+    // No label width caching needed for simple pointer area (circular)
 
     // Precompute per-artist color and adjust for light mode contrast once
     const colorById = useMemo(() => {
@@ -148,13 +135,8 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
         (<ForceGraph
             ref={fgRef as any}
             graphData={preparedData}
-            linkVisibility={(l: any) => {
-                const k = zoomRef.current || 1;
-                const many = preparedData.links.length > maxLinksToShow;
-                if (k < hideLinksBelowZoom) return false;
-                if (many && k < hideLinksBelowZoom * 1.25) return false;
-                return true;
-            }}
+            // Always show links per request
+            linkVisibility={() => true}
             linkColor={(l: any) => {
                 const src = typeof l.source === 'string' ? l.source : l.source?.id;
                 const c = (src && colorById.get(src)) || (theme === 'dark' ? '#ffffff' : '#000000');
@@ -162,6 +144,7 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
             }}
             linkCurvature={preparedData.links.length <= curvedLinksAbove ? curvedLinkCurvature : 0}
             onNodeClick={onNodeClick}
+            // We'll custom-draw nodes; keep built-in node invisible to avoid double-draw
             nodeColor={() => 'rgba(0,0,0,0)'}
             nodeCanvasObjectMode={() => 'replace'}
             d3AlphaDecay={0.02}
@@ -175,40 +158,45 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
                 const artist = node as Artist;
                 const accent = getArtistColor(artist);
 
-                // draw label only (no visible node)
-                const label = node.name;
-                const fontSize = fontSizeFor(artist, globalScale);
-                if (fontSize < minLabelPx) return;
-                ctx.font = `${fontSize}px Geist`;
-                const baseWidth = baseLabelWidthById.get(artist.id) ?? (label.length * 12 * 0.6);
-                const textWidth = baseWidth * (fontSize / 12);
-                const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.3);
-
-                // subtle halo for readability
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                if (fontSize >= strokeMinPx) {
-                    ctx.lineWidth = Math.max(0.75, fontSize / 7);
-                    ctx.strokeStyle = theme === 'dark' ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.6)';
-                    ctx.strokeText(label, x, y);
-                }
-
-                // colored text
+                // draw node circle sized by listeners (match GenresForceGraph style)
+                const r = radiusFor(artist);
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 2 * Math.PI, false);
                 ctx.fillStyle = accent;
-                ctx.fillText(label, x, y);
+                ctx.strokeStyle = accent;
+                ctx.lineWidth = 0.5;
+                ctx.fill();
+                ctx.stroke();
 
-                // store bounds for pointer hit area
-                (node as any).__bckgDimensions = bckgDimensions;
+                // fade-in label opacity based on zoom level; draw label like GenresForceGraph
+                const k = zoomRef.current || 1;
+                const denom = Math.max(1e-6, labelFadeInEnd - labelFadeInStart);
+                const tRaw = (k - labelFadeInStart) / denom;
+                const t = Math.max(0, Math.min(1, tRaw));
+                // smoothstep for nicer easing
+                const alpha = t * t * (3 - 2 * t);
+
+                const label = node.name;
+                if (alpha > 0.02) {
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+                    ctx.font = `${LABEL_FONT_SIZE}px Geist`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillStyle = theme === "dark" ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+                    ctx.fillText(label, x, y + r + 8);
+                    ctx.restore();
+                }
             }}
             nodePointerAreaPaint={(node, color, ctx, globalScale) => {
                 ctx.fillStyle = color;
-                const [width = 0, height = 0] = (node as any).__bckgDimensions || [0, 0];
-                const minSize = 24 / globalScale; // ensure minimum interactive area
-                const w = Math.max(width, minSize);
-                const h = Math.max(height, minSize);
-                const x = (node.x || 0) - w / 2;
-                const y = (node.y || 0) - h / 2;
-                ctx.fillRect(x, y, w, h);
+                const artist = node as Artist;
+                const r = radiusFor(artist) + 24 / (globalScale || 1);
+                const nodeX = node.x || 0;
+                const nodeY = node.y || 0;
+                ctx.beginPath();
+                ctx.arc(nodeX, nodeY, r, 0, 2 * Math.PI, false);
+                ctx.fill();
             }}
             // use nodeVal to slightly increase repulsion for popular artists
             nodeVal={(n: Artist) => {
