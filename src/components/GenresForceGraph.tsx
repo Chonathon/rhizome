@@ -142,7 +142,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         const nodeY = node.y || 0;
 
         // Node styling per parent color
-        const color = nodeColorById.get(genreNode.id) || (theme === 'dark' ? 'rgb(138,128,255)' : 'rgb(74,74,74)');
+        const color = nodeColorById.get(genreNode.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
         ctx.fillStyle = color; 
         ctx.strokeStyle = color;
         ctx.lineWidth = 0.5;
