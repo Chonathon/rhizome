@@ -46,7 +46,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
             size="icon"
             onClick={onClick}
           ><RhizomeLogo /></Button> */}
-        {selectedGenre ? (
+        {/* {selectedGenre ? (
           <>
             <SidebarHeader className="mb-2">
               <span>{selectedGenre.name}</span>
@@ -169,7 +169,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               </div>
 
           </>
-        ) : (
+        ) : ( */}
             <SidebarGroup>
               {/* <SidebarGroupLabel>Recent Selections</SidebarGroupLabel> */}
               <SidebarGroupContent>
@@ -217,7 +217,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                 ))} */}
               </SidebarGroupContent>
             </SidebarGroup>
-      )}
+      {/* )} */}
       </SidebarContent>
         <SidebarRail />
       </Sidebar>
