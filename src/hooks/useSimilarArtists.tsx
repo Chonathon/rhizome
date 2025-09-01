@@ -5,7 +5,8 @@ import axios, {AxiosError} from "axios";
 
 const url = envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
     ? import.meta.env.VITE_LOCALHOST
-    : import.meta.env.VITE_SERVER_URL || `https://rhizome-server-production.up.railway.app`;
+    : (import.meta.env.VITE_SERVER_URL
+        || (import.meta.env.DEV ? '/api' : `https://rhizome-server-production.up.railway.app`));
 
 const useSimilarArtists = (artist?: Artist) => {
     const [similarArtists, setSimilarArtists] = useState<Artist[]>([]);
