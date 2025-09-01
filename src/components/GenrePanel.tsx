@@ -64,7 +64,7 @@ export default function GenrePanel({
               <Label
                 key={genre.id}
                 htmlFor={genre.id}
-                className="text-md text-foreground flex items-center gap-2 py-2 cursor-pointer"
+                className="text-md text-foreground flex items-center gap-1 py-2 cursor-pointer"
               >
                 {/* TODO: Add click handler to toggle visibility of genre/cluster */}
                 <Checkbox
