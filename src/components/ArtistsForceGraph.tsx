@@ -78,6 +78,17 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
             fgRef.current.d3Force('link')?.distance(65);
             fgRef.current.d3Force('link')?.strength(0.9);
             fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(0.1));
+
+            // Collide force similar to GenresForceGraph to reduce overlaps
+            fgRef.current.d3Force('collide', d3.forceCollide((node: any) => {
+                const a = node as Artist;
+                const r = radiusFor(a);
+                const labelW = (a.name?.length || 0) * (LABEL_FONT_SIZE * 0.6);
+                const labelH = LABEL_FONT_SIZE;
+                const padding = 8;
+                return Math.max(r + padding, Math.sqrt(labelW * labelW + labelH * labelH) / 2 + padding);
+            }));
+            fgRef.current.d3Force('collide')?.strength(0.7);
         }
     }, [preparedData]);
 
