@@ -6,6 +6,7 @@ import {forceCollide} from 'd3-force';
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { buildGenreRootColorMap, clusterColors } from "@/lib/utils";
+import { drawCircleNode, drawLabelBelow, estimateLabelWidth, LABEL_FONT_SIZE, labelAlphaForZoom } from "@/lib/graphStyle";
 
 interface GenresForceGraphProps {
     graphData?: GenreGraphData;
@@ -17,12 +18,11 @@ interface GenresForceGraphProps {
     colorMap?: Map<string, string>;
 }
 
-// Helper to estimate label width based on name length and font size
-const LABEL_FONT_SIZE = 12;
-const estimateLabelWidth = (name: string) => name.length * (LABEL_FONT_SIZE * 0.6);
+// Styling shared via graphStyle utils
 
 const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode, colorMap: externalColorMap }) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
+    const zoomRef = useRef<number>(1);
     const { theme } = useTheme();
 
     const preparedData: GraphData<Genre, NodeLink> = useMemo(() => {
@@ -148,17 +148,12 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         ctx.lineWidth = 0.5;
 
         // Draw node
-        ctx.beginPath();
-        ctx.arc(nodeX, nodeY, radius, 0, 2 * Math.PI, false);
-        ctx.fill();
-        ctx.stroke();
+        drawCircleNode(ctx, nodeX, nodeY, radius, color);
 
-        // Text styling
-        ctx.font = `${LABEL_FONT_SIZE}px Geist`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillStyle = theme === "dark" ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-        ctx.fillText(genreNode.name, nodeX, nodeY + radius + 8);
+        // Text styling with zoom-based fade (shared helper)
+        const k = zoomRef.current || 1;
+        const alpha = labelAlphaForZoom(k);
+        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, radius, theme, alpha, LABEL_FONT_SIZE);
     };
 
     const nodePointerAreaPaint = (node: NodeObject, color: string, ctx: CanvasRenderingContext2D) => {
@@ -186,6 +181,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
             linkColor={() => theme === "dark" ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.18)'}
             linkWidth={1}
             onNodeClick={node => onNodeClick(node)}
+            onZoom={({ k }) => { zoomRef.current = k; }}
             nodeCanvasObject={nodeCanvasObject}
             nodeCanvasObjectMode={() => 'replace'}
             nodeVal={(node: Genre) => calculateRadius(node.artistCount)}

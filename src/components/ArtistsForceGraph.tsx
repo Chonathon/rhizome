@@ -4,6 +4,7 @@ import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
 import { ensureContrastOnLight } from "@/lib/utils";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
 interface ArtistsForceGraphProps {
@@ -42,8 +43,8 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     curvedLinksAbove = 1500,
     curvedLinkCurvature = 0.2,
     hideLinksBelowZoom = 0.1,
-    labelFadeInStart = .1,
-    labelFadeInEnd = .7,
+    labelFadeInStart = DEFAULT_LABEL_FADE_START,
+    labelFadeInEnd = DEFAULT_LABEL_FADE_END,
     maxLinksToShow = 6000,
     minLabelPx = 8,
     strokeMinPx = 13,
@@ -82,11 +83,7 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
             // Collide force similar to GenresForceGraph to reduce overlaps
             fgRef.current.d3Force('collide', d3.forceCollide((node: any) => {
                 const a = node as Artist;
-                const r = radiusFor(a);
-                const labelW = (a.name?.length || 0) * (LABEL_FONT_SIZE * 0.6);
-                const labelH = LABEL_FONT_SIZE;
-                const padding = 8;
-                return Math.max(r + padding, Math.sqrt(labelW * labelW + labelH * labelH) / 2 + padding);
+                return collideRadiusForNode(a.name, radiusFor(a));
             }));
             fgRef.current.d3Force('collide')?.strength(0.7);
         }
@@ -101,9 +98,6 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
         const maxLog = Math.log10(max);
         return { minLog, maxLog };
     }, [preparedData]);
-
-    // Match GenresForceGraph: fixed label font size
-    const LABEL_FONT_SIZE = 12;
 
     // Node radius based on listeners (log-scaled)
     const radiusFor = (artist: Artist) => {
@@ -171,33 +165,13 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
 
                 // draw node circle sized by listeners (match GenresForceGraph style)
                 const r = radiusFor(artist);
-                ctx.beginPath();
-                ctx.arc(x, y, r, 0, 2 * Math.PI, false);
-                ctx.fillStyle = accent;
-                ctx.strokeStyle = accent;
-                ctx.lineWidth = 0.5;
-                ctx.fill();
-                ctx.stroke();
+                drawCircleNode(ctx, x, y, r, accent);
 
-                // fade-in label opacity based on zoom level; draw label like GenresForceGraph
+                // fade-in label opacity based on zoom level; centralized utility
                 const k = zoomRef.current || 1;
-                const denom = Math.max(1e-6, labelFadeInEnd - labelFadeInStart);
-                const tRaw = (k - labelFadeInStart) / denom;
-                const t = Math.max(0, Math.min(1, tRaw));
-                // smoothstep for nicer easing
-                const alpha = t * t * (3 - 2 * t);
-
+                const alpha = labelAlphaForZoom(k, labelFadeInStart, labelFadeInEnd);
                 const label = node.name;
-                if (alpha > 0.02) {
-                    ctx.save();
-                    ctx.globalAlpha = alpha;
-                    ctx.font = `${LABEL_FONT_SIZE}px Geist`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'top';
-                    ctx.fillStyle = theme === "dark" ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-                    ctx.fillText(label, x, y + r + 8);
-                    ctx.restore();
-                }
+                drawLabelBelow(ctx, label, x, y, r, theme, alpha);
             }}
             nodePointerAreaPaint={(node, color, ctx, globalScale) => {
                 ctx.fillStyle = color;
