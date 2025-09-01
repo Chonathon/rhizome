@@ -110,8 +110,8 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
         const { minLog, maxLog } = listenerScale;
         const v = Math.log10(Math.max(1, artist.listeners || 1));
         const t = (v - minLog) / Math.max(1e-6, (maxLog - minLog));
-        const rMin = 2.5;
-        const rMax = 9.5;
+        const rMin = .2;
+        const rMax = 20;
         return rMin + t * (rMax - rMin);
     };
 
