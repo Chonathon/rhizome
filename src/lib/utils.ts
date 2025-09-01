@@ -201,6 +201,69 @@ export const clusterColors = [
   "#fb7185", // rose-400
 ];
 
+// Build a stable color map for genres based on their top-level parents.
+// Returns a Map keyed by both genre id and lowercase name for easier lookup.
+export const buildGenreRootColorMap = (genres: Genre[], links: NodeLink[]) => {
+  const colorMap = new Map<string, string>();
+  if (!genres?.length) return colorMap;
+
+  const nodes = genres.map(g => ({ id: g.id, name: g.name }));
+  const preparedLinks = links.map(l => ({
+    source: typeof l.source === 'string' ? l.source : (l as any).source?.id,
+    target: typeof l.target === 'string' ? l.target : (l as any).target?.id,
+  })).filter(l => l.source && l.target) as {source: string, target: string}[];
+
+  // parent map child -> Set(parent)
+  const parents = new Map<string, Set<string>>();
+  preparedLinks.forEach(l => {
+    if (!parents.has(l.target)) parents.set(l.target, new Set());
+    parents.get(l.target)!.add(l.source);
+    if (!parents.has(l.source)) parents.set(l.source, parents.get(l.source) || new Set());
+  });
+
+  const nodeIds = nodes.map(n => n.id);
+  const indegree = new Map<string, number>(nodeIds.map(id => [id, 0]));
+  preparedLinks.forEach(l => indegree.set(l.target, (indegree.get(l.target) || 0) + 1));
+  const roots = nodeIds.filter(id => (indegree.get(id) || 0) === 0);
+
+  const nodeById = new Map(nodes.map(n => [n.id, n] as const));
+  const sortedRoots = roots
+    .map(id => nodeById.get(id)!)
+    .filter(Boolean)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  sortedRoots.forEach((n, i) => {
+    const color = clusterColors[i % clusterColors.length];
+    colorMap.set(n.id, color);
+    colorMap.set(n.name.toLowerCase(), color);
+  });
+
+  const getRootColor = (id: string, hopGuard = 0): string | undefined => {
+    if (colorMap.has(id)) return colorMap.get(id);
+    if (hopGuard > 1000) return undefined;
+    const p = parents.get(id);
+    if (!p || p.size === 0) return undefined;
+    const parentId = Array.from(p).sort()[0];
+    const c = getRootColor(parentId, hopGuard + 1);
+    if (c) colorMap.set(id, c);
+    return c;
+  };
+  nodeIds.forEach(id => {
+    if (!colorMap.has(id)) {
+      const c = getRootColor(id);
+      if (c) colorMap.set(id, c);
+    }
+  });
+
+  // Also alias names to colors for convenience
+  nodes.forEach(n => {
+    const c = colorMap.get(n.id);
+    if (c) colorMap.set(n.name.toLowerCase(), c);
+  });
+
+  return colorMap;
+}
+
 export const fixWikiImageURL = (url: string) => {
   if (url.startsWith('https://commons.wikimedia.org/wiki/File:')) {
     const filename = url.substring(url.lastIndexOf('/') + 1);
