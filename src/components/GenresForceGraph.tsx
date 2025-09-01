@@ -1,10 +1,11 @@
 import {Genre, GenreClusterMode, GenreGraphData, NodeLink} from "@/types";
-import React, {useEffect, useState, useRef, useMemo, use} from "react";
+import React, {useEffect, useRef, useMemo} from "react";
 import ForceGraph, {ForceGraphMethods, GraphData, NodeObject} from "react-force-graph-2d";
 import {Loading} from "./Loading";
 import {forceCollide} from 'd3-force';
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
+import { clusterColors } from "@/lib/utils";
 
 interface GenresForceGraphProps {
     graphData?: GenreGraphData;
@@ -41,6 +42,64 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
 
         return { nodes, links };
     }, [graphData]);
+
+    // Compute a color per top-level parent and propagate to descendants
+    const nodeColorById = useMemo(() => {
+        const colorMap = new Map<string, string>();
+        if (!preparedData.nodes.length) return colorMap;
+
+        // Build parents map: childId -> Set(parentIds)
+        const parents = new Map<string, Set<string>>();
+        preparedData.links.forEach(l => {
+            const src = typeof l.source === 'string' ? l.source : (l.source as any)?.id;
+            const tgt = typeof l.target === 'string' ? l.target : (l.target as any)?.id;
+            if (!src || !tgt) return;
+            if (!parents.has(tgt)) parents.set(tgt, new Set());
+            parents.get(tgt)!.add(src);
+            if (!parents.has(src)) parents.set(src, parents.get(src) || new Set());
+        });
+
+        // Identify root/top-level nodes (no incoming links)
+        const nodeIds = preparedData.nodes.map(n => n.id);
+        const indegree = new Map<string, number>(nodeIds.map(id => [id, 0]));
+        preparedData.links.forEach(l => {
+            const tgt = typeof l.target === 'string' ? l.target : (l.target as any)?.id;
+            if (tgt) indegree.set(tgt, (indegree.get(tgt) || 0) + 1);
+        });
+        const roots = nodeIds.filter(id => (indegree.get(id) || 0) === 0);
+
+        // Assign stable colors to roots (sorted by name for determinism)
+        const nodeById = new Map(preparedData.nodes.map(n => [n.id, n] as const));
+        const sortedRoots = roots
+            .map(id => nodeById.get(id)!)
+            .filter(Boolean)
+            .sort((a, b) => a.name.localeCompare(b.name));
+        sortedRoots.forEach((n, i) => {
+            colorMap.set(n.id, clusterColors[i % clusterColors.length]);
+        });
+
+        // For others, walk up to nearest root to inherit color
+        const getRootColor = (id: string, hopGuard = 0): string | undefined => {
+            if (colorMap.has(id)) return colorMap.get(id);
+            if (hopGuard > 1000) return undefined; // safety
+            const p = parents.get(id);
+            if (!p || p.size === 0) return undefined;
+            // deterministically choose the lexicographically smallest parent
+            const parentId = Array.from(p).sort()[0];
+            const color = getRootColor(parentId, hopGuard + 1);
+            if (color) colorMap.set(id, color);
+            return color;
+        };
+        nodeIds.forEach(id => {
+            if (!colorMap.has(id)) {
+                const c = getRootColor(id);
+                if (!c) colorMap.set(id, theme === 'dark' ? '#8a80ff' : '#4a4a4a');
+            }
+        });
+
+        return colorMap;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [preparedData.nodes, preparedData.links, theme]);
 
     useEffect(() => {
         if (graphData) {
@@ -80,9 +139,10 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         const nodeX = node.x || 0;
         const nodeY = node.y || 0;
 
-        // Node styling
-        ctx.fillStyle = 'rgb(138, 128, 255)'; 
-        ctx.strokeStyle = 'rgb(138, 128, 255)';
+        // Node styling per parent color
+        const color = nodeColorById.get(genreNode.id) || (theme === 'dark' ? 'rgb(138,128,255)' : 'rgb(74,74,74)');
+        ctx.fillStyle = color; 
+        ctx.strokeStyle = color;
         ctx.lineWidth = 0.5;
 
         // Draw node
@@ -95,7 +155,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         ctx.font = `${LABEL_FONT_SIZE}px Geist`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        ctx.fillStyle = theme === "dark" ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 255, 0.8)';
+        ctx.fillStyle = theme === "dark" ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
         ctx.fillText(genreNode.name, nodeX, nodeY + radius + 8);
     };
 
