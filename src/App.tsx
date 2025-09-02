@@ -246,9 +246,9 @@ function App() {
     setArtistNodeCount(count);
     if (artists && artists.length && count < artists.length) {
       const filteredArtists = artists
-          .toSorted((a, b) => b[artistNodeLimitType] - a[artistNodeLimitType])
+          .toSorted((a: Artist, b: Artist) => b[artistNodeLimitType] - a[artistNodeLimitType])
           .slice(0, count);
-      const artistSet = new Set(filteredArtists.map(artist => artist.id));
+      const artistSet = new Set(filteredArtists.map((artist: Artist) => artist.id));
       const filteredLinks = artistLinks.filter(l => {
         return artistSet.has(l.source) && artistSet.has(l.target);
       });
