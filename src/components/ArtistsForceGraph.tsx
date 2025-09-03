@@ -3,7 +3,6 @@ import React, {useEffect, useMemo, useRef} from "react";
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
-import { ensureContrastOnLight } from "@/lib/utils";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
@@ -128,7 +127,6 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
                 }
             }
             if (!color) color = theme === 'dark' ? '#8a80ff' : '#4a4a4a';
-            if (theme !== 'dark') color = ensureContrastOnLight(color);
             m.set(a.id, color);
         });
         return m;
