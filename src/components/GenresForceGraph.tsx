@@ -6,7 +6,7 @@ import {forceCollide} from 'd3-force';
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { buildGenreRootColorMap, clusterColors } from "@/lib/utils";
-import { drawCircleNode, drawLabelBelow, estimateLabelWidth, LABEL_FONT_SIZE, labelAlphaForZoom } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode } from "@/lib/graphStyle";
 
 interface GenresForceGraphProps {
     graphData?: GenreGraphData;
@@ -114,15 +114,10 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
                 // fgRef.current.d3Force('y', d3.forceY(0).strength(0.02));
                 fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(dag ? 0.01 : .1));
                 
-                const labelWidthBuffer = 20;
-                
                 fgRef.current.d3Force('collide', forceCollide((node => {
                     const genreNode = node as Genre;
                     const radius = calculateRadius(genreNode.artistCount);
-                    const labelWidth = estimateLabelWidth(genreNode.name);
-                    const labelHeight = LABEL_FONT_SIZE;
-                    const padding = 8; 
-                    return Math.max(radius + padding, Math.sqrt(labelWidth * labelWidth + labelHeight * labelHeight) / 2 + padding);
+                    return collideRadiusForNode(genreNode.name, radius);
                 })));
                 fgRef.current.d3Force('collide')?.strength(dag ? .02: .7); // Increased strength
                 fgRef.current.zoom(dag ? 0.25 : 0.18);
@@ -153,7 +148,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         // Text styling with zoom-based fade (shared helper)
         const k = zoomRef.current || 1;
         const alpha = labelAlphaForZoom(k);
-        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, radius, theme, alpha, LABEL_FONT_SIZE);
+        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, radius, theme, alpha);
     };
 
     const nodePointerAreaPaint = (node: NodeObject, color: string, ctx: CanvasRenderingContext2D) => {
