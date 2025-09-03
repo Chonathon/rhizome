@@ -80,7 +80,7 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
             fgRef.current.d3Force('link')?.strength(0.9);
             fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(0.1));
 
-            // Collide force similar to GenresForceGraph to reduce overlaps
+            // Collide force
             fgRef.current.d3Force('collide', d3.forceCollide((node: any) => {
                 const a = node as Artist;
                 return collideRadiusForNode(a.name, radiusFor(a));
