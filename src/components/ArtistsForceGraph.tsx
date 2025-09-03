@@ -75,19 +75,23 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
 
     useEffect(() => {
         if (fgRef.current) {
-            fgRef.current.d3Force('charge')?.strength(-60);
-            fgRef.current.d3Force('link')?.distance(65);
-            fgRef.current.d3Force('link')?.strength(0.9);
+            // Tighter, more lively simulation to prevent dullness
+            fgRef.current.d3Force('charge')?.strength(-100);
+            fgRef.current.d3Force('link')?.distance(70);
+            fgRef.current.d3Force('link')?.strength(0.85);
             fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(0.1));
 
-            // Collide force
+            // Collide force with iterations to better resolve overlaps
             fgRef.current.d3Force('collide', d3.forceCollide((node: any) => {
                 const a = node as Artist;
                 return collideRadiusForNode(a.name, radiusFor(a));
-            }));
+            }).iterations(2));
             fgRef.current.d3Force('collide')?.strength(0.7);
+
+            // Reheat the simulation when data or visibility changes
+            fgRef.current.d3ReheatSimulation?.();
         }
-    }, [preparedData]);
+    }, [preparedData, show]);
 
     // Precompute listener range (log-scaled) for sizing
     const listenerScale = useMemo(() => {
@@ -152,9 +156,9 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
             // We'll custom-draw nodes; keep built-in node invisible to avoid double-draw
             nodeColor={() => 'rgba(0,0,0,0)'}
             nodeCanvasObjectMode={() => 'replace'}
-            d3AlphaDecay={0.02}
-            d3VelocityDecay={0.85}
-            cooldownTime={10000}
+            d3AlphaDecay={0.01}
+            d3VelocityDecay={0.75}
+            cooldownTime={20000}
             autoPauseRedraw={true}
             onZoom={({ k }) => { zoomRef.current = k; }}
             nodeCanvasObject={(node, ctx, globalScale) => {
