@@ -335,6 +335,7 @@ function App() {
                   dag={dagMode}
                   clusterMode={genreClusterMode}
                   colorMap={genreColorMap}
+                  selectedGenreId={selectedGenre?.id}
                 />
                 <ArtistsForceGraph
                   artists={currentArtists}
@@ -342,6 +343,7 @@ function App() {
                   loading={artistsLoading}
                   onNodeClick={onArtistNodeClick}
                   genreColorMap={genreColorMap}
+                  selectedArtistId={selectedArtist?.id}
                   show={
                     (graph === "artists" || graph === "similarArtists") && !artistsError
                   }

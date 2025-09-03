@@ -16,11 +16,13 @@ interface GenresForceGraphProps {
     dag: boolean;
     clusterMode: GenreClusterMode;
     colorMap?: Map<string, string>;
+    // Selected genre id to highlight and focus
+    selectedGenreId?: string;
 }
 
 // Styling shared via graphStyle utils
 
-const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode, colorMap: externalColorMap }) => {
+const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode, colorMap: externalColorMap, selectedGenreId }) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
     const { theme } = useTheme();
@@ -126,6 +128,39 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         }
     }, [graphData, show, clusterMode]);
 
+    // Build adjacency for 1st-degree neighbors
+    const neighborsById = useMemo(() => {
+        const m = new Map<string, Set<string>>();
+        preparedData.nodes.forEach(n => m.set(n.id, new Set()));
+        preparedData.links.forEach(l => {
+            const s = typeof l.source === 'string' ? l.source : (l.source as any)?.id;
+            const t = typeof l.target === 'string' ? l.target : (l.target as any)?.id;
+            if (!s || !t) return;
+            if (!m.has(s)) m.set(s, new Set());
+            if (!m.has(t)) m.set(t, new Set());
+            m.get(s)!.add(t);
+            m.get(t)!.add(s);
+        });
+        return m;
+    }, [preparedData]);
+
+    // Focus viewport on selected genre
+    useEffect(() => {
+        if (!show || !selectedGenreId || !fgRef.current) return;
+        const node = preparedData.nodes.find(n => n.id === selectedGenreId) as (Genre & {x?: number; y?: number}) | undefined;
+        if (!node) return;
+        const centerToNode = () => {
+            const x = node.x ?? 0;
+            const y = node.y ?? 0;
+            fgRef.current!.centerAt(x, y, 600);
+            const targetK = Math.max(0.7, Math.min(2.0, (zoomRef.current || 1) < 1 ? 1.15 : zoomRef.current));
+            fgRef.current!.zoom(targetK, 600);
+        };
+        centerToNode();
+        const t = setTimeout(centerToNode, 300);
+        return () => clearTimeout(t);
+    }, [selectedGenreId, show, preparedData]);
+
     const calculateRadius = (artistCount: number) => {
         return 5 + Math.sqrt(artistCount) * .5;
     };
@@ -137,18 +172,35 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         const nodeY = node.y || 0;
 
         // Node styling per parent color
-        const color = nodeColorById.get(genreNode.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
-        ctx.fillStyle = color; 
+        const accent = nodeColorById.get(genreNode.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
+        const isSelected = !!selectedGenreId && genreNode.id === selectedGenreId;
+        const isNeighbor = !!selectedGenreId && neighborsById.get(selectedGenreId)?.has(genreNode.id);
+        const hasSelection = !!selectedGenreId;
+        const color = accent + (hasSelection && !isSelected && !isNeighbor ? '30' : 'ff');
+        ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineWidth = 0.5;
 
         // Draw node
-        drawCircleNode(ctx, nodeX, nodeY, radius, color);
+        drawCircleNode(ctx, nodeX, nodeY, isSelected ? radius * 1.35 : radius, color);
+
+        if (isSelected) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(nodeX, nodeY, radius * 1.35 + 4, 0, 2 * Math.PI);
+            ctx.strokeStyle = accent; // ring matches node color
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.restore();
+        }
 
         // Text styling with zoom-based fade (shared helper)
         const k = zoomRef.current || 1;
-        const alpha = labelAlphaForZoom(k);
-        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, radius, theme, alpha);
+        let alpha = labelAlphaForZoom(k);
+        if (isSelected) alpha = 1;
+        else if (isNeighbor) alpha = Math.max(alpha, 0.85);
+        else if (hasSelection) alpha = Math.min(alpha, 0.2);
+        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, theme, alpha);
     };
 
     const nodePointerAreaPaint = (node: NodeObject, color: string, ctx: CanvasRenderingContext2D) => {
@@ -173,8 +225,20 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
             dagMode={dag ? 'radialin' : undefined}
             dagLevelDistance={200}
             linkCurvature={dag ? 0 : 0.5}
-            linkColor={() => theme === "dark" ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.18)'}
-            linkWidth={1}
+            linkColor={(l: any) => {
+                const s = typeof l.source === 'string' ? l.source : l.source?.id;
+                const t = typeof l.target === 'string' ? l.target : l.target?.id;
+                const connectedToSelected = !!selectedGenreId && (s === selectedGenreId || t === selectedGenreId);
+                const base = (s && nodeColorById.get(s)) || (theme === 'dark' ? '#ffffff' : '#000000');
+                const alpha = selectedGenreId ? (connectedToSelected ? 'cc' : '30') : '80';
+                return base + alpha;
+            }}
+            linkWidth={(l: any) => {
+                if (!selectedGenreId) return 1;
+                const s = typeof l.source === 'string' ? l.source : l.source?.id;
+                const t = typeof l.target === 'string' ? l.target : l.target?.id;
+                return (s === selectedGenreId || t === selectedGenreId) ? 2.5 : 0.6;
+            }}
             onNodeClick={node => onNodeClick(node)}
             onZoom={({ k }) => { zoomRef.current = k; }}
             nodeCanvasObject={nodeCanvasObject}
