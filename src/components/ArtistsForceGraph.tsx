@@ -12,6 +12,8 @@ interface ArtistsForceGraphProps {
     onNodeClick: (artist: Artist) => void;
     loading: boolean;
     show: boolean;
+    // Selected artist id to highlight and focus
+    selectedArtistId?: string;
     genreColorMap?: Map<string, string>;
     // Use curved links only when the number of rendered links is at or below this threshold.
     // If exceeded, links are straight (0 curvature) to improve performance.
@@ -38,6 +40,7 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     onNodeClick,
     loading,
     show,
+    selectedArtistId,
     genreColorMap,
     curvedLinksAbove = 1500,
     curvedLinkCurvature = 0.2,
@@ -92,6 +95,42 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
         }
     }, [preparedData, show]);
 
+    // Build adjacency map for quick 1-hop neighbor lookup
+    const neighborsById = useMemo(() => {
+        const m = new Map<string, Set<string>>();
+        preparedData.nodes.forEach(n => m.set(n.id, new Set()));
+        preparedData.links.forEach(l => {
+            const s = typeof l.source === 'string' ? l.source : (l.source as any)?.id;
+            const t = typeof l.target === 'string' ? l.target : (l.target as any)?.id;
+            if (!s || !t) return;
+            if (!m.has(s)) m.set(s, new Set());
+            if (!m.has(t)) m.set(t, new Set());
+            m.get(s)!.add(t);
+            m.get(t)!.add(s);
+        });
+        return m;
+    }, [preparedData]);
+
+    // When selection changes, center + zoom to the node
+    useEffect(() => {
+        if (!show || !selectedArtistId || !fgRef.current) return;
+        const node = preparedData.nodes.find(n => n.id === selectedArtistId) as (Artist & {x?: number; y?: number}) | undefined;
+        if (!node) return;
+        // If positions not yet settled, try shortly after
+        const centerToNode = () => {
+            const x = node.x ?? 0;
+            const y = node.y ?? 0;
+            fgRef.current!.centerAt(x, y, 600);
+            // Choose a friendly zoom level
+            const targetK = Math.max(0.8, Math.min(2.2, (zoomRef.current || 1) < 1 ? 1.2 : zoomRef.current));
+            fgRef.current!.zoom(targetK, 600);
+        };
+        // Center now and once again after a tick, in case layout shifts
+        centerToNode();
+        const t = setTimeout(centerToNode, 300);
+        return () => clearTimeout(t);
+    }, [selectedArtistId, show, preparedData]);
+
     // Precompute listener range (log-scaled) for sizing
     const listenerScale = useMemo(() => {
         const vals = preparedData.nodes.map(a => Math.max(1, a.listeners || 1));
@@ -145,9 +184,18 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
             // Always show links per request
             linkVisibility={() => true}
             linkColor={(l: any) => {
-                const src = typeof l.source === 'string' ? l.source : l.source?.id;
-                const c = (src && colorById.get(src)) || (theme === 'dark' ? '#ffffff' : '#000000');
-                return c + '80'; // add alpha
+                const s = typeof l.source === 'string' ? l.source : l.source?.id;
+                const t = typeof l.target === 'string' ? l.target : l.target?.id;
+                const connectedToSelected = !!selectedArtistId && (s === selectedArtistId || t === selectedArtistId);
+                const base = (s && colorById.get(s)) || (theme === 'dark' ? '#ffffff' : '#000000');
+                const alpha = selectedArtistId ? (connectedToSelected ? 'ff' : '30') : '80';
+                return base + alpha;
+            }}
+            linkWidth={(l: any) => {
+                if (!selectedArtistId) return 1;
+                const s = typeof l.source === 'string' ? l.source : l.source?.id;
+                const t = typeof l.target === 'string' ? l.target : l.target?.id;
+                return (s === selectedArtistId || t === selectedArtistId) ? 2.5 : 0.6;
             }}
             linkCurvature={preparedData.links.length <= curvedLinksAbove ? curvedLinkCurvature : 0}
             onNodeClick={onNodeClick}
@@ -166,12 +214,34 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
                 const accent = getArtistColor(artist);
 
                 // draw node circle sized by listeners (match GenresForceGraph style)
-                const r = radiusFor(artist);
-                drawCircleNode(ctx, x, y, r, accent);
+                const rBase = radiusFor(artist);
+                const isSelected = !!selectedArtistId && artist.id === selectedArtistId;
+                const isNeighbor = !!selectedArtistId && neighborsById.get(selectedArtistId)?.has(artist.id);
+                const r = isSelected ? rBase * 1.4 : rBase;
+
+                // Dim non-neighbors when a selection exists
+                const hasSelection = !!selectedArtistId;
+                const dimmed = hasSelection && !isSelected && !isNeighbor;
+                const color = accent + (dimmed ? '30' : 'ff');
+                drawCircleNode(ctx, x, y, r, color);
+
+                // Emphasize selection ring
+                if (isSelected) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(x, y, r + 4, 0, 2 * Math.PI);
+                    ctx.strokeStyle = accent; // ring matches node color
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    ctx.restore();
+                }
 
                 // fade-in label opacity based on zoom level; centralized utility
                 const k = zoomRef.current || 1;
-                const alpha = labelAlphaForZoom(k, labelFadeInStart, labelFadeInEnd);
+                let alpha = labelAlphaForZoom(k, labelFadeInStart, labelFadeInEnd);
+                if (isSelected) alpha = 1;
+                else if (isNeighbor) alpha = Math.max(alpha, 0.85);
+                else if (hasSelection) alpha = Math.min(alpha, 0.2);
                 const label = node.name;
                 drawLabelBelow(ctx, label, x, y, r, theme, alpha);
             }}
