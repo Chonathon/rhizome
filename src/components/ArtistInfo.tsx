@@ -89,7 +89,7 @@ export function ArtistInfo({
       show={!!(show && selectedArtist)}
       onDismiss={onDismiss}
       bodyClassName=""
-      snapPoints={[0.28, 0.9]}
+      // snapPoints={[0.28, 0.9]}
       headerTitle={selectedArtist?.name}
       headerSubtitle={
         typeof selectedArtist?.listeners === "number"
