@@ -75,11 +75,17 @@ function App() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (showArtistCard) {
+        // Prefer logical selection state over UI visibility flags
+        if (selectedArtist) {
           deselectArtist();
-        } else {
-          resetAppState();
+          return;
         }
+        if (selectedGenre) {
+          setSelectedGenre(undefined);
+          return;
+        } 
+        // resetAppState();
+      
       }
     };
 
@@ -88,7 +94,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showArtistCard]);
+  }, [selectedArtist, selectedGenre]);
 
   useEffect(() => {
     const nodeCount = Math.min(artists.length, DEFAULT_NODE_COUNT);
