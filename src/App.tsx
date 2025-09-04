@@ -335,6 +335,7 @@ function App() {
             "fixed top-0 left-3 z-50 flex flex-col  items-start lg:flex-row gap-3 p-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
           }
           >
+
                <Tabs
                 value={graph}
                 onValueChange={(val) => onTabChange(val as GraphType)}>
@@ -461,11 +462,19 @@ function App() {
                 deselectArtist={deselectArtist}
                 similarFilter={similarArtistFilter}
               />
+            
+            {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
+            {/* TODO: Consider replace with dismissible toast and adding reference to selected genre */}
               <div
-                className={`flex md:hidden justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
+                className={`flex justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
                 <ResetButton
-                  onClick={() => resetAppState()}
-                  show={graph !== "genres"}
+                
+                  onClick={() => {
+                    setGraph('genres')
+                    // setSelectedArtist(undefined)
+                  }
+                  }
+                  show={graph === 'artists' && !!selectedGenre}
                 />
                 <motion.div
                   layout
