@@ -52,7 +52,8 @@ export function drawLabelBelow(
   r: number,
   theme: string | undefined,
   alpha = 1,
-  fontPx = LABEL_FONT_SIZE
+  fontPx = LABEL_FONT_SIZE,
+  yOffset = 0
 ) {
   if (alpha <= 0) return;
   ctx.save();
@@ -61,6 +62,6 @@ export function drawLabelBelow(
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-  ctx.fillText(label, x, y + r + 8);
+  ctx.fillText(label, x, y + r + 8 + yOffset);
   ctx.restore();
 }

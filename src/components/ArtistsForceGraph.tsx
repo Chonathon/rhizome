@@ -1,9 +1,9 @@
 import {Artist, NodeLink} from "@/types";
-import React, {useEffect, useMemo, useRef} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
 interface ArtistsForceGraphProps {
@@ -74,6 +74,53 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
 
     const fgRef = useRef<ForceGraphMethods<Artist, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
+    const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
+    const prevHoveredRef = useRef<string | undefined>(undefined);
+    const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
+    const animRafRef = useRef<number | null>(null);
+
+    // Animate label y-offset on hover using simple easing
+    useEffect(() => {
+        const prev = prevHoveredRef.current;
+        const next = hoveredId;
+        prevHoveredRef.current = hoveredId;
+
+        // Targets: hovered -> 4, previous -> 0
+        const targets = new Map<string, number>();
+        if (typeof prev === 'string' && prev !== next) targets.set(prev, 0);
+        if (typeof next === 'string') targets.set(next, 4);
+
+        if (targets.size === 0) return;
+
+        const ease = (current: number, target: number) => current + (target - current) * 0.2;
+        const step = () => {
+            let anyMoving = false;
+            const map = yOffsetByIdRef.current;
+            targets.forEach((target, id) => {
+                const cur = map.get(id) || 0;
+                const nxt = ease(cur, target);
+                map.set(id, nxt);
+                if (Math.abs(nxt - target) > 0.1) anyMoving = true;
+            });
+            // Request re-draw
+            fgRef.current?.refresh?.();
+            if (anyMoving) {
+                animRafRef.current = requestAnimationFrame(step);
+            } else {
+                // Snap to targets at end
+                targets.forEach((t, id) => yOffsetByIdRef.current.set(id, t));
+                animRafRef.current = null;
+                fgRef.current?.refresh?.();
+            }
+        };
+
+        if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
+        animRafRef.current = requestAnimationFrame(step);
+        return () => {
+            if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
+            animRafRef.current = null;
+        };
+    }, [hoveredId]);
 
     useEffect(() => {
         if (fgRef.current) {
@@ -199,13 +246,14 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
             }}
             linkCurvature={preparedData.links.length <= curvedLinksAbove ? curvedLinkCurvature : 0}
             onNodeClick={onNodeClick}
+            onNodeHover={(n: any) => setHoveredId(n ? n.id : undefined)}
             // We'll custom-draw nodes; keep built-in node invisible to avoid double-draw
             nodeColor={() => 'rgba(0,0,0,0)'}
             nodeCanvasObjectMode={() => 'replace'}
             d3AlphaDecay={0.01}
             d3VelocityDecay={0.75}
             cooldownTime={20000}
-            autoPauseRedraw={true}
+            autoPauseRedraw={false}
             onZoom={({ k }) => { zoomRef.current = k; }}
             nodeCanvasObject={(node, ctx, globalScale) => {
                 const x = node.x || 0;
@@ -243,7 +291,8 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
                 else if (isNeighbor) alpha = Math.max(alpha, 0.85);
                 else if (hasSelection) alpha = Math.min(alpha, 0.2);
                 const label = node.name;
-                drawLabelBelow(ctx, label, x, y, r, theme, alpha);
+                const yOffset = yOffsetByIdRef.current.get(artist.id) || 0;
+                drawLabelBelow(ctx, label, x, y, r, theme, alpha, LABEL_FONT_SIZE, yOffset);
             }}
             nodePointerAreaPaint={(node, color, ctx, globalScale) => {
                 ctx.fillStyle = color;

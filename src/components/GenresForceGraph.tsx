@@ -1,12 +1,12 @@
 import {Genre, GenreClusterMode, GenreGraphData, NodeLink} from "@/types";
-import React, {useEffect, useRef, useMemo} from "react";
+import React, {useEffect, useRef, useMemo, useState} from "react";
 import ForceGraph, {ForceGraphMethods, GraphData, NodeObject} from "react-force-graph-2d";
 import {Loading} from "./Loading";
 import {forceCollide} from 'd3-force';
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { buildGenreRootColorMap, clusterColors } from "@/lib/utils";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE } from "@/lib/graphStyle";
 
 interface GenresForceGraphProps {
     graphData?: GenreGraphData;
@@ -25,6 +25,10 @@ interface GenresForceGraphProps {
 const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode, colorMap: externalColorMap, selectedGenreId }) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
+    const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
+    const prevHoveredRef = useRef<string | undefined>(undefined);
+    const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
+    const animRafRef = useRef<number | null>(null);
     const { theme } = useTheme();
 
     const preparedData: GraphData<Genre, NodeLink> = useMemo(() => {
@@ -45,6 +49,44 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
 
         return { nodes, links };
     }, [graphData]);
+
+    // Animate label y-offset on hover
+    useEffect(() => {
+        const prev = prevHoveredRef.current;
+        const next = hoveredId;
+        prevHoveredRef.current = hoveredId;
+
+        const targets = new Map<string, number>();
+        if (typeof prev === 'string' && prev !== next) targets.set(prev, 0);
+        if (typeof next === 'string') targets.set(next, 4);
+        if (targets.size === 0) return;
+
+        const ease = (c: number, t: number) => c + (t - c) * 0.2;
+        const step = () => {
+            let moving = false;
+            const map = yOffsetByIdRef.current;
+            targets.forEach((t, id) => {
+                const cur = map.get(id) || 0;
+                const nxt = ease(cur, t);
+                map.set(id, nxt);
+                if (Math.abs(nxt - t) > 0.1) moving = true;
+            });
+            fgRef.current?.refresh?.();
+            if (moving) animRafRef.current = requestAnimationFrame(step);
+            else {
+                targets.forEach((t, id) => yOffsetByIdRef.current.set(id, t));
+                animRafRef.current = null;
+                fgRef.current?.refresh?.();
+            }
+        };
+
+        if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
+        animRafRef.current = requestAnimationFrame(step);
+        return () => {
+            if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
+            animRafRef.current = null;
+        };
+    }, [hoveredId]);
 
     // Compute a color per top-level parent and propagate to descendants, unless provided
     const nodeColorById = useMemo(() => {
@@ -200,7 +242,8 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         if (isSelected) alpha = 1;
         else if (isNeighbor) alpha = Math.max(alpha, 0.85);
         else if (hasSelection) alpha = Math.min(alpha, 0.2);
-        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, theme, alpha);
+        const yOffset = yOffsetByIdRef.current.get(genreNode.id) || 0;
+        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, theme, alpha, LABEL_FONT_SIZE, yOffset);
     };
 
     const nodePointerAreaPaint = (node: NodeObject, color: string, ctx: CanvasRenderingContext2D) => {
@@ -221,6 +264,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
              d3AlphaDecay={0.01}     // Length forces are active; smaller → slower cooling
              d3VelocityDecay={.75}    // How springy tugs feel; smaller → more inertia
             cooldownTime={20000} // How long to run the simulation before stopping
+            autoPauseRedraw={false}
             graphData={preparedData}
             dagMode={dag ? 'radialin' : undefined}
             dagLevelDistance={200}
@@ -241,6 +285,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
             }}
             onNodeClick={node => onNodeClick(node)}
             onZoom={({ k }) => { zoomRef.current = k; }}
+            onNodeHover={(n: any) => setHoveredId(n ? n.id : undefined)}
             nodeCanvasObject={nodeCanvasObject}
             nodeCanvasObjectMode={() => 'replace'}
             nodeVal={(node: Genre) => calculateRadius(node.artistCount)}
