@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Label } from "./ui/label";
+import { Alert, AlertDescription } from "./ui/alert";
 
 
 interface ArtistInfoProps {
@@ -167,6 +168,7 @@ export function ArtistInfo({
                          </DropdownMenuContent>
                        </DropdownMenu>
 
+                        
                         <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
                           <DialogContent className="bg-sidebar backdrop-blur-sm">
                             <DialogTitle>Report Incorrect Information</DialogTitle>
@@ -223,22 +225,22 @@ export function ArtistInfo({
 
                           </DialogContent>
                         </Dialog>
-
-
                      </div>
+                {/* Description */}
                 {isDesktop && (
                   <p
-                    onClick={() => setDesktopExpanded((prev) => !prev)}
-                    className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                  onClick={() => setDesktopExpanded((prev) => !prev)}
+                  className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
                   >
                     {selectedArtist?.bio?.summary || 'No description'}
                   </p>
                 )}
                   </div>
+                  <Alert><Info /><AlertDescription>Hmm… something about this artist’s info doesn’t sound quite right. We’re checking it out</AlertDescription></Alert>
                    {!isDesktop && (
-                    <p
-                      className={`break-words text-muted-foreground ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
-                    >
+                     <p
+                     className={`break-words text-muted-foreground ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                     >
                       {selectedArtist?.bio?.summary || 'No description'}
                     </p>
                    )}
