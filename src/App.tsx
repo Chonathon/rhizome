@@ -18,7 +18,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
 import { useMediaQuery } from 'react-responsive';
-import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import { buildGenreRootColorMap, buildGenreTree, filterOutGenreTree, generateSimilarLinks } from "@/lib/utils";
@@ -31,7 +30,6 @@ import NodeLimiter from './components/NodeLimiter'
 import useSimilarArtists from "@/hooks/useSimilarArtists";
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
-import { GenreInfo } from './components/GenreInfo';
 import GenresFilter from './components/GenresFilter';
 
 const DEFAULT_NODE_COUNT = 2000;
@@ -40,7 +38,7 @@ const DEFAULT_CLUSTER_MODE = 'subgenre';
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
-  const [showArtistCard, setShowArtistCard] = useState(false);
+  // Inline node cards replace the drawer-based cards
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
@@ -148,7 +146,7 @@ function App() {
     //   setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
     // }
     setSelectedGenre(genre);
-    setShowArtistCard(false); // ensure only one card visible
+    // ensure only genre focus; artist overlay handled inline
     addRecentSelection(genre);
   }
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
@@ -161,7 +159,7 @@ function App() {
   // For clicking on a genre node in the Genres graph: only show the GenreInfo, do not switch graphs
   const onGenreNodePreview = (genre: Genre) => {
     setSelectedGenre(genre);
-    setShowArtistCard(false); // ensure only one card visible
+    // ensure only genre focus; artist overlay handled inline
     addRecentSelection(genre);
     console.log("Genre preview:", genre);
   }
@@ -169,13 +167,13 @@ function App() {
     // Switch to artists graph and select the clicked artist
     setGraph('artists');
     setSelectedArtist(artist);
-    setShowArtistCard(true);
+    // inline card handled in graph
     addRecentSelection(artist);
   }
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
       setSelectedArtist(artist);
-      setShowArtistCard(true);
+      // inline card handled in graph
       addRecentSelection(artist);
     }
     if (graph === 'similarArtists') {
@@ -195,7 +193,7 @@ function App() {
   }
   const deselectArtist = () => {
     setSelectedArtist(undefined);
-    setShowArtistCard(false);
+    // inline card handled in graph
     setSelectedArtistNoGenre(undefined);
   }
   const similarArtistFilter = (similarArtists: string[]) => {
@@ -343,6 +341,11 @@ function App() {
                   clusterMode={genreClusterMode}
                   colorMap={genreColorMap}
                   selectedGenreId={selectedGenre?.id}
+                  selectedGenreObj={selectedGenre}
+                  onDeselectSelected={() => setSelectedGenre(undefined)}
+                  onLinkedGenreClick={onLinkedGenreClick}
+                  onTopArtistClick={onTopArtistClick}
+                  allArtists={onShowAllArtists}
                 />
                 <ArtistsForceGraph
                   artists={currentArtists}
@@ -351,6 +354,10 @@ function App() {
                   onNodeClick={onArtistNodeClick}
                   genreColorMap={genreColorMap}
                   selectedArtistId={selectedArtist?.id}
+                  selectedArtistObj={selectedArtist}
+                  onDeselectSelected={deselectArtist}
+                  setArtistFromName={setArtistFromName}
+                  similarFilter={similarArtistFilter}
                   show={
                     (graph === "artists" || graph === "similarArtists") && !artistsError
                   }
@@ -406,30 +413,7 @@ function App() {
                   }
                 `}
             >
-              <GenreInfo 
-                selectedGenre={selectedGenre}
-                onLinkedGenreClick={onLinkedGenreClick}
-                show={graph === 'genres' && !!selectedGenre && !showArtistCard}
-                genreLoading={artistsLoading}
-                onTopArtistClick={onTopArtistClick}
-                deselectGenre={() => {
-                  setSelectedGenre(undefined);
-                  setGraph('genres');
-                  setCurrentArtists([]);
-                  setCurrentArtistLinks([]);
-                }}
-                onSelectGenre={onLinkedGenreClick}
-                allArtists={onShowAllArtists}
-              />
-              <ArtistInfo
-                selectedArtist={selectedArtist}
-                setArtistFromName={setArtistFromName}
-                artistLoading={false}
-                artistError={false}
-                show={showArtistCard}
-                deselectArtist={deselectArtist}
-                similarFilter={similarArtistFilter}
-              />
+              {/* Drawer-based info cards removed; now rendered inline within graph nodes */}
             
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
             {/* TODO: Consider replace with dismissible toast and adding reference to selected genre */}

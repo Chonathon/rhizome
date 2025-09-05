@@ -5,6 +5,7 @@ import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
+import ArtistNodeOverlay from './ArtistNodeOverlay';
 
 interface ArtistsForceGraphProps {
     artists: Artist[];
@@ -15,6 +16,11 @@ interface ArtistsForceGraphProps {
     // Selected artist id to highlight and focus
     selectedArtistId?: string;
     genreColorMap?: Map<string, string>;
+    // Inline card + traversal controls
+    selectedArtistObj?: Artist;
+    onDeselectSelected?: () => void;
+    setArtistFromName?: (name: string) => void;
+    similarFilter?: (artists: string[]) => string[];
     // Use curved links only when the number of rendered links is at or below this threshold.
     // If exceeded, links are straight (0 curvature) to improve performance.
     curvedLinksAbove?: number;
@@ -42,6 +48,10 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     show,
     selectedArtistId,
     genreColorMap,
+    selectedArtistObj,
+    onDeselectSelected,
+    setArtistFromName,
+    similarFilter,
     curvedLinksAbove = 1500,
     curvedLinkCurvature = 0.2,
     hideLinksBelowZoom = 0.1,
@@ -73,11 +83,14 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     }, [artists, artistLinks]);
 
     const fgRef = useRef<ForceGraphMethods<Artist, NodeLink> | undefined>(undefined);
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const zoomRef = useRef<number>(1);
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
+    const [selectedScreen, setSelectedScreen] = useState<{x: number; y: number} | null>(null);
+    const [neighborAnchors, setNeighborAnchors] = useState<{id: string; name: string; x: number; y: number}[]>([]);
 
     // Animate label y-offset on hover using simple easing
     useEffect(() => {
@@ -178,6 +191,33 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
         return () => clearTimeout(t);
     }, [selectedArtistId, show, preparedData]);
 
+    // Update overlay screen positions for selected + neighbors
+    const updateOverlayPositions = () => {
+        if (!fgRef.current || !selectedArtistId) {
+            setSelectedScreen(null);
+            setNeighborAnchors([]);
+            return;
+        }
+        const node = preparedData.nodes.find(n => n.id === selectedArtistId) as (Artist & {x?: number; y?: number}) | undefined;
+        if (!node || typeof node.x !== 'number' || typeof node.y !== 'number') {
+            setSelectedScreen(null);
+            setNeighborAnchors([]);
+            return;
+        }
+        const p = (fgRef.current as any).graph2ScreenCoords(node.x, node.y) as {x: number; y: number};
+        setSelectedScreen({ x: p.x, y: p.y });
+
+        const neighborIds = Array.from(neighborsById.get(selectedArtistId) || []);
+        const anchors: {id: string; name: string; x: number; y: number}[] = [];
+        neighborIds.forEach(id => {
+            const n = preparedData.nodes.find(a => a.id === id) as (Artist & {x?: number; y?: number}) | undefined;
+            if (!n || typeof n.x !== 'number' || typeof n.y !== 'number') return;
+            const sp = (fgRef.current as any).graph2ScreenCoords(n.x, n.y) as {x: number; y: number};
+            anchors.push({ id, name: n.name, x: sp.x, y: sp.y });
+        });
+        setNeighborAnchors(anchors);
+    };
+
     // Precompute listener range (log-scaled) for sizing
     const listenerScale = useMemo(() => {
         const vals = preparedData.nodes.map(a => Math.max(1, a.listeners || 1));
@@ -225,7 +265,8 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     return !show ? null : loading ? (<div className="flex-1 h-[calc(100vh-104px)] w-full">
         <Loading />
     </div>) : (
-        (<ForceGraph
+        <div ref={containerRef} className="relative w-full h-[calc(100vh-0px)]">
+        <ForceGraph
             ref={fgRef as any}
             graphData={preparedData}
             // Always show links per request
@@ -254,7 +295,8 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
             d3VelocityDecay={0.75}
             cooldownTime={20000}
             autoPauseRedraw={false}
-            onZoom={({ k }) => { zoomRef.current = k; }}
+            onZoom={({ k }) => { zoomRef.current = k; updateOverlayPositions(); }}
+            onEngineTick={updateOverlayPositions}
             nodeCanvasObject={(node, ctx, globalScale) => {
                 const x = node.x || 0;
                 const y = node.y || 0;
@@ -266,6 +308,11 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
                 const isSelected = !!selectedArtistId && artist.id === selectedArtistId;
                 const isNeighbor = !!selectedArtistId && neighborsById.get(selectedArtistId)?.has(artist.id);
                 const r = isSelected ? rBase * 1.4 : rBase;
+
+                // If selected, skip drawing the base node so the card visually "replaces" it.
+                if (isSelected) {
+                    return;
+                }
 
                 // Dim non-neighbors when a selection exists
                 const hasSelection = !!selectedArtistId;
@@ -311,7 +358,28 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
                 const t = (v - minLog) / Math.max(1e-6, (maxLog - minLog));
                 return 1 + t * 6; // 1..7
             }}
-        />)
+        />
+        {/* Inline overlay replacing selected node */}
+        {selectedArtistId && selectedScreen && (
+            <>
+                <ArtistNodeOverlay
+                    show={!!show}
+                    selectedArtist={selectedArtistObj || (preparedData.nodes.find(n => n.id === selectedArtistId) as Artist | undefined)}
+                    nodeX={selectedScreen.x}
+                    nodeY={selectedScreen.y}
+                    neighbors={neighborAnchors}
+                    onNeighborClick={(id) => {
+                        const neighbor = preparedData.nodes.find(n => n.id === id);
+                        if (neighbor) onNodeClick(neighbor as Artist);
+                    }}
+                    onDismiss={onDeselectSelected}
+                    setArtistFromName={setArtistFromName || (() => {})}
+                    deselectArtist={onDeselectSelected || (() => {})}
+                    similarFilter={similarFilter || ((arr: string[]) => arr)}
+                />
+            </>
+        )}
+        </div>
     )
 }
 

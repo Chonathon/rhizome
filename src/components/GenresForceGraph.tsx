@@ -1,4 +1,4 @@
-import {Genre, GenreClusterMode, GenreGraphData, NodeLink} from "@/types";
+import {Artist, Genre, GenreClusterMode, GenreGraphData, NodeLink} from "@/types";
 import React, {useEffect, useRef, useMemo, useState} from "react";
 import ForceGraph, {ForceGraphMethods, GraphData, NodeObject} from "react-force-graph-2d";
 import {Loading} from "./Loading";
@@ -7,6 +7,7 @@ import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { buildGenreRootColorMap, clusterColors } from "@/lib/utils";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE } from "@/lib/graphStyle";
+import GenreNodeOverlay from './GenreNodeOverlay';
 
 interface GenresForceGraphProps {
     graphData?: GenreGraphData;
@@ -18,18 +19,27 @@ interface GenresForceGraphProps {
     colorMap?: Map<string, string>;
     // Selected genre id to highlight and focus
     selectedGenreId?: string;
+    // Inline overlay helpers
+    selectedGenreObj?: Genre;
+    onDeselectSelected?: () => void;
+    onLinkedGenreClick?: (genreID: string) => void;
+    onTopArtistClick?: (artist: Artist) => void;
+    allArtists?: (genre: Genre) => void;
 }
 
 // Styling shared via graphStyle utils
 
-const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode, colorMap: externalColorMap, selectedGenreId }) => {
+const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode, colorMap: externalColorMap, selectedGenreId, selectedGenreObj, onDeselectSelected, onLinkedGenreClick, onTopArtistClick, allArtists }) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const zoomRef = useRef<number>(1);
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
     const { theme } = useTheme();
+    const [selectedScreen, setSelectedScreen] = useState<{x: number; y: number} | null>(null);
+    const [neighborAnchors, setNeighborAnchors] = useState<{id: string; name: string; x: number; y: number}[]>([]);
 
     const preparedData: GraphData<Genre, NodeLink> = useMemo(() => {
         if (!graphData) return { nodes: [], links: [] };
@@ -203,6 +213,33 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         return () => clearTimeout(t);
     }, [selectedGenreId, show, preparedData]);
 
+    // Update overlay screen positions for selected + neighbors
+    const updateOverlayPositions = () => {
+        if (!fgRef.current || !selectedGenreId) {
+            setSelectedScreen(null);
+            setNeighborAnchors([]);
+            return;
+        }
+        const node = preparedData.nodes.find(n => n.id === selectedGenreId) as (Genre & {x?: number; y?: number}) | undefined;
+        if (!node || typeof node.x !== 'number' || typeof node.y !== 'number') {
+            setSelectedScreen(null);
+            setNeighborAnchors([]);
+            return;
+        }
+        const p = (fgRef.current as any).graph2ScreenCoords(node.x, node.y) as {x: number; y: number};
+        setSelectedScreen({ x: p.x, y: p.y });
+
+        const neighborIds = Array.from(neighborsById.get(selectedGenreId) || []);
+        const anchors: {id: string; name: string; x: number; y: number}[] = [];
+        neighborIds.forEach(id => {
+            const n = preparedData.nodes.find(a => a.id === id) as (Genre & {x?: number; y?: number}) | undefined;
+            if (!n || typeof n.x !== 'number' || typeof n.y !== 'number') return;
+            const sp = (fgRef.current as any).graph2ScreenCoords(n.x, n.y) as {x: number; y: number};
+            anchors.push({ id, name: n.name, x: sp.x, y: sp.y });
+        });
+        setNeighborAnchors(anchors);
+    };
+
     const calculateRadius = (artistCount: number) => {
         return 5 + Math.sqrt(artistCount) * .5;
     };
@@ -223,23 +260,15 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         ctx.strokeStyle = color;
         ctx.lineWidth = 0.5;
 
-        // Draw node
-        drawCircleNode(ctx, nodeX, nodeY, isSelected ? radius * 1.35 : radius, color);
-
-        if (isSelected) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(nodeX, nodeY, radius * 1.35 + 4, 0, 2 * Math.PI);
-            ctx.strokeStyle = accent; // ring matches node color
-            ctx.lineWidth = 3;
-            ctx.stroke();
-            ctx.restore();
+        // If selected, skip drawing the base node so the card visually replaces it
+        if (!isSelected) {
+            drawCircleNode(ctx, nodeX, nodeY, radius, color);
         }
 
         // Text styling with zoom-based fade (shared helper)
         const k = zoomRef.current || 1;
         let alpha = labelAlphaForZoom(k);
-        if (isSelected) alpha = 1;
+        if (isSelected) alpha = 0; // skip label for replaced node
         else if (isNeighbor) alpha = Math.max(alpha, 0.85);
         else if (hasSelection) alpha = Math.min(alpha, 0.2);
         const yOffset = yOffsetByIdRef.current.get(genreNode.id) || 0;
@@ -259,6 +288,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
     }
 
     return !show ? null : loading ? <Loading /> : (
+        <div ref={containerRef} className="relative w-full h-[calc(100vh-0px)]">
         <ForceGraph
             ref={fgRef}
              d3AlphaDecay={0.01}     // Length forces are active; smaller → slower cooling
@@ -284,13 +314,33 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
                 return (s === selectedGenreId || t === selectedGenreId) ? 2.5 : 0.6;
             }}
             onNodeClick={node => onNodeClick(node)}
-            onZoom={({ k }) => { zoomRef.current = k; }}
+            onZoom={({ k }) => { zoomRef.current = k; updateOverlayPositions(); }}
             onNodeHover={(n: any) => setHoveredId(n ? n.id : undefined)}
             nodeCanvasObject={nodeCanvasObject}
             nodeCanvasObjectMode={() => 'replace'}
             nodeVal={(node: Genre) => calculateRadius(node.artistCount)}
             nodePointerAreaPaint={nodePointerAreaPaint}
+            onEngineTick={updateOverlayPositions}
         />
+        {/* Inline overlay replacing selected node */}
+        {selectedGenreId && selectedScreen && (
+            <GenreNodeOverlay
+                show={!!show}
+                selectedGenre={(selectedGenreObj || (preparedData.nodes.find(n => n.id === selectedGenreId) as Genre | undefined))}
+                nodeX={selectedScreen.x}
+                nodeY={selectedScreen.y}
+                neighbors={neighborAnchors}
+                onNeighborClick={(id) => {
+                    const neighbor = preparedData.nodes.find(n => n.id === id) as Genre | undefined;
+                    if (neighbor) onNodeClick(neighbor);
+                }}
+                onDismiss={onDeselectSelected}
+                onLinkedGenreClick={onLinkedGenreClick}
+                onTopArtistClick={onTopArtistClick}
+                allArtists={allArtists}
+            />
+        )}
+        </div>
     )
 }
 
