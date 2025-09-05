@@ -5,7 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis } from "lucide-react";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem
+} from "@/components/ui/dropdown-menu"
 
 interface ArtistInfoProps {
   selectedArtist?: Artist;
@@ -96,22 +103,47 @@ export function ArtistInfo({
                       
                     
                      <div className="flex gap-3 w-full">
-                       <Button
-                        size={isDesktop ? "lg" : "xl"}
-                        variant="default"
-                        // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                        className={isDesktop ? 'self-start' : 'flex-1'}
-                                           >
-                        <CirclePlay size={24}/>Play
-                                           </Button>
-                       <Button
-                        size={isDesktop ? "lg" : "xl"}
-                        variant="secondary"
-                        // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                        className={isDesktop ? 'self-start' : 'flex-1'}
-                                           >
-                        <SquarePlus size={24}/>Add
-                                           </Button>
+                         <Button
+                            size={isDesktop ? "lg" : "xl"}
+                            variant="default"
+                            // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                            className={isDesktop ? 'self-start' : 'flex-1'}
+                            onClick={() => (
+                              toast("Playing Artist...")
+                            )}
+                            >
+                            <CirclePlay size={24}/>Play
+                          </Button>
+                         <Button
+                            size={isDesktop ? "lg" : "xl"}
+                            variant="secondary"
+                            // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                            className={isDesktop ? 'self-start' : 'flex-1'}
+                                              >
+                            <SquarePlus size={24}/>Add
+                          </Button>
+                              
+                       <DropdownMenu>
+                         <DropdownMenuTrigger asChild>
+                           <Button
+                              size={isDesktop ? "lg" : "xl"}
+                              variant="secondary"
+                              onClick={() => selectedArtist && allArtists(selectedArtist)}
+                              className={isDesktop ? 'self-start' : 'flex-1'}
+                              >
+                              <Ellipsis size={24}/>More
+                            </Button>
+                         </DropdownMenuTrigger>
+                         <DropdownMenuContent>
+                          <DropdownMenuItem
+                          onClick={() => toast("incident reported...")}
+                          >Report Incorrect Information                  
+                            
+                          </DropdownMenuItem>
+                         </DropdownMenuContent>
+                       </DropdownMenu>
+
+
                      </div>
                 {isDesktop && (
                   <p

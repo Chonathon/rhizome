@@ -17,6 +17,7 @@ import {
 } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
+import { Toaster, toast } from 'sonner'
 import { useMediaQuery } from 'react-responsive';
 import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
@@ -314,6 +315,7 @@ function App() {
         setSearchOpen={setSearchOpen}
         onClick={resetAppState}
         selectedGenre={selectedGenre}>
+          <Toaster />
           <Gradient />
         <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
           <div className={
