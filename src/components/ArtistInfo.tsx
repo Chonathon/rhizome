@@ -22,6 +22,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Textarea } from "./ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Label } from "./ui/label";
+
 
 interface ArtistInfoProps {
   selectedArtist?: Artist;
@@ -113,25 +125,25 @@ export function ArtistInfo({
                       
                     
                      <div className="flex gap-3 w-full">
-                         <Button
-                            size={isDesktop ? "lg" : "xl"}
-                            variant="default"
-                            // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                            className={isDesktop ? 'self-start' : 'flex-1'}
-                            onClick={() => (
-                              toast("Playing Artist...")
-                            )}
-                            >
-                            <CirclePlay size={24}/>Play
-                          </Button>
-                         <Button
-                            size={isDesktop ? "lg" : "xl"}
-                            variant="secondary"
-                            // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                            className={isDesktop ? 'self-start' : 'flex-1'}
-                                              >
-                            <SquarePlus size={24}/>Add
-                          </Button>
+                           <Button
+                              size={isDesktop ? "lg" : "xl"}
+                              variant="default"
+                              // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                              className={isDesktop ? 'self-start' : 'flex-1'}
+                              onClick={() => (
+                                toast("Playing Artist...")
+                              )}
+                              >
+                              <CirclePlay size={24}/>Play
+                            </Button>
+                           <Button
+                              size={isDesktop ? "lg" : "xl"}
+                              variant="secondary"
+                              // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                              className={isDesktop ? 'self-start' : 'flex-1'}
+                                                >
+                              <SquarePlus size={24}/>Add
+                            </Button>
                               
                        <DropdownMenu>
                          <DropdownMenuTrigger asChild>
@@ -156,10 +168,12 @@ export function ArtistInfo({
                        </DropdownMenu>
 
                         <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
-                          <DialogContent className="bg-accent">
+                          <DialogContent className="bg-sidebar backdrop-blur-sm">
                             <DialogTitle>Report Incorrect Information</DialogTitle>
-                            <DialogDescription>Oi</DialogDescription>
-                            <form className="grid gap-4 py-4">
+                            <DialogDescription>Please let us know what information about this artist seems incorrect. 
+                            Select a reason and provide any extra details if you’d like.
+                            </DialogDescription>
+                            <form className="grid gap-4 py-3">
                               <div className="grid gap-2">
                                 <label
                                   htmlFor="reason"
@@ -167,31 +181,31 @@ export function ArtistInfo({
                                 >
                                   Reason
                                 </label>
-                                <select
-                                  id="reason"
-                                  className="bg-background text-foreground placeholder:text-muted-foreground flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                  defaultValue="select"
-                                >
-                                  <option value="select" disabled>
-                                    Select a reason
-                                  </option>
-                                  <option value="incorrect-bio">Incorrect Biography</option>
-                                  <option value="incorrect-stats">Incorrect Stats</option>
-                                  <option value="other">Other</option>
-                                </select>
+                                <Select>
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select a reason" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      <SelectGroup>
+                                        <SelectLabel className="sr-only">Reasons</SelectLabel>
+                                        <SelectItem value="Inforrect information">Inforrect information</SelectItem>
+                                      </SelectGroup>
+                                      
+                                  </SelectContent>
+                                </Select>
                               </div>
                               <div className="grid gap-2">
-                                <label
+                                <Label
                                   htmlFor="details"
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  className="text-sm font-medium"
                                 >
-                                  Details (optional)
-                                </label>
-                                <textarea
-                                  id="details"
-                                  placeholder="Additional details..."
-                                  className="bg-background text-foreground placeholder:text-muted-foreground flex min-h-[80px] w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                />
+                                Details (optional)
+                                </Label> 
+                                <Textarea
+                                 id="details"
+                                placeholder="Additional details...">
+                                   
+                                </Textarea>
                               </div>
                             </form>
                             <DialogFooter>
