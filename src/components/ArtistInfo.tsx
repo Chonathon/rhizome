@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -127,10 +127,10 @@ export function ArtistInfo({
 
               {/* Content */}
               <div className="w-full flex flex-col gap-6">
+                
+                {/* Actions */}
                 <div className={`flex  flex-col gap-6
                     ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
-                      
-                    
                      <div className="flex gap-3 w-full">
                            <Button
                               size={isDesktop ? "lg" : "xl"}
@@ -169,18 +169,21 @@ export function ArtistInfo({
                                 setReportDialogOpen(true);
                               }}
                             >
+                              <Flag />
                               Report Incorrect Information
                             </DropdownMenuItem>
                          </DropdownMenuContent>
                        </DropdownMenu>
 
-                        
+                        {/* Report Dialog */}
                         <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
                           <DialogContent className="bg-sidebar backdrop-blur-sm">
-                            <DialogTitle>Report Incorrect Information</DialogTitle>
-                            <DialogDescription>Please let us know what information about this artist seems incorrect. 
-                            Select a reason and provide any extra details if you’d like.
-                            </DialogDescription>
+                              <DialogHeader>                
+                                  <DialogTitle>Report Incorrect Information</DialogTitle>
+                                  <DialogDescription>Please let us know what information about this artist seems incorrect. 
+                                  Select a reason and provide any extra details if you’d like.
+                                  </DialogDescription>
+                              </DialogHeader>
                             <form className="grid gap-4 py-3">
                               <div className="grid gap-2">
                                 <label
@@ -217,6 +220,13 @@ export function ArtistInfo({
                               </div>
                             </form>
                             <DialogFooter>
+                              <DialogClose asChild>
+                                <Button
+                                  variant="outline"
+                                  >
+                                  Cancel
+                                </Button>
+                              </DialogClose>
                               <DialogClose asChild>
                                 <Button
                                   type="submit"
