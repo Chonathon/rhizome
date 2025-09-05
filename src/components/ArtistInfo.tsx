@@ -60,6 +60,8 @@ export function ArtistInfo({
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1200px)");
+  // Track bad data report state; must be declared before any conditional returns
+  const [badDataFlag, setBadDataFlag] = useState(false);
 
   const onDismiss = () => {
     deselectArtist();
@@ -76,11 +78,11 @@ export function ArtistInfo({
   // Reset expansion when artist changes
   useEffect(() => {
     setDesktopExpanded(true);
+    // TODO: REMOVE AFTER IMPLEMENTING BACKEND. Resets the bad data flag when switching artists so it stays scoped
+    setBadDataFlag(false);
   }, [selectedArtist?.id]);
 
   if (!show) return null;
-
-  const [badDataFlag, setBadDataFlag] = useState(false);
 
   return (
     <ResponsiveDrawer
