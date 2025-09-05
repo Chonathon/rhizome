@@ -25,6 +25,10 @@ interface ArtistNodeOverlayProps {
   setArtistFromName: (name: string) => void;
   deselectArtist: () => void;
   similarFilter: (artists: string[]) => string[];
+  // Report measured card bounds (relative to container) to parent
+  onCardBounds?: (bounds: { left: number; top: number; width: number; height: number }) => void;
+  // Container to compute relative offsets
+  containerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export const ArtistNodeOverlay: React.FC<ArtistNodeOverlayProps> = ({
@@ -38,6 +42,8 @@ export const ArtistNodeOverlay: React.FC<ArtistNodeOverlayProps> = ({
   setArtistFromName,
   deselectArtist,
   similarFilter,
+  onCardBounds,
+  containerRef,
 }) => {
   // Compute a smart offset for the card based on neighbor distribution
   const cardPosition = useMemo(() => {
@@ -72,9 +78,42 @@ export const ArtistNodeOverlay: React.FC<ArtistNodeOverlayProps> = ({
     } as React.CSSProperties;
   }, [cardPosition]);
 
+  const cardRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Measure and report card bounds in container-relative screen coords
+  const lastBoundsRef = React.useRef<{ left: number; top: number; width: number; height: number } | null>(null);
+
+  React.useLayoutEffect(() => {
+    if (!show || !cardRef.current || !onCardBounds) return;
+    const report = () => {
+      const cardRect = cardRef.current!.getBoundingClientRect();
+      const containerRect = containerRef?.current?.getBoundingClientRect();
+      if (!containerRect) return;
+      const next = {
+        left: cardRect.left - containerRect.left,
+        top: cardRect.top - containerRect.top,
+        width: cardRect.width,
+        height: cardRect.height,
+      };
+      const last = lastBoundsRef.current;
+      if (!last || last.left !== next.left || last.top !== next.top || last.width !== next.width || last.height !== next.height) {
+        lastBoundsRef.current = next;
+        onCardBounds(next);
+      }
+    };
+    report();
+    const ro = new ResizeObserver(() => report());
+    ro.observe(cardRef.current!);
+    window.addEventListener('resize', report);
+    return () => {
+      try { ro.disconnect(); } catch {}
+      window.removeEventListener('resize', report);
+    };
+  }, [show, onCardBounds, containerRef, cardPosition]);
+
   return (
     <>
-      <div style={centerStyle}>
+      <div ref={cardRef} style={centerStyle}>
         <ArtistCard
           selectedArtist={selectedArtist}
           setArtistFromName={setArtistFromName}

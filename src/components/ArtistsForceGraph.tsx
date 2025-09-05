@@ -91,6 +91,14 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     const animRafRef = useRef<number | null>(null);
     const [selectedScreen, setSelectedScreen] = useState<{x: number; y: number} | null>(null);
     const [neighborAnchors, setNeighborAnchors] = useState<{id: string; name: string; x: number; y: number}[]>([]);
+    const [selectedCardBounds, setSelectedCardBounds] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+    const onCardBoundsStable = React.useCallback((b: { left: number; top: number; width: number; height: number }) => {
+        setSelectedCardBounds(prev => {
+            if (!prev) return b;
+            if (prev.left !== b.left || prev.top !== b.top || prev.width !== b.width || prev.height !== b.height) return b;
+            return prev; // no change → avoid re-render loop
+        });
+    }, []);
 
     // Animate label y-offset on hover using simple easing
     useEffect(() => {
@@ -191,21 +199,39 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
         return () => clearTimeout(t);
     }, [selectedArtistId, show, preparedData]);
 
-    // Update overlay screen positions for selected + neighbors
+    // Update overlay screen positions for selected + neighbors (with change guard)
+    const lastScreenRef = useRef<{ x: number; y: number } | null>(null);
+    const lastNeighborsHashRef = useRef<string>("");
     const updateOverlayPositions = () => {
         if (!fgRef.current || !selectedArtistId) {
-            setSelectedScreen(null);
-            setNeighborAnchors([]);
+            if (lastScreenRef.current !== null) {
+                lastScreenRef.current = null;
+                setSelectedScreen(null);
+            }
+            if (lastNeighborsHashRef.current !== "") {
+                lastNeighborsHashRef.current = "";
+                setNeighborAnchors([]);
+            }
             return;
         }
         const node = preparedData.nodes.find(n => n.id === selectedArtistId) as (Artist & {x?: number; y?: number}) | undefined;
         if (!node || typeof node.x !== 'number' || typeof node.y !== 'number') {
-            setSelectedScreen(null);
-            setNeighborAnchors([]);
+            if (lastScreenRef.current !== null) {
+                lastScreenRef.current = null;
+                setSelectedScreen(null);
+            }
+            if (lastNeighborsHashRef.current !== "") {
+                lastNeighborsHashRef.current = "";
+                setNeighborAnchors([]);
+            }
             return;
         }
         const p = (fgRef.current as any).graph2ScreenCoords(node.x, node.y) as {x: number; y: number};
-        setSelectedScreen({ x: p.x, y: p.y });
+        const prev = lastScreenRef.current;
+        if (!prev || Math.abs(prev.x - p.x) > 0.5 || Math.abs(prev.y - p.y) > 0.5) {
+            lastScreenRef.current = { x: p.x, y: p.y };
+            setSelectedScreen({ x: p.x, y: p.y });
+        }
 
         const neighborIds = Array.from(neighborsById.get(selectedArtistId) || []);
         const anchors: {id: string; name: string; x: number; y: number}[] = [];
@@ -215,7 +241,11 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
             const sp = (fgRef.current as any).graph2ScreenCoords(n.x, n.y) as {x: number; y: number};
             anchors.push({ id, name: n.name, x: sp.x, y: sp.y });
         });
-        setNeighborAnchors(anchors);
+        const hash = anchors.map(a => `${a.id}:${Math.round(a.x)}:${Math.round(a.y)}`).sort().join('|');
+        if (hash !== lastNeighborsHashRef.current) {
+            lastNeighborsHashRef.current = hash;
+            setNeighborAnchors(anchors);
+        }
     };
 
     // Precompute listener range (log-scaled) for sizing
@@ -269,23 +299,69 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
         <ForceGraph
             ref={fgRef as any}
             graphData={preparedData}
-            // Always show links per request
-            linkVisibility={() => true}
-            linkColor={(l: any) => {
-                const s = typeof l.source === 'string' ? l.source : l.source?.id;
-                const t = typeof l.target === 'string' ? l.target : l.target?.id;
-                const connectedToSelected = !!selectedArtistId && (s === selectedArtistId || t === selectedArtistId);
-                const base = (s && colorById.get(s)) || (theme === 'dark' ? '#ffffff' : '#000000');
+            // We'll custom-draw links so we can attach them to the card edge
+            linkCanvasObjectMode={() => 'replace'}
+            linkCanvasObject={(l: any, ctx: CanvasRenderingContext2D) => {
+                // Resolve ids and world-space endpoints
+                const sId: string | undefined = typeof l.source === 'string' ? l.source : l.source?.id;
+                const tId: string | undefined = typeof l.target === 'string' ? l.target : l.target?.id;
+                const sx: number = typeof l.source === 'string' ? 0 : (l.source?.x || 0);
+                const sy: number = typeof l.source === 'string' ? 0 : (l.source?.y || 0);
+                const tx: number = typeof l.target === 'string' ? 0 : (l.target?.x || 0);
+                const ty: number = typeof l.target === 'string' ? 0 : (l.target?.y || 0);
+
+                // Determine styling similar to prior props
+                const connectedToSelected = !!selectedArtistId && (sId === selectedArtistId || tId === selectedArtistId);
+                const base = (sId && colorById.get(sId)) || (theme === 'dark' ? '#ffffff' : '#000000');
                 const alpha = selectedArtistId ? (connectedToSelected ? 'ff' : '30') : '80';
-                return base + alpha;
+                ctx.strokeStyle = base + alpha;
+                const width = !selectedArtistId ? 1 : (connectedToSelected ? 2.5 : 0.6);
+                ctx.lineWidth = width;
+
+                // Adjust endpoint to card edge if selected node is on this link and we have card bounds
+                let ax = sx, ay = sy, bx = tx, by = ty; // world-space endpoints to draw
+                if (connectedToSelected && selectedCardBounds && fgRef.current) {
+                    const isSourceSelected = sId === selectedArtistId;
+                    const neighborWorld = isSourceSelected ? { x: tx, y: ty } : { x: sx, y: sy };
+                    const neighborScreen = (fgRef.current as any).graph2ScreenCoords(neighborWorld.x, neighborWorld.y) as {x: number; y: number};
+
+                    // Compute intersection on the card rect along the ray from neighbor -> card center
+                    const { left, top, width: cw, height: ch } = selectedCardBounds;
+                    const rect = { L: left, T: top, R: left + cw, B: top + ch };
+                    const cx = left + cw / 2;
+                    const cy = top + ch / 2;
+
+                    const inter = (() => {
+                        const x0 = neighborScreen.x; const y0 = neighborScreen.y;
+                        const dx = cx - x0; const dy = cy - y0;
+                        const eps = 1e-6;
+                        const tVals: { t: number; x: number; y: number }[] = [];
+                        if (Math.abs(dx) > eps) {
+                            const tL = (rect.L - x0) / dx; const yL = y0 + tL * dy; if (tL > 0 && yL >= rect.T - 0.1 && yL <= rect.B + 0.1) tVals.push({ t: tL, x: rect.L, y: yL });
+                            const tR = (rect.R - x0) / dx; const yR = y0 + tR * dy; if (tR > 0 && yR >= rect.T - 0.1 && yR <= rect.B + 0.1) tVals.push({ t: tR, x: rect.R, y: yR });
+                        }
+                        if (Math.abs(dy) > eps) {
+                            const tT = (rect.T - y0) / dy; const xT = x0 + tT * dx; if (tT > 0 && xT >= rect.L - 0.1 && xT <= rect.R + 0.1) tVals.push({ t: tT, x: xT, y: rect.T });
+                            const tB = (rect.B - y0) / dy; const xB = x0 + tB * dx; if (tB > 0 && xB >= rect.L - 0.1 && xB <= rect.R + 0.1) tVals.push({ t: tB, x: xB, y: rect.B });
+                        }
+                        if (!tVals.length) return null;
+                        // Closest positive intersection
+                        tVals.sort((a,b) => a.t - b.t);
+                        return { x: tVals[0].x, y: tVals[0].y };
+                    })();
+
+                    if (inter) {
+                        const interWorld = (fgRef.current as any).screen2GraphCoords(inter.x, inter.y) as {x: number; y: number};
+                        if (isSourceSelected) { ax = interWorld.x; ay = interWorld.y; } else { bx = interWorld.x; by = interWorld.y; }
+                    }
+                }
+
+                // Draw straight line (keeps performance sane and avoids double-rendering)
+                ctx.beginPath();
+                ctx.moveTo(ax, ay);
+                ctx.lineTo(bx, by);
+                ctx.stroke();
             }}
-            linkWidth={(l: any) => {
-                if (!selectedArtistId) return 1;
-                const s = typeof l.source === 'string' ? l.source : l.source?.id;
-                const t = typeof l.target === 'string' ? l.target : l.target?.id;
-                return (s === selectedArtistId || t === selectedArtistId) ? 2.5 : 0.6;
-            }}
-            linkCurvature={preparedData.links.length <= curvedLinksAbove ? curvedLinkCurvature : 0}
             onNodeClick={onNodeClick}
             onNodeHover={(n: any) => setHoveredId(n ? n.id : undefined)}
             // We'll custom-draw nodes; keep built-in node invisible to avoid double-draw
@@ -376,6 +452,8 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
                     setArtistFromName={setArtistFromName || (() => {})}
                     deselectArtist={onDeselectSelected || (() => {})}
                     similarFilter={similarFilter || ((arr: string[]) => arr)}
+                    onCardBounds={onCardBoundsStable}
+                    containerRef={containerRef}
                 />
             </>
         )}
