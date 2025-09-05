@@ -44,6 +44,7 @@ interface ArtistInfoProps {
   deselectArtist: () => void;
   setArtistFromName: (name: string) => void;
   similarFilter: (artists: string[]) => string[];
+  onBadDataClick: () => void;
 }
 
 export function ArtistInfo({
@@ -54,6 +55,7 @@ export function ArtistInfo({
   deselectArtist,
   setArtistFromName,
   similarFilter,
+  onBadDataClick,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -77,6 +79,8 @@ export function ArtistInfo({
   }, [selectedArtist?.id]);
 
   if (!show) return null;
+
+  const [badDataFlag, setBadDataFlag] = useState(false);
 
   return (
     <ResponsiveDrawer
@@ -214,7 +218,11 @@ export function ArtistInfo({
                               <DialogClose asChild>
                                 <Button
                                   type="submit"
-                                onClick={() => {  toast.success("Report submitted. Thanks!"); setReportDialogOpen(false);}}
+                                onClick={() => {  
+                                  toast.success("Thanks for the heads up. We'll look into it soon!"); setReportDialogOpen(false);
+                                  setBadDataFlag(true);
+                                
+                                }}
                                   >
                                   Submit
                                 </Button>
@@ -236,7 +244,7 @@ export function ArtistInfo({
                   </p>
                 )}
                   </div>
-                  <Alert><Info /><AlertDescription>Hmm… something about this artist’s info doesn’t sound quite right. We’re checking it out</AlertDescription></Alert>
+                  {badDataFlag && <Alert><Info /><AlertDescription>Hmm… something about this artist’s info doesn’t sound quite right. We’re checking it out</AlertDescription></Alert>}
                    {!isDesktop && (
                      <p
                      className={`break-words text-muted-foreground ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
