@@ -13,6 +13,15 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface ArtistInfoProps {
   selectedArtist?: Artist;
@@ -34,6 +43,7 @@ export function ArtistInfo({
   similarFilter,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1200px)");
 
   const onDismiss = () => {
@@ -128,20 +138,77 @@ export function ArtistInfo({
                            <Button
                               size={isDesktop ? "lg" : "xl"}
                               variant="secondary"
-                              onClick={() => selectedArtist && allArtists(selectedArtist)}
+                              // onClick={() => selectedArtist && allArtists(selectedArtist)}
                               className={isDesktop ? 'self-start' : 'flex-1'}
                               >
                               <Ellipsis size={24}/>More
                             </Button>
                          </DropdownMenuTrigger>
                          <DropdownMenuContent>
-                          <DropdownMenuItem
-                          onClick={() => toast("incident reported...")}
-                          >Report Incorrect Information                  
-                            
-                          </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                setReportDialogOpen(true);
+                              }}
+                            >
+                              Report Incorrect Information
+                            </DropdownMenuItem>
                          </DropdownMenuContent>
                        </DropdownMenu>
+
+                        <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+                          <DialogContent className="bg-accent">
+                            <DialogTitle>Report Incorrect Information</DialogTitle>
+                            <DialogDescription>Oi</DialogDescription>
+                            <form className="grid gap-4 py-4">
+                              <div className="grid gap-2">
+                                <label
+                                  htmlFor="reason"
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  Reason
+                                </label>
+                                <select
+                                  id="reason"
+                                  className="bg-background text-foreground placeholder:text-muted-foreground flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                  defaultValue="select"
+                                >
+                                  <option value="select" disabled>
+                                    Select a reason
+                                  </option>
+                                  <option value="incorrect-bio">Incorrect Biography</option>
+                                  <option value="incorrect-stats">Incorrect Stats</option>
+                                  <option value="other">Other</option>
+                                </select>
+                              </div>
+                              <div className="grid gap-2">
+                                <label
+                                  htmlFor="details"
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  Details (optional)
+                                </label>
+                                <textarea
+                                  id="details"
+                                  placeholder="Additional details..."
+                                  className="bg-background text-foreground placeholder:text-muted-foreground flex min-h-[80px] w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                />
+                              </div>
+                            </form>
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button
+                                  type="submit"
+                                onClick={() => {  toast.success("Report submitted. Thanks!"); setReportDialogOpen(false);}}
+                                  >
+                                  Submit
+                                </Button>
+                              </DialogClose>
+                            </DialogFooter>
+
+
+
+                          </DialogContent>
+                        </Dialog>
 
 
                      </div>
