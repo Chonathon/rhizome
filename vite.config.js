@@ -12,4 +12,15 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      // Proxy API requests in dev to avoid CORS
+      "/api": {
+        target: "https://rhizome-server-production.up.railway.app",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p) => p.replace(/^\/api/, ""),
+      },
+    },
+  },
 })

@@ -49,7 +49,7 @@ export function ResponsiveDrawer({
   contentClassName,
   bodyClassName,
   directionDesktop = "right",
-  snapPoints = [0.28, 0.9],
+  snapPoints = [0.40, 0.9],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 1200px)",
   showMobileHandle = false,
@@ -79,10 +79,12 @@ export function ResponsiveDrawer({
 
   // Ensure consistent snap height when resizing to mobile while open
   useEffect(() => {
+    // Reset to the first snap only when transitioning to mobile or opening,
+    // not on every render when parents pass a new snapPoints array literal.
     if (!isDesktop && open) {
       setActiveSnap(snapPoints[0] ?? 0.9);
     }
-  }, [isDesktop, open, snapPoints]);
+  }, [isDesktop, open]);
 
   // Track whether the scroll container is at the very top to gate dragging.
   React.useEffect(() => {

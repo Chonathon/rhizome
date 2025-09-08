@@ -21,7 +21,7 @@ import { useMediaQuery } from 'react-responsive';
 import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
-import { buildGenreTree, filterOutGenreTree, generateSimilarLinks } from "@/lib/utils";
+import { buildGenreRootColorMap, buildGenreTree, filterOutGenreTree, generateSimilarLinks } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
@@ -70,6 +70,7 @@ function App() {
     totalArtistsInDB
   } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
+  const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
@@ -81,11 +82,17 @@ function App() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (showArtistCard) {
+        // Prefer logical selection state over UI visibility flags
+        if (selectedArtist) {
           deselectArtist();
-        } else {
-          resetAppState();
+          return;
         }
+        if (selectedGenre) {
+          setSelectedGenre(undefined);
+          return;
+        } 
+        // resetAppState();
+      
       }
     };
 
@@ -94,7 +101,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showArtistCard]);
+  }, [selectedArtist, selectedGenre]);
 
   useEffect(() => {
     //console.log(artists.length)
@@ -110,6 +117,12 @@ function App() {
   useEffect(() => {
     const nodeCount = genres.length;
     onGenreNodeCountChange(nodeCount);
+  }, [genres, genreLinks]);
+
+  useEffect(() => {
+    // Build a stable color map from the full genre graph so artists and genres share colors
+    const map = buildGenreRootColorMap(genres, genreLinks);
+    setGenreColorMap(map);
   }, [genres, genreLinks]);
 
   useEffect(() => {
@@ -320,6 +333,7 @@ function App() {
             "fixed top-0 left-3 z-50 flex flex-col  items-start lg:flex-row gap-3 p-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
           }
           >
+
                <Tabs
                 value={graph}
                 onValueChange={(val) => onTabChange(val as GraphType)}>
@@ -357,12 +371,16 @@ function App() {
                   show={graph === "genres" && !genresError}
                   dag={dagMode}
                   clusterMode={genreClusterMode}
+                  colorMap={genreColorMap}
+                  selectedGenreId={selectedGenre?.id}
                 />
                 <ArtistsForceGraph
                   artists={currentArtists}
                   artistLinks={currentArtistLinks}
                   loading={artistsLoading}
                   onNodeClick={onArtistNodeClick}
+                  genreColorMap={genreColorMap}
+                  selectedArtistId={selectedArtist?.id}
                   show={
                     (graph === "artists" || graph === "similarArtists") && !artistsError
                   }
@@ -442,11 +460,19 @@ function App() {
                 deselectArtist={deselectArtist}
                 similarFilter={similarArtistFilter}
               />
+            
+            {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
+            {/* TODO: Consider replace with dismissible toast and adding reference to selected genre */}
               <div
-                className={`flex md:hidden justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
+                className={`flex justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
                 <ResetButton
-                  onClick={() => resetAppState()}
-                  show={graph !== "genres"}
+                
+                  onClick={() => {
+                    setGraph('genres')
+                    // setSelectedArtist(undefined)
+                  }
+                  }
+                  show={graph === 'artists' && !!selectedGenre}
                 />
                 <motion.div
                   layout
