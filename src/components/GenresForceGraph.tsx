@@ -127,7 +127,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         // For others, walk up to nearest root to inherit color
         const getRootColor = (id: string, hopGuard = 0): string | undefined => {
             if (map.has(id)) return map.get(id);
-            if (hopGuard > 1000) return undefined; // safety
+            //if (hopGuard > 1000) return undefined; // safety
             const p = parents.get(id);
             if (!p || p.size === 0) return undefined;
             // deterministically choose the lexicographically smallest parent

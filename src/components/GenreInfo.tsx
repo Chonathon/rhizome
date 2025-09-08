@@ -1,5 +1,5 @@
 import { BasicNode, Genre, Artist } from '@/types'
-import { formatNumber } from '@/lib/utils'
+import {fixWikiImageURL, formatNumber} from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
@@ -191,7 +191,7 @@ export function GenreInfo({
                                 className="group block w-full h-full focus:outline-none"
                               >
                                 <img
-                                  src={(artist.image as string)}
+                                  src={fixWikiImageURL(artist.image as string)}
                                   alt={artist.name}
                                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                                   loading="lazy"
