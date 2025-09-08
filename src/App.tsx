@@ -61,7 +61,14 @@ function App() {
   const [genreNodeCount, setGenreNodeCount] = useState<number>(0);
   const [artistNodeCount, setArtistNodeCount] = useState<number>(0);
   const { genres, genreLinks, genresLoading, genresError } = useGenres();
-  const { artists, artistLinks, artistsLoading, artistsError } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
+  const {
+    artists,
+    artistLinks,
+    artistsLoading,
+    artistsError,
+    fetchAllArtists,
+    totalArtistsInDB
+  } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
 
@@ -97,8 +104,14 @@ function App() {
   }, [selectedArtist, selectedGenre]);
 
   useEffect(() => {
-    const nodeCount = Math.min(artists.length, DEFAULT_NODE_COUNT);
-    onArtistNodeCountChange(nodeCount);
+    //console.log(artists.length)
+    if (selectedGenre) {
+      const nodeCount = Math.min(artists.length, DEFAULT_NODE_COUNT);
+      onArtistNodeCountChange(nodeCount);
+    } else {
+      setCurrentArtists(artists);
+      setCurrentArtistLinks(artistLinks);
+    }
   }, [artists]);
 
   useEffect(() => {
@@ -257,7 +270,9 @@ function App() {
   }
   const onArtistNodeCountChange = (count: number) => {
     setArtistNodeCount(count);
-    if (artists && artists.length && count < artists.length) {
+    if (!selectedGenre) {
+      fetchAllArtists(artistNodeLimitType, count);
+    } else if (artists && artists.length && count < artists.length) {
       const filteredArtists = artists
           .toSorted((a: Artist, b: Artist) => b[artistNodeLimitType] - a[artistNodeLimitType])
           .slice(0, count);
@@ -288,7 +303,22 @@ function App() {
       onGenreNodeClick(newGenre);
     }
   }
-
+  const onTabChange = async (graphType: GraphType) => {
+    if (graphType === 'genres') {
+      setGraph('genres');
+      if (selectedGenre) {
+        setCurrentArtists([]);
+        setCurrentArtistLinks([]);
+      }
+      setSelectedGenre(undefined);
+    } else {
+      setGraph('artists');
+      if (!selectedGenre && !currentArtists.length) {
+        setArtistNodeCount(DEFAULT_NODE_COUNT);
+        await fetchAllArtists(artistNodeLimitType, DEFAULT_NODE_COUNT);
+      }
+    }
+  }
 
   return (
     <SidebarProvider>
@@ -306,12 +336,12 @@ function App() {
 
                <Tabs
                 value={graph}
-                onValueChange={(val) => setGraph(val as GraphType)}>
+                onValueChange={(val) => onTabChange(val as GraphType)}>
                   <TabsList>
                       <TabsTrigger
-                      onClick={() => setGraph('genres')} value="genres">Genres</TabsTrigger>
+                      onClick={() => onTabChange("genres")} value="genres">Genres</TabsTrigger>
                     <TabsTrigger
-                    onClick={() => setGraph('artists')} value="artists">Artists</TabsTrigger>
+                    onClick={() => onTabChange('artists')} value="artists">Artists</TabsTrigger>
                   </TabsList>
                 </Tabs>
                 { graph === 'artists' &&
@@ -365,7 +395,7 @@ function App() {
                 show={showGenreNodeLimiter()}
             />
             <NodeLimiter
-              totalNodes={artists.length}
+              totalNodes={artists && artists.length && selectedGenre ? artists.length : totalArtistsInDB ? totalArtistsInDB : DEFAULT_NODE_COUNT}
               nodeType={'artists'}
               initialValue={artistNodeCount}
               onChange={onArtistNodeCountChange}

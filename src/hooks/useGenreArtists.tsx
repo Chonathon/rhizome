@@ -13,6 +13,7 @@ const useGenreArtists = (genreID?: string) => {
     const [artistLinks, setArtistLinks] = useState<NodeLink[]>([]);
     const [artistsLoading, setArtistsLoading] = useState(false);
     const [artistsError, setArtistsError] = useState<AxiosError>();
+    const [totalArtistsInDB, setTotalArtistsInDB] = useState<number | undefined>(undefined);
 
     const fetchArtists = async () => {
         if (genreID) {
@@ -30,11 +31,28 @@ const useGenreArtists = (genreID?: string) => {
         }
     }
 
+    const fetchAllArtists = async (filter?: string, amount?: number) => {
+        if (!genreID && filter && amount) {
+            setArtistsLoading(true);
+            try {
+                const response = await axios.get(`${url}/artists/${filter}/${amount}`);
+                setArtists(response.data.artists);
+                setArtistLinks(response.data.links);
+                setTotalArtistsInDB(response.data.count);
+            } catch (err) {
+                if (err instanceof AxiosError) {
+                    setArtistsError(err);
+                }
+            }
+            setArtistsLoading(false);
+        }
+    }
+
     useEffect(() => {
         fetchArtists();
     }, [genreID]);
 
-    return { artists, artistsLoading, artistsError, artistLinks };
+    return { artists, artistsLoading, artistsError, artistLinks, fetchAllArtists, totalArtistsInDB };
 }
 
 export default useGenreArtists;

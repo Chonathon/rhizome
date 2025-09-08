@@ -34,7 +34,7 @@ interface AppSidebarProps {
 export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { recentSelections } = useRecentSelections()
-  console.log("Recent selections in sidebar:", recentSelections);
+  //console.log("Recent selections in sidebar:", recentSelections);
 
   return (
     <>
