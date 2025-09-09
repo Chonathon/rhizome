@@ -8,6 +8,8 @@ import {
   GenreGraphData,
   NodeLink
 } from "@/types";
+import {root} from "postcss";
+import {mix} from "framer-motion";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -62,20 +64,34 @@ export const genreHasChildren = (genre: Genre, genreClusterMode: GenreClusterMod
   }
 }
 
-export const isTopLevelGenre = (genre: Genre, genreClusterMode: GenreClusterMode) => {
-  switch (genreClusterMode) {
-      case "subgenre":
-        return genre.subgenre_of.length === 0 && genre.subgenres.length > 0;
-      case "influence":
-        return genre.influenced_by.length === 0 && genre.influenced_genres.length > 0;
-      case "fusion":
-        return genre.fusion_of.length === 0 && genre.fusion_genres.length > 0;
-    default:
-      return false;
-  }
+export const isTopLevelGenre = (genre: Genre, genreClusterModes: GenreClusterMode[]) => {
+  genreClusterModes.forEach((mode: GenreClusterMode) => {
+    if (genre[parentFieldMap[mode]].length && genre[childFieldMap[mode]].length > 0) return true;
+  });
+  return false;
 }
 
-export const buildGenreTree = (genres: Genre[], parent: Genre, mode: GenreClusterMode) => {
+export const parentFieldMap: {
+  subgenre: "subgenres";
+  influence: "influenced_genres";
+  fusion: "fusion_genres";
+} = {
+  subgenre: 'subgenres',
+  influence: 'influenced_genres',
+  fusion: 'fusion_genres',
+}
+
+export const childFieldMap: {
+  subgenre: 'subgenre_of',
+  influence: 'influenced_by',
+  fusion: 'fusion_of'
+} = {
+  subgenre: 'subgenre_of',
+  influence: 'influenced_by',
+  fusion: 'fusion_of',
+}
+
+export const buildGenreTree = (genres: Genre[], parent: Genre, modes: GenreClusterMode[]) => {
   const nodes: Genre[] = [];
   const links: NodeLink[] = [];
   const genresMap = new Map<string, Genre>();
@@ -89,21 +105,19 @@ export const buildGenreTree = (genres: Genre[], parent: Genre, mode: GenreCluste
     const genre = genresMap.get(parentId);
     if (!genre) return;
 
-    let children: BasicNode[] = [];
-    if (mode === 'subgenre') {
-      children = genre.subgenres;
-    } else if (mode === 'influence') {
-      children = genre.influenced_genres;
-    } else if (mode === 'fusion') {
-      children = genre.fusion_genres;
-    }
+    let children: {id: string, name: string, mode: GenreClusterMode}[] = [];
+    modes.forEach((mode) => {
+      children.push(...genre[parentFieldMap[mode]].map(g => {
+        return {...g, mode};
+      }))
+    });
 
     for (const child of children) {
       const childId = child.id;
       const childGenre = genresMap.get(childId);
       if (childGenre) {
         nodes.push(childGenre);
-        links.push({ source: parentId, target: childId });
+        links.push({ source: parentId, target: childId, linkType: child.mode });
       }
       addChildren(childId, level + 1);
     }
@@ -114,7 +128,7 @@ export const buildGenreTree = (genres: Genre[], parent: Genre, mode: GenreCluste
   return { nodes, links };
 };
 
-export const filterOutGenreTree = (genreGraphData: GenreGraphData, parent: Genre, mode: GenreClusterMode) => {
+export const filterOutGenreTree = (genreGraphData: GenreGraphData, parent: Genre, modes: GenreClusterMode[]) => {
   const nodesToFilter = new Set<string>();
   const genresMap = new Map<string, Genre>();
   genreGraphData.nodes.forEach(genre => {
@@ -127,14 +141,12 @@ export const filterOutGenreTree = (genreGraphData: GenreGraphData, parent: Genre
     const genre = genresMap.get(parentId);
     if (!genre) return;
 
-    let children: BasicNode[] = [];
-    if (mode === 'subgenre') {
-      children = genre.subgenres;
-    } else if (mode === 'influence') {
-      children = genre.influenced_genres;
-    } else if (mode === 'fusion') {
-      children = genre.fusion_genres;
-    }
+    let children: {id: string, name: string, mode: GenreClusterMode}[] = [];
+    modes.forEach((mode) => {
+      children.push(...genre[parentFieldMap[mode]].map(g => {
+        return {...g, mode};
+      }))
+    });
 
     for (const child of children) {
       const childId = child.id;
@@ -264,6 +276,56 @@ export const buildGenreRootColorMap = (genres: Genre[], links: NodeLink[]) => {
   return colorMap;
 }
 
+export const assignRootGenreColors = (rootIDs: string[]) => {
+  const colorMap = new Map<string, string>();
+  if (!rootIDs.length) return colorMap;
+  const sortedRoots = [...rootIDs].sort((a, b) => a.localeCompare(b));
+  sortedRoots.forEach((n, i) => {
+    const color = clusterColors[i % clusterColors.length];
+    colorMap.set(n, color);
+  });
+  return colorMap;
+}
+
+export const buildGenreColorMap = (genres: Genre[], rootIDs: string[]) => {
+  const rootColorMap = assignRootGenreColors(rootIDs);
+  const colorMap = new Map<string, string>();
+  let singletonCount = 0;
+  genres.forEach(genre => {
+    switch (genre.rootGenres.length) {
+      case 0:
+        colorMap.set(genre.id, getSingletonColor(singletonCount));
+        singletonCount++;
+        break;
+      case 1:
+        const color = rootColorMap.get(genre.rootGenres[0]);
+        if (color) colorMap.set(genre.id, color);
+        else {
+          colorMap.set(genre.id, getSingletonColor(singletonCount));
+          singletonCount++;
+        }
+        break;
+      default:
+        if (!genre.rootGenres || genre.rootGenres.length < 2) {
+          colorMap.set(genre.id, getSingletonColor(singletonCount));
+          singletonCount++;
+        } else {
+          const colors: string[] = [];
+          genre.rootGenres.forEach((g) => {
+            const curRoot = rootColorMap.get(g);
+            if (curRoot) colors.push(curRoot);
+          });
+          colorMap.set(genre.id, mixColors(colors));
+        }
+    }
+  });
+  return colorMap;
+}
+
+export const getSingletonColor = (count: number) => {
+  return clusterColors[count % clusterColors.length];
+}
+
 // --- Color utilities ---
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
   let h = hex.trim();
@@ -323,6 +385,32 @@ export const ensureContrastOnLight = (hex: string, lightBgHex = '#ffffff', minRa
   }
   return '#111111'; // ultimate fallback to satisfy contrast on white
 };
+
+export const mixColors = (colors: string[]) => {
+  if (!colors.length) return '#000000';
+  if (colors.length === 1) return colors[0];
+  let color = mixTwoColorsAverage(colors[0], colors[1]);
+  if (colors.length === 2) return color;
+  for (let i = 2; i < colors.length; i += 1) {
+    color = mixTwoColorsAverage(color, colors[i]);
+  }
+  return color;
+}
+
+const mixTwoColorsAverage = (color1: string, color2: string) => {
+  const rgb1 = hexToRgb(color1);
+  const rgb2 = hexToRgb(color2);
+  if (rgb1 && rgb2) {
+    const mixRGB = {
+      r: Math.round(rgb1.r + rgb2.r / 2),
+      g: Math.round(rgb1.g + rgb2.g / 2),
+      b: Math.round(rgb1.b + rgb2.b / 2),
+    }
+    return rgbToHex(mixRGB.r, mixRGB.g, mixRGB.b);
+  }
+  return '#000000';
+}
+
 
 export const fixWikiImageURL = (url: string) => {
   if (url.startsWith('https://commons.wikimedia.org/wiki/File:')) {

@@ -8,7 +8,7 @@ import { ResponsivePanel } from "@/components/ResponsivePanel";
 
 interface ClusteringPanelProps {
     clusterMode: GenreClusterMode;
-    setClusterMode: (mode: GenreClusterMode) => void;
+    setClusterMode: (mode: GenreClusterMode[]) => void;
     dagMode: boolean;
     setDagMode: (enabled: boolean) => void;
 }
@@ -33,7 +33,7 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
         >
             <RadioGroup
                 value={clusterMode}
-                onValueChange={(value) => setClusterMode(value as GenreClusterMode)}
+                onValueChange={(value) => setClusterMode([value as GenreClusterMode])}
                 className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm p-1 rounded-2xl border border-accent dark:border-border/50 bg-accent"
             >
                 {options.map((option) => (

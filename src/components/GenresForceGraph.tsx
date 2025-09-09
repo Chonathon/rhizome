@@ -14,7 +14,7 @@ interface GenresForceGraphProps {
     loading: boolean;
     show: boolean;
     dag: boolean;
-    clusterMode: GenreClusterMode;
+    clusterModes: GenreClusterMode[];
     colorMap?: Map<string, string>;
     // Selected genre id to highlight and focus
     selectedGenreId?: string;
@@ -22,7 +22,7 @@ interface GenresForceGraphProps {
 
 // Styling shared via graphStyle utils
 
-const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode, colorMap: externalColorMap, selectedGenreId }) => {
+const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId }) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
@@ -168,7 +168,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
                 // fgRef.current.centerAt(0, 0, 0);
             }
         }
-    }, [graphData, show, clusterMode]);
+    }, [graphData, show, clusterModes]);
 
     // Build adjacency for 1st-degree neighbors
     const neighborsById = useMemo(() => {

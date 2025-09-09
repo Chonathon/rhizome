@@ -5,6 +5,7 @@ import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
+import {mixColors} from "@/lib/utils";
 
 interface ArtistsForceGraphProps {
     artists: Artist[];
@@ -15,6 +16,7 @@ interface ArtistsForceGraphProps {
     // Selected artist id to highlight and focus
     selectedArtistId?: string;
     genreColorMap?: Map<string, string>;
+    getGenreRoots: (genreID: string) => string[];
     // Use curved links only when the number of rendered links is at or below this threshold.
     // If exceeded, links are straight (0 curvature) to improve performance.
     curvedLinksAbove?: number;
@@ -42,6 +44,7 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     show,
     selectedArtistId,
     genreColorMap,
+    getGenreRoots,
     curvedLinksAbove = 1500,
     curvedLinkCurvature = 0.2,
     hideLinksBelowZoom = 0.1,
@@ -204,11 +207,22 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     const colorById = useMemo(() => {
         const m = new Map<string, string>();
         preparedData.nodes.forEach(a => {
-            let color: string | undefined;
+            // let colors = [];
+            // if (genreColorMap && a.genres && a.genres.length) {
+            //     for (const g of a.genres) {
+            //         const color = genreColorMap.get(g);
+            //         if (color) colors.push(color);
+            //     }
+            // }
+            // if (colors.length) {
+            //     m.set(a.id, mixColors(colors));
+            // } else {
+            //     m.set(a.id, theme === 'dark' ? '#8a80ff' : '#4a4a4a')
+            // }
+            let color;
             if (genreColorMap && a.genres && a.genres.length) {
                 for (const g of a.genres) {
-                    const key = g.toLowerCase();
-                    color = genreColorMap.get(g) || genreColorMap.get(key);
+                    color = genreColorMap.get(g);
                     if (color) break;
                 }
             }

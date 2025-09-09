@@ -11,6 +11,7 @@ const url = envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
 const useGenres = () => {
     const [genres, setGenres] = useState<Genre[]>([]);
     const [genreLinks, setGenreLinks] = useState<NodeLink[]>([]);
+    const [genreRoots, setGenreRoots] = useState<string[]>([]);
     const [genresLoading, setGenresLoading] = useState(true);
     const [genresError, setGenresError] = useState<AxiosError>();
 
@@ -18,8 +19,10 @@ const useGenres = () => {
         setGenresLoading(true);
         try {
             const response = await axios.get(`${url}/genres`);
+            const rootsRes = await axios.get(`${url}/genres/tree/roots`);
             setGenres(response.data.genres);
             setGenreLinks(response.data.links);
+            setGenreRoots(rootsRes.data.rootGenres);
         } catch (err) {
             if (err instanceof AxiosError) {
                 setGenresError(err);
@@ -32,7 +35,7 @@ const useGenres = () => {
         fetchGenres();
     }, []);
 
-    return { genres, genreLinks, genresLoading, genresError };
+    return { genres, genreLinks, genreRoots, genresLoading, genresError };
 }
 
 export default useGenres;
