@@ -73,7 +73,8 @@ function App() {
     artistsLoading,
     artistsError,
     fetchAllArtists,
-    totalArtistsInDB
+    totalArtistsInDB,
+    fetchMultipleGenresArtists
   } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());

@@ -48,11 +48,28 @@ const useGenreArtists = (genreID?: string) => {
         }
     }
 
+    const fetchMultipleGenresArtists = async (genres: string[], filter?: string, amount?: number) => {
+        if (genres.length && filter && amount) {
+            setArtistsLoading(true);
+            try {
+                const response = await axios.post(`${url}/artists/${filter}/${amount}`, {genres: genres});
+                setArtists(response.data.artists);
+                setArtistLinks(response.data.links);
+                setTotalArtistsInDB(response.data.count);
+            } catch (err) {
+                if (err instanceof AxiosError) {
+                    setArtistsError(err);
+                }
+            }
+            setArtistsLoading(false);
+        }
+    }
+
     useEffect(() => {
         fetchArtists();
     }, [genreID]);
 
-    return { artists, artistsLoading, artistsError, artistLinks, fetchAllArtists, totalArtistsInDB };
+    return { artists, artistsLoading, artistsError, artistLinks, fetchAllArtists, totalArtistsInDB, fetchMultipleGenresArtists };
 }
 
 export default useGenreArtists;

@@ -65,10 +65,11 @@ export const genreHasChildren = (genre: Genre, genreClusterMode: GenreClusterMod
 }
 
 export const isTopLevelGenre = (genre: Genre, genreClusterModes: GenreClusterMode[]) => {
+  let isRoot = false;
   genreClusterModes.forEach((mode: GenreClusterMode) => {
-    if (genre[parentFieldMap[mode]].length && genre[childFieldMap[mode]].length > 0) return true;
+    if (genre[parentFieldMap[mode]].length > 0 && genre[childFieldMap[mode]].length === 0) isRoot = true;
   });
-  return false;
+  return isRoot;
 }
 
 export const parentFieldMap: {
