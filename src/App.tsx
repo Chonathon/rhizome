@@ -199,7 +199,7 @@ function App() {
   const resetAppState = () => {
     setGraph('genres');
     setCurrentGenres({nodes: genres, links: genreLinks.filter(link => {
-        DEFAULT_CLUSTER_MODE.includes(link.linkType as "subgenre" | "influence" | "fusion")
+        return DEFAULT_CLUSTER_MODE.includes(link.linkType as "subgenre" | "influence" | "fusion")
       })});
     setSelectedGenre(undefined);
     deselectArtist();
