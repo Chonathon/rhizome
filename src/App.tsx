@@ -73,7 +73,8 @@ function App() {
     artistsLoading,
     artistsError,
     fetchAllArtists,
-    totalArtistsInDB
+    totalArtistsInDB,
+    topArtists
   } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
@@ -459,6 +460,7 @@ function App() {
                 }}
                 onSelectGenre={onLinkedGenreClick}
                 allArtists={onShowAllArtists}
+                topArtists={topArtists}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}

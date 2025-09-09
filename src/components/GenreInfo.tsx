@@ -21,6 +21,7 @@ interface GenreInfoProps {
   onLinkedGenreClick: (genreID: string) => void;
   limitRelated?: number;
   onTopArtistClick?: (artist: Artist) => void;
+  topArtists?: Artist[];
 }
 
 export function GenreInfo({
@@ -34,6 +35,7 @@ export function GenreInfo({
   onLinkedGenreClick,
   limitRelated = 5,
   onTopArtistClick,
+    topArtists,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(true)
@@ -67,13 +69,6 @@ export function GenreInfo({
   const isDesktop = useMediaQuery("(min-width: 1200px)")
 
   const initial = selectedGenre?.name?.[0]?.toUpperCase() ?? '?'
-
-  // Top artists for this genre (by listeners)
-  const { artists: genreArtists } = useGenreArtists(selectedGenre?.id)
-  const topArtists = (genreArtists ?? [])
-    .slice()
-    .sort((a, b) => (b.listeners ?? 0) - (a.listeners ?? 0))
-    .slice(0, 8)
 
   // Prepare images for a bento carousel (desktop thumbnail area)
   const imageArtists = useMemo(
@@ -339,7 +334,7 @@ export function GenreInfo({
                   </div>
                 )}
                 {/* Top Artists */}
-                {topArtists.length > 0 && (
+                {topArtists && topArtists.length > 0 && (
                   <div className="flex flex-col gap-2">
                     <span className="text-md font-semibold">Top Artists</span>
                     <div className="flex flex-wrap items-center gap-1.5">
