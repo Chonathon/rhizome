@@ -3,9 +3,9 @@ import {fixWikiImageURL, formatNumber} from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
-import { SquareArrowUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SquareArrowUp, ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { Badge } from './ui/badge';
+import { Badge} from './ui/badge';
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 
 
@@ -407,6 +407,7 @@ export function GenreInfo({
                       </h3>
                     )}
               </div>
+              <div className='w-full h-full my-3 flex items-end'><Button className='w-full' variant={'outline'}><Flag />Report Incorrect Information</Button></div>
             </div>
           </div>
           </>
