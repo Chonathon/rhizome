@@ -306,12 +306,17 @@ export const buildGenreColorMap = (genres: Genre[], rootIDs: string[]) => {
         }
         break;
       default:
-        const colors: string[] = [];
-        genre.rootGenres.forEach((g) => {
-          const curRoot = rootColorMap.get(g);
-          if (curRoot) colors.push(curRoot);
-        });
-        colorMap.set(genre.id, mixColors(colors));
+        if (!genre.rootGenres || genre.rootGenres.length < 2) {
+          colorMap.set(genre.id, getSingletonColor(singletonCount));
+          singletonCount++;
+        } else {
+          const colors: string[] = [];
+          genre.rootGenres.forEach((g) => {
+            const curRoot = rootColorMap.get(g);
+            if (curRoot) colors.push(curRoot);
+          });
+          colorMap.set(genre.id, mixColors(colors));
+        }
     }
   });
   return colorMap;
