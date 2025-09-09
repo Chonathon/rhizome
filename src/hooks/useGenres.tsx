@@ -19,9 +19,9 @@ const useGenres = () => {
         setGenresLoading(true);
         try {
             const response = await axios.get(`${url}/genres`);
+            const rootsRes = await axios.get(`${url}/genres/tree/roots`);
             setGenres(response.data.genres);
             setGenreLinks(response.data.links);
-            const rootsRes = await axios.get(`${url}/genres/tree/roots`);
             setGenreRoots(rootsRes.data.rootGenres);
         } catch (err) {
             if (err instanceof AxiosError) {

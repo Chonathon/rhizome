@@ -121,9 +121,9 @@ function App() {
   }, [artists]);
 
   useEffect(() => {
-    setGenreColorMap(buildGenreColorMap(genres, genreRoots));
     const nodeCount = genres.length;
     onGenreNodeCountChange(nodeCount);
+    setGenreColorMap(buildGenreColorMap(genres, genreRoots));
   }, [genres, genreLinks]);
 
   useEffect(() => {
