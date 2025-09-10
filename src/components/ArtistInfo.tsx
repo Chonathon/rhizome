@@ -104,7 +104,7 @@ export function ArtistInfo({
             
 
             {/* Scrolling Container */}
-            <div data-drawer-scroll className="w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar">
+            <div data-drawer-scroll className="w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar bp-32 md:pb16">
               {/* Thumbnail */}
               <div
                 className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none ${
@@ -199,7 +199,22 @@ export function ArtistInfo({
                                   <SelectContent>
                                       <SelectGroup>
                                         <SelectLabel className="sr-only">Reasons</SelectLabel>
-                                        <SelectItem value="Inforrect information">Inforrect information</SelectItem>
+                                        <SelectItem disabled={!selectedArtist?.name} value="Name">
+                                          Name</SelectItem>
+                                        <SelectItem disabled={!selectedArtist?.image} value="Image">
+                                          Image</SelectItem>
+                                        <SelectItem disabled={!selectedArtist?.bio} value="Description">
+                                          Description</SelectItem>
+                                        <SelectItem disabled={!selectedArtist?.similar} value="Similar Artists">
+                                          Similar Artists</SelectItem>
+                                        <SelectItem disabled={!selectedArtist?.startDate} value="Founded Date">
+                                          Founded Date</SelectItem>
+                                        <SelectItem disabled={!selectedArtist?.tags} value="Tags">
+                                          Tags</SelectItem>
+                                        <SelectItem disabled={!selectedArtist?.genres} value="Genres">
+                                          Genres</SelectItem>
+                                        <SelectItem value="Other">
+                                          Other</SelectItem>
                                       </SelectGroup>
                                       
                                   </SelectContent>

@@ -160,9 +160,9 @@ export function GenreInfo({
         return (
           <>
             
-
+            {/* TODO: fix bug that's forcing us to use all this extra padding on the scrolling container */}
             {/* Scrolling Container */}
-            <div data-drawer-scroll className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar'>
+            <div data-drawer-scroll className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar pb-32 md:pb-16'>
             
             {/* Thumbnail / Bento Carousel */}
             <div className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none
@@ -239,7 +239,7 @@ export function GenreInfo({
               )}
             </div>
             {/* Content */}
-            <div className="w-full flex flex-col gap-6 ">
+            <div className="w-full flex flex-col gap-6">
 
                   <div className={`flex flex-row 
                     ${isDesktop ? 'gap-3' : 'items-center justify-between gap-3 mt-3'}`}>
@@ -407,7 +407,7 @@ export function GenreInfo({
                       </h3>
                     )}
               </div>
-              <div className='w-full h-full my-3 flex items-end'><Button className='w-full' variant={'outline'}><Flag />Report Incorrect Information</Button></div>
+              <div className='w-full pt-3 flex items-end'><Button className='w-full' variant={'outline'}><Flag />Report Incorrect Information</Button></div>
             </div>
           </div>
           </>
