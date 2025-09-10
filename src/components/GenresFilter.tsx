@@ -25,14 +25,14 @@ import {
 // Props control available genres, clustering mode, and external selection callbacks.
 export default function GenresFilter({
   genres = [],
-  genreClusterMode,
+  genreClusterModes,
   onParentClick,
   onParentDeselect,
   onParentSelect,
   graphType,
 }: {
   genres?: Genre[];
-  genreClusterMode: GenreClusterMode;
+  genreClusterModes: GenreClusterMode[];
   onParentClick: (genre: Genre) => void;
   onParentDeselect: (genre: Genre) => void;
   onParentSelect: (genre: Genre) => void;
@@ -40,8 +40,8 @@ export default function GenresFilter({
 }) {
   // Compute the set of top-level genres based on the current cluster mode.
   const topLevelGenres = useMemo(
-    () => genres.filter((g) => isTopLevelGenre(g, genreClusterMode)),
-    [genres, genreClusterMode]
+    () => genres.filter((g) => isTopLevelGenre(g, genreClusterModes)),
+    [genres, genreClusterModes]
   );
 
   // Default all collapsibles closed. Map is keyed by parent genre id.

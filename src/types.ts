@@ -14,7 +14,7 @@ export interface Genre extends BasicNode {
     named_after_area?: string[];
     used_instruments?: string[];
     badDataFlag?: boolean;
-    badDataReason?: string;
+    rootGenres: string[];
 }
 
 export interface Tag {
@@ -35,7 +35,6 @@ export interface Artist extends BasicNode {
     endDate?: string;
     image?: string;
     badDataFlag?: boolean;
-    badDataReason?: string;
 }
 
 export interface BasicNode {
@@ -46,7 +45,7 @@ export interface BasicNode {
 export interface NodeLink {
     source: string;
     target: string;
-    linkType?: LinkType;
+    linkType: LinkType;
 }
 
 export interface LastFMBio {
@@ -57,9 +56,9 @@ export interface LastFMBio {
 
 export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'parentGenre';
 
-export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion' | 'all';
+export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion';
 
-export type LinkType = 'subgenre' | 'influence' | 'fusion' | 'similar';
+export type LinkType = GenreClusterMode | 'similar';
 
 export interface GenreGraphData {
     nodes: Genre[];

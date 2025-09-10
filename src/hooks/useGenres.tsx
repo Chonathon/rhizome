@@ -5,11 +5,13 @@ import {envBoolean} from "@/lib/utils";
 
 const url = envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
     ? import.meta.env.VITE_LOCALHOST
-    : import.meta.env.VITE_SERVER_URL || `https://rhizome-server-production.up.railway.app`;
+    : (import.meta.env.VITE_SERVER_URL
+        || (import.meta.env.DEV ? '/api' : `https://rhizome-server-production.up.railway.app`));
 
 const useGenres = () => {
     const [genres, setGenres] = useState<Genre[]>([]);
     const [genreLinks, setGenreLinks] = useState<NodeLink[]>([]);
+    const [genreRoots, setGenreRoots] = useState<string[]>([]);
     const [genresLoading, setGenresLoading] = useState(true);
     const [genresError, setGenresError] = useState<AxiosError>();
     const [genresDataFlagLoading, setGenresDataFlagLoading] = useState(false);
@@ -19,8 +21,10 @@ const useGenres = () => {
         setGenresLoading(true);
         try {
             const response = await axios.get(`${url}/genres`);
+            const rootsRes = await axios.get(`${url}/genres/tree/roots`);
             setGenres(response.data.genres);
             setGenreLinks(response.data.links);
+            setGenreRoots(rootsRes.data.rootGenres);
         } catch (err) {
             if (err instanceof AxiosError) {
                 setGenresError(err);
@@ -50,7 +54,7 @@ const useGenres = () => {
         return success;
     }
 
-    return { genres, genreLinks, genresLoading, genresError, flagBadGenreData, genresDataFlagLoading, genresDataFlagError };
+    return { genres, genreLinks, genresLoading, genresError, flagBadGenreData, genresDataFlagLoading, genresDataFlagError, genreRoots };
 }
 
 export default useGenres;

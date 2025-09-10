@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useMediaQuery } from "react-responsive";
 import { useEffect, useCallback, useState } from "react";
 import { Badge } from "./ui/badge";
+import { Toaster, toast } from "sonner";
 
 interface ResetButtonProps {
     onClick: () => void;
@@ -40,5 +41,11 @@ export function ResetButton({ onClick, show }: ResetButtonProps) {
                           </Badge> */}
         </Button>
     </motion.div>
-    )
+          // toast("hello") {
+          //   <Button  onClick={onClick}></Button>
+          // }
+                
+              
+
+  )
 }

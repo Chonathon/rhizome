@@ -1,10 +1,12 @@
 import {Genre, GenreClusterMode, GenreGraphData, NodeLink} from "@/types";
-import React, {useEffect, useState, useRef, useMemo, use} from "react";
+import React, {useEffect, useRef, useMemo, useState} from "react";
 import ForceGraph, {ForceGraphMethods, GraphData, NodeObject} from "react-force-graph-2d";
 import {Loading} from "./Loading";
 import {forceCollide} from 'd3-force';
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
+import { buildGenreRootColorMap, clusterColors } from "@/lib/utils";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE } from "@/lib/graphStyle";
 
 interface GenresForceGraphProps {
     graphData?: GenreGraphData;
@@ -12,15 +14,21 @@ interface GenresForceGraphProps {
     loading: boolean;
     show: boolean;
     dag: boolean;
-    clusterMode: GenreClusterMode;
+    clusterModes: GenreClusterMode[];
+    colorMap?: Map<string, string>;
+    // Selected genre id to highlight and focus
+    selectedGenreId?: string;
 }
 
-// Helper to estimate label width based on name length and font size
-const LABEL_FONT_SIZE = 12;
-const estimateLabelWidth = (name: string) => name.length * (LABEL_FONT_SIZE * 0.6);
+// Styling shared via graphStyle utils
 
-const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterMode }) => {
+const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId }) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
+    const zoomRef = useRef<number>(1);
+    const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
+    const prevHoveredRef = useRef<string | undefined>(undefined);
+    const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
+    const animRafRef = useRef<number | null>(null);
     const { theme } = useTheme();
 
     const preparedData: GraphData<Genre, NodeLink> = useMemo(() => {
@@ -42,6 +50,103 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         return { nodes, links };
     }, [graphData]);
 
+    // Animate label y-offset on hover
+    useEffect(() => {
+        const prev = prevHoveredRef.current;
+        const next = hoveredId;
+        prevHoveredRef.current = hoveredId;
+
+        const targets = new Map<string, number>();
+        if (typeof prev === 'string' && prev !== next) targets.set(prev, 0);
+        if (typeof next === 'string') targets.set(next, 4);
+        if (targets.size === 0) return;
+
+        const ease = (c: number, t: number) => c + (t - c) * 0.2;
+        const step = () => {
+            let moving = false;
+            const map = yOffsetByIdRef.current;
+            targets.forEach((t, id) => {
+                const cur = map.get(id) || 0;
+                const nxt = ease(cur, t);
+                map.set(id, nxt);
+                if (Math.abs(nxt - t) > 0.1) moving = true;
+            });
+            fgRef.current?.refresh?.();
+            if (moving) animRafRef.current = requestAnimationFrame(step);
+            else {
+                targets.forEach((t, id) => yOffsetByIdRef.current.set(id, t));
+                animRafRef.current = null;
+                fgRef.current?.refresh?.();
+            }
+        };
+
+        if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
+        animRafRef.current = requestAnimationFrame(step);
+        return () => {
+            if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
+            animRafRef.current = null;
+        };
+    }, [hoveredId]);
+
+    // Compute a color per top-level parent and propagate to descendants, unless provided
+    const nodeColorById = useMemo(() => {
+        if (externalColorMap) return externalColorMap;
+        const map = new Map<string, string>();
+        if (!preparedData.nodes.length) return map;
+
+        // Build parents map: childId -> Set(parentIds)
+        const parents = new Map<string, Set<string>>();
+        preparedData.links.forEach(l => {
+            const src = typeof l.source === 'string' ? l.source : (l.source as any)?.id;
+            const tgt = typeof l.target === 'string' ? l.target : (l.target as any)?.id;
+            if (!src || !tgt) return;
+            if (!parents.has(tgt)) parents.set(tgt, new Set());
+            parents.get(tgt)!.add(src);
+            if (!parents.has(src)) parents.set(src, parents.get(src) || new Set());
+        });
+
+        // Identify root/top-level nodes (no incoming links)
+        const nodeIds = preparedData.nodes.map(n => n.id);
+        const indegree = new Map<string, number>(nodeIds.map(id => [id, 0]));
+        preparedData.links.forEach(l => {
+            const tgt = typeof l.target === 'string' ? l.target : (l.target as any)?.id;
+            if (tgt) indegree.set(tgt, (indegree.get(tgt) || 0) + 1);
+        });
+        const roots = nodeIds.filter(id => (indegree.get(id) || 0) === 0);
+
+        // Assign stable colors to roots (sorted by name for determinism)
+        const nodeById = new Map(preparedData.nodes.map(n => [n.id, n] as const));
+        const sortedRoots = roots
+            .map(id => nodeById.get(id)!)
+            .filter(Boolean)
+            .sort((a, b) => a.name.localeCompare(b.name));
+        sortedRoots.forEach((n, i) => {
+            map.set(n.id, clusterColors[i % clusterColors.length]);
+        });
+
+        // For others, walk up to nearest root to inherit color
+        const getRootColor = (id: string, hopGuard = 0): string | undefined => {
+            if (map.has(id)) return map.get(id);
+            //if (hopGuard > 1000) return undefined; // safety
+            const p = parents.get(id);
+            if (!p || p.size === 0) return undefined;
+            // deterministically choose the lexicographically smallest parent
+            const parentId = Array.from(p).sort()[0];
+            const color = getRootColor(parentId, hopGuard + 1);
+            if (color) map.set(id, color);
+            return color;
+        };
+        nodeIds.forEach(id => {
+            if (!map.has(id)) {
+                const c = getRootColor(id);
+                if (!c) map.set(id, theme === 'dark' ? '#8a80ff' : '#4a4a4a');
+            }
+        });
+
+        return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [externalColorMap, preparedData.nodes, preparedData.links, theme]);
+
     useEffect(() => {
         if (graphData) {
             if (fgRef.current) {
@@ -53,22 +158,50 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
                 // fgRef.current.d3Force('y', d3.forceY(0).strength(0.02));
                 fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(dag ? 0.01 : .1));
                 
-                const labelWidthBuffer = 20;
-                
                 fgRef.current.d3Force('collide', forceCollide((node => {
                     const genreNode = node as Genre;
                     const radius = calculateRadius(genreNode.artistCount);
-                    const labelWidth = estimateLabelWidth(genreNode.name);
-                    const labelHeight = LABEL_FONT_SIZE;
-                    const padding = 8; 
-                    return Math.max(radius + padding, Math.sqrt(labelWidth * labelWidth + labelHeight * labelHeight) / 2 + padding);
+                    return collideRadiusForNode(genreNode.name, radius);
                 })));
                 fgRef.current.d3Force('collide')?.strength(dag ? .02: .7); // Increased strength
                 fgRef.current.zoom(dag ? 0.25 : 0.18);
                 // fgRef.current.centerAt(0, 0, 0);
             }
         }
-    }, [graphData, show, clusterMode]);
+    }, [graphData, show, clusterModes]);
+
+    // Build adjacency for 1st-degree neighbors
+    const neighborsById = useMemo(() => {
+        const m = new Map<string, Set<string>>();
+        preparedData.nodes.forEach(n => m.set(n.id, new Set()));
+        preparedData.links.forEach(l => {
+            const s = typeof l.source === 'string' ? l.source : (l.source as any)?.id;
+            const t = typeof l.target === 'string' ? l.target : (l.target as any)?.id;
+            if (!s || !t) return;
+            if (!m.has(s)) m.set(s, new Set());
+            if (!m.has(t)) m.set(t, new Set());
+            m.get(s)!.add(t);
+            m.get(t)!.add(s);
+        });
+        return m;
+    }, [preparedData]);
+
+    // Focus viewport on selected genre
+    useEffect(() => {
+        if (!show || !selectedGenreId || !fgRef.current) return;
+        const node = preparedData.nodes.find(n => n.id === selectedGenreId) as (Genre & {x?: number; y?: number}) | undefined;
+        if (!node) return;
+        const centerToNode = () => {
+            const x = node.x ?? 0;
+            const y = node.y ?? 0;
+            fgRef.current!.centerAt(x, y, 600);
+            const targetK = Math.max(0.7, Math.min(2.0, (zoomRef.current || 1) < 1 ? 1.15 : zoomRef.current));
+            fgRef.current!.zoom(targetK, 600);
+        };
+        centerToNode();
+        const t = setTimeout(centerToNode, 300);
+        return () => clearTimeout(t);
+    }, [selectedGenreId, show, preparedData]);
 
     const calculateRadius = (artistCount: number) => {
         return 5 + Math.sqrt(artistCount) * .5;
@@ -80,23 +213,37 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
         const nodeX = node.x || 0;
         const nodeY = node.y || 0;
 
-        // Node styling
-        ctx.fillStyle = 'rgb(138, 128, 255)'; 
-        ctx.strokeStyle = 'rgb(138, 128, 255)';
+        // Node styling per parent color
+        const accent = nodeColorById.get(genreNode.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
+        const isSelected = !!selectedGenreId && genreNode.id === selectedGenreId;
+        const isNeighbor = !!selectedGenreId && neighborsById.get(selectedGenreId)?.has(genreNode.id);
+        const hasSelection = !!selectedGenreId;
+        const color = accent + (hasSelection && !isSelected && !isNeighbor ? '30' : 'ff');
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
         ctx.lineWidth = 0.5;
 
         // Draw node
-        ctx.beginPath();
-        ctx.arc(nodeX, nodeY, radius, 0, 2 * Math.PI, false);
-        ctx.fill();
-        ctx.stroke();
+        drawCircleNode(ctx, nodeX, nodeY, isSelected ? radius * 1.35 : radius, color);
 
-        // Text styling
-        ctx.font = `${LABEL_FONT_SIZE}px Geist`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillStyle = theme === "dark" ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 255, 0.8)';
-        ctx.fillText(genreNode.name, nodeX, nodeY + radius + 8);
+        if (isSelected) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(nodeX, nodeY, radius * 1.35 + 4, 0, 2 * Math.PI);
+            ctx.strokeStyle = accent; // ring matches node color
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Text styling with zoom-based fade (shared helper)
+        const k = zoomRef.current || 1;
+        let alpha = labelAlphaForZoom(k);
+        if (isSelected) alpha = 1;
+        else if (isNeighbor) alpha = Math.max(alpha, 0.85);
+        else if (hasSelection) alpha = Math.min(alpha, 0.2);
+        const yOffset = yOffsetByIdRef.current.get(genreNode.id) || 0;
+        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, theme, alpha, LABEL_FONT_SIZE, yOffset);
     };
 
     const nodePointerAreaPaint = (node: NodeObject, color: string, ctx: CanvasRenderingContext2D) => {
@@ -117,13 +264,28 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
              d3AlphaDecay={0.01}     // Length forces are active; smaller → slower cooling
              d3VelocityDecay={.75}    // How springy tugs feel; smaller → more inertia
             cooldownTime={20000} // How long to run the simulation before stopping
+            autoPauseRedraw={false}
             graphData={preparedData}
             dagMode={dag ? 'radialin' : undefined}
             dagLevelDistance={200}
             linkCurvature={dag ? 0 : 0.5}
-            linkColor={() => theme === "dark" ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.18)'}
-            linkWidth={1}
+            linkColor={(l: any) => {
+                const s = typeof l.source === 'string' ? l.source : l.source?.id;
+                const t = typeof l.target === 'string' ? l.target : l.target?.id;
+                const connectedToSelected = !!selectedGenreId && (s === selectedGenreId || t === selectedGenreId);
+                const base = (s && nodeColorById.get(s)) || (theme === 'dark' ? '#ffffff' : '#000000');
+                const alpha = selectedGenreId ? (connectedToSelected ? 'cc' : '30') : '80';
+                return base + alpha;
+            }}
+            linkWidth={(l: any) => {
+                if (!selectedGenreId) return 1;
+                const s = typeof l.source === 'string' ? l.source : l.source?.id;
+                const t = typeof l.target === 'string' ? l.target : l.target?.id;
+                return (s === selectedGenreId || t === selectedGenreId) ? 2.5 : 0.6;
+            }}
             onNodeClick={node => onNodeClick(node)}
+            onZoom={({ k }) => { zoomRef.current = k; }}
+            onNodeHover={(n: any) => setHoveredId(n ? n.id : undefined)}
             nodeCanvasObject={nodeCanvasObject}
             nodeCanvasObjectMode={() => 'replace'}
             nodeVal={(node: Genre) => calculateRadius(node.artistCount)}
