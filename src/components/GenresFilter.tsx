@@ -221,7 +221,7 @@ export default function GenresFilter({
               {selectedParents.map((genre) => (
                 <CommandItem
                   key={`sel-parent-${genre.id}`}
-                  value={genre.name}
+                  value={`selected-parent:${genre.id} ${genre.name}`}
                   onSelect={() => toggleParent(genre)}
                   className="flex items-center gap-2"
                 >
@@ -232,7 +232,7 @@ export default function GenresFilter({
               {selectedChildrenFlat.map(({ parent, child }) => (
                 <CommandItem
                   key={`sel-child-${parent.id}-${child.id}`}
-                  value={`${child.name} ${parent.name}`}
+                  value={`selected-child:${parent.id}:${child.id} ${child.name} ${parent.name}`}
                   onSelect={() => toggleChild(parent, child)}
                   className="flex items-center gap-2"
                 >
@@ -240,9 +240,10 @@ export default function GenresFilter({
                   <span>{child.name}</span>
                 </CommandItem>
               ))}
+            <CommandSeparator />
             </CommandGroup>
-          )}
-          <CommandSeparator />
+          )
+        }
           <CommandGroup>
             {topLevelGenres.map((genre) => {
               // In search mode, treat the list as flat: if the parent is selected, show a full check.
