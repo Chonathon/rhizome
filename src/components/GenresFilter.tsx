@@ -197,6 +197,13 @@ export default function GenresFilter({
         <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
         <CommandList ref={listRef} key={query.trim() ? "searching" : "empty"}>
           <CommandEmpty>No genres found.</CommandEmpty>
+          <CommandGroup className='sr-only' heading="Selections">
+            <CommandItem>
+
+
+
+            </CommandItem>
+          </CommandGroup>
           <CommandGroup>
             {topLevelGenres.map((genre) => {
               // In search mode, treat the list as flat: if the parent is selected, show a full check.
