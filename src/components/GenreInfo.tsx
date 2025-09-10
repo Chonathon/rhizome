@@ -429,10 +429,12 @@ export function GenreInfo({
                 </Alert>
               )}
               <div className='w-full pt-3 flex items-end'>
-                <Button className='w-full' variant={'outline'} onClick={() => setReportDialogOpen(true)}>
+                <Button className='self-start' variant={'outline'} size={'lg'} onClick={() => setReportDialogOpen(true)}>
                   <Flag />Report Incorrect Information
                 </Button>
               </div>
+
+              {/* Report Incorrect Info Dialog */}
               <ReportIncorrectInfoDialog
                 open={reportDialogOpen}
                 onOpenChange={setReportDialogOpen}

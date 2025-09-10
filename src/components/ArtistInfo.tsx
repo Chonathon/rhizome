@@ -268,7 +268,7 @@ export function ArtistInfo({
                 
 
                 {/* Similar Artists */}
-                {selectedArtist?.similar && selectedArtist.similar.length > 0 && (
+                {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
                   <div className="flex flex-col gap-2">
                     <span className="text-md font-semibold">Similar Artists</span>
                     <div className="flex flex-wrap items-center gap-1.5">
