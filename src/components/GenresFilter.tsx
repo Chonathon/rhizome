@@ -19,6 +19,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator
 } from "@/components/ui/command";
 import { isTopLevelGenre, parentFieldMap, childFieldMap } from "@/lib/utils";
 
@@ -160,6 +161,24 @@ export default function GenresFilter({
     }, 0);
   }, [topLevelGenres, parentSelected, selectedChildren]);
 
+  // Flat selected lists for the Selected group
+  const selectedParents = useMemo(
+    () => topLevelGenres.filter((g) => parentSelected[g.id]),
+    [topLevelGenres, parentSelected]
+  );
+
+  const selectedChildrenFlat = useMemo(
+    () =>
+      topLevelGenres.flatMap((parent) => {
+        const set = selectedChildren[parent.id];
+        if (!set || set.size === 0) return [] as { parent: Genre; child: Genre }[];
+        return getChildGenres(parent)
+          .filter((c) => set.has(c.id))
+          .map((child) => ({ parent, child }));
+      }),
+    [topLevelGenres, selectedChildren]
+  );
+
   if (graphType !== "artists") return null;
 
   return (
@@ -197,13 +216,33 @@ export default function GenresFilter({
         <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
         <CommandList ref={listRef} key={query.trim() ? "searching" : "empty"}>
           <CommandEmpty>No genres found.</CommandEmpty>
-          <CommandGroup className='sr-only' heading="Selections">
-            <CommandItem>
-
-
-
-            </CommandItem>
-          </CommandGroup>
+          {(selectedParents.length > 0 || selectedChildrenFlat.length > 0) && (
+            <CommandGroup heading="Selected">
+              {selectedParents.map((genre) => (
+                <CommandItem
+                  key={`sel-parent-${genre.id}`}
+                  value={genre.name}
+                  onSelect={() => toggleParent(genre)}
+                  className="flex items-center gap-2"
+                >
+                  <Check className="opacity-100" />
+                  <span>{genre.name}</span>
+                </CommandItem>
+              ))}
+              {selectedChildrenFlat.map(({ parent, child }) => (
+                <CommandItem
+                  key={`sel-child-${parent.id}-${child.id}`}
+                  value={`${child.name} ${parent.name}`}
+                  onSelect={() => toggleChild(parent, child)}
+                  className="flex items-center gap-2"
+                >
+                  <Check className="opacity-100" />
+                  <span>{child.name}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+          <CommandSeparator />
           <CommandGroup>
             {topLevelGenres.map((genre) => {
               // In search mode, treat the list as flat: if the parent is selected, show a full check.
