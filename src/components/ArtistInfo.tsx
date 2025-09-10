@@ -13,26 +13,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem
 } from "@/components/ui/dropdown-menu"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Textarea } from "./ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Label } from "./ui/label";
+import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 
 
@@ -62,6 +43,39 @@ export function ArtistInfo({
   const isDesktop = useMediaQuery("(min-width: 1200px)");
   // Track bad data report state; must be declared before any conditional returns
   const [badDataFlag, setBadDataFlag] = useState(false);
+  const artistReasons = useMemo(
+    () => [
+      { value: "Name", label: "Name", disabled: !selectedArtist?.name },
+      { value: "Image", label: "Image", disabled: !selectedArtist?.image },
+      { value: "Description", label: "Description", disabled: !selectedArtist?.bio },
+      {
+        value: "Similar Artists",
+        label: "Similar Artists",
+        disabled: !(selectedArtist?.similar && selectedArtist.similar.length > 0),
+      },
+      { value: "Founded Date", label: "Founded Date", disabled: !selectedArtist?.startDate },
+      {
+        value: "Tags",
+        label: "Tags",
+        disabled: !(selectedArtist?.tags && selectedArtist.tags.length > 0),
+      },
+      {
+        value: "Genres",
+        label: "Genres",
+        disabled: !(selectedArtist?.genres && selectedArtist.genres.length > 0),
+      },
+      { value: "Other", label: "Other" },
+    ],
+    [
+      selectedArtist?.name,
+      selectedArtist?.image,
+      selectedArtist?.bio,
+      selectedArtist?.similar,
+      selectedArtist?.startDate,
+      selectedArtist?.tags,
+      selectedArtist?.genres,
+    ]
+  );
 
   const onDismiss = () => {
     deselectArtist();
@@ -174,92 +188,17 @@ export function ArtistInfo({
                             </DropdownMenuItem>
                          </DropdownMenuContent>
                        </DropdownMenu>
-
-                        {/* Report Dialog */}
-                        <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
-                          <DialogContent className="bg-sidebar backdrop-blur-sm">
-                              <DialogHeader>                
-                                  <DialogTitle>Report Incorrect Information</DialogTitle>
-                                  <DialogDescription>Please let us know what information about this artist seems incorrect. 
-                                  Select a reason and provide any extra details if you’d like.
-                                  </DialogDescription>
-                              </DialogHeader>
-                            <form className="grid gap-4 py-3">
-                              <div className="grid gap-2">
-                                <label
-                                  htmlFor="reason"
-                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                  Reason
-                                </label>
-                                <Select>
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select a reason" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                      <SelectGroup>
-                                        <SelectLabel className="sr-only">Reasons</SelectLabel>
-                                        <SelectItem disabled={!selectedArtist?.name} value="Name">
-                                          Name</SelectItem>
-                                        <SelectItem disabled={!selectedArtist?.image} value="Image">
-                                          Image</SelectItem>
-                                        <SelectItem disabled={!selectedArtist?.bio} value="Description">
-                                          Description</SelectItem>
-                                        <SelectItem disabled={!selectedArtist?.similar} value="Similar Artists">
-                                          Similar Artists</SelectItem>
-                                        <SelectItem disabled={!selectedArtist?.startDate} value="Founded Date">
-                                          Founded Date</SelectItem>
-                                        <SelectItem disabled={!selectedArtist?.tags} value="Tags">
-                                          Tags</SelectItem>
-                                        <SelectItem disabled={!selectedArtist?.genres} value="Genres">
-                                          Genres</SelectItem>
-                                        <SelectItem value="Other">
-                                          Other</SelectItem>
-                                      </SelectGroup>
-                                      
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="grid gap-2">
-                                <Label
-                                  htmlFor="details"
-                                  className="text-sm font-medium"
-                                >
-                                Details (optional)
-                                </Label> 
-                                <Textarea
-                                 id="details"
-                                placeholder="Additional details...">
-                                   
-                                </Textarea>
-                              </div>
-                            </form>
-                            <DialogFooter>
-                              <DialogClose asChild>
-                                <Button
-                                  variant="outline"
-                                  >
-                                  Cancel
-                                </Button>
-                              </DialogClose>
-                              <DialogClose asChild>
-                                <Button
-                                  type="submit"
-                                onClick={() => {  
-                                  toast.success("Thanks for the heads up. We'll look into it soon!"); setReportDialogOpen(false);
-                                  setBadDataFlag(true);
-                                
-                                }}
-                                  >
-                                  Submit
-                                </Button>
-                              </DialogClose>
-                            </DialogFooter>
-
-
-
-                          </DialogContent>
-                        </Dialog>
+                        
+                        <ReportIncorrectInfoDialog
+                          open={reportDialogOpen}
+                          onOpenChange={setReportDialogOpen}
+                          reasons={artistReasons}
+                          description="Please let us know what information about this artist seems incorrect. Select a reason and provide any extra details if you’d like."
+                          onSubmit={() => {
+                            toast.success("Thanks for the heads up. We'll look into it soon!");
+                            setBadDataFlag(true);
+                          }}
+                        />
                      </div>
                 {/* Description */}
                 {isDesktop && (
@@ -271,7 +210,6 @@ export function ArtistInfo({
                   </p>
                 )}
                   </div>
-                  {badDataFlag && <Alert><Info /><AlertDescription>Hmm… something about this artist’s info doesn’t sound quite right. We’re checking it out</AlertDescription></Alert>}
                    {!isDesktop && (
                      <p
                      className={`break-words text-muted-foreground ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
@@ -375,6 +313,9 @@ export function ArtistInfo({
                 {artistError && (
                   <p>Can’t find {selectedArtist?.name} 🤔</p>
                 )}
+                
+              {/* Bad Data Flag */}
+              {badDataFlag && <Alert><Info /><AlertDescription>Hmm… something about this artist’s info doesn’t sound quite right. We’re checking it out</AlertDescription></Alert>}
               </div>
             </div>
           </>

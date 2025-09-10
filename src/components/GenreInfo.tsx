@@ -3,10 +3,13 @@ import {fixWikiImageURL, formatNumber} from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
-import { SquareArrowUp, ChevronLeft, ChevronRight, Flag } from 'lucide-react';
+import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge} from './ui/badge';
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
+import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
+import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 
 
@@ -37,6 +40,8 @@ export function GenreInfo({
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(true)
+  const [reportDialogOpen, setReportDialogOpen] = useState(false)
+  const [badDataFlag, setBadDataFlag] = useState(false)
 
   const onDismiss = () => {
     deselectGenre()
@@ -120,6 +125,12 @@ export function GenreInfo({
     setMCanPrev(scrollLeft > 1)
     setMCanNext(scrollLeft < maxScrollLeft - 1)
   }
+
+  // Reset report state when genre changes
+  useEffect(() => {
+    setBadDataFlag(false)
+    setReportDialogOpen(false)
+  }, [selectedGenre?.id])
 
   // Reset carousel scroll position when a new genre is selected
   useEffect(() => {
@@ -407,7 +418,56 @@ export function GenreInfo({
                       </h3>
                     )}
               </div>
-              <div className='w-full pt-3 flex items-end'><Button className='w-full' variant={'outline'}><Flag />Report Incorrect Information</Button></div>
+
+              {/* Bad Data Flag */}
+              {badDataFlag && (
+                <Alert>
+                  <Info />
+                  <AlertDescription>
+                    Hmm… something about this genre’s info doesn’t sound quite right. We’re checking it out
+                  </AlertDescription>
+                </Alert>
+              )}
+              <div className='w-full pt-3 flex items-end'>
+                <Button className='w-full' variant={'outline'} onClick={() => setReportDialogOpen(true)}>
+                  <Flag />Report Incorrect Information
+                </Button>
+              </div>
+              <ReportIncorrectInfoDialog
+                open={reportDialogOpen}
+                onOpenChange={setReportDialogOpen}
+                reasons={[
+                  { value: 'Name', label: 'Name', disabled: !selectedGenre?.name },
+                  { value: 'Description', label: 'Description', disabled: !selectedGenre?.description },
+                  {
+                    value: 'Relationships',
+                    label: 'Related/Subgenres/Influences',
+                    disabled: !(
+                      (selectedGenre?.subgenres?.length ?? 0) > 0 ||
+                      (selectedGenre?.subgenre_of?.length ?? 0) > 0 ||
+                      (selectedGenre?.influenced_by?.length ?? 0) > 0 ||
+                      (selectedGenre?.influenced_genres?.length ?? 0) > 0 ||
+                      (selectedGenre?.fusion_of?.length ?? 0) > 0
+                    ),
+                  },
+                  { value: 'Top Artists', label: 'Top Artists', disabled: !(topArtists?.length > 0) },
+                  {
+                    value: 'Stats',
+                    label: 'Stats',
+                    disabled: !(
+                      typeof selectedGenre?.artistCount === 'number' ||
+                      typeof selectedGenre?.totalListeners === 'number' ||
+                      typeof selectedGenre?.totalPlays === 'number'
+                    ),
+                  },
+                  { value: 'Other', label: 'Other' },
+                ]}
+                description="Please let us know what information about this genre seems incorrect. Select a reason and provide any extra details if you’d like."
+                onSubmit={() => {
+                  toast.success("Thanks for the heads up. We'll look into it soon!");
+                  setBadDataFlag(true);
+                }}
+              />
             </div>
           </div>
           </>
