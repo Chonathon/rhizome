@@ -1,6 +1,6 @@
 import { BasicNode, Genre, Artist } from '@/types'
 import {fixWikiImageURL, formatNumber} from '@/lib/utils'
-import { useEffect, useMemo, useRef, useState } from "react"
+import { use, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
 import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info } from 'lucide-react';
@@ -41,12 +41,12 @@ export function GenreInfo({
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(true)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
-  const [badDataFlag, setBadDataFlag] = useState(false)
-
+  
+  
   const onDismiss = () => {
     deselectGenre()
   }
-
+  
   const relatedLine = (label: string, nodes?: BasicNode[]) => {
     if (!nodes || nodes.length === 0) return null
     const items = nodes.slice(0, limitRelated)
@@ -68,23 +68,51 @@ export function GenreInfo({
       </div>
     )
   }
-
+  
   const isDesktop = useMediaQuery("(min-width: 1200px)")
-
+  
   const initial = selectedGenre?.name?.[0]?.toUpperCase() ?? '?'
-
+  
   // Top artists for this genre (by listeners)
   const { artists: genreArtists } = useGenreArtists(selectedGenre?.id)
   const topArtists = (genreArtists ?? [])
-    .slice()
-    .sort((a, b) => (b.listeners ?? 0) - (a.listeners ?? 0))
-    .slice(0, 8)
-
+  .slice()
+  .sort((a, b) => (b.listeners ?? 0) - (a.listeners ?? 0))
+  .slice(0, 8)
+  
   // Prepare images for a bento carousel (desktop thumbnail area)
   const imageArtists = useMemo(
     () => (topArtists ?? []).filter(a => typeof a.image === 'string' && a.image.trim().length > 0),
     [topArtists]
   )
+
+  const [badDataFlag, setBadDataFlag] = useState(false)
+  const genreReasons = useMemo(() => [
+                  { value: 'Name', label: 'Name', disabled: !selectedGenre?.name },
+                  { value: 'Description', label: 'Description', disabled: !selectedGenre?.description },
+                  {
+                    value: 'Relationships',
+                    label: 'Related/Subgenres/Influences',
+                    disabled: !(
+                      (selectedGenre?.subgenres?.length ?? 0) > 0 ||
+                      (selectedGenre?.subgenre_of?.length ?? 0) > 0 ||
+                      (selectedGenre?.influenced_by?.length ?? 0) > 0 ||
+                      (selectedGenre?.influenced_genres?.length ?? 0) > 0 ||
+                      (selectedGenre?.fusion_of?.length ?? 0) > 0
+                    ),
+                  },
+                  { value: 'Top Artists', label: 'Top Artists', disabled: !(topArtists?.length > 0) },
+                  {
+                    value: 'Stats',
+                    label: 'Stats',
+                    disabled: !(
+                      typeof selectedGenre?.artistCount === 'number' ||
+                      typeof selectedGenre?.totalListeners === 'number' ||
+                      typeof selectedGenre?.totalPlays === 'number'
+                    ),
+                  },
+                  { value: 'Other', label: 'Other' },
+                ], [selectedGenre?.name, selectedGenre?.description, selectedGenre?.subgenres, selectedGenre?.subgenre_of, selectedGenre?.influenced_by, selectedGenre?.influenced_genres, selectedGenre?.fusion_of, topArtists, selectedGenre?.artistCount, selectedGenre?.totalListeners, selectedGenre?.totalPlays])
   const chunk = <T,>(arr: T[], size: number) => Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size))
   const slides = useMemo(() => chunk(imageArtists, 3), [imageArtists])
   const scrollerRef = useRef<HTMLDivElement | null>(null)
@@ -126,7 +154,7 @@ export function GenreInfo({
     setMCanNext(scrollLeft < maxScrollLeft - 1)
   }
 
-  // Reset report state when genre changes
+  // TODO: REMOVE AFTER IMPLEMENTING BACKEND. Resets the bad data flag when switching artists so it stays scoped
   useEffect(() => {
     setBadDataFlag(false)
     setReportDialogOpen(false)
@@ -438,32 +466,7 @@ export function GenreInfo({
               <ReportIncorrectInfoDialog
                 open={reportDialogOpen}
                 onOpenChange={setReportDialogOpen}
-                reasons={[
-                  { value: 'Name', label: 'Name', disabled: !selectedGenre?.name },
-                  { value: 'Description', label: 'Description', disabled: !selectedGenre?.description },
-                  {
-                    value: 'Relationships',
-                    label: 'Related/Subgenres/Influences',
-                    disabled: !(
-                      (selectedGenre?.subgenres?.length ?? 0) > 0 ||
-                      (selectedGenre?.subgenre_of?.length ?? 0) > 0 ||
-                      (selectedGenre?.influenced_by?.length ?? 0) > 0 ||
-                      (selectedGenre?.influenced_genres?.length ?? 0) > 0 ||
-                      (selectedGenre?.fusion_of?.length ?? 0) > 0
-                    ),
-                  },
-                  { value: 'Top Artists', label: 'Top Artists', disabled: !(topArtists?.length > 0) },
-                  {
-                    value: 'Stats',
-                    label: 'Stats',
-                    disabled: !(
-                      typeof selectedGenre?.artistCount === 'number' ||
-                      typeof selectedGenre?.totalListeners === 'number' ||
-                      typeof selectedGenre?.totalPlays === 'number'
-                    ),
-                  },
-                  { value: 'Other', label: 'Other' },
-                ]}
+                reasons={genreReasons}
                 description="Please let us know what information about this genre seems incorrect. Select a reason and provide any extra details if you’d like."
                 onSubmit={() => {
                   toast.success("Thanks for the heads up. We'll look into it soon!");
