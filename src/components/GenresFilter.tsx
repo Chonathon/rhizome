@@ -10,7 +10,7 @@ import {
   CollapsibleTrigger,
 } from "@radix-ui/react-collapsible";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
 import { useTriStateSelection } from "@/hooks/useTriStateSelection";
 import {
   Command,
@@ -100,6 +100,8 @@ export default function GenresFilter({
   // When searching, auto-open parents that match or have matching children.
   // Clearing the query resets to default closed state.
   const listRef = useRef<HTMLDivElement | null>(null);
+  const selectedGroupRef = useRef<HTMLDivElement | null>(null);
+  const prevSelectedHeightRef = useRef<number>(0);
 
   // Computed: Any selection active?
   const hasAnySelection = topLevelGenres.some((g) => parentSelected[g.id] ?? false);
@@ -179,6 +181,21 @@ export default function GenresFilter({
     [topLevelGenres, selectedChildren]
   );
 
+  // Preserve scroll position when the Selected group grows/shrinks above the list.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const prevHeight = prevSelectedHeightRef.current || 0;
+    const nextHeight = selectedGroupRef.current?.offsetHeight || 0;
+    const delta = nextHeight - prevHeight;
+
+    if (delta !== 0 && list.scrollTop > 0) {
+      // Adjust scrollTop by the height delta added/removed above current view
+      list.scrollTop = list.scrollTop + delta;
+    }
+    prevSelectedHeightRef.current = nextHeight;
+  }, [selectedParents.length, selectedChildrenFlat.length, query]);
+
   if (graphType !== "artists") return null;
 
   return (
@@ -218,7 +235,8 @@ export default function GenresFilter({
           <CommandEmpty>No genres found.</CommandEmpty>
           {/* Selected Group */}
           {(selectedParents.length > 0 || selectedChildrenFlat.length > 0) && (
-            <CommandGroup aria-labelledby="Selected Genres">
+            <div ref={selectedGroupRef}>
+            <CommandGroup className='bg-accent/40' aria-labelledby="Selected Genres">
               {selectedParents.map((genre) => (
                 <CommandItem
                   key={`sel-parent-${genre.id}`}
@@ -242,8 +260,9 @@ export default function GenresFilter({
                 </CommandItem>
               ))}
               <Button className="mt-1 mb-2" size={'sm'} variant={'ghost'} onClick={() => clearAll()}>Clear</Button>
-            <CommandSeparator />
+            {/* <CommandSeparator /> */}
             </CommandGroup>
+            </div>
           )
         }
           <CommandGroup>
