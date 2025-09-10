@@ -358,9 +358,9 @@ function App() {
       setSelectedGenre(updatedGenre);
       // 2 options for synchronizing flagged state:
       // this doesn't set genres, so a browser refresh is needed if genres are filtered after this to reflect the genre's flag
-      setCurrentGenres({ nodes: [...currentGenres.nodes.filter(n => n.id !== updatedGenre.id), updatedGenre], links: currentGenres.links });
+      // setCurrentGenres({ nodes: [...currentGenres.nodes.filter(n => n.id !== updatedGenre.id), updatedGenre], links: currentGenres.links });
       // sets genres but triggers a larger chain of refreshes
-      //setGenres([...genres.filter(g => g.id !== updatedGenre.id), updatedGenre]);
+      setGenres([...genres.filter(g => g.id !== updatedGenre.id), updatedGenre]);
     }
     return success;
   }
