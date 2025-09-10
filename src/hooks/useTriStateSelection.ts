@@ -51,9 +51,11 @@ export function useTriStateSelection<T extends { id: string }>(
     const children = getChildren(parent);
     const sel = selectedChildren[parent.id] ?? new Set<string>();
     const isParent = parentSelected[parent.id] ?? false;
-    if (!isParent) return "unchecked";
-    if (sel.size === children.length || sel.size === 0) return "checked";
-    return "indeterminate";
+    // If parent explicitly selected, show checked.
+    if (isParent) return "checked";
+    // Otherwise, any child selection indicates indeterminate.
+    if (sel.size > 0) return "indeterminate";
+    return "unchecked";
   };
 
   const toggleParent = (parent: T) => {
@@ -79,22 +81,16 @@ export function useTriStateSelection<T extends { id: string }>(
   };
 
   const toggleChild = (parent: T, child: T) => {
-    let newSize = 0;
     setSelectedChildren((prev) => {
       const copy = { ...prev };
       const set = new Set<string>(copy[parent.id] ?? []);
       if (set.has(child.id)) set.delete(child.id);
       else set.add(child.id);
       copy[parent.id] = set;
-      newSize = set.size;
       return copy;
     });
 
-    // If any child is selected, ensure the parent is marked selected.
-    if (newSize > 0) {
-      setParentSelected((prev) => ({ ...prev, [parent.id]: true }));
-    }
-
+    // Do not auto-select the parent; let tri-state reflect children.
     onChildClick?.(child, parent);
   };
 
@@ -108,4 +104,3 @@ export function useTriStateSelection<T extends { id: string }>(
     toggleChild,
   } as const;
 }
-

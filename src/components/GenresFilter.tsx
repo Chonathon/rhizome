@@ -154,7 +154,7 @@ export default function GenresFilter({
     return selectedChildren[parent.id]?.has(childId) ?? false;
   };
 
-  // Show count of selected parents + selected children next to the trigger button.
+  // Show count of selected parents + selected children next to the clear button.
   const totalSelected = useMemo(() => {
     return topLevelGenres.reduce((acc, g) => {
       const parentCount = parentSelected[g.id] ? 1 : 0;
