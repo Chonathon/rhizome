@@ -20,22 +20,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-export interface ReportReason {
-  value: string;
-  label: string;
-  disabled?: boolean;
-}
+import {ReportReason} from "@/types";
 
 interface ReportIncorrectInfoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   reasons: ReportReason[];
-  onSubmit: (data: { reason: string | null; details: string }) => void;
+  onSubmit: (reason: string, details: string ) => void;
   title?: string;
   description?: string;
   submitLabel?: string;
   cancelLabel?: string;
+  descriptionLimit?: number;
 }
 
 export function ReportIncorrectInfoDialog({
@@ -48,15 +44,18 @@ export function ReportIncorrectInfoDialog({
     "Please let us know what seems incorrect. Select a reason and provide any extra details if you’d like.",
   submitLabel = "Submit",
   cancelLabel = "Cancel",
+    descriptionLimit = 150,
 }: ReportIncorrectInfoDialogProps) {
   const [reason, setReason] = useState<string | null>(null);
   const [details, setDetails] = useState("");
 
   const handleSubmit = () => {
-    onSubmit({ reason, details });
-    onOpenChange(false);
-    setReason(null);
-    setDetails("");
+    if (reason) {
+      onSubmit(reason, details);
+      onOpenChange(false);
+      setReason(null);
+      setDetails("");
+    }
   };
 
   return (
@@ -112,7 +111,7 @@ export function ReportIncorrectInfoDialog({
             <Button variant="outline">{cancelLabel}</Button>
           </DialogClose>
           <DialogClose asChild>
-            <Button type="submit" onClick={handleSubmit} disabled={!reason}>
+            <Button type="submit" onClick={handleSubmit} disabled={!reason || details.length > descriptionLimit}>
               {submitLabel}
             </Button>
           </DialogClose>

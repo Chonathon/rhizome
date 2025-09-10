@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {Genre, NodeLink} from "@/types";
+import {BadDataReport, Genre, NodeLink} from "@/types";
 import axios, {AxiosError} from "axios";
 import {envBoolean} from "@/lib/utils";
 
@@ -37,11 +37,11 @@ const useGenres = () => {
         fetchGenres();
     }, []);
 
-    const flagBadGenreData = async (genreID: string, reason = 'none') => {
+    const flagBadGenreData = async (report: BadDataReport) => {
         setGenresDataFlagLoading(true);
         let success = false;
         try {
-            const response = await axios.put(`${url}/genres/bdflag/${genreID}/${reason}`);
+            const response = await axios.post(`${url}/genres/baddata/report`, { report: report });
             if (response.status === 200) {
                 success = true;
             }
@@ -54,7 +54,17 @@ const useGenres = () => {
         return success;
     }
 
-    return { genres, genreLinks, genresLoading, genresError, flagBadGenreData, genresDataFlagLoading, genresDataFlagError, genreRoots };
+    return {
+        genres,
+        genreLinks,
+        genresLoading,
+        genresError,
+        flagBadGenreData,
+        genresDataFlagLoading,
+        genresDataFlagError,
+        genreRoots,
+        setGenres,
+    };
 }
 
 export default useGenres;

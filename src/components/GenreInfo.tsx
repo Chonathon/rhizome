@@ -24,7 +24,7 @@ interface GenreInfoProps {
   onLinkedGenreClick: (genreID: string) => void;
   limitRelated?: number;
   onTopArtistClick?: (artist: Artist) => void;
-  onBadDataClick: () => void;
+  onBadDataSubmit: (id: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => Promise<boolean>;
   topArtists?: Artist[];
 }
 
@@ -39,7 +39,7 @@ export function GenreInfo({
   onLinkedGenreClick,
   limitRelated = 5,
   onTopArtistClick,
-    onBadDataClick,
+    onBadDataSubmit,
     topArtists,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
@@ -83,7 +83,6 @@ export function GenreInfo({
     [topArtists]
   )
 
-  const [badDataFlag, setBadDataFlag] = useState(false)
   const genreReasons = useMemo(() => [
                   { value: 'Name', label: 'Name', disabled: !selectedGenre?.name },
                   { value: 'Description', label: 'Description', disabled: !selectedGenre?.description },
@@ -98,7 +97,7 @@ export function GenreInfo({
                       (selectedGenre?.fusion_of?.length ?? 0) > 0
                     ),
                   },
-                  { value: 'Top Artists', label: 'Top Artists', disabled: !(topArtists?.length > 0) },
+                  { value: 'Top Artists', label: 'Top Artists', disabled: !topArtists || !topArtists.length },
                   {
                     value: 'Stats',
                     label: 'Stats',
@@ -151,11 +150,14 @@ export function GenreInfo({
     setMCanNext(scrollLeft < maxScrollLeft - 1)
   }
 
-  // TODO: REMOVE AFTER IMPLEMENTING BACKEND. Resets the bad data flag when switching artists so it stays scoped
-  useEffect(() => {
-    setBadDataFlag(false)
-    setReportDialogOpen(false)
-  }, [selectedGenre?.id])
+  const onSubmitBadData = async (reason: string, details?: string) => {
+    if (selectedGenre) {
+      const success = await onBadDataSubmit(selectedGenre.id, reason, 'genre', selectedGenre.badDataFlag || false, details);
+      if (success) {
+        toast.success("Thanks for the heads up. We'll look into it soon!");
+      }
+    }
+  }
 
   // Reset carousel scroll position when a new genre is selected
   useEffect(() => {
@@ -445,7 +447,7 @@ export function GenreInfo({
               </div>
 
               {/* Bad Data Flag */}
-              {badDataFlag && (
+              {selectedGenre && selectedGenre.badDataFlag && (
                 <Alert>
                   <Info />
                   <AlertDescription>
@@ -465,10 +467,7 @@ export function GenreInfo({
                 onOpenChange={setReportDialogOpen}
                 reasons={genreReasons}
                 description="Please let us know what information about this genre seems incorrect. Select a reason and provide any extra details if you’d like."
-                onSubmit={() => {
-                  toast.success("Thanks for the heads up. We'll look into it soon!");
-                  setBadDataFlag(true);
-                }}
+                onSubmit={(reason, details) => onSubmitBadData(reason, details)}
               />
             </div>
           </div>

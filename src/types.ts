@@ -72,3 +72,18 @@ type KeysOfType<T, V> = {
 export type GenreNodeLimitType = KeysOfType<Genre, number>;
 
 export type ArtistNodeLimitType = KeysOfType<Artist, number>;
+
+export interface BadDataReport {
+    userID: string;
+    type: 'artist' | 'genre';
+    itemID: string;
+    reason: string;
+    resolved: boolean;
+    details?: string;
+}
+
+export interface ReportReason {
+    value: string;
+    label: string;
+    disabled?: boolean;
+}

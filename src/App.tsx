@@ -8,7 +8,7 @@ import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Artist, ArtistNodeLimitType,
+  Artist, ArtistNodeLimitType, BadDataReport,
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
@@ -75,7 +75,7 @@ function App() {
       genreRoots,
     flagBadGenreData,
     genresDataFlagLoading,
-    genresDataFlagError
+      setGenres,
   } = useGenres();
   const {
     artists,
@@ -341,6 +341,54 @@ function App() {
     }
     return [];
   }
+  const onBadDataGenreSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
+    //TODO: use actual user ID when accounts are implemented
+    const userID = 'dev';
+    const report: BadDataReport = {
+      userID,
+      itemID,
+      reason,
+      type,
+      resolved: false,
+      details,
+    }
+    const success = await flagBadGenreData(report);
+    if (success && !hasFlag && selectedGenre && currentGenres) {
+      const updatedGenre = {...selectedGenre, badDataFlag: true};
+      setSelectedGenre(updatedGenre);
+      // 2 options for synchronizing flagged state:
+      // this doesn't set genres, so a browser refresh is needed if genres are filtered after this to reflect the genre's flag
+      setCurrentGenres({ nodes: [...currentGenres.nodes.filter(n => n.id !== updatedGenre.id), updatedGenre], links: currentGenres.links });
+      // sets genres but triggers a larger chain of refreshes
+      //setGenres([...genres.filter(g => g.id !== updatedGenre.id), updatedGenre]);
+    }
+    return success;
+  }
+  const onBadDataArtistSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
+    //TODO: use actual user ID when accounts are implemented
+    const userID = 'dev';
+    const report: BadDataReport = {
+      userID,
+      itemID,
+      reason,
+      type,
+      resolved: false,
+      details,
+    }
+    const success = await flagBadArtistData(report);
+    if (success && !hasFlag) {
+      if (selectedArtistNoGenre) {
+        const updatedSelected = {...selectedArtistNoGenre, badDataFlag: true};
+        setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtistNoGenre.id), updatedSelected]);
+        setSelectedArtistNoGenre(updatedSelected);
+      } else if (selectedArtist) {
+        const updatedSelected = {...selectedArtist, badDataFlag: !selectedArtist.badDataFlag};
+        setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtist.id), updatedSelected]);
+        setSelectedArtist(updatedSelected);
+      }
+    }
+    return success;
+  }
 
   return (
     <SidebarProvider>
@@ -473,7 +521,7 @@ function App() {
                 }}
                 onSelectGenre={onLinkedGenreClick}
                 allArtists={onShowAllArtists}
-                onBadDataClick={onBadDataGenreClick}
+                onBadDataSubmit={onBadDataGenreSubmit}
                 topArtists={topArtists}
               />
               <ArtistInfo
@@ -484,7 +532,7 @@ function App() {
                 show={showArtistCard}
                 deselectArtist={deselectArtist}
                 similarFilter={similarArtistFilter}
-                onBadDataClick={onBadDataArtistClick}
+                onBadDataSubmit={onBadDataArtistSubmit}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

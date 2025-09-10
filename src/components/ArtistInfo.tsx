@@ -25,7 +25,7 @@ interface ArtistInfoProps {
   deselectArtist: () => void;
   setArtistFromName: (name: string) => void;
   similarFilter: (artists: string[]) => string[];
-  onBadDataClick: () => void;
+  onBadDataSubmit: (id: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => Promise<boolean>;
 }
 
 export function ArtistInfo({
@@ -36,35 +36,34 @@ export function ArtistInfo({
   deselectArtist,
   setArtistFromName,
   similarFilter,
-  onBadDataClick,
+  onBadDataSubmit,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1200px)");
-  // Track bad data report state; must be declared before any conditional returns
-  const [badDataFlag, setBadDataFlag] = useState(false);
+
   const artistReasons = useMemo(
     () => [
-      { value: "Name", label: "Name", disabled: !selectedArtist?.name },
-      { value: "Image", label: "Image", disabled: !selectedArtist?.image },
-      { value: "Description", label: "Description", disabled: !selectedArtist?.bio },
+      { value: "name", label: "Name", disabled: !selectedArtist?.name },
+      { value: "image", label: "Image", disabled: !selectedArtist?.image },
+      { value: "bio", label: "Description", disabled: !selectedArtist?.bio },
       {
-        value: "Similar Artists",
+        value: "similar",
         label: "Similar Artists",
         disabled: !(selectedArtist?.similar && selectedArtist.similar.length > 0),
       },
-      { value: "Founded Date", label: "Founded Date", disabled: !selectedArtist?.startDate },
+      { value: "startDate", label: "Founded Date", disabled: !selectedArtist?.startDate },
       {
-        value: "Tags",
+        value: "tags",
         label: "Tags",
         disabled: !(selectedArtist?.tags && selectedArtist.tags.length > 0),
       },
       {
-        value: "Genres",
+        value: "genres",
         label: "Genres",
         disabled: !(selectedArtist?.genres && selectedArtist.genres.length > 0),
       },
-      { value: "Other", label: "Other" },
+      { value: "other", label: "Other" },
     ],
     [
       selectedArtist?.name,
@@ -89,12 +88,16 @@ export function ArtistInfo({
     return raw ? fixWikiImageURL(raw) : undefined;
   }, [selectedArtist?.image]);
 
-  // Reset expansion when artist changes
-  useEffect(() => {
-    setDesktopExpanded(true);
-    // TODO: REMOVE AFTER IMPLEMENTING BACKEND. Resets the bad data flag when switching artists so it stays scoped
-    setBadDataFlag(false);
-  }, [selectedArtist?.id]);
+  const onSubmitBadData = async (reason: string, details?: string) => {
+    if (selectedArtist) {
+      const success = await onBadDataSubmit(selectedArtist.id, reason, 'artist', selectedArtist.badDataFlag || false, details);
+      if (success) {
+        toast.success("Thanks for the heads up. We'll look into it soon!");
+      }
+    }
+  }
+
+
 
   if (!show) return null;
 
@@ -194,10 +197,7 @@ export function ArtistInfo({
                           onOpenChange={setReportDialogOpen}
                           reasons={artistReasons}
                           description="Please let us know what information about this artist seems incorrect. Select a reason and provide any extra details if you’d like."
-                          onSubmit={() => {
-                            toast.success("Thanks for the heads up. We'll look into it soon!");
-                            setBadDataFlag(true);
-                          }}
+                          onSubmit={(reason, details) => onSubmitBadData(reason, details)}
                         />
                      </div>
                 {/* Description */}
@@ -315,7 +315,12 @@ export function ArtistInfo({
                 )}
 
               {/* Bad Data Flag */}
-              {badDataFlag && <Alert><Info /><AlertDescription>Hmm… something about this artist’s info doesn’t sound quite right. We’re checking it out</AlertDescription></Alert>}
+              {selectedArtist && selectedArtist.badDataFlag && (
+                  <Alert>
+                    <Info />
+                    <AlertDescription>Hmm… something about this artist’s info doesn’t sound quite right. We’re checking it out</AlertDescription>
+                  </Alert>
+              )}
               </div>
             </div>
           </>

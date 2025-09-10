@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {Artist, NodeLink} from "@/types";
+import {Artist, BadDataReport, NodeLink} from "@/types";
 import axios, {AxiosError} from "axios";
 import {envBoolean} from "@/lib/utils";
 
@@ -58,11 +58,11 @@ const useGenreArtists = (genreID?: string, topAmount = 8) => {
         fetchArtists();
     }, [genreID]);
 
-    const flagBadArtistData = async (artistID: string, reason = 'none') => {
+    const flagBadArtistData = async (report: BadDataReport) => {
         setArtistsDataFlagLoading(true);
         let success = false;
         try {
-            const response = await axios.put(`${url}/artists/bdflag/${artistID}/${reason}`);
+            const response = await axios.post(`${url}/artists/baddata/report/submit`, { report: report });
             if (response.status === 200) {
                 success = true;
             }
