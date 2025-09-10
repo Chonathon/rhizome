@@ -3,10 +3,13 @@ import {fixWikiImageURL, formatNumber} from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
 import useGenreArtists from "@/hooks/useGenreArtists";
-import { SquareArrowUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { Badge } from './ui/badge';
+import { Badge} from './ui/badge';
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
+import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
+import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 
 
@@ -39,6 +42,8 @@ export function GenreInfo({
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(true)
+  const [reportDialogOpen, setReportDialogOpen] = useState(false)
+
 
   const onDismiss = () => {
     deselectGenre()
@@ -75,6 +80,34 @@ export function GenreInfo({
     () => (topArtists ?? []).filter(a => typeof a.image === 'string' && a.image.trim().length > 0),
     [topArtists]
   )
+
+  const [badDataFlag, setBadDataFlag] = useState(false)
+  const genreReasons = useMemo(() => [
+                  { value: 'Name', label: 'Name', disabled: !selectedGenre?.name },
+                  { value: 'Description', label: 'Description', disabled: !selectedGenre?.description },
+                  {
+                    value: 'Relationships',
+                    label: 'Related/Subgenres/Influences',
+                    disabled: !(
+                      (selectedGenre?.subgenres?.length ?? 0) > 0 ||
+                      (selectedGenre?.subgenre_of?.length ?? 0) > 0 ||
+                      (selectedGenre?.influenced_by?.length ?? 0) > 0 ||
+                      (selectedGenre?.influenced_genres?.length ?? 0) > 0 ||
+                      (selectedGenre?.fusion_of?.length ?? 0) > 0
+                    ),
+                  },
+                  { value: 'Top Artists', label: 'Top Artists', disabled: !(topArtists?.length > 0) },
+                  {
+                    value: 'Stats',
+                    label: 'Stats',
+                    disabled: !(
+                      typeof selectedGenre?.artistCount === 'number' ||
+                      typeof selectedGenre?.totalListeners === 'number' ||
+                      typeof selectedGenre?.totalPlays === 'number'
+                    ),
+                  },
+                  { value: 'Other', label: 'Other' },
+                ], [selectedGenre?.name, selectedGenre?.description, selectedGenre?.subgenres, selectedGenre?.subgenre_of, selectedGenre?.influenced_by, selectedGenre?.influenced_genres, selectedGenre?.fusion_of, topArtists, selectedGenre?.artistCount, selectedGenre?.totalListeners, selectedGenre?.totalPlays])
   const chunk = <T,>(arr: T[], size: number) => Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size))
   const slides = useMemo(() => chunk(imageArtists, 3), [imageArtists])
   const scrollerRef = useRef<HTMLDivElement | null>(null)
@@ -116,6 +149,12 @@ export function GenreInfo({
     setMCanNext(scrollLeft < maxScrollLeft - 1)
   }
 
+  // TODO: REMOVE AFTER IMPLEMENTING BACKEND. Resets the bad data flag when switching artists so it stays scoped
+  useEffect(() => {
+    setBadDataFlag(false)
+    setReportDialogOpen(false)
+  }, [selectedGenre?.id])
+
   // Reset carousel scroll position when a new genre is selected
   useEffect(() => {
     if (scrollerRef?.current) {
@@ -155,9 +194,9 @@ export function GenreInfo({
         return (
           <>
             
-
+            {/* TODO: fix bug that's forcing us to use all this extra padding on the scrolling container */}
             {/* Scrolling Container */}
-            <div data-drawer-scroll className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar'>
+            <div data-drawer-scroll className='w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar pb-32 md:pb-16'>
             
             {/* Thumbnail / Bento Carousel */}
             <div className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none
@@ -234,7 +273,7 @@ export function GenreInfo({
               )}
             </div>
             {/* Content */}
-            <div className="w-full flex flex-col gap-6 ">
+            <div className="w-full flex flex-col gap-6">
 
                   <div className={`flex flex-row 
                     ${isDesktop ? 'gap-3' : 'items-center justify-between gap-3 mt-3'}`}>
@@ -402,6 +441,33 @@ export function GenreInfo({
                       </h3>
                     )}
               </div>
+
+              {/* Bad Data Flag */}
+              {badDataFlag && (
+                <Alert>
+                  <Info />
+                  <AlertDescription>
+                    Hmm… something about this genre’s info doesn’t sound quite right. We’re checking it out
+                  </AlertDescription>
+                </Alert>
+              )}
+              <div className='w-full pt-3 flex items-end'>
+                <Button className='self-start' variant={'outline'} size={'lg'} onClick={() => setReportDialogOpen(true)}>
+                  <Flag />Report Incorrect Information
+                </Button>
+              </div>
+
+              {/* Report Incorrect Info Dialog */}
+              <ReportIncorrectInfoDialog
+                open={reportDialogOpen}
+                onOpenChange={setReportDialogOpen}
+                reasons={genreReasons}
+                description="Please let us know what information about this genre seems incorrect. Select a reason and provide any extra details if you’d like."
+                onSubmit={() => {
+                  toast.success("Thanks for the heads up. We'll look into it soon!");
+                  setBadDataFlag(true);
+                }}
+              />
             </div>
           </div>
           </>

@@ -17,6 +17,7 @@ import {
 } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
+import { Toaster, toast } from 'sonner'
 import { useMediaQuery } from 'react-responsive';
 import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
@@ -97,9 +98,9 @@ function App() {
         if (selectedGenre) {
           setSelectedGenre(undefined);
           return;
-        } 
+        }
         // resetAppState();
-      
+
       }
     };
 
@@ -336,13 +337,13 @@ function App() {
         setSearchOpen={setSearchOpen}
         onClick={resetAppState}
         selectedGenre={selectedGenre}>
+          <Toaster />
           <Gradient />
         <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
           <div className={
             "fixed top-0 left-3 z-50 flex flex-col  items-start lg:flex-row gap-3 p-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
           }
           >
-
                <Tabs
                 value={graph}
                 onValueChange={(val) => onTabChange(val as GraphType)}>
@@ -471,13 +472,13 @@ function App() {
                 deselectArtist={deselectArtist}
                 similarFilter={similarArtistFilter}
               />
-            
+
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
             {/* TODO: Consider replace with dismissible toast and adding reference to selected genre */}
               <div
                 className={`flex justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
                 <ResetButton
-                
+
                   onClick={() => {
                     setGraph('genres')
                     // setSelectedArtist(undefined)
