@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {Artist, NodeLink} from "@/types";
+import {Artist, BadDataReport, NodeLink} from "@/types";
 import axios, {AxiosError} from "axios";
 import {envBoolean} from "@/lib/utils";
 
@@ -13,6 +13,8 @@ const useGenreArtists = (genreID?: string, topAmount = 8) => {
     const [artistLinks, setArtistLinks] = useState<NodeLink[]>([]);
     const [artistsLoading, setArtistsLoading] = useState(false);
     const [artistsError, setArtistsError] = useState<AxiosError>();
+    const [artistsDataFlagLoading, setArtistsDataFlagLoading] = useState<boolean>(false);
+    const [artistsDataFlagError, setArtistsDataFlagError] = useState<AxiosError>();
     const [totalArtistsInDB, setTotalArtistsInDB] = useState<number | undefined>(undefined);
     const [topArtists, setTopArtists] = useState<Artist[]>([]);
 
@@ -56,7 +58,35 @@ const useGenreArtists = (genreID?: string, topAmount = 8) => {
         fetchArtists();
     }, [genreID]);
 
-    return { artists, artistsLoading, artistsError, artistLinks, fetchAllArtists, totalArtistsInDB, topArtists };
+    const flagBadArtistData = async (report: BadDataReport) => {
+        setArtistsDataFlagLoading(true);
+        let success = false;
+        try {
+            const response = await axios.post(`${url}/artists/baddata/report/submit`, { report: report });
+            if (response.status === 200) {
+                success = true;
+            }
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setArtistsDataFlagError(err);
+            }
+        }
+        setArtistsDataFlagLoading(false);
+        return success;
+    }
+
+    return {
+        artists,
+        artistsLoading,
+        artistsError,
+        artistLinks,
+        flagBadArtistData,
+        artistsDataFlagLoading,
+        artistsDataFlagError,
+        fetchAllArtists,
+        totalArtistsInDB,
+        topArtists
+    };
 }
 
 export default useGenreArtists;
