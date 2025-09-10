@@ -4,14 +4,13 @@
 import { Button } from "@/components/ui/button";
 import { ChevronsUpDown, Check, ChevronDown, Minus, X } from "lucide-react";
 import { Genre, GenreClusterMode, GraphType } from "@/types";
-import { isTopLevelGenre } from "@/lib/utils";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@radix-ui/react-collapsible";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
 import { useTriStateSelection } from "@/hooks/useTriStateSelection";
 import {
   Command,
@@ -20,7 +19,9 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator
 } from "@/components/ui/command";
+import { isTopLevelGenre, parentFieldMap, childFieldMap } from "@/lib/utils";
 
 // Props control available genres, clustering mode, and external selection callbacks.
 export default function GenresFilter({
@@ -38,11 +39,18 @@ export default function GenresFilter({
   onParentSelect: (genre: Genre) => void;
   graphType: GraphType;
 }) {
-  // Compute the set of top-level genres based on the current cluster mode.
-  const topLevelGenres = useMemo(
-    () => genres.filter((g) => isTopLevelGenre(g, genreClusterModes)),
-    [genres, genreClusterModes]
-  );
+  // Compute the set of top-level genres based on the current cluster modes.
+  const topLevelGenres = useMemo(() => {
+    const viaUtil = genres.filter((g) => isTopLevelGenre(g, genreClusterModes));
+    if (viaUtil.length > 0) return viaUtil;
+    // Fallback if util returns none
+    return genres.filter((g) =>
+      genreClusterModes.some((mode) =>
+        (g[parentFieldMap[mode]]?.length ?? 0) > 0 &&
+        (g[childFieldMap[mode]]?.length ?? 0) > 0
+      )
+    );
+  }, [genres, genreClusterModes]);
 
   // Default all collapsibles closed. Map is keyed by parent genre id.
   const defaultOpenMap = useMemo(() => {
@@ -92,6 +100,8 @@ export default function GenresFilter({
   // When searching, auto-open parents that match or have matching children.
   // Clearing the query resets to default closed state.
   const listRef = useRef<HTMLDivElement | null>(null);
+  const selectedGroupRef = useRef<HTMLDivElement | null>(null);
+  const prevSelectedHeightRef = useRef<number>(0);
 
   // Computed: Any selection active?
   const hasAnySelection = topLevelGenres.some((g) => parentSelected[g.id] ?? false);
@@ -144,7 +154,7 @@ export default function GenresFilter({
     return selectedChildren[parent.id]?.has(childId) ?? false;
   };
 
-  // Show count of selected parents + selected children next to the trigger button.
+  // Show count of selected parents + selected children next to the clear button.
   const totalSelected = useMemo(() => {
     return topLevelGenres.reduce((acc, g) => {
       const parentCount = parentSelected[g.id] ? 1 : 0;
@@ -152,6 +162,39 @@ export default function GenresFilter({
       return acc + parentCount + childCount;
     }, 0);
   }, [topLevelGenres, parentSelected, selectedChildren]);
+
+  // Flat selected lists for the Selected group
+  const selectedParents = useMemo(
+    () => topLevelGenres.filter((g) => parentSelected[g.id]),
+    [topLevelGenres, parentSelected]
+  );
+
+  const selectedChildrenFlat = useMemo(
+    () =>
+      topLevelGenres.flatMap((parent) => {
+        const set = selectedChildren[parent.id];
+        if (!set || set.size === 0) return [] as { parent: Genre; child: Genre }[];
+        return getChildGenres(parent)
+          .filter((c) => set.has(c.id))
+          .map((child) => ({ parent, child }));
+      }),
+    [topLevelGenres, selectedChildren]
+  );
+
+  // Preserve scroll position when the Selected group grows/shrinks above the list.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const prevHeight = prevSelectedHeightRef.current || 0;
+    const nextHeight = selectedGroupRef.current?.offsetHeight || 0;
+    const delta = nextHeight - prevHeight;
+
+    if (delta !== 0 && list.scrollTop > 0) {
+      // Adjust scrollTop by the height delta added/removed above current view
+      list.scrollTop = list.scrollTop + delta;
+    }
+    prevSelectedHeightRef.current = nextHeight;
+  }, [selectedParents.length, selectedChildrenFlat.length, query]);
 
   if (graphType !== "artists") return null;
 
@@ -190,6 +233,38 @@ export default function GenresFilter({
         <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
         <CommandList ref={listRef} key={query.trim() ? "searching" : "empty"}>
           <CommandEmpty>No genres found.</CommandEmpty>
+          {/* Selected Group */}
+          {(selectedParents.length > 0 || selectedChildrenFlat.length > 0) && (
+            <div ref={selectedGroupRef}>
+            <CommandGroup className='bg-accent/40' aria-labelledby="Selected Genres">
+              {selectedParents.map((genre) => (
+                <CommandItem
+                  key={`sel-parent-${genre.id}`}
+                  value={`selected-parent:${genre.id} ${genre.name}`}
+                  onSelect={() => toggleParent(genre)}
+                  className="flex items-center gap-2"
+                >
+                  <Check className="opacity-100" />
+                  <span>{genre.name}</span>
+                </CommandItem>
+              ))}
+              {selectedChildrenFlat.map(({ parent, child }) => (
+                <CommandItem
+                  key={`sel-child-${parent.id}-${child.id}`}
+                  value={`selected-child:${parent.id}:${child.id} ${child.name} ${parent.name}`}
+                  onSelect={() => toggleChild(parent, child)}
+                  className="flex items-center gap-2"
+                >
+                  <Check className="opacity-100" />
+                  <span>{child.name}</span>
+                </CommandItem>
+              ))}
+              <Button className="mt-1 mb-2" size={'sm'} variant={'ghost'} onClick={() => clearAll()}>Clear</Button>
+            {/* <CommandSeparator /> */}
+            </CommandGroup>
+            </div>
+          )
+        }
           <CommandGroup>
             {topLevelGenres.map((genre) => {
               // In search mode, treat the list as flat: if the parent is selected, show a full check.
