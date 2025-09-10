@@ -4,7 +4,6 @@
 import { Button } from "@/components/ui/button";
 import { ChevronsUpDown, Check, ChevronDown, Minus, X } from "lucide-react";
 import { Genre, GenreClusterMode, GraphType } from "@/types";
-import { isTopLevelGenre } from "@/lib/utils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -21,6 +20,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { isTopLevelGenre, parentFieldMap, childFieldMap } from "@/lib/utils";
 
 // Props control available genres, clustering mode, and external selection callbacks.
 export default function GenresFilter({
@@ -38,11 +38,18 @@ export default function GenresFilter({
   onParentSelect: (genre: Genre) => void;
   graphType: GraphType;
 }) {
-  // Compute the set of top-level genres based on the current cluster mode.
-  const topLevelGenres = useMemo(
-    () => genres.filter((g) => isTopLevelGenre(g, genreClusterModes)),
-    [genres, genreClusterModes]
-  );
+  // Compute the set of top-level genres based on the current cluster modes.
+  const topLevelGenres = useMemo(() => {
+    const viaUtil = genres.filter((g) => isTopLevelGenre(g, genreClusterModes));
+    if (viaUtil.length > 0) return viaUtil;
+    // Fallback if util returns none
+    return genres.filter((g) =>
+      genreClusterModes.some((mode) =>
+        (g[parentFieldMap[mode]]?.length ?? 0) > 0 &&
+        (g[childFieldMap[mode]]?.length ?? 0) > 0
+      )
+    );
+  }, [genres, genreClusterModes]);
 
   // Default all collapsibles closed. Map is keyed by parent genre id.
   const defaultOpenMap = useMemo(() => {
