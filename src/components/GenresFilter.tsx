@@ -216,8 +216,9 @@ export default function GenresFilter({
         <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
         <CommandList ref={listRef} key={query.trim() ? "searching" : "empty"}>
           <CommandEmpty>No genres found.</CommandEmpty>
+          {/* Selected Group */}
           {(selectedParents.length > 0 || selectedChildrenFlat.length > 0) && (
-            <CommandGroup heading="Selected">
+            <CommandGroup aria-labelledby="Selected Genres">
               {selectedParents.map((genre) => (
                 <CommandItem
                   key={`sel-parent-${genre.id}`}
@@ -240,6 +241,7 @@ export default function GenresFilter({
                   <span>{child.name}</span>
                 </CommandItem>
               ))}
+              <Button className="mt-1 mb-2" size={'sm'} variant={'ghost'} onClick={() => clearAll()}>Clear</Button>
             <CommandSeparator />
             </CommandGroup>
           )
