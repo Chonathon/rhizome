@@ -5,7 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag } from "lucide-react";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem
+} from "@/components/ui/dropdown-menu"
+import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
+import { Alert, AlertDescription } from "./ui/alert";
+
 
 interface ArtistInfoProps {
   selectedArtist?: Artist;
@@ -15,6 +25,7 @@ interface ArtistInfoProps {
   deselectArtist: () => void;
   setArtistFromName: (name: string) => void;
   similarFilter: (artists: string[]) => string[];
+  onBadDataSubmit: (id: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => Promise<boolean>;
 }
 
 export function ArtistInfo({
@@ -25,9 +36,45 @@ export function ArtistInfo({
   deselectArtist,
   setArtistFromName,
   similarFilter,
+  onBadDataSubmit,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1200px)");
+
+  const artistReasons = useMemo(
+    () => [
+      { value: "name", label: "Name", disabled: !selectedArtist?.name },
+      { value: "image", label: "Image", disabled: !selectedArtist?.image },
+      { value: "bio", label: "Description", disabled: !selectedArtist?.bio },
+      {
+        value: "similar",
+        label: "Similar Artists",
+        disabled: !(selectedArtist?.similar && selectedArtist.similar.length > 0),
+      },
+      { value: "startDate", label: "Founded Date", disabled: !selectedArtist?.startDate },
+      {
+        value: "tags",
+        label: "Tags",
+        disabled: !(selectedArtist?.tags && selectedArtist.tags.length > 0),
+      },
+      {
+        value: "genres",
+        label: "Genres",
+        disabled: !(selectedArtist?.genres && selectedArtist.genres.length > 0),
+      },
+      { value: "other", label: "Other" },
+    ],
+    [
+      selectedArtist?.name,
+      selectedArtist?.image,
+      selectedArtist?.bio,
+      selectedArtist?.similar,
+      selectedArtist?.startDate,
+      selectedArtist?.tags,
+      selectedArtist?.genres,
+    ]
+  );
 
   const onDismiss = () => {
     deselectArtist();
@@ -41,10 +88,16 @@ export function ArtistInfo({
     return raw ? fixWikiImageURL(raw) : undefined;
   }, [selectedArtist?.image]);
 
-  // Reset expansion when artist changes
-  useEffect(() => {
-    setDesktopExpanded(true);
-  }, [selectedArtist?.id]);
+  const onSubmitBadData = async (reason: string, details?: string) => {
+    if (selectedArtist) {
+      const success = await onBadDataSubmit(selectedArtist.id, reason, 'artist', selectedArtist.badDataFlag || false, details);
+      if (success) {
+        toast.success("Thanks for the heads up. We'll look into it soon!");
+      }
+    }
+  }
+
+
 
   if (!show) return null;
 
@@ -68,7 +121,7 @@ export function ArtistInfo({
             
 
             {/* Scrolling Container */}
-            <div data-drawer-scroll className="w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar">
+            <div data-drawer-scroll className="w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar bp-32 md:pb16">
               {/* Thumbnail */}
               <div
                 className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none ${
@@ -91,41 +144,76 @@ export function ArtistInfo({
 
               {/* Content */}
               <div className="w-full flex flex-col gap-6">
+
+                {/* Actions */}
                 <div className={`flex  flex-col gap-6
                     ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
-                      
-                    
                      <div className="flex gap-3 w-full">
-                       <Button
-                        size={isDesktop ? "lg" : "xl"}
-                        variant="default"
-                        // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                        className={isDesktop ? 'self-start' : 'flex-1'}
-                                           >
-                        <CirclePlay size={24}/>Play
-                                           </Button>
-                       <Button
-                        size={isDesktop ? "lg" : "xl"}
-                        variant="secondary"
-                        // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                        className={isDesktop ? 'self-start' : 'flex-1'}
-                                           >
-                        <SquarePlus size={24}/>Add
-                                           </Button>
+                           <Button
+                              size={isDesktop ? "lg" : "xl"}
+                              variant="default"
+                              // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                              className={isDesktop ? 'self-start' : 'flex-1'}
+                              onClick={() => (
+                                toast("Playing Artist...")
+                              )}
+                              >
+                              <CirclePlay size={24}/>Play
+                            </Button>
+                           <Button
+                              size={isDesktop ? "lg" : "xl"}
+                              variant="secondary"
+                              // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                              className={isDesktop ? 'self-start' : 'flex-1'}
+                                                >
+                              <SquarePlus size={24}/>Add
+                            </Button>
+
+                       <DropdownMenu>
+                         <DropdownMenuTrigger asChild>
+                           <Button
+                              size={isDesktop ? "lg" : "xl"}
+                              variant="secondary"
+                              // onClick={() => selectedArtist && allArtists(selectedArtist)}
+                              className={isDesktop ? 'self-start' : 'flex-1'}
+                              >
+                              <Ellipsis size={24}/>More
+                            </Button>
+                         </DropdownMenuTrigger>
+                         <DropdownMenuContent>
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                setReportDialogOpen(true);
+                              }}
+                            >
+                              <Flag />
+                              Report Incorrect Information
+                            </DropdownMenuItem>
+                         </DropdownMenuContent>
+                       </DropdownMenu>
+
+                        <ReportIncorrectInfoDialog
+                          open={reportDialogOpen}
+                          onOpenChange={setReportDialogOpen}
+                          reasons={artistReasons}
+                          description="Please let us know what information about this artist seems incorrect. Select a reason and provide any extra details if you’d like."
+                          onSubmit={(reason, details) => onSubmitBadData(reason, details)}
+                        />
                      </div>
+                {/* Description */}
                 {isDesktop && (
                   <p
-                    onClick={() => setDesktopExpanded((prev) => !prev)}
-                    className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                  onClick={() => setDesktopExpanded((prev) => !prev)}
+                  className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
                   >
                     {selectedArtist?.bio?.summary || 'No description'}
                   </p>
                 )}
                   </div>
                    {!isDesktop && (
-                    <p
-                      className={`break-words text-muted-foreground ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
-                    >
+                     <p
+                     className={`break-words text-muted-foreground ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                     >
                       {selectedArtist?.bio?.summary || 'No description'}
                     </p>
                    )}
@@ -180,7 +268,7 @@ export function ArtistInfo({
                 
 
                 {/* Similar Artists */}
-                {selectedArtist?.similar && selectedArtist.similar.length > 0 && (
+                {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
                   <div className="flex flex-col gap-2">
                     <span className="text-md font-semibold">Similar Artists</span>
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -225,6 +313,14 @@ export function ArtistInfo({
                 {artistError && (
                   <p>Can’t find {selectedArtist?.name} 🤔</p>
                 )}
+
+              {/* Bad Data Flag */}
+              {selectedArtist && selectedArtist.badDataFlag && (
+                  <Alert>
+                    <Info />
+                    <AlertDescription>Hmm… something about this artist’s info doesn’t sound quite right. We’re checking it out</AlertDescription>
+                  </Alert>
+              )}
               </div>
             </div>
           </>

@@ -8,7 +8,7 @@ import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Artist, ArtistNodeLimitType,
+  Artist, ArtistNodeLimitType, BadDataReport,
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
@@ -17,6 +17,7 @@ import {
 } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
+import { Toaster, toast } from 'sonner'
 import { useMediaQuery } from 'react-responsive';
 import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
@@ -66,14 +67,27 @@ function App() {
   const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>('listeners');
   const [genreNodeCount, setGenreNodeCount] = useState<number>(0);
   const [artistNodeCount, setArtistNodeCount] = useState<number>(0);
-  const { genres, genreLinks, genreRoots, genresLoading, genresError } = useGenres();
+  const {
+    genres,
+    genreLinks,
+    genresLoading,
+    genresError,
+      genreRoots,
+    flagBadGenreData,
+    genresDataFlagLoading,
+      setGenres,
+  } = useGenres();
   const {
     artists,
     artistLinks,
     artistsLoading,
     artistsError,
-    fetchAllArtists,
-    totalArtistsInDB,
+    flagBadArtistData,
+    artistsDataFlagLoading,
+    artistsDataFlagError,
+      fetchAllArtists,
+      totalArtistsInDB,
+      topArtists,
     fetchMultipleGenresArtists
   } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
@@ -97,9 +111,9 @@ function App() {
         if (selectedGenre) {
           setSelectedGenre(undefined);
           return;
-        } 
+        }
         // resetAppState();
-      
+
       }
     };
 
@@ -328,6 +342,54 @@ function App() {
     }
     return [];
   }
+  const onBadDataGenreSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
+    //TODO: use actual user ID when accounts are implemented
+    const userID = 'dev';
+    const report: BadDataReport = {
+      userID,
+      itemID,
+      reason,
+      type,
+      resolved: false,
+      details,
+    }
+    const success = await flagBadGenreData(report);
+    if (success && !hasFlag && selectedGenre && currentGenres) {
+      const updatedGenre = {...selectedGenre, badDataFlag: true};
+      setSelectedGenre(updatedGenre);
+      // 2 options for synchronizing flagged state:
+      // this doesn't set genres, so a browser refresh is needed if genres are filtered after this to reflect the genre's flag
+      // setCurrentGenres({ nodes: [...currentGenres.nodes.filter(n => n.id !== updatedGenre.id), updatedGenre], links: currentGenres.links });
+      // sets genres but triggers a larger chain of refreshes
+      setGenres([...genres.filter(g => g.id !== updatedGenre.id), updatedGenre]);
+    }
+    return success;
+  }
+  const onBadDataArtistSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
+    //TODO: use actual user ID when accounts are implemented
+    const userID = 'dev';
+    const report: BadDataReport = {
+      userID,
+      itemID,
+      reason,
+      type,
+      resolved: false,
+      details,
+    }
+    const success = await flagBadArtistData(report);
+    if (success && !hasFlag) {
+      if (selectedArtistNoGenre) {
+        const updatedSelected = {...selectedArtistNoGenre, badDataFlag: true};
+        setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtistNoGenre.id), updatedSelected]);
+        setSelectedArtistNoGenre(updatedSelected);
+      } else if (selectedArtist) {
+        const updatedSelected = {...selectedArtist, badDataFlag: !selectedArtist.badDataFlag};
+        setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtist.id), updatedSelected]);
+        setSelectedArtist(updatedSelected);
+      }
+    }
+    return success;
+  }
 
   return (
     <SidebarProvider>
@@ -336,13 +398,13 @@ function App() {
         setSearchOpen={setSearchOpen}
         onClick={resetAppState}
         selectedGenre={selectedGenre}>
+          <Toaster />
           <Gradient />
         <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
           <div className={
             "fixed top-0 left-3 z-50 flex flex-col  items-start lg:flex-row gap-3 p-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
           }
           >
-
                <Tabs
                 value={graph}
                 onValueChange={(val) => onTabChange(val as GraphType)}>
@@ -460,6 +522,8 @@ function App() {
                 }}
                 onSelectGenre={onLinkedGenreClick}
                 allArtists={onShowAllArtists}
+                onBadDataSubmit={onBadDataGenreSubmit}
+                topArtists={topArtists}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
@@ -469,14 +533,15 @@ function App() {
                 show={showArtistCard}
                 deselectArtist={deselectArtist}
                 similarFilter={similarArtistFilter}
+                onBadDataSubmit={onBadDataArtistSubmit}
               />
-            
+
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
             {/* TODO: Consider replace with dismissible toast and adding reference to selected genre */}
               <div
                 className={`flex justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
                 <ResetButton
-                
+
                   onClick={() => {
                     setGraph('genres')
                     // setSelectedArtist(undefined)
