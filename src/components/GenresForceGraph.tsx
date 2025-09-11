@@ -5,7 +5,7 @@ import {Loading} from "./Loading";
 import {forceCollide} from 'd3-force';
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
-import { buildGenreRootColorMap, clusterColors } from "@/lib/utils";
+import { clusterColors } from "@/lib/utils";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE } from "@/lib/graphStyle";
 
 interface GenresForceGraphProps {

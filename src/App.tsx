@@ -24,7 +24,6 @@ import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import {
   buildGenreColorMap,
-  buildGenreRootColorMap,
   buildGenreTree,
   filterOutGenreTree,
   generateSimilarLinks
@@ -125,7 +124,6 @@ function App() {
   }, [selectedArtist, selectedGenre]);
 
   useEffect(() => {
-    //console.log(artists.length)
     if (selectedGenre) {
       const nodeCount = Math.min(artists.length, DEFAULT_NODE_COUNT);
       onArtistNodeCountChange(nodeCount);
@@ -162,7 +160,15 @@ function App() {
   }
   document.addEventListener("keydown", down);
   return () => document.removeEventListener("keydown", down)
-}, [])
+}, []);
+
+  useEffect(() => {
+    if (totalArtistsInDB && totalArtistsInDB < DEFAULT_NODE_COUNT && artistNodeCount !== totalArtistsInDB) {
+      setArtistNodeCount(totalArtistsInDB);
+    } else if (artistNodeCount !== DEFAULT_NODE_COUNT) {
+      setArtistNodeCount(DEFAULT_NODE_COUNT);
+    }
+  }, [totalArtistsInDB]);
 
   const setArtistFromName = (name: string) => {
     const artist = currentArtists.find((a) => a.name === name);
@@ -237,23 +243,6 @@ function App() {
     setSelectedArtistNoGenre(artistResult);
     setShowArtistCard(true);
     setCanCreateSimilarArtistGraph(true);
-  }
-  const onParentGenreClick = (genre: Genre) => {
-    setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
-  }
-  const onParentGenreDeselect = (genre: Genre) => {
-    if (currentGenres){
-      setCurrentGenres(filterOutGenreTree(currentGenres, genre, genreClusterMode));
-    }
-  }
-  const onParentGenreReselect = (genre: Genre) => {
-    if (currentGenres){
-      const reselectedGenreData = buildGenreTree(genres, genre, genreClusterMode);
-      setCurrentGenres({
-        nodes: [...currentGenres.nodes, ...reselectedGenreData.nodes],
-        links: [...currentGenres.links, ...reselectedGenreData.links],
-      });
-    }
   }
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
     setGenreClusterMode([...newMode]);
@@ -390,6 +379,23 @@ function App() {
     }
     return success;
   }
+  const onGenreFilterSelectionChange = async (selectedIDs: string[]) => {
+    if (graph === 'genres') {
+      // filters genres in genre mode; buggy
+      // setCurrentGenres({ nodes: genres.filter((g) => selectedIDs.includes(g.id)), links: genreLinks.filter(l => {
+      //   return genreClusterMode
+      //       .includes(l.linkType as "subgenre" | "influence" | "fusion") && (selectedIDs.includes(l.target) || selectedIDs.includes(l.source));
+      //   })
+      // });
+    } else {
+      if (selectedIDs.length > 0) {
+        await fetchMultipleGenresArtists(selectedIDs, artistNodeLimitType, DEFAULT_NODE_COUNT);
+      } else {
+        setArtistNodeCount(DEFAULT_NODE_COUNT);
+        await fetchAllArtists(artistNodeLimitType, DEFAULT_NODE_COUNT);
+      }
+    }
+  }
 
   return (
     <SidebarProvider>
@@ -417,13 +423,11 @@ function App() {
                 </Tabs>
                 { graph === 'artists' &&
                 <div className='flex gap-3'>
-                   <GenresFilter 
+                   <GenresFilter
                     genres={genres}
-                    onParentClick={onParentGenreClick}
                     genreClusterModes={genreClusterMode}
-                    onParentDeselect={onParentGenreDeselect}
-                    onParentSelect={onParentGenreReselect}
                     graphType={graph}
+                    onGenreSelectionChange={onGenreFilterSelectionChange}
               />
 
                   <Button size='lg' variant='outline'>Mood & Activity
