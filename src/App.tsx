@@ -13,7 +13,7 @@ import {
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
   GraphType,
-  NodeLink
+  NodeLink, Tag
 } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
@@ -389,6 +389,15 @@ function App() {
     }
     return success;
   }
+  const getRootGenreFromTags = (tags: Tag[]) => {
+    const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
+    if (genreTags.length > 0) {
+      const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
+      const tagGenre = genres.find((g) => g.name === bestTag.name);
+      if (tagGenre) return tagGenre.rootGenres;
+    }
+    return [];
+  }
 
   return (
     <SidebarProvider>
@@ -445,16 +454,17 @@ function App() {
                   selectedGenreId={selectedGenre?.id}
                 />
                 <ArtistsForceGraph
-                  artists={currentArtists}
-                  artistLinks={currentArtistLinks}
-                  loading={artistsLoading}
-                  onNodeClick={onArtistNodeClick}
-                  genreColorMap={genreColorMap}
-                  getGenreRoots={getGenreRootsFromID}
-                  selectedArtistId={selectedArtist?.id}
-                  show={
-                    (graph === "artists" || graph === "similarArtists") && !artistsError
-                  }
+                    artists={currentArtists}
+                    artistLinks={currentArtistLinks}
+                    loading={artistsLoading}
+                    onNodeClick={onArtistNodeClick}
+                    genreColorMap={genreColorMap}
+                    getGenreRoots={getGenreRootsFromID}
+                    selectedArtistId={selectedArtist?.id}
+                    show={
+                        (graph === "artists" || graph === "similarArtists") && !artistsError
+                    }
+                    getRootGenreByTags={getRootGenreFromTags}
                 />
 
           {!isMobile && <div className='z-20 fixed bottom-4 right-4'>
