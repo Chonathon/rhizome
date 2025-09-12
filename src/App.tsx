@@ -24,7 +24,8 @@ import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import {
   buildGenreColorMap,
-  generateSimilarLinks
+  generateSimilarLinks,
+    mixColors
 } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
@@ -36,10 +37,13 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
 import { GenreInfo } from './components/GenreInfo';
 import GenresFilter from './components/GenresFilter';
+import {useTheme} from "next-themes";
 
 const DEFAULT_NODE_COUNT = 2000;
 const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
 const TOP_ARTISTS_TO_FETCH = 8;
+const DARK_THEME_NODE_COLOR = '#8a80ff';
+const LIGHT_THEME_NODE_COLOR = '#4a4a4a';
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -89,6 +93,7 @@ function App() {
     fetchMultipleGenresArtists
   } = useArtists(undefined, TOP_ARTISTS_TO_FETCH);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
+  const { theme } = useTheme();
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
@@ -374,6 +379,62 @@ function App() {
     }
     return success;
   }
+  const getRootGenreFromTags = (tags: Tag[]) => {
+    const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
+    if (genreTags.length > 0) {
+      const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
+      const tagGenre = genres.find((g) => g.name === bestTag.name);
+      if (tagGenre) return tagGenre.rootGenres;
+    }
+    return [];
+  }
+
+  const getArtistColor = (artist: Artist) => {
+    let color;
+    // First try strongest tag that is a genre
+    const rootIDs = getRootGenreFromTags(artist.tags);
+    if (rootIDs.length) color = getGenreColorFromRoots(rootIDs);
+
+    // Next try genres until a root is found
+    if (!color) {
+      for (const g of artist.genres) {
+        color = getGenreColorFromID(g);
+        if (color && color !== DARK_THEME_NODE_COLOR && color !== LIGHT_THEME_NODE_COLOR) break;
+      }
+    }
+    // If no roots are found
+    if (!color) color = colorFallback();
+    return color;
+  }
+
+  const getGenreColorFromID = (genreID: string) => {
+    const roots = getGenreRootsFromID(genreID);
+    let color = getGenreColorFromRoots(roots);
+    if (!color) color = colorFallback(genreID);
+    return color;
+  }
+
+  const getGenreColorFromRoots = (roots: string[]) => {
+    let color;
+    if (roots.length === 1) {
+      color = genreColorMap.get(roots[0]);
+    } else if (roots.length > 1) {
+      const colors: string[] = [];
+      roots.forEach(root => {
+        const rootColor = genreColorMap.get(root);
+        if (rootColor) colors.push(rootColor);
+      });
+      color = mixColors(colors);
+    }
+    return color;
+  }
+
+  const colorFallback = (genreID?: string) => {
+    let color;
+    if (genreID) color = genreColorMap.get(genreID);
+    if (!color) color = theme === 'dark' ? DARK_THEME_NODE_COLOR : LIGHT_THEME_NODE_COLOR;
+    return color;
+  }
   const onGenreFilterSelectionChange = async (selectedIDs: string[]) => {
     if (graph === 'genres') {
       // filters genres in genre mode; buggy
@@ -390,15 +451,6 @@ function App() {
         await fetchAllArtists(artistNodeLimitType, DEFAULT_NODE_COUNT);
       }
     }
-  }
-  const getRootGenreFromTags = (tags: Tag[]) => {
-    const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
-    if (genreTags.length > 0) {
-      const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
-      const tagGenre = genres.find((g) => g.name === bestTag.name);
-      if (tagGenre) return tagGenre.rootGenres;
-    }
-    return [];
   }
 
   return (
@@ -454,17 +506,15 @@ function App() {
                   selectedGenreId={selectedGenre?.id}
                 />
                 <ArtistsForceGraph
-                  artists={currentArtists}
-                  artistLinks={currentArtistLinks}
-                  loading={artistsLoading}
-                  onNodeClick={onArtistNodeClick}
-                  genreColorMap={genreColorMap}
-                  getGenreRoots={getGenreRootsFromID}
-                  selectedArtistId={selectedArtist?.id}
-                  show={
-                    (graph === "artists" || graph === "similarArtists") && !artistsError
-                  }
-                  getRootGenreByTags={getRootGenreFromTags}
+                    artists={currentArtists}
+                    artistLinks={currentArtistLinks}
+                    loading={artistsLoading}
+                    onNodeClick={onArtistNodeClick}
+                    selectedArtistId={selectedArtist?.id}
+                    show={
+                        (graph === "artists" || graph === "similarArtists") && !artistsError
+                    }
+                    computeArtistColor={getArtistColor}
                 />
 
           {!isMobile && <div className='z-20 fixed bottom-4 right-4'>
