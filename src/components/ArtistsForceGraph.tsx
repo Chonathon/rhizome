@@ -15,9 +15,7 @@ interface ArtistsForceGraphProps {
     show: boolean;
     // Selected artist id to highlight and focus
     selectedArtistId?: string;
-    genreColorMap?: Map<string, string>;
-    getGenreRoots: (genreID: string) => string[];
-    getRootGenreByTags: (tags: Tag[]) => string[];
+    computeArtistColor: (artist: Artist) => string;
     // Use curved links only when the number of rendered links is at or below this threshold.
     // If exceeded, links are straight (0 curvature) to improve performance.
     curvedLinksAbove?: number;
@@ -44,8 +42,7 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     loading,
     show,
     selectedArtistId,
-    genreColorMap,
-    getGenreRoots, getRootGenreByTags,
+    computeArtistColor,
     curvedLinksAbove = 1500,
     curvedLinkCurvature = 0.2,
     hideLinksBelowZoom = 0.1,
@@ -208,41 +205,10 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     const colorById = useMemo(() => {
         const m = new Map<string, string>();
         preparedData.nodes.forEach(a => {
-            let color;
-            if (genreColorMap && a.genres && a.genres.length) {
-                // First try strongest tag that is a genre
-                const rootIDs = getRootGenreByTags(a.tags);
-                if (rootIDs.length === 1) {
-                    color = genreColorMap.get(rootIDs[0]);
-                }
-                // Mix colors if multiple roots (i.e. fusion genre)
-                if (rootIDs.length > 1) {
-                    const colors: string[] = [];
-                    rootIDs.forEach(r => {
-                        const rootColor = genreColorMap.get(r);
-                        if (rootColor) colors.push(rootColor);
-                    });
-                    color = mixColors(colors);
-                }
-
-                // Next try genres until a root is found
-                if (!color) {
-                    for (const g of a.genres) {
-                        // Try if genre is a root
-                        color = genreColorMap.get(g);
-                        if (color) break;
-                        // Try to find genre's roots
-                        color = genreColorMap.get(getGenreRoots(g)[0]);
-                        if (color) break;
-                    }
-                }
-            }
-            // If no roots are found
-            if (!color) color = theme === 'dark' ? '#8a80ff' : '#4a4a4a';
-            m.set(a.id, color);
+            m.set(a.id, computeArtistColor(a));
         });
         return m;
-    }, [preparedData.nodes, genreColorMap, theme]);
+    }, [preparedData.nodes, theme]);
 
     const getArtistColor = (artist: Artist): string => {
         return colorById.get(artist.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
