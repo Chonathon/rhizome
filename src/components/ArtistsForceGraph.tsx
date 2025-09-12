@@ -1,4 +1,4 @@
-import {Artist, NodeLink} from "@/types";
+import {Artist, NodeLink, Tag} from "@/types";
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
@@ -17,6 +17,7 @@ interface ArtistsForceGraphProps {
     selectedArtistId?: string;
     genreColorMap?: Map<string, string>;
     getGenreRoots: (genreID: string) => string[];
+    getRootGenreByTags: (tags: Tag[]) => string[];
     // Use curved links only when the number of rendered links is at or below this threshold.
     // If exceeded, links are straight (0 curvature) to improve performance.
     curvedLinksAbove?: number;
@@ -44,7 +45,7 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     show,
     selectedArtistId,
     genreColorMap,
-    getGenreRoots,
+    getGenreRoots, getRootGenreByTags,
     curvedLinksAbove = 1500,
     curvedLinkCurvature = 0.2,
     hideLinksBelowZoom = 0.1,
@@ -207,25 +208,36 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     const colorById = useMemo(() => {
         const m = new Map<string, string>();
         preparedData.nodes.forEach(a => {
-            // let colors = [];
-            // if (genreColorMap && a.genres && a.genres.length) {
-            //     for (const g of a.genres) {
-            //         const color = genreColorMap.get(g);
-            //         if (color) colors.push(color);
-            //     }
-            // }
-            // if (colors.length) {
-            //     m.set(a.id, mixColors(colors));
-            // } else {
-            //     m.set(a.id, theme === 'dark' ? '#8a80ff' : '#4a4a4a')
-            // }
             let color;
             if (genreColorMap && a.genres && a.genres.length) {
-                for (const g of a.genres) {
-                    color = genreColorMap.get(g);
-                    if (color) break;
+                // First try strongest tag that is a genre
+                const rootIDs = getRootGenreByTags(a.tags);
+                if (rootIDs.length === 1) {
+                    color = genreColorMap.get(rootIDs[0]);
+                }
+                // Mix colors if multiple roots (i.e. fusion genre)
+                if (rootIDs.length > 1) {
+                    const colors: string[] = [];
+                    rootIDs.forEach(r => {
+                        const rootColor = genreColorMap.get(r);
+                        if (rootColor) colors.push(rootColor);
+                    });
+                    color = mixColors(colors);
+                }
+
+                // Next try genres until a root is found
+                if (!color) {
+                    for (const g of a.genres) {
+                        // Try if genre is a root
+                        color = genreColorMap.get(g);
+                        if (color) break;
+                        // Try to find genre's roots
+                        color = genreColorMap.get(getGenreRoots(g)[0]);
+                        if (color) break;
+                    }
                 }
             }
+            // If no roots are found
             if (!color) color = theme === 'dark' ? '#8a80ff' : '#4a4a4a';
             m.set(a.id, color);
         });
