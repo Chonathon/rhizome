@@ -372,11 +372,14 @@ const mixTwoColorsAverage = (color1: string, color2: string) => {
   return '#000000';
 }
 
-
 export const fixWikiImageURL = (url: string) => {
   if (url.startsWith('https://commons.wikimedia.org/wiki/File:')) {
     const filename = url.substring(url.lastIndexOf('/') + 1);
     return 'https://commons.wikimedia.org/wiki/Special:Redirect/file/' + filename;
   }
   return url;
+}
+
+export const getRootGenreOfChild = (genre: Genre, genres: Genre[]) => {
+
 }

@@ -2,7 +2,7 @@ import './App.css'
 import { useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import useGenreArtists from "@/hooks/useGenreArtists";
+import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
@@ -13,7 +13,7 @@ import {
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
   GraphType,
-  NodeLink
+  NodeLink, Tag
 } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
@@ -24,15 +24,12 @@ import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import {
   buildGenreColorMap,
-  buildGenreTree,
-  filterOutGenreTree,
   generateSimilarLinks
 } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
-// import GenrePanel from './components/GenrePanel'r'
 import NodeLimiter from './components/NodeLimiter'
 import useSimilarArtists from "@/hooks/useSimilarArtists";
 import { SidebarProvider } from "@/components/ui/sidebar"
@@ -42,9 +39,11 @@ import GenresFilter from './components/GenresFilter';
 
 const DEFAULT_NODE_COUNT = 2000;
 const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
+const TOP_ARTISTS_TO_FETCH = 8;
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
+  const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
@@ -74,7 +73,7 @@ function App() {
       genreRoots,
     flagBadGenreData,
     genresDataFlagLoading,
-      setGenres,
+      setGenres, // Don't use this unless necessary for data synchronization
   } = useGenres();
   const {
     artists,
@@ -88,7 +87,7 @@ function App() {
       totalArtistsInDB,
       topArtists,
     fetchMultipleGenresArtists
-  } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
+  } = useArtists(undefined, TOP_ARTISTS_TO_FETCH);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
 
@@ -112,7 +111,6 @@ function App() {
           return;
         }
         // resetAppState();
-
       }
     };
 
@@ -176,13 +174,15 @@ function App() {
       onArtistNodeClick(artist);
     }
   }
-  const onGenreNodeClick = (genre: Genre) => {
+  const onGenreNodeClick = async (genre: Genre) => {
     // this code makes the mini genre graph
     // if (genreHasChildren(genre, genreClusterMode)) {
     //   setGenreMiniView(true);
     //   setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
     // }
+    await fetchMultipleGenresArtists([genre.id], artistNodeLimitType, artistNodeCount);
     setSelectedGenre(genre);
+    setSelectedGenres([genre]);
     setShowArtistCard(false); // ensure only one card visible
     addRecentSelection(genre);
   }
@@ -193,13 +193,7 @@ function App() {
     addRecentSelection(genre);
     console.log("Show all artists for genre:", genre);
   }
-  // For clicking on a genre node in the Genres graph: only show the GenreInfo, do not switch graphs
-  const onGenreNodePreview = (genre: Genre) => {
-    setSelectedGenre(genre);
-    setShowArtistCard(false); // ensure only one card visible
-    addRecentSelection(genre);
-    console.log("Genre preview:", genre);
-  }
+
   const onTopArtistClick = (artist: Artist) => {
     // Switch to artists graph and select the clicked artist
     setGraph('artists');
@@ -316,6 +310,7 @@ function App() {
         setCurrentArtistLinks([]);
       }
       setSelectedGenre(undefined);
+      setShowArtistCard(false);
     } else {
       setGraph('artists');
       if (!selectedGenre && !currentArtists.length) {
@@ -396,6 +391,15 @@ function App() {
       }
     }
   }
+  const getRootGenreFromTags = (tags: Tag[]) => {
+    const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
+    if (genreTags.length > 0) {
+      const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
+      const tagGenre = genres.find((g) => g.name === bestTag.name);
+      if (tagGenre) return tagGenre.rootGenres;
+    }
+    return [];
+  }
 
   return (
     <SidebarProvider>
@@ -441,7 +445,7 @@ function App() {
           </div>
                 <GenresForceGraph
                   graphData={currentGenres}
-                  onNodeClick={onGenreNodePreview}
+                  onNodeClick={onGenreNodeClick}
                   loading={genresLoading}
                   show={graph === "genres" && !genresError}
                   dag={dagMode}
@@ -460,6 +464,7 @@ function App() {
                   show={
                     (graph === "artists" || graph === "similarArtists") && !artistsError
                   }
+                  getRootGenreByTags={getRootGenreFromTags}
                 />
 
           {!isMobile && <div className='z-20 fixed bottom-4 right-4'>
@@ -520,6 +525,7 @@ function App() {
                 onTopArtistClick={onTopArtistClick}
                 deselectGenre={() => {
                   setSelectedGenre(undefined);
+                  setSelectedGenres([]);
                   setGraph('genres');
                   setCurrentArtists([]);
                   setCurrentArtistLinks([]);

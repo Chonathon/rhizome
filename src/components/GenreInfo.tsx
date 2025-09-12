@@ -2,7 +2,7 @@ import { BasicNode, Genre, Artist } from '@/types'
 import {fixWikiImageURL, formatNumber} from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
-import useGenreArtists from "@/hooks/useGenreArtists";
+import useArtists from "@/hooks/useArtists";
 import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge} from './ui/badge';

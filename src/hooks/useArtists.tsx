@@ -8,7 +8,7 @@ const url = envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
     : (import.meta.env.VITE_SERVER_URL
         || (import.meta.env.DEV ? '/api' : `https://rhizome-server-production.up.railway.app`));
 
-const useGenreArtists = (genreID?: string, topAmount = 8) => {
+const useArtists = (genreID?: string, topAmount = 8) => {
     const [artists, setArtists] = useState<Artist[]>([]);
     const [artistLinks, setArtistLinks] = useState<NodeLink[]>([]);
     const [artistsLoading, setArtistsLoading] = useState(false);
@@ -58,6 +58,10 @@ const useGenreArtists = (genreID?: string, topAmount = 8) => {
         if (genres.length && filter && amount) {
             setArtistsLoading(true);
             try {
+                if (genres.length === 1) {
+                    const topRes = await axios.get(`${url}/artists/top/${genres[0]}/${topAmount}`);
+                    setTopArtists(topRes.data);
+                }
                 const response = await axios.post(`${url}/artists/${filter}/${amount}`, {genres: genres});
                 setArtists(response.data.artists);
                 setArtistLinks(response.data.links);
@@ -107,4 +111,4 @@ const useGenreArtists = (genreID?: string, topAmount = 8) => {
     };
 }
 
-export default useGenreArtists;
+export default useArtists;
