@@ -384,7 +384,9 @@ export function GenreInfo({
                     <span className="text-md font-semibold">Top Artists</span>
                     <div className="flex flex-wrap items-center gap-1.5">
                     {topArtists.map((artist) => {
-                      const img = getArtistImageByName?.(artist.name);
+                      const img = typeof artist.image === 'string' && artist.image.trim()
+                        ? fixWikiImageURL(artist.image as string)
+                        : undefined;
                       const initial = artist.name?.[0]?.toUpperCase() ?? '?';
                       return (
                         <Badge
