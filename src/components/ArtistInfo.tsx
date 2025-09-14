@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
-import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
+import { fixWikiImageURL, formatDate, formatNumber, clusterColors } from "@/lib/utils";
 import { CirclePlay, SquarePlus, Ellipsis, Info, Flag } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -99,6 +99,9 @@ export function ArtistInfo({
     }
   }
 
+  const artistGenres = [
+    { name: ''}
+  ]
 
 
   if (!show) return null;
@@ -295,18 +298,28 @@ export function ArtistInfo({
                   <div className="flex flex-col gap-2">
                     <span className="text-md font-semibold">Genres</span>
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                      {selectedArtist.genres.map((g, i) => (
-                        <>
-                          {onGenreClick ? (
-                            <Button variant="link" size="lg" key={`${g}-${i}`} onClick={() => onGenreClick(g)}>
-                              {g}
-                            </Button>
-                          ) : (
-                            <span key={`${g}-${i}`}>{g}</span>
-                          )}
-                          {i < selectedArtist.genres.length - 1 ? ' · ' : ''}
-                        </>
-                      ))}
+                      {selectedArtist.genres.map((name) => {
+                        const key = `${name}`;
+                        // Simple stable color selection from cluster palette
+                        const token = String(name).toLowerCase();
+                        let hash = 0;
+                        for (let i = 0; i < token.length; i++) {
+                          hash = (hash * 31 + token.charCodeAt(i)) >>> 0;
+                        }
+                        const color = clusterColors[hash % clusterColors.length];
+                        return (
+                          <>
+                            {onGenreClick && (
+                              <Badge key={key} variant="outline" title={`Go to ${name}`} asChild>
+                                <Button variant="ghost" size="sm" onClick={() => onGenreClick(name)} className="cursor-pointer inline-flex items-center gap-1">
+                                  <span className="inline-block rounded-full h-2 w-2" style={{ backgroundColor: color }} />
+                                  {name}
+                                </Button>
+                              </Badge>
+                            )}
+                          </>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
