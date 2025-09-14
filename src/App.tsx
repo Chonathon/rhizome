@@ -27,7 +27,9 @@ import {
   buildGenreRootColorMap,
   buildGenreTree,
   filterOutGenreTree,
-  generateSimilarLinks, mixColors
+  generateSimilarLinks, 
+  mixColors, 
+  fixWikiImageURL
 } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
@@ -172,6 +174,11 @@ function App() {
     if (artist) {
       onArtistNodeClick(artist);
     }
+  }
+  const getArtistImageByName = (name: string) => {
+    const a = currentArtists.find((x) => x.name === name);
+    const raw = a?.image as string | undefined;
+    return raw ? fixWikiImageURL(raw) : undefined;
   }
   const onGenreNodeClick = (genre: Genre) => {
     // this code makes the mini genre graph
@@ -602,6 +609,7 @@ function App() {
                 similarFilter={similarArtistFilter}
                 onBadDataSubmit={onBadDataArtistSubmit}
                 onGenreClick={onGenreNameClick}
+                getArtistImageByName={getArtistImageByName}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

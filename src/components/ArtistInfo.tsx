@@ -27,6 +27,7 @@ interface ArtistInfoProps {
   similarFilter: (artists: string[]) => string[];
   onBadDataSubmit: (id: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => Promise<boolean>;
   onGenreClick?: (name: string) => void;
+  getArtistImageByName?: (name: string) => string | undefined;
 }
 
 export function ArtistInfo({
@@ -39,6 +40,7 @@ export function ArtistInfo({
   similarFilter,
   onBadDataSubmit,
   onGenreClick,
+  getArtistImageByName,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -277,18 +279,34 @@ export function ArtistInfo({
                   <div className="flex flex-col gap-2">
                     <span className="text-md font-semibold">Similar Artists</span>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      {similarFilter(selectedArtist.similar).map((name) => (
-                        <Badge key={name} asChild variant="outline" title={`Go to ${name}`}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setArtistFromName(name)}
-                            className="cursor-pointer"
-                          >
-                            {name}
-                          </Button>
-                        </Badge>
-                      ))}
+                      {similarFilter(selectedArtist.similar).map((name) => {
+                        const img = getArtistImageByName?.(name);
+                        const initial = name?.[0]?.toUpperCase() ?? '?';
+                        return (
+                          <Badge key={name} asChild variant="outline" title={`Go to ${name}`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setArtistFromName(name)}
+                              className="cursor-pointer inline-flex items-center gap-1.5"
+                            >
+                              {img ? (
+                                <img
+                                  src={img}
+                                  alt={`${name} avatar`}
+                                  className="w-4 h-4 rounded-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <span className="w-4 h-4 rounded-full bg-muted text-[10px] leading-4 text-center">
+                                  {initial}
+                                </span>
+                              )}
+                              {name}
+                            </Button>
+                          </Badge>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
