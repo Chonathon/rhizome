@@ -322,6 +322,15 @@ function App() {
       onGenreNodeClick(newGenre);
     }
   }
+  const onGenreNameClick = (name: string) => {
+    const newGenre = genres.find((g) => g.name === name);
+    if (newGenre) {
+      setGraph('genres');
+      onGenreNodeClick(newGenre);
+    } else {
+      toast.error(`Genre not found: ${name}`);
+    }
+  }
   const onTabChange = async (graphType: GraphType) => {
     if (graphType === 'genres') {
       setGraph('genres');
@@ -592,6 +601,7 @@ function App() {
                 deselectArtist={deselectArtist}
                 similarFilter={similarArtistFilter}
                 onBadDataSubmit={onBadDataArtistSubmit}
+                onGenreClick={onGenreNameClick}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

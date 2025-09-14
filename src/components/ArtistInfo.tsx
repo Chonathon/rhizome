@@ -26,6 +26,7 @@ interface ArtistInfoProps {
   setArtistFromName: (name: string) => void;
   similarFilter: (artists: string[]) => string[];
   onBadDataSubmit: (id: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => Promise<boolean>;
+  onGenreClick?: (name: string) => void;
 }
 
 export function ArtistInfo({
@@ -37,6 +38,7 @@ export function ArtistInfo({
   setArtistFromName,
   similarFilter,
   onBadDataSubmit,
+  onGenreClick,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -283,6 +285,27 @@ export function ArtistInfo({
                             {name}
                           </Button>
                         </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Genres */}
+                {selectedArtist?.genres && selectedArtist.genres.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-md font-semibold">Genres</span>
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                      {selectedArtist.genres.map((g, i) => (
+                        <>
+                          {onGenreClick ? (
+                            <Button variant="link" size="lg" key={`${g}-${i}`} onClick={() => onGenreClick(g)}>
+                              {g}
+                            </Button>
+                          ) : (
+                            <span key={`${g}-${i}`}>{g}</span>
+                          )}
+                          {i < selectedArtist.genres.length - 1 ? ' · ' : ''}
+                        </>
                       ))}
                     </div>
                   </div>
