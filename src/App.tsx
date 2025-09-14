@@ -598,6 +598,7 @@ function App() {
                 allArtists={onShowAllArtists}
                 onBadDataSubmit={onBadDataGenreSubmit}
                 topArtists={topArtists}
+                getArtistImageByName={getArtistImageByName}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}

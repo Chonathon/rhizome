@@ -26,6 +26,7 @@ interface GenreInfoProps {
   onTopArtistClick?: (artist: Artist) => void;
   onBadDataSubmit: (id: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => Promise<boolean>;
   topArtists?: Artist[];
+  getArtistImageByName?: (name: string) => string | undefined;
 }
 
 export function GenreInfo({
@@ -41,6 +42,7 @@ export function GenreInfo({
   onTopArtistClick,
     onBadDataSubmit,
     topArtists,
+    getArtistImageByName,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(true)
@@ -381,18 +383,34 @@ export function GenreInfo({
                   <div className="flex flex-col gap-2">
                     <span className="text-md font-semibold">Top Artists</span>
                     <div className="flex flex-wrap items-center gap-1.5">
-                    {topArtists.map((artist) => (
-                      <Badge
-                        key={artist.id}
-                        asChild
-                        variant="outline"
-                        title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
-                      >
-                        <Button variant="ghost" size="sm" onClick={() => onTopArtistClick?.(artist)} className="cursor-pointer">
-                          {artist.name}
-                        </Button>
-                      </Badge>
-                    ))}
+                    {topArtists.map((artist) => {
+                      const img = getArtistImageByName?.(artist.name);
+                      const initial = artist.name?.[0]?.toUpperCase() ?? '?';
+                      return (
+                        <Badge
+                          key={artist.id}
+                          asChild
+                          variant="outline"
+                          title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
+                        >
+                            <Button variant="ghost" size="sm" onClick={() => onTopArtistClick?.(artist)} className="cursor-pointer">
+                            {img ? (
+                              <img
+                                src={img}
+                                alt={`${artist.name} avatar`}
+                                className="w-4 h-4 rounded-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="w-4 h-4 rounded-full bg-muted text-[10px] leading-4 text-center">
+                                {initial}
+                              </span>
+                            )}
+                              {artist.name}
+                            </Button>
+                        </Badge>
+                      );
+                    })}
                     </div>
                 <Button
                   disabled={genreLoading}
