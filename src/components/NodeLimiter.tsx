@@ -16,8 +16,8 @@ interface NodeLimiterProps {
   show: boolean;
 }
 
-const MAX_NODES = 40000;
-const ALL_PRESETS = [20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50]
+const MAX_NODES = 2000;
+const ALL_PRESETS = [2000, 1000, 500, 200, 100, 50]
 
 export default function NodeLimiter({ initialValue, onChange, totalNodes, nodeType, show }: NodeLimiterProps) {
     const [value, setValue] = useState<number>(initialValue);
@@ -48,7 +48,7 @@ export default function NodeLimiter({ initialValue, onChange, totalNodes, nodeTy
                     <Button size="sm" variant="outline">{value}</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                    {totalNodes && totalNodes < MAX_NODES && (
+                    {totalNodes && (totalNodes < MAX_NODES || nodeType === 'genres') && (
                         <DropdownMenuItem onClick={() => onValueChange(totalNodes)}>
                             {totalNodes}
                         </DropdownMenuItem>

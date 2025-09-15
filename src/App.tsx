@@ -47,7 +47,7 @@ const LIGHT_THEME_NODE_COLOR = '#4a4a4a';
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
-  const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
@@ -67,8 +67,9 @@ function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>('artistCount');
   const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>('listeners');
-  const [genreNodeCount, setGenreNodeCount] = useState<number>(0);
-  const [artistNodeCount, setArtistNodeCount] = useState<number>(0);
+  const [genreNodeCount, setGenreNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
+  const [artistNodeCount, setArtistNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
+  const [artistNodeDisplayMax, setArtistNodeDisplayMax] = useState<number>(0);
   const {
     genres,
     genreLinks,
@@ -166,10 +167,13 @@ function App() {
 }, []);
 
   useEffect(() => {
-    if (totalArtistsInDB && totalArtistsInDB < DEFAULT_NODE_COUNT && artistNodeCount !== totalArtistsInDB) {
-      setArtistNodeCount(totalArtistsInDB);
-    } else if (artistNodeCount !== DEFAULT_NODE_COUNT) {
+    // if (artists && totalArtistsInDB && totalArtistsInDB < DEFAULT_NODE_COUNT && artistNodeCount !== totalArtistsInDB) {
+    if (artists && artists.length && artists.length < DEFAULT_NODE_COUNT) {
+      setArtistNodeCount(artists.length);
+      setArtistNodeDisplayMax(artists.length);
+    } else if (!selectedGenre && totalArtistsInDB) {
       setArtistNodeCount(DEFAULT_NODE_COUNT);
+      setArtistNodeDisplayMax(totalArtistsInDB);
     }
   }, [totalArtistsInDB]);
 
@@ -185,15 +189,16 @@ function App() {
     //   setGenreMiniView(true);
     //   setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
     // }
-    await fetchMultipleGenresArtists([genre.id], artistNodeLimitType, artistNodeCount);
     setSelectedGenre(genre);
-    setSelectedGenres([genre]);
-    setShowArtistCard(false); // ensure only one card visible
+    setSelectedGenres([genre.id]);
+    setShowArtistCard(false); // ensure only one card
+    const amountToFetch = genre.artistCount < DEFAULT_NODE_COUNT ? genre.artistCount : DEFAULT_NODE_COUNT;
+    await fetchMultipleGenresArtists([genre.id], artistNodeLimitType, amountToFetch);
     addRecentSelection(genre);
   }
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
   const onShowAllArtists = (genre: Genre) => {
-    setSelectedGenre(genre);
+    if (!selectedGenre) setSelectedGenre(genre);
     setGraph('artists');
     addRecentSelection(genre);
     console.log("Show all artists for genre:", genre);
@@ -315,6 +320,7 @@ function App() {
         setCurrentArtistLinks([]);
       }
       setSelectedGenre(undefined);
+      setSelectedGenres([]);
       setShowArtistCard(false);
     } else {
       setGraph('artists');
@@ -380,11 +386,13 @@ function App() {
     return success;
   }
   const getRootGenreFromTags = (tags: Tag[]) => {
-    const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
-    if (genreTags.length > 0) {
-      const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
-      const tagGenre = genres.find((g) => g.name === bestTag.name);
-      if (tagGenre) return tagGenre.rootGenres;
+    if (tags && tags.length) {
+      const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
+      if (genreTags.length > 0) {
+        const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
+        const tagGenre = genres.find((g) => g.name === bestTag.name);
+        if (tagGenre) return tagGenre.rootGenres;
+      }
     }
     return [];
   }
@@ -445,8 +453,10 @@ function App() {
       // });
     } else {
       if (selectedIDs.length > 0) {
+        setSelectedGenre(undefined);
         await fetchMultipleGenresArtists(selectedIDs, artistNodeLimitType, DEFAULT_NODE_COUNT);
       } else {
+        setSelectedGenres(selectedIDs);
         setArtistNodeCount(DEFAULT_NODE_COUNT);
         await fetchAllArtists(artistNodeLimitType, DEFAULT_NODE_COUNT);
       }
@@ -484,6 +494,7 @@ function App() {
                     genreClusterModes={genreClusterMode}
                     graphType={graph}
                     onGenreSelectionChange={onGenreFilterSelectionChange}
+                    initialSelection={selectedGenre.id}
               />
 
                   <Button size='lg' variant='outline'>Mood & Activity
@@ -526,7 +537,7 @@ function App() {
                 show={showGenreNodeLimiter()}
             />
             <NodeLimiter
-              totalNodes={artists && artists.length && selectedGenre ? artists.length : totalArtistsInDB ? totalArtistsInDB : DEFAULT_NODE_COUNT}
+              totalNodes={artistNodeDisplayMax}
               nodeType={'artists'}
               initialValue={artistNodeCount}
               onChange={onArtistNodeCountChange}
@@ -571,7 +582,7 @@ function App() {
                 selectedGenre={selectedGenre}
                 onLinkedGenreClick={onLinkedGenreClick}
                 show={graph === 'genres' && !!selectedGenre && !showArtistCard}
-                genreLoading={artistsLoading}
+                genreArtistsLoading={artistsLoading}
                 onTopArtistClick={onTopArtistClick}
                 deselectGenre={() => {
                   setSelectedGenre(undefined);

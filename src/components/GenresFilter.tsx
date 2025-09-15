@@ -30,11 +30,13 @@ export default function GenresFilter({
   genreClusterModes,
   graphType,
     onGenreSelectionChange,
+    initialSelection,
 }: {
   genres?: Genre[];
   genreClusterModes: GenreClusterMode[];
   graphType: GraphType;
   onGenreSelectionChange: (selectedIDs: string[]) => void;
+  initialSelection: string | undefined;
 }) {
   const isMountingRef = useRef<boolean>(false);
   // Compute the set of top-level genres based on the current cluster modes.
@@ -78,6 +80,17 @@ export default function GenresFilter({
     // While searching, do not bulk-toggle children when a parent is toggled.
     bulkToggleChildren: !query.trim(),
   });
+
+  useEffect(() => {
+    if (topLevelGenres.length && initialSelection) {
+      // isMountingRef.current = true;
+      setParentSelected(prev => {
+        const next: Record<string, boolean> = {};
+        for (const g of topLevelGenres) next[g.id] = g.id === initialSelection;
+        return next;
+      });
+    }
+  }, [topLevelGenres, initialSelection]);
 
   // Collapsible open/closed state.
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(defaultOpenMap);
