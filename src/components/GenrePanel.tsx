@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tag } from "lucide-react";
 import { Genre, GenreClusterMode } from "@/types";
-import {clusterColors, isTopLevelGenre} from "@/lib/utils";
+import {CLUSTER_COLORS, isTopLevelGenre} from "@/lib/utils";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
 import {useEffect, useState} from "react";
 

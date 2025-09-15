@@ -2,13 +2,14 @@ import {useEffect, useState} from "react";
 import {Artist, BadDataReport, NodeLink} from "@/types";
 import axios, {AxiosError} from "axios";
 import {envBoolean} from "@/lib/utils";
+import {TOP_ARTISTS_TO_FETCH} from "@/constants";
 
 const url = envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
     ? import.meta.env.VITE_LOCALHOST
     : (import.meta.env.VITE_SERVER_URL
         || (import.meta.env.DEV ? '/api' : `https://rhizome-server-production.up.railway.app`));
 
-const useArtists = (genreID?: string, topAmount = 8) => {
+const useArtists = (genreID?: string, topAmount = TOP_ARTISTS_TO_FETCH) => {
     const [artists, setArtists] = useState<Artist[]>([]);
     const [artistLinks, setArtistLinks] = useState<NodeLink[]>([]);
     const [artistsLoading, setArtistsLoading] = useState(false);

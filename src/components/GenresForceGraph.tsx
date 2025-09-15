@@ -5,7 +5,7 @@ import {Loading} from "./Loading";
 import {forceCollide} from 'd3-force';
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
-import { clusterColors } from "@/lib/utils";
+import { CLUSTER_COLORS } from "@/constants";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE } from "@/lib/graphStyle";
 
 interface GenresForceGraphProps {
@@ -121,7 +121,7 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
             .filter(Boolean)
             .sort((a, b) => a.name.localeCompare(b.name));
         sortedRoots.forEach((n, i) => {
-            map.set(n.id, clusterColors[i % clusterColors.length]);
+            map.set(n.id, CLUSTER_COLORS[i % CLUSTER_COLORS.length]);
         });
 
         // For others, walk up to nearest root to inherit color

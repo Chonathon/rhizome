@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useMediaQuery } from "react-responsive";
 import useSearch from "@/hooks/useSearch";
+import {SEARCH_DEBOUNCE_MS} from "@/constants";
 
 interface SearchProps {
   onGenreSelect: (genre: Genre) => void;
@@ -25,9 +26,6 @@ interface SearchProps {
   open: boolean;
   setOpen: (open: boolean) => void;
 }
-
-
-const DEBOUNCE_MS = 500;
 
 export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres = [], selectedGenre, selectedArtist, open, setOpen }: SearchProps) {
   const isMobile = useMediaQuery({ maxWidth: 640 });
@@ -43,10 +41,10 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
     if (inputValue) {
       const timeout = setTimeout(() => {
         setQuery(inputValue);
-      }, DEBOUNCE_MS);
+      }, SEARCH_DEBOUNCE_MS);
       return () => clearTimeout(timeout);
     }
-  }, [inputValue, DEBOUNCE_MS]);
+  }, [inputValue, SEARCH_DEBOUNCE_MS]);
 
 
   // Filter the searchable items. This is problematic with bands of the same name, for now it just uses the first one in the results

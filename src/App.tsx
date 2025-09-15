@@ -38,12 +38,13 @@ import { AppSidebar } from "@/components/AppSideBar"
 import { GenreInfo } from './components/GenreInfo';
 import GenresFilter from './components/GenresFilter';
 import {useTheme} from "next-themes";
-
-const DEFAULT_NODE_COUNT = 2000;
-const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
-const TOP_ARTISTS_TO_FETCH = 8;
-const DARK_THEME_NODE_COLOR = '#8a80ff';
-const LIGHT_THEME_NODE_COLOR = '#4a4a4a';
+import {
+  DEFAULT_DARK_NODE_COLOR, DEFAULT_ARTIST_LIMIT_TYPE,
+  DEFAULT_CLUSTER_MODE, DEFAULT_GENRE_LIMIT_TYPE,
+  DEFAULT_NODE_COUNT,
+  DEFAULT_LIGHT_NODE_COLOR,
+  TOP_ARTISTS_TO_FETCH
+} from "@/constants";
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
@@ -65,8 +66,8 @@ function App() {
   const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>('artistCount');
-  const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>('listeners');
+  const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>(DEFAULT_GENRE_LIMIT_TYPE);
+  const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>(DEFAULT_ARTIST_LIMIT_TYPE);
   const [genreNodeCount, setGenreNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [artistNodeCount, setArtistNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [artistNodeDisplayMax, setArtistNodeDisplayMax] = useState<number>(0);
@@ -407,7 +408,7 @@ function App() {
     if (!color) {
       for (const g of artist.genres) {
         color = getGenreColorFromID(g);
-        if (color && color !== DARK_THEME_NODE_COLOR && color !== LIGHT_THEME_NODE_COLOR) break;
+        if (color && color !== DEFAULT_DARK_NODE_COLOR && color !== DEFAULT_LIGHT_NODE_COLOR) break;
       }
     }
     // If no roots are found
@@ -440,7 +441,7 @@ function App() {
   const colorFallback = (genreID?: string) => {
     let color;
     if (genreID) color = genreColorMap.get(genreID);
-    if (!color) color = theme === 'dark' ? DARK_THEME_NODE_COLOR : LIGHT_THEME_NODE_COLOR;
+    if (!color) color = theme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
     return color;
   }
   const onGenreFilterSelectionChange = async (selectedIDs: string[]) => {
