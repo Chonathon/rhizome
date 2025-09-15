@@ -8,7 +8,7 @@ import {
   GenreGraphData,
   NodeLink
 } from "@/types";
-import {PARENT_FIELD_MAP, CHILD_FIELD_MAP, CLUSTER_COLORS} from "@/constants";
+import {PARENT_FIELD_MAP, CHILD_FIELD_MAP, CLUSTER_COLORS, SINGLETON_PARENT_GENRE} from "@/constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -318,6 +318,42 @@ export const fixWikiImageURL = (url: string) => {
   return url;
 }
 
-export const getRootGenreOfChild = (genre: Genre, genres: Genre[]) => {
-
+export const getRootGenreOfChild = (genre: Genre, genres: Genre[], genreClusterModes: GenreClusterMode[]) => {
+  if (isTopLevelGenre(genre, genreClusterModes)) return genre;
+  let singleton = true;
+  genreClusterModes.forEach(c => {
+    if (genre[CHILD_FIELD_MAP[c]].length) singleton = false;
+  });
+  if (singleton) return SINGLETON_PARENT_GENRE;
+  const genresMap = new Map<string, Genre>(genres.map(g => [g.id, g]));
+  const addParent = (childID: string, level: number) => {
+    const genre = genresMap.get(childID);
+    if (!genre) return;
+    let parents: {id: string, name: string, mode: GenreClusterMode}[] = [];
+    genreClusterModes.forEach((mode) => {
+      parents.push(...genre[CHILD_FIELD_MAP[mode]].map(g => {
+        return {...g, mode};
+      }))
+    });
+  }
 }
+
+// const addChildren = (parentId: string, level: number) => {
+//   const genre = genresMap.get(parentId);
+//   if (!genre) return;
+//
+//   let children: {id: string, name: string, mode: GenreClusterMode}[] = [];
+//   modes.forEach((mode) => {
+//     children.push(...genre[PARENT_FIELD_MAP[mode]].map(g => {
+//       return {...g, mode};
+//     }))
+//   });
+//
+//   for (const child of children) {
+//     const childId = child.id;
+//     const childGenre = genresMap.get(childId);
+//     if (childGenre) {
+//       allChildren.push({ id: childId, name: child.name } as Genre);
+//     }
+//     addChildren(childId, level + 1);
+//   }

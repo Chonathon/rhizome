@@ -32,17 +32,21 @@ export default function GenresFilter({
   graphType,
     onGenreSelectionChange,
     initialSelection,
+    isInitialSelectionRoot,
+    initialSelectedParents,
 }: {
   genres?: Genre[];
   genreClusterModes: GenreClusterMode[];
   graphType: GraphType;
   onGenreSelectionChange: (selectedIDs: string[]) => void;
-  initialSelection: string | undefined;
+  initialSelection: Genre | undefined;
+  isInitialSelectionRoot: boolean;
+  initialSelectedParents: Record<string, Set<string>>;
 }) {
-  const isMountingRef = useRef<boolean>(false);
+  //const isMountingRef = useRef<boolean>(false);
   // Compute the set of top-level genres based on the current cluster modes.
   const topLevelGenres = useMemo(() => {
-    isMountingRef.current = true;
+    //isMountingRef.current = true;
     const viaUtil = genres.filter((g) => isTopLevelGenre(g, genreClusterModes));
     if (viaUtil.length > 0) return viaUtil;
     // Fallback if util returns none
@@ -68,6 +72,13 @@ export default function GenresFilter({
   // Search query (declared early so selection logic can reference it)
   const [query, setQuery] = useState("");
 
+  // const buildInitialParents = (child: string) => {
+  //   const parents: Record<string, Set<string>> = {};
+  //   initialSelectedParents.forEach(p => {
+  //     parents[p] = new Set(child);
+  //   });
+  //   return parents;
+  // }
   // Tri-state selection logic is handled by a reusable hook.
   const {
     parentSelected,
@@ -80,18 +91,20 @@ export default function GenresFilter({
   } = useTriStateSelection(topLevelGenres, (p) => parentChildMap.get(p.id) || [], {
     // While searching, do not bulk-toggle children when a parent is toggled.
     bulkToggleChildren: !query.trim(),
+    initialParentSelected: isInitialSelectionRoot && initialSelection ? { [initialSelection.id]: true } : undefined,
+    initialSelectedChildren: initialSelectedParents,
   });
 
-  useEffect(() => {
-    if (topLevelGenres.length && initialSelection) {
-      // isMountingRef.current = true;
-      setParentSelected(prev => {
-        const next: Record<string, boolean> = {};
-        for (const g of topLevelGenres) next[g.id] = g.id === initialSelection;
-        return next;
-      });
-    }
-  }, [topLevelGenres, initialSelection]);
+  // useEffect(() => {
+  //   if (topLevelGenres.length && initialSelection) {
+  //     // isMountingRef.current = true;
+  //     setParentSelected(prev => {
+  //       const next: Record<string, boolean> = {};
+  //       for (const g of topLevelGenres) next[g.id] = initialSelection.includes(g.id);
+  //       return next;
+  //     });
+  //   }
+  // }, [topLevelGenres, initialSelection]);
 
   // Collapsible open/closed state.
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(defaultOpenMap);
@@ -107,7 +120,7 @@ export default function GenresFilter({
   const selectedGroupRef = useRef<HTMLDivElement | null>(null);
   const prevSelectedHeightRef = useRef<number>(0);
 
-  // Computed: Any selection active?
+  // Computed: Any selection active? This doesn't count children genres
   const hasAnySelection = topLevelGenres.some((g) => parentSelected[g.id] ?? false);
 
   // Clear all selections for all parents/children
@@ -175,7 +188,7 @@ export default function GenresFilter({
         const set = selectedChildren[parent.id];
         if (!set || set.size === 0) return [] as { parent: Genre; child: Genre }[];
         const children = parentChildMap.get(parent.id);
-        isMountingRef.current = false;
+        //isMountingRef.current = false;
         return children ? children
           .filter((c) => set.has(c.id))
           .map((child) => ({ parent, child })) : [];
@@ -190,7 +203,7 @@ export default function GenresFilter({
 
   useEffect(() => {
     const ids = [...selectedParents.map(p => p.id), ...selectedChildrenFlat.map(c => c.child.id)];
-    if (ids.length || !isMountingRef.current) onGenreSelectionChange(ids);
+    onGenreSelectionChange(ids);
   }, [selectedParents, selectedChildrenFlat]);
 
   // Preserve scroll position when the Selected group grows/shrinks above the list.
@@ -218,9 +231,9 @@ export default function GenresFilter({
       if (open) setOpenMap(defaultOpenMap);
     }}
       trigger={
-        <Button size="lg" variant="outline" className={`${hasAnySelection ? "px-4" : ""}`}>
+        <Button size="lg" variant="outline" className={`${totalSelected > 0 ? "px-4" : ""}`}>
           {`Genres`}
-          {hasAnySelection ? (
+          {totalSelected > 0 ? (
             <Button
               size="icon"
               variant="secondary"

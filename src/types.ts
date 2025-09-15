@@ -15,6 +15,7 @@ export interface Genre extends BasicNode {
     used_instruments?: string[];
     badDataFlag?: boolean;
     rootGenres: string[];
+    specificRootGenres: RootGenreNode[];
 }
 
 export interface Tag {
@@ -86,4 +87,9 @@ export interface ReportReason {
     value: string;
     label: string;
     disabled?: boolean;
+}
+
+export interface RootGenreNode {
+    id: string;
+    type: GenreClusterMode;
 }

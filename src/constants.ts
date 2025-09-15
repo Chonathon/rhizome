@@ -1,4 +1,4 @@
-import {ArtistNodeLimitType, GenreClusterMode, GenreNodeLimitType} from "@/types";
+import {ArtistNodeLimitType, Genre, GenreClusterMode, GenreNodeLimitType} from "@/types";
 
 export const DEFAULT_NODE_COUNT = 2000;
 export const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
@@ -25,6 +25,19 @@ export const CHILD_FIELD_MAP: {
     subgenre: 'subgenre_of',
     influence: 'influenced_by',
     fusion: 'fusion_of',
+}
+
+export const SINGLETON_PARENT_GENRE: Genre = {
+    id: 'singletonparentgenre',
+    name: 'no relationships',
+    rootGenres: [],
+    subgenres: [],
+    subgenre_of: [],
+    fusion_genres: [],
+    fusion_of: [],
+    influenced_genres: [],
+    influenced_by: [],
+    artistCount: 0,
 }
 
 export const TOP_ARTISTS_TO_FETCH = 8;

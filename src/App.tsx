@@ -1,5 +1,5 @@
 import './App.css'
-import { useEffect, useState } from 'react'
+import {useEffect, useMemo, useState} from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
@@ -24,8 +24,8 @@ import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import {
   buildGenreColorMap,
-  generateSimilarLinks,
-    mixColors
+  generateSimilarLinks, isTopLevelGenre,
+  mixColors
 } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
@@ -48,7 +48,10 @@ import {
 
 function App() {
   const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
+  const selectedGenreIDs = useMemo(() => {
+    return selectedGenres.map(genre => genre.id);
+  }, [selectedGenres]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
@@ -70,7 +73,9 @@ function App() {
   const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>(DEFAULT_ARTIST_LIMIT_TYPE);
   const [genreNodeCount, setGenreNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [artistNodeCount, setArtistNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
+  const [artistNodeCountDisplay, setArtistNodeCountDisplay] = useState<number>(0);
   const [artistNodeDisplayMax, setArtistNodeDisplayMax] = useState<number>(0);
+  const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
   const {
     genres,
     genreLinks,
@@ -93,7 +98,7 @@ function App() {
       totalArtistsInDB,
       topArtists,
     fetchMultipleGenresArtists
-  } = useArtists(undefined, TOP_ARTISTS_TO_FETCH);
+  } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { theme } = useTheme();
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
@@ -129,13 +134,18 @@ function App() {
   }, [selectedArtist, selectedGenre]);
 
   useEffect(() => {
-    if (selectedGenre) {
-      const nodeCount = Math.min(artists.length, DEFAULT_NODE_COUNT);
-      onArtistNodeCountChange(nodeCount);
-    } else {
-      setCurrentArtists(artists);
-      setCurrentArtistLinks(artistLinks);
-    }
+    // if (selectedGenre) {
+    //   const nodeCount = Math.min(artists.length, DEFAULT_NODE_COUNT);
+    //   onArtistNodeCountChange(nodeCount);
+    // } else {
+    //   setCurrentArtists(artists);
+    //   setCurrentArtistLinks(artistLinks);
+    // }
+    const nodeCount = Math.min(artists.length, DEFAULT_NODE_COUNT);
+    //setArtistNodeCount(nodeCount);
+    //setArtistNodeDisplayMax(totalArtistsInDB);
+    setCurrentArtists(artists);
+    setCurrentArtistLinks(artistLinks);
   }, [artists]);
 
   useEffect(() => {
@@ -167,16 +177,16 @@ function App() {
   return () => document.removeEventListener("keydown", down)
 }, []);
 
-  useEffect(() => {
-    // if (artists && totalArtistsInDB && totalArtistsInDB < DEFAULT_NODE_COUNT && artistNodeCount !== totalArtistsInDB) {
-    if (artists && artists.length && artists.length < DEFAULT_NODE_COUNT) {
-      setArtistNodeCount(artists.length);
-      setArtistNodeDisplayMax(artists.length);
-    } else if (!selectedGenre && totalArtistsInDB) {
-      setArtistNodeCount(DEFAULT_NODE_COUNT);
-      setArtistNodeDisplayMax(totalArtistsInDB);
-    }
-  }, [totalArtistsInDB]);
+  // useEffect(() => {
+  //   // if (artists && totalArtistsInDB && totalArtistsInDB < DEFAULT_NODE_COUNT && artistNodeCount !== totalArtistsInDB) {
+  //   if (artists && artists.length && artists.length < DEFAULT_NODE_COUNT) {
+  //     setArtistNodeCount(artists.length);
+  //     setArtistNodeDisplayMax(artists.length);
+  //   } else if (!selectedGenre && totalArtistsInDB) {
+  //     setArtistNodeCount(DEFAULT_NODE_COUNT);
+  //     setArtistNodeDisplayMax(totalArtistsInDB);
+  //   }
+  // }, [totalArtistsInDB]);
 
   const setArtistFromName = (name: string) => {
     const artist = currentArtists.find((a) => a.name === name);
@@ -190,16 +200,18 @@ function App() {
     //   setGenreMiniView(true);
     //   setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
     // }
-    setSelectedGenre(genre);
-    setSelectedGenres([genre.id]);
+    if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+    //setSelectedGenre(genre);
+    setSelectedGenres([genre]);
     setShowArtistCard(false); // ensure only one card
-    const amountToFetch = genre.artistCount < DEFAULT_NODE_COUNT ? genre.artistCount : DEFAULT_NODE_COUNT;
-    await fetchMultipleGenresArtists([genre.id], artistNodeLimitType, amountToFetch);
+    //const amountToFetch = genre.artistCount < DEFAULT_NODE_COUNT ? genre.artistCount : DEFAULT_NODE_COUNT;
+    //await fetchMultipleGenresArtists([genre.id], artistNodeLimitType, amountToFetch);
     addRecentSelection(genre);
   }
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
   const onShowAllArtists = (genre: Genre) => {
-    if (!selectedGenre) setSelectedGenre(genre);
+    //if (!selectedGenre) setSelectedGenre(genre);
+    if (!selectedGenres.length) setSelectedGenres([genre]);
     setGraph('artists');
     addRecentSelection(genre);
     console.log("Show all artists for genre:", genre);
@@ -227,7 +239,8 @@ function App() {
     setCurrentGenres({nodes: genres, links: genreLinks.filter(link => {
         return DEFAULT_CLUSTER_MODE.includes(link.linkType as "subgenre" | "influence" | "fusion")
       })});
-    setSelectedGenre(undefined);
+    //setSelectedGenre(undefined);
+    setSelectedGenres([]);
     deselectArtist();
     setGenreMiniView(false);
     setCanCreateSimilarArtistGraph(false);
@@ -315,20 +328,20 @@ function App() {
   }
   const onTabChange = async (graphType: GraphType) => {
     if (graphType === 'genres') {
+      setIsBeforeArtistLoad(true);
       setGraph('genres');
-      if (selectedGenre) {
-        setCurrentArtists([]);
-        setCurrentArtistLinks([]);
-      }
-      setSelectedGenre(undefined);
+      setCurrentArtists([]);
+      setCurrentArtistLinks([]);
+      //setSelectedGenre(undefined);
       setSelectedGenres([]);
       setShowArtistCard(false);
     } else {
+      if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
-      if (!selectedGenre && !currentArtists.length) {
-        setArtistNodeCount(DEFAULT_NODE_COUNT);
-        await fetchAllArtists(artistNodeLimitType, DEFAULT_NODE_COUNT);
-      }
+      // if (!selectedGenre && !currentArtists.length) {
+      //   setArtistNodeCount(DEFAULT_NODE_COUNT);
+      //   await fetchAllArtists(artistNodeLimitType, DEFAULT_NODE_COUNT);
+      // }
     }
   }
   const getGenreRootsFromID = (genreID: string) => {
@@ -453,16 +466,48 @@ function App() {
       //   })
       // });
     } else {
-      if (selectedIDs.length > 0) {
-        setSelectedGenre(undefined);
-        await fetchMultipleGenresArtists(selectedIDs, artistNodeLimitType, DEFAULT_NODE_COUNT);
+      if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+      console.log('gf selection change' + selectedIDs.length)
+      if (selectedIDs.length === 0) {
+        //setSelectedGenre(undefined);
+        setSelectedGenres([]);
+        //await fetchMultipleGenresArtists(selectedIDs, artistNodeLimitType, DEFAULT_NODE_COUNT);
       } else {
-        setSelectedGenres(selectedIDs);
-        setArtistNodeCount(DEFAULT_NODE_COUNT);
-        await fetchAllArtists(artistNodeLimitType, DEFAULT_NODE_COUNT);
+        setSelectedGenres(selectedIDs.map(s => {
+          return { id: s } as Genre
+        }));
+        //setArtistNodeCount(DEFAULT_NODE_COUNT);
+        //await fetchAllArtists(artistNodeLimitType, DEFAULT_NODE_COUNT);
       }
     }
   }
+
+  const initialGenreSelection = useMemo(() => {
+    const initialObject: {
+      initialSelection: Genre | undefined,
+      isRoot: boolean,
+      parents: Record<string, Set<string>>
+    } = { initialSelection: undefined, isRoot: true, parents: {}};
+    if (graph === 'genres' && selectedGenres.length) {
+      const selected = selectedGenres[0];
+      const isRoot = isTopLevelGenre(selected, genreClusterMode);
+      initialObject.initialSelection = selected;
+      initialObject.isRoot = isRoot;
+      if (isRoot) {
+        initialObject.parents = { [selected.id]: new Set()}
+      } else {
+        const initialSelectedParents = selected.specificRootGenres.filter(g => genreClusterMode.includes(g.type)).map(f => f.id);
+        const parents: Record<string, Set<string>> = {};
+        initialSelectedParents.forEach(p => {
+          parents[p] = new Set([selected.id]);
+        });
+        initialObject.parents = parents;
+      }
+    }
+    return initialObject;
+  }, [selectedGenres]);
+
+  console.log(initialGenreSelection)
 
   return (
     <SidebarProvider>
@@ -495,7 +540,9 @@ function App() {
                     genreClusterModes={genreClusterMode}
                     graphType={graph}
                     onGenreSelectionChange={onGenreFilterSelectionChange}
-                    initialSelection={selectedGenre.id}
+                    initialSelection={initialGenreSelection.initialSelection}
+                    isInitialSelectionRoot={initialGenreSelection.isRoot}
+                    initialSelectedParents={initialGenreSelection.parents}
               />
 
                   <Button size='lg' variant='outline'>Mood & Activity
@@ -538,10 +585,10 @@ function App() {
                 show={showGenreNodeLimiter()}
             />
             <NodeLimiter
-              totalNodes={artistNodeDisplayMax}
+              totalNodes={totalArtistsInDB}
               nodeType={'artists'}
-              initialValue={artistNodeCount}
-              onChange={onArtistNodeCountChange}
+              initialValue={currentArtists.length}
+              onChange={(value) => setArtistNodeCount(value)}
               show={showArtistNodeLimiter()}
             />
           </div>}
@@ -580,9 +627,9 @@ function App() {
                 `}
             >
               <GenreInfo 
-                selectedGenre={selectedGenre}
+                selectedGenre={selectedGenres[0]}
                 onLinkedGenreClick={onLinkedGenreClick}
-                show={graph === 'genres' && !!selectedGenre && !showArtistCard}
+                show={graph === 'genres' && selectedGenres.length === 1 && !showArtistCard}
                 genreArtistsLoading={artistsLoading}
                 onTopArtistClick={onTopArtistClick}
                 deselectGenre={() => {
