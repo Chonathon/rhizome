@@ -183,6 +183,9 @@ function App() {
   const getArtistByName = (name: string) => {
     return currentArtists.find((a) => a.name === name);
   }
+  const getGenreNameById = (id: string) => {
+    return genres.find((g) => g.id === id)?.name;
+  }
   const onGenreNodeClick = (genre: Genre) => {
     // this code makes the mini genre graph
     // if (genreHasChildren(genre, genreClusterMode)) {
@@ -617,6 +620,7 @@ function App() {
                 getArtistByName={getArtistByName}
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
+                getGenreNameById={getGenreNameById}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

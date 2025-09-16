@@ -31,6 +31,7 @@ interface ArtistInfoProps {
   getArtistByName?: (name: string) => Artist | undefined;
   genreColorMap?: Map<string, string>;
   getArtistColor: (artist: Artist) => string;
+  getGenreNameById?: (id: string) => string | undefined;
 }
 
 export function ArtistInfo({
@@ -47,6 +48,7 @@ export function ArtistInfo({
   getArtistByName,
   genreColorMap,
   getArtistColor,
+  getGenreNameById,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -329,15 +331,19 @@ export function ArtistInfo({
                   <div className="flex flex-col gap-2">
                     <span className="text-md font-semibold">Genres</span>
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                      {selectedArtist.genres.map((name) => {
-                        const key = `${name}`;
+                      {selectedArtist.genres.map((genreId) => {
+                        const name = getGenreNameById?.(genreId) ?? genreId;
+                        const key = `${genreId}`;
+                        const genreColor = genreColorMap?.get(genreId);
                         return (
                           <>
                             {onGenreClick && (
                               <Badge key={key} variant="outline" title={`Go to ${name}`} asChild>
                                 <Button variant="ghost" size="sm" onClick={() => onGenreClick(name)} className="cursor-pointer inline-flex items-center gap-1">
-                                  {/* TODO: Hook up genre color */}
-                                  <span className="inline-block rounded-full h-2 w-2 bg-amber-400" />
+                                  <span
+                                    className="inline-block rounded-full h-2 w-2"
+                                    style={{ backgroundColor: genreColor ?? '#fbbf24' }}
+                                  />
                                   {name}
                                 </Button>
                               </Badge>
