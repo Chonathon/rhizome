@@ -19,28 +19,10 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
     const [totalArtistsInDB, setTotalArtistsInDB] = useState<number>(DEFAULT_NODE_COUNT);
     const [topArtists, setTopArtists] = useState<Artist[]>([]);
 
-    // const fetchArtists = async () => {
-    //     if (genreID) {
-    //         setArtistsLoading(true);
-    //         try {
-    //             const topRes = await axios.get(`${url}/artists/top/${genreID}/${topAmount}`);
-    //             setTopArtists(topRes.data);
-    //             const response = await axios.get(`${url}/artists/${genreID}`);
-    //
-    //             setArtists(response.data.artists);
-    //             setArtistLinks(response.data.links);
-    //         } catch (err) {
-    //             if (err instanceof AxiosError) {
-    //                 setArtistsError(err);
-    //             }
-    //         }
-    //         setArtistsLoading(false);
-    //     }
-    // }
-
     const fetchArtists = async () => {
         if (!initial) {
             setArtistsLoading(true);
+            console.log('fetching....')
             try {
                 const selectedSize = genreIDs.length;
                 if (selectedSize === 0) {
@@ -55,9 +37,14 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
                 }
                 if (selectedSize > 0) {
                     const response = await axios.post(`${url}/artists/${filter}/${amount}`, {genres: genreIDs});
+                    const artistCount = response.data.artists.length;
                     setArtists(response.data.artists);
                     setArtistLinks(response.data.links);
-                    setTotalArtistsInDB(response.data.count > DEFAULT_NODE_COUNT ? response.data.count : response.data.artists.length);
+                    setTotalArtistsInDB(
+                        response.data.count > DEFAULT_NODE_COUNT && artistCount === DEFAULT_NODE_COUNT
+                        ? response.data.count
+                        : artistCount
+                    );
                 }
             } catch (err) {
                 if (err instanceof AxiosError) {

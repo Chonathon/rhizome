@@ -93,3 +93,9 @@ export interface RootGenreNode {
     id: string;
     type: GenreClusterMode;
 }
+
+export interface InitialGenreFilter {
+    genre: Genre | undefined;
+    isRoot: boolean;
+    parents: Record<string, Set<string>>;
+}

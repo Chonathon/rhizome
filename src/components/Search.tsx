@@ -21,13 +21,13 @@ interface SearchProps {
   graphState: GraphType;
   currentArtists: Artist[];
   genres?: Genre[];
-  selectedGenre?: Genre;
+  selectedGenres?: Genre[];
   selectedArtist?: Artist;
   open: boolean;
   setOpen: (open: boolean) => void;
 }
 
-export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres = [], selectedGenre, selectedArtist, open, setOpen }: SearchProps) {
+export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres = [], selectedGenres, selectedArtist, open, setOpen }: SearchProps) {
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");
@@ -99,8 +99,8 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
         >
           <div className="flex gap-2 items-center animate-fade-in">
             <SearchIcon size={20}></SearchIcon>
-            {selectedGenre ? (
-              selectedGenre.name
+            {selectedGenres?.length ? (
+              selectedGenres[0].name
             ) : selectedArtist ? (
               selectedArtist.name
             ) : (

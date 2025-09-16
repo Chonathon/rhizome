@@ -1,4 +1,4 @@
-import {ArtistNodeLimitType, Genre, GenreClusterMode, GenreNodeLimitType} from "@/types";
+import {ArtistNodeLimitType, Genre, GenreClusterMode, GenreNodeLimitType, InitialGenreFilter} from "@/types";
 
 export const DEFAULT_NODE_COUNT = 2000;
 export const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
@@ -37,6 +37,7 @@ export const SINGLETON_PARENT_GENRE: Genre = {
     fusion_of: [],
     influenced_genres: [],
     influenced_by: [],
+    specificRootGenres: [],
     artistCount: 0,
 }
 
@@ -45,6 +46,12 @@ export const TOP_ARTISTS_TO_FETCH = 8;
 export const BAD_DATA_DESC_LIMIT = 150;
 
 export const SEARCH_DEBOUNCE_MS = 500;
+
+export const EMPTY_GENRE_FILTER_OBJECT: InitialGenreFilter = {
+    genre: undefined,
+    isRoot: true,
+    parents: {},
+};
 
 export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
 export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';

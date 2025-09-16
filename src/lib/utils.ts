@@ -30,6 +30,25 @@ export const envBoolean = (value: string) => {
   return value && (value.toLowerCase() === 'true' || parseInt(value) === 1);
 }
 
+export const primitiveArraysEqual = (a: Array<string | number>, b: Array<string | number>) => {
+  a.sort();
+  b.sort();
+
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  if (a.length !== b.length) return false;
+
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+
+  return true;
+}
+
+export const arraySubsetOf = (a: Array<string | number>, b: Array<string | number>) => {
+  return b.every(v => a.includes(v));
+}
+
 export const generateArtistLinks = (artist: Artist, similarCount: number) => {
   const links = [];
   for (let i = 0; i < similarCount - 1; i++) {
@@ -61,10 +80,12 @@ export const isTopLevelGenre = (genre: Genre, genreClusterModes: GenreClusterMod
 export const getChildrenOfGenre = (genre: Genre, genres: Genre[], modes: GenreClusterMode[]) => {
   const allChildren: Genre[] = [];
   const genresMap = new Map<string, Genre>(genres.map(g => [g.id, g]));
+  const visited = new Set<string>();
   const addChildren = (parentId: string, level: number) => {
     const genre = genresMap.get(parentId);
-    if (!genre) return;
+    if (!genre || visited.has(parentId)) return;
 
+    visited.add(parentId);
     let children: {id: string, name: string, mode: GenreClusterMode}[] = [];
     modes.forEach((mode) => {
       children.push(...genre[PARENT_FIELD_MAP[mode]].map(g => {

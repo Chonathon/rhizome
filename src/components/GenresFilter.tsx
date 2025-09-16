@@ -3,7 +3,7 @@
 // be toggled as a whole, or individual child subgenres can be toggled.
 import { Button } from "@/components/ui/button";
 import { ChevronsUpDown, Check, ChevronDown, Minus, X } from "lucide-react";
-import { Genre, GenreClusterMode, GraphType } from "@/types";
+import {Genre, GenreClusterMode, GraphType, InitialGenreFilter} from "@/types";
 import {
   Collapsible,
   CollapsibleContent,
@@ -32,16 +32,12 @@ export default function GenresFilter({
   graphType,
     onGenreSelectionChange,
     initialSelection,
-    isInitialSelectionRoot,
-    initialSelectedParents,
 }: {
   genres?: Genre[];
   genreClusterModes: GenreClusterMode[];
   graphType: GraphType;
   onGenreSelectionChange: (selectedIDs: string[]) => void;
-  initialSelection: Genre | undefined;
-  isInitialSelectionRoot: boolean;
-  initialSelectedParents: Record<string, Set<string>>;
+  initialSelection: InitialGenreFilter;
 }) {
   //const isMountingRef = useRef<boolean>(false);
   // Compute the set of top-level genres based on the current cluster modes.
@@ -72,6 +68,8 @@ export default function GenresFilter({
   // Search query (declared early so selection logic can reference it)
   const [query, setQuery] = useState("");
 
+  const childrenSearchResults = useRef<string[]>([]);
+
   // const buildInitialParents = (child: string) => {
   //   const parents: Record<string, Set<string>> = {};
   //   initialSelectedParents.forEach(p => {
@@ -91,8 +89,8 @@ export default function GenresFilter({
   } = useTriStateSelection(topLevelGenres, (p) => parentChildMap.get(p.id) || [], {
     // While searching, do not bulk-toggle children when a parent is toggled.
     bulkToggleChildren: !query.trim(),
-    initialParentSelected: isInitialSelectionRoot && initialSelection ? { [initialSelection.id]: true } : undefined,
-    initialSelectedChildren: initialSelectedParents,
+    initialParentSelected: initialSelection.isRoot && initialSelection.genre ? { [initialSelection.genre.id]: true } : undefined,
+    initialSelectedChildren: initialSelection.parents,
   });
 
   // useEffect(() => {
@@ -139,6 +137,7 @@ export default function GenresFilter({
 
   useEffect(() => {
     const q = query.trim().toLowerCase();
+    childrenSearchResults.current = [];
     if (q === "") {
       // Reset to default open state when the search is cleared
       setOpenMap(defaultOpenMap);
@@ -221,6 +220,25 @@ export default function GenresFilter({
     prevSelectedHeightRef.current = nextHeight;
   }, [selectedParents.length, selectedChildrenFlat.length, query]);
 
+  const getChildSearchResults = (parent: Genre) => {
+    const children = parentChildMap.get(parent.id);
+    if (!children || !children.length) return [];
+    const childMap = new Map();
+    children.forEach(c => {
+      childMap.set(c.id, c);
+    });
+
+  }
+
+  const childDupeCheck = (id: string) => {
+    console.log('check')
+    if (childrenSearchResults.current.includes(id)) return false;
+    if (query.trim().length) {
+      childrenSearchResults.current = [...childrenSearchResults.current, id];
+    }
+    return true;
+  }
+
   if (graphType !== "artists") return null;
 
   return (
@@ -231,6 +249,7 @@ export default function GenresFilter({
       if (open) setOpenMap(defaultOpenMap);
     }}
       trigger={
+        // Collapsed Genres Button
         <Button size="lg" variant="outline" className={`${totalSelected > 0 ? "px-4" : ""}`}>
           {`Genres`}
           {totalSelected > 0 ? (
@@ -254,6 +273,7 @@ export default function GenresFilter({
       className="p-0 overflow-hidden"
       side="bottom"
       >
+      {/* Expanded List */}
       <Command>
         <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
         <CommandList ref={listRef} key={query.trim() ? "searching" : "empty"}>
@@ -329,10 +349,11 @@ export default function GenresFilter({
                   <CollapsibleContent>
                     <div className={query ? "" : "pl-8"}>
                       {parentChildMap.get(genre.id).map((child) => {
+                        if (!child) return null;
                         const childChecked = isChildSelected(genre, child.id);
                         return (
                           <CommandItem
-                            key={child.id}
+                            key={`${genre.id}-${child.id}`}
                             value={child.name}
                             onSelect={() => toggleChild(genre, child)}
                             className={`flex items-center gap-2 `}
