@@ -57,9 +57,9 @@ export function GenreInfo({
     if (!nodes || nodes.length === 0) return null
     const items = nodes.slice(0, limitRelated)
     return (
-      <div className="flex flex-col items-start gap-x-1.5 gap-3">
-        <span className="text-md text-muted-foreground">{label}:</span>
-        <div className='flex items-center gap-1.5 flex-wrap'>
+      <div className="flex flex-col items-start gap-2">
+        <span className="text-md font-medium text-muted-foreground">{label}:</span>
+        <div className='flex items-center gap-1 flex-wrap'>
           {items.map((node, i) => (
             <>
               {onLinkedGenreClick ? (
@@ -67,7 +67,7 @@ export function GenreInfo({
               ) : (
                 <span key={node.id}>{node.name}</span>
               )}
-              {i < items.length - 1 ? ' · ' : ''}
+              {/* {i < items.length - 1 ? ' · ' : ''} */}
             </>
           ))}
         </div>
@@ -432,8 +432,8 @@ export function GenreInfo({
               {/* Related */}
               {genreError && <p>Can’t find {selectedGenre?.name} 🤔</p>}
               {!genreError && (
-                <div className='flex flex-col gap-2'>
-                  <text className='text-md font-semibold'>Related</text>
+                <div className='flex flex-col gap-3'>
+                  <text className='text-md font-semibold'>Relationships</text>
                   <>
                     {relatedLine('Subgenre of', selectedGenre?.subgenre_of)}
                     {relatedLine('Subgenres', selectedGenre?.subgenres)}
