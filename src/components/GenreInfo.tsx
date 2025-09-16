@@ -27,6 +27,7 @@ interface GenreInfoProps {
   onBadDataSubmit: (id: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => Promise<boolean>;
   topArtists?: Artist[];
   getArtistImageByName?: (name: string) => string | undefined;
+  genreColorMap?: Map<string, string>;
 }
 
 export function GenreInfo({
@@ -43,6 +44,7 @@ export function GenreInfo({
     onBadDataSubmit,
     topArtists,
     getArtistImageByName,
+    genreColorMap,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(true)
@@ -59,17 +61,28 @@ export function GenreInfo({
     return (
       <div className="flex flex-col items-start gap-2">
         <span className="text-md font-medium text-muted-foreground">{label}:</span>
-        <div className='flex items-center gap-1 flex-wrap'>
-          {items.map((node, i) => (
-            <>
-              {onLinkedGenreClick ? (
-                <Badge asChild variant={'outline'} ><Button variant="ghost" size="sm" key={node.id} onClick={() => onLinkedGenreClick(node.id)}>{node.name}</Button></Badge>
-              ) : (
-                <span key={node.id}>{node.name}</span>
-              )}
-              {/* {i < items.length - 1 ? ' · ' : ''} */}
-            </>
-          ))}
+        <div className='flex items-center gap-1.5 flex-wrap'>
+          {items.map((node, i) => {
+            const genreColor = genreColorMap?.get(node.id);
+            return (
+              <>
+                {onLinkedGenreClick ? (
+                  <Badge asChild variant={'outline'} key={node.id}>
+                    <Button variant="ghost" size="sm" onClick={() => onLinkedGenreClick(node.id)}>
+                      <span
+                        className="inline-block rounded-full h-2 w-2"
+                        style={{ backgroundColor: genreColor ?? '#ffffff' }}
+                      />
+                      {node.name}
+                    </Button>
+                  </Badge>
+                ) : (
+                  <span key={node.id}>{node.name}</span>
+                )}
+                {/* {i < items.length - 1 ? ' · ' : ''} */}
+              </>
+            );
+          })}
         </div>
       </div>
     )

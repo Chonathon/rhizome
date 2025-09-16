@@ -593,6 +593,7 @@ function App() {
                 onLinkedGenreClick={onLinkedGenreClick}
                 show={graph === 'genres' && !!selectedGenre && !showArtistCard}
                 genreLoading={artistsLoading}
+                genreColorMap={genreColorMap}
                 onTopArtistClick={onTopArtistClick}
                 deselectGenre={() => {
                   setSelectedGenre(undefined);

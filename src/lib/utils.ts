@@ -417,6 +417,3 @@ export const fixWikiImageURL = (url: string) => {
   }
   return url;
 }
-
-// Compute an artist accent color based on the first matching genre color.
-// Falls back to a neutral theme-based color when no genre mapping is available.
