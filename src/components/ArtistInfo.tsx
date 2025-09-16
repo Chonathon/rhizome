@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
-import { fixWikiImageURL, formatDate, formatNumber, clusterColors } from "@/lib/utils";
+import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
 import { CirclePlay, SquarePlus, Ellipsis, Info, Flag } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,6 +28,9 @@ interface ArtistInfoProps {
   onBadDataSubmit: (id: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => Promise<boolean>;
   onGenreClick?: (name: string) => void;
   getArtistImageByName?: (name: string) => string | undefined;
+  getArtistByName?: (name: string) => Artist | undefined;
+  genreColorMap?: Map<string, string>;
+  getArtistColor: (artist: Artist) => string;
 }
 
 export function ArtistInfo({
@@ -41,6 +44,9 @@ export function ArtistInfo({
   onBadDataSubmit,
   onGenreClick,
   getArtistImageByName,
+  getArtistByName,
+  genreColorMap,
+  getArtistColor,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -281,6 +287,8 @@ export function ArtistInfo({
                     <div className="flex flex-wrap items-center gap-1.5">
                       {similarFilter(selectedArtist.similar).map((name) => {
                         const img = getArtistImageByName?.(name);
+                        const artistObj = getArtistByName?.(name);
+                        const accent = getArtistColor(artistObj!);
                         const initial = name?.[0]?.toUpperCase() ?? '?';
                         return (
                           <Badge key={name} asChild variant="outline" title={`Go to ${name}`}>
@@ -290,18 +298,23 @@ export function ArtistInfo({
                               onClick={() => setArtistFromName(name)}
                               className="cursor-pointer inline-flex items-center gap-1.5"
                             >
-                              {img ? (
-                                <img
-                                  src={img}
-                                  alt={`${name} avatar`}
-                                  className="w-4 h-4 rounded-full object-cover"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <span className="w-4 h-4 rounded-full bg-muted text-[10px] leading-4 text-center">
-                                  {initial}
-                                </span>
-                              )}
+                              <span
+                                className="inline-flex items-center justify-center rounded-full border-2 w-[18px] h-[18px] p-[1px]"
+                                style={{ borderColor: accent }}
+                              >
+                                {img ? (
+                                  <img
+                                    src={img}
+                                    alt={`${name} avatar`}
+                                    className="w-4 h-4 rounded-full object-cover"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <span className="w-4 h-4 rounded-full bg-muted text-[10px] leading-4 text-center">
+                                    {initial}
+                                  </span>
+                                )}
+                              </span>
                               {name}
                             </Button>
                           </Badge>
@@ -318,19 +331,13 @@ export function ArtistInfo({
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                       {selectedArtist.genres.map((name) => {
                         const key = `${name}`;
-                        // Simple stable color selection from cluster palette
-                        const token = String(name).toLowerCase();
-                        let hash = 0;
-                        for (let i = 0; i < token.length; i++) {
-                          hash = (hash * 31 + token.charCodeAt(i)) >>> 0;
-                        }
-                        const color = clusterColors[hash % clusterColors.length];
                         return (
                           <>
                             {onGenreClick && (
                               <Badge key={key} variant="outline" title={`Go to ${name}`} asChild>
                                 <Button variant="ghost" size="sm" onClick={() => onGenreClick(name)} className="cursor-pointer inline-flex items-center gap-1">
-                                  <span className="inline-block rounded-full h-2 w-2" style={{ backgroundColor: color }} />
+                                  {/* TODO: Hook up genre color */}
+                                  <span className="inline-block rounded-full h-2 w-2 bg-amber-400" />
                                   {name}
                                 </Button>
                               </Badge>

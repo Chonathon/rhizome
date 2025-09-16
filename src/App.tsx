@@ -180,6 +180,9 @@ function App() {
     const raw = a?.image as string | undefined;
     return raw ? fixWikiImageURL(raw) : undefined;
   }
+  const getArtistByName = (name: string) => {
+    return currentArtists.find((a) => a.name === name);
+  }
   const onGenreNodeClick = (genre: Genre) => {
     // this code makes the mini genre graph
     // if (genreHasChildren(genre, genreClusterMode)) {
@@ -611,6 +614,9 @@ function App() {
                 onBadDataSubmit={onBadDataArtistSubmit}
                 onGenreClick={onGenreNameClick}
                 getArtistImageByName={getArtistImageByName}
+                getArtistByName={getArtistByName}
+                genreColorMap={genreColorMap}
+                getArtistColor={getArtistColor}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

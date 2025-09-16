@@ -57,13 +57,13 @@ export function GenreInfo({
     if (!nodes || nodes.length === 0) return null
     const items = nodes.slice(0, limitRelated)
     return (
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+      <div className="flex flex-col items-start gap-x-1.5 gap-3">
         <span className="text-md text-muted-foreground">{label}:</span>
         <div className='flex items-center gap-1.5 flex-wrap'>
           {items.map((node, i) => (
             <>
               {onLinkedGenreClick ? (
-                <Button variant="link" size="lg" key={node.id} onClick={() => onLinkedGenreClick(node.id)}>{node.name}</Button>
+                <Badge asChild variant={'outline'} ><Button variant="ghost" size="sm" key={node.id} onClick={() => onLinkedGenreClick(node.id)}>{node.name}</Button></Badge>
               ) : (
                 <span key={node.id}>{node.name}</span>
               )}
