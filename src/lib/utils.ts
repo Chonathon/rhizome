@@ -375,23 +375,3 @@ export const getRootGenreOfChild = (genre: Genre, genres: Genre[], genreClusterM
     });
   }
 }
-
-// const addChildren = (parentId: string, level: number) => {
-//   const genre = genresMap.get(parentId);
-//   if (!genre) return;
-//
-//   let children: {id: string, name: string, mode: GenreClusterMode}[] = [];
-//   modes.forEach((mode) => {
-//     children.push(...genre[PARENT_FIELD_MAP[mode]].map(g => {
-//       return {...g, mode};
-//     }))
-//   });
-//
-//   for (const child of children) {
-//     const childId = child.id;
-//     const childGenre = genresMap.get(childId);
-//     if (childGenre) {
-//       allChildren.push({ id: childId, name: child.name } as Genre);
-//     }
-//     addChildren(childId, level + 1);
-//   }

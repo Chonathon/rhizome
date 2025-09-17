@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
+import ArtistBadge from "@/components/ArtistBadge";
+import GenreBadge from "@/components/GenreBadge";
 
 
 interface ArtistInfoProps {
@@ -26,6 +28,12 @@ interface ArtistInfoProps {
   setArtistFromName: (name: string) => void;
   similarFilter: (artists: string[]) => string[];
   onBadDataSubmit: (id: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => Promise<boolean>;
+  onGenreClick?: (name: string) => void;
+  getArtistImageByName?: (name: string) => string | undefined;
+  getArtistByName?: (name: string) => Artist | undefined;
+  genreColorMap?: Map<string, string>;
+  getArtistColor: (artist: Artist) => string;
+  getGenreNameById?: (id: string) => string | undefined;
 }
 
 export function ArtistInfo({
@@ -37,6 +45,12 @@ export function ArtistInfo({
   setArtistFromName,
   similarFilter,
   onBadDataSubmit,
+  onGenreClick,
+  getArtistImageByName,
+  getArtistByName,
+  genreColorMap,
+  getArtistColor,
+  getGenreNameById,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -97,6 +111,9 @@ export function ArtistInfo({
     }
   }
 
+  const artistGenres = [
+    { name: ''}
+  ]
 
 
   if (!show) return null;
@@ -272,18 +289,48 @@ export function ArtistInfo({
                   <div className="flex flex-col gap-2">
                     <span className="text-md font-semibold">Similar Artists</span>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      {similarFilter(selectedArtist.similar).map((name) => (
-                        <Badge key={name} asChild variant="outline" title={`Go to ${name}`}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                      {similarFilter(selectedArtist.similar).map((name) => {
+                        const img = getArtistImageByName?.(name);
+                        const artistObj = getArtistByName?.(name);
+                        const genreColor = artistObj ? getArtistColor(artistObj) : undefined;
+                        return (
+                          <ArtistBadge
+                            key={name}
+                            name={name}
+                            imageUrl={img}
+                            genreColor={genreColor}
                             onClick={() => setArtistFromName(name)}
-                            className="cursor-pointer"
-                          >
-                            {name}
-                          </Button>
-                        </Badge>
-                      ))}
+                            title={`Go to ${name}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Genres */}
+                {selectedArtist?.genres && selectedArtist.genres.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-md font-semibold">Genres</span>
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                      {selectedArtist.genres.map((genreId) => {
+                        const name = getGenreNameById?.(genreId) ?? genreId;
+                        const key = `${genreId}`;
+                        const genreColor = genreColorMap?.get(genreId);
+                        return (
+                          <>
+                            {onGenreClick && (
+                              <GenreBadge
+                                key={key}
+                                name={name}
+                                genreColor={genreColor}
+                                onClick={() => onGenreClick(name)}
+                                title={`Go to ${name}`}
+                              />
+                            )}
+                          </>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
