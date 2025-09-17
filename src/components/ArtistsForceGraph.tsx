@@ -1,11 +1,10 @@
-import {Artist, NodeLink, Tag} from "@/types";
+import {Artist, NodeLink} from "@/types";
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
-import {mixColors} from "@/lib/utils";
 
 interface ArtistsForceGraphProps {
     artists: Artist[];

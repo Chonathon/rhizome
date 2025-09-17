@@ -2,7 +2,7 @@ import { BasicNode, Genre, Artist } from '@/types'
 import {fixWikiImageURL, formatNumber} from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
-import useGenreArtists from "@/hooks/useGenreArtists";
+import useArtists from "@/hooks/useArtists";
 import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge} from './ui/badge';
@@ -19,7 +19,7 @@ interface GenreInfoProps {
   selectedGenre?: Genre;
   allArtists: (genre: Genre) => void
   show: boolean;
-  genreLoading: boolean;
+  genreArtistsLoading: boolean;
   genreError?: boolean;
   deselectGenre: () => void;
   onSelectGenre?: (name: string) => void;
@@ -36,7 +36,7 @@ interface GenreInfoProps {
 export function GenreInfo({
   selectedGenre,
   show,
-  genreLoading,
+  genreArtistsLoading,
   genreError,
   allArtists,
   deselectGenre,
@@ -293,7 +293,7 @@ export function GenreInfo({
                     ${isDesktop ? 'gap-3' : 'items-center justify-between gap-3 mt-3'}`}>
                     
                     {!isDesktop && <Button
-                      disabled={genreLoading}
+                      disabled={genreArtistsLoading}
                       size="xl"
                       variant="secondary"
                       onClick={() => selectedGenre && allArtists(selectedGenre)}
@@ -410,7 +410,7 @@ export function GenreInfo({
                     })}
                     </div>
                 <Button
-                  disabled={genreLoading}
+                  disabled={genreArtistsLoading}
                   size="lg"
                   variant="secondary"
                   onClick={() => selectedGenre && allArtists(selectedGenre)}

@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {ReportReason} from "@/types";
+import {BAD_DATA_DESC_LIMIT} from "@/constants";
 
 interface ReportIncorrectInfoDialogProps {
   open: boolean;
@@ -44,7 +45,7 @@ export function ReportIncorrectInfoDialog({
     "Please let us know what seems incorrect. Select a reason and provide any extra details if you’d like.",
   submitLabel = "Submit",
   cancelLabel = "Cancel",
-    descriptionLimit = 150,
+    descriptionLimit = BAD_DATA_DESC_LIMIT,
 }: ReportIncorrectInfoDialogProps) {
   const [reason, setReason] = useState<string | null>(null);
   const [details, setDetails] = useState("");

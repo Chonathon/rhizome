@@ -8,6 +8,7 @@ interface Options<T extends { id: string }>
     onParentSelect: (parent: T) => void;
     onParentDeselect: (parent: T) => void;
     onChildClick: (child: T, parent: T) => void;
+    onSelectionChange: (selection: T[]) => void;
     initialParentSelected: Record<string, boolean>;
     initialSelectedChildren: Record<string, Set<string>>;
   }> {}
@@ -22,6 +23,7 @@ export function useTriStateSelection<T extends { id: string }>(
     onParentSelect,
     onParentDeselect,
     onChildClick,
+      onSelectionChange,
     initialParentSelected,
     initialSelectedChildren,
   } = options;
@@ -48,7 +50,6 @@ export function useTriStateSelection<T extends { id: string }>(
   }, [parents]);
 
   const getParentState = (parent: T): TriState => {
-    const children = getChildren(parent);
     const sel = selectedChildren[parent.id] ?? new Set<string>();
     const isParent = parentSelected[parent.id] ?? false;
     // If parent explicitly selected, show checked.

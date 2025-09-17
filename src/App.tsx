@@ -1,8 +1,8 @@
 import './App.css'
-import { useEffect, useState } from 'react'
+import {useEffect, useMemo, useState} from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import useGenreArtists from "@/hooks/useGenreArtists";
+import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
@@ -12,7 +12,7 @@ import {
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
-  GraphType,
+  GraphType, InitialGenreFilter,
   NodeLink, Tag
 } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,18 +24,19 @@ import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import {
   buildGenreColorMap,
-  buildGenreRootColorMap,
+  generateSimilarLinks,
+  isRootGenre,
+  isSingletonGenre,
+  mixColors,
+  primitiveArraysEqual,
   buildGenreTree,
   filterOutGenreTree,
-  generateSimilarLinks, 
-  mixColors, 
   fixWikiImageURL
 } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
-// import GenrePanel from './components/GenrePanel'r'
 import NodeLimiter from './components/NodeLimiter'
 import useSimilarArtists from "@/hooks/useSimilarArtists";
 import { SidebarProvider } from "@/components/ui/sidebar"
@@ -43,14 +44,19 @@ import { AppSidebar } from "@/components/AppSideBar"
 import { GenreInfo } from './components/GenreInfo';
 import GenresFilter from './components/GenresFilter';
 import {useTheme} from "next-themes";
-
-const DEFAULT_NODE_COUNT = 2000;
-const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
-const DARK_THEME_NODE_COLOR = '#8a80ff';
-const LIGHT_THEME_NODE_COLOR = '#4a4a4a';
+import {
+  DEFAULT_DARK_NODE_COLOR, DEFAULT_ARTIST_LIMIT_TYPE,
+  DEFAULT_CLUSTER_MODE, DEFAULT_GENRE_LIMIT_TYPE,
+  DEFAULT_NODE_COUNT,
+  DEFAULT_LIGHT_NODE_COLOR,
+  TOP_ARTISTS_TO_FETCH, EMPTY_GENRE_FILTER_OBJECT, SINGLETON_PARENT_GENRE, GENRE_FILTER_CLUSTER_MODE
+} from "@/constants";
 
 function App() {
-  const [selectedGenre, setSelectedGenre] = useState<Genre | undefined>(undefined);
+  const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
+  const selectedGenreIDs = useMemo(() => {
+    return selectedGenres.map(genre => genre.id);
+  }, [selectedGenres]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
@@ -62,25 +68,27 @@ function App() {
     const storedDagMode = localStorage.getItem('dagMode');
     return storedDagMode ? JSON.parse(storedDagMode) : false;
   });
-  const { addRecentSelection } = useRecentSelections();
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
-  const [genreMiniView, setGenreMiniView] = useState<boolean>(false);
   const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>('artistCount');
-  const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>('listeners');
-  const [genreNodeCount, setGenreNodeCount] = useState<number>(0);
-  const [artistNodeCount, setArtistNodeCount] = useState<number>(0);
+  const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>(DEFAULT_GENRE_LIMIT_TYPE);
+  const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>(DEFAULT_ARTIST_LIMIT_TYPE);
+  const [genreNodeCount, setGenreNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
+  const [artistNodeCount, setArtistNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
+  const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
+  const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
+  const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
+  const { addRecentSelection } = useRecentSelections();
   const {
     genres,
     genreLinks,
     genresLoading,
     genresError,
-      genreRoots,
+    genreRoots,
     flagBadGenreData,
     genresDataFlagLoading,
-      setGenres,
+    setGenres, // Don't use this unless necessary for data synchronization
   } = useGenres();
   const {
     artists,
@@ -90,13 +98,20 @@ function App() {
     flagBadArtistData,
     artistsDataFlagLoading,
     artistsDataFlagError,
-      fetchAllArtists,
-      totalArtistsInDB,
-      topArtists
-  } = useGenreArtists(selectedGenre ? selectedGenre.id : undefined);
+    totalArtistsInDB,
+    topArtists,
+  } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { theme } = useTheme();
-  const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
+
+  const singletonParentGenre = useMemo(() => {
+    return {
+      ...SINGLETON_PARENT_GENRE,
+      subgenres: genres.filter(g => isSingletonGenre(g, GENRE_FILTER_CLUSTER_MODE)).map(s => {
+        return {id: s.id, name: s.name}
+      })
+    }
+  }, [genres]);
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
@@ -105,41 +120,46 @@ function App() {
     localStorage.setItem('dagMode', JSON.stringify(dagMode));
   }, [dagMode]);
 
+  // Custom escape key functionality
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         // Prefer logical selection state over UI visibility flags
+        if (graph === 'genres' && selectedGenres.length){
+          deselectGenre();
+          return;
+        }
         if (selectedArtist) {
           deselectArtist();
           return;
         }
-        if (selectedGenre) {
-          setSelectedGenre(undefined);
-          return;
-        }
-        // resetAppState();
-
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedArtist, selectedGenre]);
+  }, [selectedArtist, selectedGenres]);
 
+  // Custom command-K key functionality for search
   useEffect(() => {
-    //console.log(artists.length)
-    if (selectedGenre) {
-      const nodeCount = Math.min(artists.length, DEFAULT_NODE_COUNT);
-      onArtistNodeCountChange(nodeCount);
-    } else {
-      setCurrentArtists(artists);
-      setCurrentArtistLinks(artistLinks);
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
     }
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down)
+  }, []);
+
+  // Sets current artists/links shown in the graph when artists are fetched from the DB
+  useEffect(() => {
+    setCurrentArtists(artists);
+    setCurrentArtistLinks(artistLinks);
   }, [artists]);
 
+  // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
     const nodeCount = genres.length;
     onGenreNodeCountChange(nodeCount);
@@ -158,65 +178,52 @@ function App() {
     }
   }, [similarArtists]);
 
-  useEffect(() => {
-  const down = (e: KeyboardEvent) => {
-    if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      setSearchOpen((prev) => !prev);
-    }
-  }
-  document.addEventListener("keydown", down);
-  return () => document.removeEventListener("keydown", down)
-}, [])
-
   const setArtistFromName = (name: string) => {
     const artist = currentArtists.find((a) => a.name === name);
     if (artist) {
       onArtistNodeClick(artist);
     }
   }
+
   const getArtistImageByName = (name: string) => {
     const a = currentArtists.find((x) => x.name === name);
     const raw = a?.image as string | undefined;
     return raw ? fixWikiImageURL(raw) : undefined;
   }
+
   const getArtistByName = (name: string) => {
     return currentArtists.find((a) => a.name === name);
   }
+
   const getGenreNameById = (id: string) => {
     return genres.find((g) => g.id === id)?.name;
   }
+
   const onGenreNodeClick = (genre: Genre) => {
-    // this code makes the mini genre graph
-    // if (genreHasChildren(genre, genreClusterMode)) {
-    //   setGenreMiniView(true);
-    //   setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
-    // }
-    setSelectedGenre(genre);
-    setShowArtistCard(false); // ensure only one card visible
+    if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+    setInitialGenreFilter(createInitialGenreFilterObject(genre));
+    setSelectedGenres([genre]);
+    setShowArtistCard(false); // ensure only one card
+    setSelectedArtist(undefined);
     addRecentSelection(genre);
   }
+
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
   const onShowAllArtists = (genre: Genre) => {
-    setSelectedGenre(genre);
+    if (!selectedGenres.length) setSelectedGenres([genre]); // safety in case no genre selected
     setGraph('artists');
     addRecentSelection(genre);
     console.log("Show all artists for genre:", genre);
   }
-  // For clicking on a genre node in the Genres graph: only show the GenreInfo, do not switch graphs
-  const onGenreNodePreview = (genre: Genre) => {
-    setSelectedGenre(genre);
-    setShowArtistCard(false); // ensure only one card visible
-    addRecentSelection(genre);
-    console.log("Genre preview:", genre);
-  }
+
+  // Switch to artists graph and select the clicked artist
   const onTopArtistClick = (artist: Artist) => {
-    // Switch to artists graph and select the clicked artist
     setGraph('artists');
     setSelectedArtist(artist);
     setShowArtistCard(true);
     addRecentSelection(artist);
   }
+
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
       setSelectedArtist(artist);
@@ -227,49 +234,41 @@ function App() {
       createSimilarArtistGraph(artist);
     }
   }
+
   const resetAppState = () => {
     setGraph('genres');
     setCurrentGenres({nodes: genres, links: genreLinks.filter(link => {
         return DEFAULT_CLUSTER_MODE.includes(link.linkType as "subgenre" | "influence" | "fusion")
       })});
-    setSelectedGenre(undefined);
+    deselectGenre();
     deselectArtist();
-    setGenreMiniView(false);
     setCanCreateSimilarArtistGraph(false);
-    setCurrentArtists([]);
-    setCurrentArtistLinks([]);
     setGenreClusterMode(DEFAULT_CLUSTER_MODE);
   }
+
+  const deselectGenre = () => {
+    setSelectedGenres([]);
+    setGraph('genres');
+    setCurrentArtists([]);
+    setCurrentArtistLinks([]);
+    setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
+  }
+
   const deselectArtist = () => {
     setSelectedArtist(undefined);
     setShowArtistCard(false);
     setSelectedArtistNoGenre(undefined);
   }
+
   const similarArtistFilter = (similarArtists: string[]) => {
     return similarArtists.filter(s => currentArtists.some(a => a.name === s));
   }
+
   const createSimilarArtistGraph = (artistResult: Artist) => {
     setSelectedArtist(artistResult);
     setSelectedArtistNoGenre(artistResult);
     setShowArtistCard(true);
     setCanCreateSimilarArtistGraph(true);
-  }
-  const onParentGenreClick = (genre: Genre) => {
-    setCurrentGenres(buildGenreTree(genres, genre, genreClusterMode));
-  }
-  const onParentGenreDeselect = (genre: Genre) => {
-    if (currentGenres){
-      setCurrentGenres(filterOutGenreTree(currentGenres, genre, genreClusterMode));
-    }
-  }
-  const onParentGenreReselect = (genre: Genre) => {
-    if (currentGenres){
-      const reselectedGenreData = buildGenreTree(genres, genre, genreClusterMode);
-      setCurrentGenres({
-        nodes: [...currentGenres.nodes, ...reselectedGenreData.nodes],
-        links: [...currentGenres.links, ...reselectedGenreData.links],
-      });
-    }
   }
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
     setGenreClusterMode([...newMode]);
@@ -277,11 +276,13 @@ function App() {
       setCurrentGenres({ nodes: currentGenres.nodes, links: filterLinksByClusterMode(newMode) });
     }
   }
+
   const filterLinksByClusterMode = (newMode: GenreClusterMode[]) => {
     return genreLinks && genreLinks.length
         ? genreLinks.filter(l => newMode.includes(l.linkType as "subgenre" | "influence" | "fusion"))
         : [];
   }
+
   const onGenreNodeCountChange = (count: number) => {
     setGenreNodeCount(count);
     if (genres && genres.length && count < genres.length) {
@@ -300,41 +301,26 @@ function App() {
       setCurrentGenres({ nodes: genres, links: filterLinksByClusterMode(genreClusterMode) });
     }
   }
-  const onArtistNodeCountChange = (count: number) => {
-    setArtistNodeCount(count);
-    if (!selectedGenre) {
-      fetchAllArtists(artistNodeLimitType, count);
-    } else if (artists && artists.length && count < artists.length) {
-      const filteredArtists = [...artists]
-          .sort((a: Artist, b: Artist) => b[artistNodeLimitType] - a[artistNodeLimitType])
-          .slice(0, count);
-      const artistSet = new Set(filteredArtists.map((artist: Artist) => artist.id));
-      const filteredLinks = artistLinks.filter(l => {
-        return artistSet.has(l.source) && artistSet.has(l.target);
-      });
-      setCurrentArtists(filteredArtists);
-      setCurrentArtistLinks(filteredLinks);
-    } else {
-      setCurrentArtists(artists);
-      setCurrentArtistLinks(artistLinks);
-    }
-  }
+
   const showGenreNodeLimiter = () => {
     if (graph === 'genres') {
       return !!genres && !genresLoading && !genresError;
     } else return false;
   }
+
   const showArtistNodeLimiter = () => {
     if (graph === 'artists') {
       return !!artists && !artistsLoading && !artistsError;
     } else return false;
   }
+
   const onLinkedGenreClick = (genreID: string) => {
     const newGenre = genres.find((g) => g.id === genreID);
     if (newGenre) {
       onGenreNodeClick(newGenre);
     }
   }
+
   const onGenreNameClick = (name: string) => {
     const newGenre = genres.find((g) => g.name === name);
     if (newGenre) {
@@ -344,22 +330,22 @@ function App() {
       toast.error(`Genre not found: ${name}`);
     }
   }
+
   const onTabChange = async (graphType: GraphType) => {
     if (graphType === 'genres') {
+      setIsBeforeArtistLoad(true);
       setGraph('genres');
-      if (selectedGenre) {
-        setCurrentArtists([]);
-        setCurrentArtistLinks([]);
-      }
-      setSelectedGenre(undefined);
+      setCurrentArtists([]);
+      setCurrentArtistLinks([]);
+      setSelectedGenres([]);
+      setShowArtistCard(false);
+      setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
     } else {
+      if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
-      if (!selectedGenre && !currentArtists.length) {
-        setArtistNodeCount(DEFAULT_NODE_COUNT);
-        await fetchAllArtists(artistNodeLimitType, DEFAULT_NODE_COUNT);
-      }
     }
   }
+
   const getGenreRootsFromID = (genreID: string) => {
     const genre = genres.find((g) => g.id === genreID);
     if (genre) {
@@ -367,6 +353,7 @@ function App() {
     }
     return [];
   }
+
   const onBadDataGenreSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
     //TODO: use actual user ID when accounts are implemented
     const userID = 'dev';
@@ -379,9 +366,9 @@ function App() {
       details,
     }
     const success = await flagBadGenreData(report);
-    if (success && !hasFlag && selectedGenre && currentGenres) {
-      const updatedGenre = {...selectedGenre, badDataFlag: true};
-      setSelectedGenre(updatedGenre);
+    if (success && !hasFlag && selectedGenres.length && currentGenres) {
+      const updatedGenre = {...selectedGenres[0], badDataFlag: true};
+      setSelectedGenres([updatedGenre]);
       // 2 options for synchronizing flagged state:
       // this doesn't set genres, so a browser refresh is needed if genres are filtered after this to reflect the genre's flag
       // setCurrentGenres({ nodes: [...currentGenres.nodes.filter(n => n.id !== updatedGenre.id), updatedGenre], links: currentGenres.links });
@@ -390,6 +377,7 @@ function App() {
     }
     return success;
   }
+
   const onBadDataArtistSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
     //TODO: use actual user ID when accounts are implemented
     const userID = 'dev';
@@ -415,13 +403,15 @@ function App() {
     }
     return success;
   }
-  const getRootGenreFromTags = (tags?: Tag[] | null) => {
-    const safeTags = tags ?? [];
-    const genreTags = safeTags.filter(t => genres.some((g) => g.name === t.name));
-    if (genreTags.length > 0) {
-      const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
-      const tagGenre = genres.find((g) => g.name === bestTag.name);
-      if (tagGenre) return tagGenre.rootGenres;
+
+  const getRootGenreFromTags = (tags: Tag[]) => {
+    if (tags && tags.length) {
+      const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
+      if (genreTags.length > 0) {
+        const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
+        const tagGenre = genres.find((g) => g.name === bestTag.name);
+        if (tagGenre) return tagGenre.rootGenres;
+      }
     }
     return [];
   }
@@ -436,7 +426,7 @@ function App() {
     if (!color) {
       for (const g of artist.genres) {
         color = getGenreColorFromID(g);
-        if (color && color !== DARK_THEME_NODE_COLOR && color !== LIGHT_THEME_NODE_COLOR) break;
+        if (color && color !== DEFAULT_DARK_NODE_COLOR && color !== DEFAULT_LIGHT_NODE_COLOR) break;
       }
     }
     // If no roots are found
@@ -469,19 +459,81 @@ function App() {
   const colorFallback = (genreID?: string) => {
     let color;
     if (genreID) color = genreColorMap.get(genreID);
-    if (!color) color = theme === 'dark' ? DARK_THEME_NODE_COLOR : LIGHT_THEME_NODE_COLOR;
+    if (!color) color = theme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
     return color;
+  }
+
+  const onGenreFilterSelectionChange = async (selectedIDs: string[]) => {
+    if (graph === 'genres') {
+      // filters genres in genre mode; buggy
+      // setCurrentGenres({ nodes: genres.filter((g) => selectedIDs.includes(g.id)), links: genreLinks.filter(l => {
+      //   return genreClusterMode
+      //       .includes(l.linkType as "subgenre" | "influence" | "fusion") && (selectedIDs.includes(l.target) || selectedIDs.includes(l.source));
+      //   })
+      // });
+    } else {
+      if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+      // console.log('gf selection change: ' + selectedIDs.length)
+      if (selectedIDs.length === 0) {
+        if (selectedGenres.length !== 0) setSelectedGenres([]);
+      } else {
+        if (!primitiveArraysEqual(selectedIDs, selectedGenres.map(genre => genre.id))) {
+          setSelectedGenres(selectedIDs.map(s => {
+            return { id: s } as Genre
+          }));
+        }
+      }
+    }
+  }
+
+  const artistNodeCountSelection = (value: number) => {
+    if (value <= artistNodeCount) {
+      if (artists && artists.length) {
+        const filteredArtists = [...artists]
+            .sort((a: Artist, b: Artist) => b[artistNodeLimitType] - a[artistNodeLimitType])
+            .slice(0, value);
+        const artistSet = new Set(filteredArtists.map((artist: Artist) => artist.id));
+        const filteredLinks = artistLinks.filter(l => {
+          return artistSet.has(l.source) && artistSet.has(l.target);
+        });
+        setCurrentArtists(filteredArtists);
+        setCurrentArtistLinks(filteredLinks);
+      }
+    } else {
+      setArtistNodeCount(value);
+    }
+  }
+
+  // Builds the initial genres for the GenresFilter
+  const createInitialGenreFilterObject = (genre: Genre) => {
+    const isSingleton = isSingletonGenre(genre, GENRE_FILTER_CLUSTER_MODE);
+    const isRoot = isRootGenre(genre, GENRE_FILTER_CLUSTER_MODE);
+    let parents: Record<string, Set<string>> = {};
+    if (isSingleton) {
+      parents = { [SINGLETON_PARENT_GENRE.id]: new Set([genre.id]) };
+    } else if (isRoot) {
+      parents = { [genre.id]: new Set()};
+    } else {
+      const initialSelectedParents = genre.specificRootGenres
+          .filter(g => g.type === GENRE_FILTER_CLUSTER_MODE[0]) // change if multiple modes needed
+          .map(f => f.id);
+      initialSelectedParents.forEach(p => {
+        parents[p] = new Set([genre.id]);
+      });
+    }
+    return { genre, isRoot, parents };
   }
 
   return (
     <SidebarProvider>
       <AppSidebar
-          onLinkedGenreClick={onLinkedGenreClick}
+        onLinkedGenreClick={onLinkedGenreClick}
         setSearchOpen={setSearchOpen}
         onClick={resetAppState}
-        selectedGenre={selectedGenre}>
-          <Toaster />
-          <Gradient />
+        selectedGenre={selectedGenres[0]}
+      >
+        <Toaster />
+        <Gradient />
         <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
           <div className={
             "fixed top-0 left-3 z-50 flex flex-col  items-start lg:flex-row gap-3 p-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
@@ -499,14 +551,14 @@ function App() {
                 </Tabs>
                 { graph === 'artists' &&
                 <div className='flex gap-3'>
-                   <GenresFilter 
-                    genres={genres}
-                    onParentClick={onParentGenreClick}
-                    genreClusterModes={genreClusterMode}
-                    onParentDeselect={onParentGenreDeselect}
-                    onParentSelect={onParentGenreReselect}
+                   <GenresFilter
+                    key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
+                    genres={[...genres, singletonParentGenre]}
+                    genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
                     graphType={graph}
-              />
+                    onGenreSelectionChange={onGenreFilterSelectionChange}
+                    initialSelection={initialGenreFilter}
+                   />
 
                   <Button size='lg' variant='outline'>Mood & Activity
                     <ChevronDown />
@@ -519,13 +571,13 @@ function App() {
           </div>
                 <GenresForceGraph
                   graphData={currentGenres}
-                  onNodeClick={onGenreNodePreview}
+                  onNodeClick={onGenreNodeClick}
                   loading={genresLoading}
                   show={graph === "genres" && !genresError}
                   dag={dagMode}
                   clusterModes={genreClusterMode}
                   colorMap={genreColorMap}
-                  selectedGenreId={selectedGenre?.id}
+                  selectedGenreId={selectedGenres[0]?.id}
                 />
                 <ArtistsForceGraph
                     artists={currentArtists}
@@ -548,10 +600,10 @@ function App() {
                 show={showGenreNodeLimiter()}
             />
             <NodeLimiter
-              totalNodes={artists && artists.length && selectedGenre ? artists.length : totalArtistsInDB ? totalArtistsInDB : DEFAULT_NODE_COUNT}
+              totalNodes={totalArtistsInDB}
               nodeType={'artists'}
-              initialValue={artistNodeCount}
-              onChange={onArtistNodeCountChange}
+              initialValue={currentArtists.length}
+              onChange={(value) => artistNodeCountSelection(value)}
               show={showArtistNodeLimiter()}
             />
           </div>}
@@ -566,16 +618,7 @@ function App() {
                 genreArtistCountThreshold={genreSizeThreshold}
                 setGenreArtistCountThreshold={setGenreSizeThreshold}
               />
-              {/* <GenrePanel
-                genres={genres}
-                onParentClick={onParentGenreClick}
-                genreClusterMode={genreClusterMode}
-                onParentDeselect={onParentGenreDeselect}
-                onParentSelect={onParentGenreReselect}
-                show={graph === 'genres' && !genresLoading && !genresError}
-              /> */}
           </div>
-          
 
           <AnimatePresence mode="popLayout">
             <motion.div
@@ -590,17 +633,12 @@ function App() {
                 `}
             >
               <GenreInfo 
-                selectedGenre={selectedGenre}
+                selectedGenre={selectedGenres[0]}
                 onLinkedGenreClick={onLinkedGenreClick}
-                show={graph === 'genres' && !!selectedGenre && !showArtistCard}
-                genreLoading={artistsLoading}
+                show={graph === 'genres' && selectedGenres.length === 1 && !showArtistCard}
+                genreArtistsLoading={artistsLoading}
                 onTopArtistClick={onTopArtistClick}
-                deselectGenre={() => {
-                  setSelectedGenre(undefined);
-                  setGraph('genres');
-                  setCurrentArtists([]);
-                  setCurrentArtistLinks([]);
-                }}
+                deselectGenre={deselectGenre}
                 onSelectGenre={onLinkedGenreClick}
                 allArtists={onShowAllArtists}
                 onBadDataSubmit={onBadDataGenreSubmit}
@@ -631,13 +669,12 @@ function App() {
               <div
                 className={`flex justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
                 <ResetButton
-
                   onClick={() => {
                     setGraph('genres')
                     // setSelectedArtist(undefined)
                   }
                   }
-                  show={graph === 'artists' && !!selectedGenre}
+                  show={graph === 'artists' && selectedGenres.length === 1}
                 />
                 <motion.div
                   layout
@@ -649,7 +686,7 @@ function App() {
                     currentArtists={currentArtists}
                     genres={currentGenres?.nodes}
                     graphState={graph}
-                    selectedGenre={selectedGenre}
+                    selectedGenres={selectedGenres}
                     selectedArtist={selectedArtist}
                     open={searchOpen}
                     setOpen={setSearchOpen}
