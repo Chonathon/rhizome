@@ -10,6 +10,7 @@ import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import ArtistBadge from "@/components/ArtistBadge";
 
 
 
@@ -405,33 +406,14 @@ export function GenreInfo({
                         : undefined;
                       const initial = artist.name?.[0]?.toUpperCase() ?? '?';
                       return (
-                        <Badge
-                          key={artist.id}
-                          asChild
-                          variant="outline"
-                          title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
-                        >
-                            <Button variant="ghost" size="sm" onClick={() => onTopArtistClick?.(artist)} className="cursor-pointer">
-                             <span
-                                className="inline-flex items-center justify-center rounded-full border-1 size-5"
-                                style={{ borderColor: accent }}
-                              >
-                            {img ? (
-                              <img
-                                src={img}
-                                alt={`${artist.name} avatar`}
-                                className="w-full h-full rounded-full object-cover"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <span className="w-full h-full rounded-full bg-muted text-[10px] leading-4 text-center">
-                                {initial}
-                              </span>
-                            )}
-                            </span>
-                              {artist.name}
-                            </Button>
-                        </Badge>
+                        <ArtistBadge
+                            key={artist.name}
+                            name={artist.name}
+                            imageUrl={img}
+                            accentColor={accent}
+                            onClick={() =>onTopArtistClick?.(artist)}
+                            title={`Go to ${artist.name}`}
+                          />
                       );
                     })}
                     </div>
