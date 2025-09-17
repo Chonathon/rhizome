@@ -30,8 +30,8 @@ export default function GenresFilter({
   genres = [],
   genreClusterModes,
   graphType,
-    onGenreSelectionChange,
-    initialSelection,
+  onGenreSelectionChange,
+  initialSelection,
 }: {
   genres?: Genre[];
   genreClusterModes: GenreClusterMode[];
@@ -39,10 +39,8 @@ export default function GenresFilter({
   onGenreSelectionChange: (selectedIDs: string[]) => void;
   initialSelection: InitialGenreFilter;
 }) {
-  //const isMountingRef = useRef<boolean>(false);
   // Compute the set of top-level genres based on the current cluster modes.
   const topLevelGenres = useMemo(() => {
-    //isMountingRef.current = true;
     const viaUtil = genres.filter((g) => isRootGenre(g, genreClusterModes));
     if (viaUtil.length > 0) return viaUtil;
     // Fallback if util returns none
@@ -70,13 +68,6 @@ export default function GenresFilter({
 
   const childrenSearchResults = useRef<string[]>([]);
 
-  // const buildInitialParents = (child: string) => {
-  //   const parents: Record<string, Set<string>> = {};
-  //   initialSelectedParents.forEach(p => {
-  //     parents[p] = new Set(child);
-  //   });
-  //   return parents;
-  // }
   // Tri-state selection logic is handled by a reusable hook.
   const {
     parentSelected,
@@ -93,24 +84,8 @@ export default function GenresFilter({
     initialSelectedChildren: initialSelection.parents,
   });
 
-  // useEffect(() => {
-  //   if (topLevelGenres.length && initialSelection) {
-  //     // isMountingRef.current = true;
-  //     setParentSelected(prev => {
-  //       const next: Record<string, boolean> = {};
-  //       for (const g of topLevelGenres) next[g.id] = initialSelection.includes(g.id);
-  //       return next;
-  //     });
-  //   }
-  // }, [topLevelGenres, initialSelection]);
-
   // Collapsible open/closed state.
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(defaultOpenMap);
-
-  // Reset collapsible open state when the top-level set changes.
-  useEffect(() => {
-    setOpenMap(defaultOpenMap);
-  }, [defaultOpenMap]);
 
   // When searching, auto-open parents that match or have matching children.
   // Clearing the query resets to default closed state.
@@ -158,7 +133,7 @@ export default function GenresFilter({
       }
       return next;
     });
-  }, [query, topLevelGenres]);
+  }, [query]);
 
   // Determine the parent's tri-state based on its own selection and child selections.
   // Read-only helper to check if a given child is selected under a parent.
@@ -195,11 +170,7 @@ export default function GenresFilter({
     [topLevelGenres, selectedChildren]
   );
 
-  const onSelectionChange = () => {
-    const ids = [...selectedParents.map(p => p.id), ...selectedChildrenFlat.map(c => c.child.id)];
-    onGenreSelectionChange(ids);
-  }
-
+  // Triggers loading artists on selection of genres
   useEffect(() => {
     const ids = [...selectedParents.map(p => p.id), ...selectedChildrenFlat.map(c => c.child.id)];
     onGenreSelectionChange(ids);
@@ -220,6 +191,7 @@ export default function GenresFilter({
     prevSelectedHeightRef.current = nextHeight;
   }, [selectedParents.length, selectedChildrenFlat.length, query]);
 
+  // These were used to try to make fusion/influence work
   const getChildSearchResults = (parent: Genre) => {
     const children = parentChildMap.get(parent.id);
     if (!children || !children.length) return [];
@@ -227,11 +199,8 @@ export default function GenresFilter({
     children.forEach(c => {
       childMap.set(c.id, c);
     });
-
   }
-
   const childDupeCheck = (id: string) => {
-    console.log('check')
     if (childrenSearchResults.current.includes(id)) return false;
     if (query.trim().length) {
       childrenSearchResults.current = [...childrenSearchResults.current, id];
