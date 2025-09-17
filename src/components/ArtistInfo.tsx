@@ -291,13 +291,13 @@ export function ArtistInfo({
                       {similarFilter(selectedArtist.similar).map((name) => {
                         const img = getArtistImageByName?.(name);
                         const artistObj = getArtistByName?.(name);
-                        const accent = artistObj ? getArtistColor(artistObj) : undefined;
+                        const genreColor = artistObj ? getArtistColor(artistObj) : undefined;
                         return (
                           <ArtistBadge
                             key={name}
                             name={name}
                             imageUrl={img}
-                            accentColor={accent}
+                            genreColor={genreColor}
                             onClick={() => setArtistFromName(name)}
                             title={`Go to ${name}`}
                           />

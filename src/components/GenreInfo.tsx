@@ -410,7 +410,7 @@ export function GenreInfo({
                             key={artist.name}
                             name={artist.name}
                             imageUrl={img}
-                            accentColor={accent}
+                            genreColor={accent}
                             onClick={() =>onTopArtistClick?.(artist)}
                             title={`Go to ${artist.name}`}
                           />
