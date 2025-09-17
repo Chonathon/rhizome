@@ -11,6 +11,7 @@ import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
+import GenreBadge from "@/components/GenreBadge";
 
 
 
@@ -68,22 +69,13 @@ export function GenreInfo({
           {items.map((node, i) => {
             const genreColor = genreColorMap?.get(node.id);
             return (
-              <>
-                {onLinkedGenreClick ? (
-                  <Badge asChild variant={'outline'} key={node.id}>
-                    <Button variant="ghost" size="sm" onClick={() => onLinkedGenreClick(node.id)}>
-                      <span
-                        className="inline-block rounded-full h-2 w-2"
-                        style={{ backgroundColor: genreColor ?? '#ffffff' }}
-                      />
-                      {node.name}
-                    </Button>
-                  </Badge>
-                ) : (
-                  <span key={node.id}>{node.name}</span>
-                )}
-                {/* {i < items.length - 1 ? ' · ' : ''} */}
-              </>
+              <GenreBadge
+                key={node.id}
+                name={node.name}
+                onClick={() => onLinkedGenreClick(node.id)}
+                genreColor={genreColor}
+                title={`Go to ${node.name}`}
+              />
             );
           })}
         </div>

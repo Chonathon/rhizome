@@ -24,13 +24,10 @@ export default function GenreBadge({
         className="cursor-pointer inline-flex items-center gap-1.5"
       >
         <span
-          className="inline-flex items-center justify-center rounded-full border-1 size-5"
-          style={{ backgroundColor: genreColor ?? '#ffffff' }}
-        >
-          <span className="w-full h-full rounded-full bg-muted text-[10px] leading-4 text-center">
+        className="inline-block rounded-full h-2 w-2"
+        style={{ backgroundColor: genreColor ?? '#ffffff' }}
+        />
             {initial}
-          </span>
-        </span>
         {name}
       </Button>
     </Badge>
