@@ -413,11 +413,11 @@ export function GenreInfo({
                               <img
                                 src={img}
                                 alt={`${artist.name} avatar`}
-                                className="w-4 h-4 rounded-full object-cover"
+                                className="size-5 rounded-full object-cover"
                                 loading="lazy"
                               />
                             ) : (
-                              <span className="w-4 h-4 rounded-full bg-muted text-[10px] leading-4 text-center">
+                              <span className="size-5 rounded-full bg-muted text-[10px] leading-4 text-center">
                                 {initial}
                               </span>
                             )}
