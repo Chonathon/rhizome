@@ -606,6 +606,7 @@ function App() {
                 topArtists={topArtists}
                 getArtistImageByName={getArtistImageByName}
                 genreColorMap={genreColorMap}
+                getArtistColor={getArtistColor}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}

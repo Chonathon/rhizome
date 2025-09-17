@@ -28,6 +28,7 @@ interface GenreInfoProps {
   topArtists?: Artist[];
   getArtistImageByName?: (name: string) => string | undefined;
   genreColorMap?: Map<string, string>;
+  getArtistColor: (artist: Artist) => string;
 }
 
 export function GenreInfo({
@@ -41,6 +42,7 @@ export function GenreInfo({
   onLinkedGenreClick,
   limitRelated = 5,
   onTopArtistClick,
+  getArtistColor,
     onBadDataSubmit,
     topArtists,
     getArtistImageByName,
@@ -397,6 +399,7 @@ export function GenreInfo({
                     <span className="text-md font-semibold">Top Artists</span>
                     <div className="flex flex-wrap items-center gap-1.5">
                     {topArtists.map((artist) => {
+                      const accent = getArtistColor(artist!);
                       const img = typeof artist.image === 'string' && artist.image.trim()
                         ? fixWikiImageURL(artist.image as string)
                         : undefined;
@@ -409,6 +412,10 @@ export function GenreInfo({
                           title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
                         >
                             <Button variant="ghost" size="sm" onClick={() => onTopArtistClick?.(artist)} className="cursor-pointer">
+                             <span
+                                className="inline-flex items-center justify-center rounded-full border-1 size-5"
+                                style={{ borderColor: accent }}
+                              >
                             {img ? (
                               <img
                                 src={img}
@@ -421,6 +428,7 @@ export function GenreInfo({
                                 {initial}
                               </span>
                             )}
+                            </span>
                               {artist.name}
                             </Button>
                         </Badge>
