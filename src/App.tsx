@@ -415,8 +415,9 @@ function App() {
     }
     return success;
   }
-  const getRootGenreFromTags = (tags: Tag[]) => {
-    const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
+  const getRootGenreFromTags = (tags?: Tag[] | null) => {
+    const safeTags = tags ?? [];
+    const genreTags = safeTags.filter(t => genres.some((g) => g.name === t.name));
     if (genreTags.length > 0) {
       const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
       const tagGenre = genres.find((g) => g.name === bestTag.name);
