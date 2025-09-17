@@ -24,7 +24,7 @@ import { Gradient } from './components/Gradient';
 import { Search } from './components/Search';
 import {
   buildGenreColorMap,
-  generateSimilarLinks, isTopLevelGenre,
+  generateSimilarLinks, isRootGenre, isSingletonGenre,
   mixColors, primitiveArraysEqual
 } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -43,7 +43,7 @@ import {
   DEFAULT_CLUSTER_MODE, DEFAULT_GENRE_LIMIT_TYPE,
   DEFAULT_NODE_COUNT,
   DEFAULT_LIGHT_NODE_COLOR,
-  TOP_ARTISTS_TO_FETCH, EMPTY_GENRE_FILTER_OBJECT
+  TOP_ARTISTS_TO_FETCH, EMPTY_GENRE_FILTER_OBJECT, SINGLETON_PARENT_GENRE, GENRE_FILTER_CLUSTER_MODE
 } from "@/constants";
 
 function App() {
@@ -98,6 +98,15 @@ function App() {
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { theme } = useTheme();
 
+  const singletonParentGenre = useMemo(() => {
+    return {
+      ...SINGLETON_PARENT_GENRE,
+      subgenres: genres.filter(g => isSingletonGenre(g, GENRE_FILTER_CLUSTER_MODE)).map(s => {
+        return {id: s.id, name: s.name}
+      })
+    }
+  }, [genres]);
+
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
 
@@ -110,15 +119,14 @@ function App() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         // Prefer logical selection state over UI visibility flags
+        if (graph === 'genres' && selectedGenres.length){
+          deselectGenre();
+          return;
+        }
         if (selectedArtist) {
           deselectArtist();
           return;
         }
-        if (selectedGenres.length) {
-          setSelectedGenres([]);
-          return;
-        }
-        // resetAppState();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -434,7 +442,7 @@ function App() {
       // });
     } else {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-      console.log('gf selection change' + selectedIDs.length)
+      // console.log('gf selection change: ' + selectedIDs.length)
       if (selectedIDs.length === 0) {
         if (selectedGenres.length !== 0) setSelectedGenres([]);
       } else {
@@ -465,14 +473,18 @@ function App() {
     }
   }
 
+  // Builds the initial genres for the GenresFilter
   const createInitialGenreFilterObject = (genre: Genre) => {
-    const isRoot = isTopLevelGenre(genre, genreClusterMode);
+    const isSingleton = isSingletonGenre(genre, GENRE_FILTER_CLUSTER_MODE);
+    const isRoot = isRootGenre(genre, GENRE_FILTER_CLUSTER_MODE);
     let parents: Record<string, Set<string>> = {};
-    if (isRoot) {
-      parents = { [genre.id]: new Set()}
+    if (isSingleton) {
+      parents = { [SINGLETON_PARENT_GENRE.id]: new Set([genre.id]) };
+    } else if (isRoot) {
+      parents = { [genre.id]: new Set()};
     } else {
       const initialSelectedParents = genre.specificRootGenres
-          .filter(g => genreClusterMode.includes(g.type))
+          .filter(g => g.type === GENRE_FILTER_CLUSTER_MODE[0]) // change if multiple modes needed
           .map(f => f.id);
       initialSelectedParents.forEach(p => {
         parents[p] = new Set([genre.id]);
@@ -510,8 +522,8 @@ function App() {
                 <div className='flex gap-3'>
                    <GenresFilter
                     key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
-                    genres={genres}
-                    genreClusterModes={genreClusterMode}
+                    genres={[...genres, singletonParentGenre]}
+                    genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
                     graphType={graph}
                     onGenreSelectionChange={onGenreFilterSelectionChange}
                     initialSelection={initialGenreFilter}

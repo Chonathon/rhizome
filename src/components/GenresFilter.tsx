@@ -21,7 +21,7 @@ import {
   CommandList,
   CommandSeparator
 } from "@/components/ui/command";
-import {isTopLevelGenre, getParentChildrenMap} from "@/lib/utils";
+import {isRootGenre, getParentChildrenMap} from "@/lib/utils";
 import { PARENT_FIELD_MAP, CHILD_FIELD_MAP } from "@/constants";
 import {g} from "framer-motion/m";
 
@@ -43,7 +43,7 @@ export default function GenresFilter({
   // Compute the set of top-level genres based on the current cluster modes.
   const topLevelGenres = useMemo(() => {
     //isMountingRef.current = true;
-    const viaUtil = genres.filter((g) => isTopLevelGenre(g, genreClusterModes));
+    const viaUtil = genres.filter((g) => isRootGenre(g, genreClusterModes));
     if (viaUtil.length > 0) return viaUtil;
     // Fallback if util returns none
     return genres.filter((g) =>

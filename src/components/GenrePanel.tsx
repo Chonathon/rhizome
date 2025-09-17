@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tag } from "lucide-react";
 import { Genre, GenreClusterMode } from "@/types";
-import {CLUSTER_COLORS, isTopLevelGenre} from "@/lib/utils";
+import {CLUSTER_COLORS, isRootGenre} from "@/lib/utils";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
 import {useEffect, useState} from "react";
 
@@ -59,7 +59,7 @@ export default function GenrePanel({
       <div className="overflow-y-auto max-h-120 rounded-2xl border border-accent shadow-sm bg-accent dark:dark:bg-background">
         <div className="flex flex-col gap-0.5 py-2 pl-4 pr-2">
           {genres
-            .filter((genre) => isTopLevelGenre(genre, genreClusterMode))
+            .filter((genre) => isRootGenre(genre, genreClusterMode))
             .map((genre: Genre, index: number) => (
               <Label
                 key={genre.id}

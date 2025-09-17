@@ -8,7 +8,13 @@ import {
   GenreGraphData,
   NodeLink
 } from "@/types";
-import {PARENT_FIELD_MAP, CHILD_FIELD_MAP, CLUSTER_COLORS, SINGLETON_PARENT_GENRE} from "@/constants";
+import {
+  PARENT_FIELD_MAP,
+  CHILD_FIELD_MAP,
+  CLUSTER_COLORS,
+  SINGLETON_PARENT_GENRE,
+  SINGLETON_PARENT_COLOR
+} from "@/constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -69,12 +75,22 @@ export const isGenre = (item: BasicNode) => {
   return "artistCount" in item;
 }
 
-export const isTopLevelGenre = (genre: Genre, genreClusterModes: GenreClusterMode[]) => {
+export const isRootGenre = (genre: Genre, genreClusterModes: GenreClusterMode[]) => {
   let isRoot = false;
   genreClusterModes.forEach((mode: GenreClusterMode) => {
     if (genre[PARENT_FIELD_MAP[mode]].length > 0 && genre[CHILD_FIELD_MAP[mode]].length === 0) isRoot = true;
   });
   return isRoot;
+}
+
+export const isSingletonGenre = (genre: Genre, genreClusterModes: GenreClusterMode[]) => {
+  let isSingleton = true;
+  genreClusterModes.forEach((mode: GenreClusterMode) => {
+    if (genre[PARENT_FIELD_MAP[mode]].length > 0 || genre[CHILD_FIELD_MAP[mode]].length > 0) {
+      isSingleton = false;
+    }
+  });
+  return isSingleton;
 }
 
 export const getChildrenOfGenre = (genre: Genre, genres: Genre[], modes: GenreClusterMode[]) => {
@@ -198,6 +214,7 @@ export const filterOutGenreTree = (genreGraphData: GenreGraphData, parent: Genre
 
 export const assignRootGenreColors = (rootIDs: string[]) => {
   const colorMap = new Map<string, string>();
+  colorMap.set(SINGLETON_PARENT_GENRE.id, SINGLETON_PARENT_COLOR);
   if (!rootIDs.length) return colorMap;
   const sortedRoots = [...rootIDs].sort((a, b) => a.localeCompare(b));
   sortedRoots.forEach((n, i) => {
@@ -340,7 +357,7 @@ export const fixWikiImageURL = (url: string) => {
 }
 
 export const getRootGenreOfChild = (genre: Genre, genres: Genre[], genreClusterModes: GenreClusterMode[]) => {
-  if (isTopLevelGenre(genre, genreClusterModes)) return genre;
+  if (isRootGenre(genre, genreClusterModes)) return genre;
   let singleton = true;
   genreClusterModes.forEach(c => {
     if (genre[CHILD_FIELD_MAP[c]].length) singleton = false;

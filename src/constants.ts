@@ -47,6 +47,7 @@ export const BAD_DATA_DESC_LIMIT = 150;
 
 export const SEARCH_DEBOUNCE_MS = 500;
 
+export const GENRE_FILTER_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
 export const EMPTY_GENRE_FILTER_OBJECT: InitialGenreFilter = {
     genre: undefined,
     isRoot: true,
@@ -97,3 +98,5 @@ export const CLUSTER_COLORS = [
     "#f472b6", // pink-400
     "#fb7185", // rose-400
 ];
+
+export const SINGLETON_PARENT_COLOR = "#c4b5fd"; // violet-300 (arbitrary)
