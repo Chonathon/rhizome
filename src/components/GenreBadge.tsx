@@ -14,7 +14,6 @@ export default function GenreBadge({
   genreColor,
   title,
 }: GenreBadgeProps) {
-  const initial = name?.[0]?.toUpperCase() ?? '?';
   return (
     <Badge asChild variant="outline" title={title ?? `Go to ${name}`}> 
       <Button
@@ -27,7 +26,6 @@ export default function GenreBadge({
         className="inline-block rounded-full h-2 w-2"
         style={{ backgroundColor: genreColor ?? '#ffffff' }}
         />
-            {initial}
         {name}
       </Button>
     </Badge>

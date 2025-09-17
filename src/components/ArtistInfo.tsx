@@ -16,6 +16,7 @@ import {
 import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
+import GenreBadge from "@/components/GenreBadge";
 
 
 interface ArtistInfoProps {
@@ -319,15 +320,13 @@ export function ArtistInfo({
                         return (
                           <>
                             {onGenreClick && (
-                              <Badge key={key} variant="outline" title={`Go to ${name}`} asChild>
-                                <Button variant="ghost" size="sm" onClick={() => onGenreClick(name)} className="cursor-pointer inline-flex items-center gap-1">
-                                  <span
-                                    className="inline-block rounded-full h-2 w-2"
-                                    style={{ backgroundColor: genreColor ?? '#fbbf24' }}
-                                  />
-                                  {name}
-                                </Button>
-                              </Badge>
+                              <GenreBadge
+                                key={key}
+                                name={name}
+                                genreColor={genreColor}
+                                onClick={() => onGenreClick(name)}
+                                title={`Go to ${name}`}
+                              />
                             )}
                           </>
                         );
