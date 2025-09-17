@@ -27,7 +27,9 @@ import {
   buildGenreRootColorMap,
   buildGenreTree,
   filterOutGenreTree,
-  generateSimilarLinks, mixColors
+  generateSimilarLinks, 
+  mixColors, 
+  fixWikiImageURL
 } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
@@ -172,6 +174,17 @@ function App() {
     if (artist) {
       onArtistNodeClick(artist);
     }
+  }
+  const getArtistImageByName = (name: string) => {
+    const a = currentArtists.find((x) => x.name === name);
+    const raw = a?.image as string | undefined;
+    return raw ? fixWikiImageURL(raw) : undefined;
+  }
+  const getArtistByName = (name: string) => {
+    return currentArtists.find((a) => a.name === name);
+  }
+  const getGenreNameById = (id: string) => {
+    return genres.find((g) => g.id === id)?.name;
   }
   const onGenreNodeClick = (genre: Genre) => {
     // this code makes the mini genre graph
@@ -322,6 +335,15 @@ function App() {
       onGenreNodeClick(newGenre);
     }
   }
+  const onGenreNameClick = (name: string) => {
+    const newGenre = genres.find((g) => g.name === name);
+    if (newGenre) {
+      setGraph('genres');
+      onGenreNodeClick(newGenre);
+    } else {
+      toast.error(`Genre not found: ${name}`);
+    }
+  }
   const onTabChange = async (graphType: GraphType) => {
     if (graphType === 'genres') {
       setGraph('genres');
@@ -393,8 +415,9 @@ function App() {
     }
     return success;
   }
-  const getRootGenreFromTags = (tags: Tag[]) => {
-    const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
+  const getRootGenreFromTags = (tags?: Tag[] | null) => {
+    const safeTags = tags ?? [];
+    const genreTags = safeTags.filter(t => genres.some((g) => g.name === t.name));
     if (genreTags.length > 0) {
       const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
       const tagGenre = genres.find((g) => g.name === bestTag.name);
@@ -582,6 +605,9 @@ function App() {
                 allArtists={onShowAllArtists}
                 onBadDataSubmit={onBadDataGenreSubmit}
                 topArtists={topArtists}
+                getArtistImageByName={getArtistImageByName}
+                genreColorMap={genreColorMap}
+                getArtistColor={getArtistColor}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
@@ -592,6 +618,12 @@ function App() {
                 deselectArtist={deselectArtist}
                 similarFilter={similarArtistFilter}
                 onBadDataSubmit={onBadDataArtistSubmit}
+                onGenreClick={onGenreNameClick}
+                getArtistImageByName={getArtistImageByName}
+                getArtistByName={getArtistByName}
+                genreColorMap={genreColorMap}
+                getArtistColor={getArtistColor}
+                getGenreNameById={getGenreNameById}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

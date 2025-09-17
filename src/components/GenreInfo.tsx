@@ -10,6 +10,8 @@ import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import ArtistBadge from "@/components/ArtistBadge";
+import GenreBadge from "@/components/GenreBadge";
 
 
 
@@ -26,6 +28,9 @@ interface GenreInfoProps {
   onTopArtistClick?: (artist: Artist) => void;
   onBadDataSubmit: (id: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => Promise<boolean>;
   topArtists?: Artist[];
+  getArtistImageByName?: (name: string) => string | undefined;
+  genreColorMap?: Map<string, string>;
+  getArtistColor: (artist: Artist) => string;
 }
 
 export function GenreInfo({
@@ -39,8 +44,11 @@ export function GenreInfo({
   onLinkedGenreClick,
   limitRelated = 5,
   onTopArtistClick,
+  getArtistColor,
     onBadDataSubmit,
     topArtists,
+    getArtistImageByName,
+    genreColorMap,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(true)
@@ -55,19 +63,21 @@ export function GenreInfo({
     if (!nodes || nodes.length === 0) return null
     const items = nodes.slice(0, limitRelated)
     return (
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-        <span className="text-md text-muted-foreground">{label}:</span>
+      <div className="flex flex-col items-start gap-2">
+        <span className="text-md font-medium text-muted-foreground">{label}:</span>
         <div className='flex items-center gap-1.5 flex-wrap'>
-          {items.map((node, i) => (
-            <>
-              {onLinkedGenreClick ? (
-                <Button variant="link" size="lg" key={node.id} onClick={() => onLinkedGenreClick(node.id)}>{node.name}</Button>
-              ) : (
-                <span key={node.id}>{node.name}</span>
-              )}
-              {i < items.length - 1 ? ' · ' : ''}
-            </>
-          ))}
+          {items.map((node, i) => {
+            const genreColor = genreColorMap?.get(node.id);
+            return (
+              <GenreBadge
+                key={node.id}
+                name={node.name}
+                onClick={() => onLinkedGenreClick(node.id)}
+                genreColor={genreColor}
+                title={`Go to ${node.name}`}
+              />
+            );
+          })}
         </div>
       </div>
     )
@@ -381,18 +391,23 @@ export function GenreInfo({
                   <div className="flex flex-col gap-2">
                     <span className="text-md font-semibold">Top Artists</span>
                     <div className="flex flex-wrap items-center gap-1.5">
-                    {topArtists.map((artist) => (
-                      <Badge
-                        key={artist.id}
-                        asChild
-                        variant="outline"
-                        title={`${artist.listeners?.toLocaleString() ?? 0} listeners`}
-                      >
-                        <Button variant="ghost" size="sm" onClick={() => onTopArtistClick?.(artist)} className="cursor-pointer">
-                          {artist.name}
-                        </Button>
-                      </Badge>
-                    ))}
+                    {topArtists.map((artist) => {
+                      const accent = getArtistColor(artist!);
+                      const img = typeof artist.image === 'string' && artist.image.trim()
+                        ? fixWikiImageURL(artist.image as string)
+                        : undefined;
+                      const initial = artist.name?.[0]?.toUpperCase() ?? '?';
+                      return (
+                        <ArtistBadge
+                            key={artist.name}
+                            name={artist.name}
+                            imageUrl={img}
+                            genreColor={accent}
+                            onClick={() =>onTopArtistClick?.(artist)}
+                            title={`Go to ${artist.name}`}
+                          />
+                      );
+                    })}
                     </div>
                 <Button
                   disabled={genreLoading}
@@ -412,8 +427,8 @@ export function GenreInfo({
               {/* Related */}
               {genreError && <p>Can’t find {selectedGenre?.name} 🤔</p>}
               {!genreError && (
-                <div className='flex flex-col gap-2'>
-                  <text className='text-md font-semibold'>Related</text>
+                <div className='flex flex-col gap-3'>
+                  <text className='text-md font-semibold'>Relationships</text>
                   <>
                     {relatedLine('Subgenre of', selectedGenre?.subgenre_of)}
                     {relatedLine('Subgenres', selectedGenre?.subgenres)}
