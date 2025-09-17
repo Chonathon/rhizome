@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
+import ArtistBadge from "@/components/ArtistBadge";
 
 
 interface ArtistInfoProps {
@@ -290,36 +291,16 @@ export function ArtistInfo({
                       {similarFilter(selectedArtist.similar).map((name) => {
                         const img = getArtistImageByName?.(name);
                         const artistObj = getArtistByName?.(name);
-                        const accent = getArtistColor(artistObj!);
-                        const initial = name?.[0]?.toUpperCase() ?? '?';
+                        const accent = artistObj ? getArtistColor(artistObj) : undefined;
                         return (
-                          <Badge key={name} asChild variant="outline" title={`Go to ${name}`}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setArtistFromName(name)}
-                              className="cursor-pointer inline-flex items-center gap-1.5"
-                            >
-                              <span
-                                className="inline-flex items-center justify-center rounded-full border-1 size-5"
-                                style={{ borderColor: accent }}
-                              >
-                                {img ? (
-                                  <img
-                                    src={img}
-                                    alt={`${name} avatar`}
-                                    className="w-full h-full rounded-full object-cover"
-                                    loading="lazy"
-                                  />
-                                ) : (
-                                  <span className="w-full h-full rounded-full bg-muted text-[10px] leading-4 text-center">
-                                    {initial}
-                                  </span>
-                                )}
-                              </span>
-                              {name}
-                            </Button>
-                          </Badge>
+                          <ArtistBadge
+                            key={name}
+                            name={name}
+                            imageUrl={img}
+                            accentColor={accent}
+                            onClick={() => setArtistFromName(name)}
+                            title={`Go to ${name}`}
+                          />
                         );
                       })}
                     </div>
