@@ -174,7 +174,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               {/* <SidebarGroupLabel>Recent Selections</SidebarGroupLabel> */}
               <SidebarGroupContent>
                 <div className="w-full p-3 -mt-3.5 -ml-1.5 mb-3">
-                  <button onClick={onClick}>
+                  <button onClick={onClick} className="group/logo">
                     <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
                   </button>
                 </div>
