@@ -219,8 +219,10 @@ export default function GenresFilter({
     }}
       trigger={
         // Collapsed Genres Button
-        <Button size="lg" variant="outline" className={`${totalSelected > 0 ? "px-4" : ""}`}>
-          {`Genres`}
+        <Button size="lg" variant="outline" className={`${totalSelected > 0 ? "px-4" : ""}`}> 
+        {totalSelected === 1
+        ? (selectedParents[0]?.name ?? selectedChildrenFlat[0]?.child.name)
+        : "Genres" }
           {totalSelected > 0 ? (
             <Button
               size="icon"
@@ -229,10 +231,10 @@ export default function GenresFilter({
               className="-m-1.5 w-7 h-7 group"
               onMouseDown={(e) => e.preventDefault()}
               onClick={(e) => { e.stopPropagation(); clearAll(); }}
-              title="Clear all filters"
+              title="Clear all genre selections"
             >
-              <span className="group-hover:hidden text-xs leading-none">{totalSelected}</span>
-              <X className="hidden group-hover:block h-4 w-4" />
+              {totalSelected > 1 ? <span className=" text-xs leading-none">{totalSelected}</span> : <X className="h-4 w-4" />}
+              
             </Button>
           ) : (
             <ChevronDown />
@@ -250,7 +252,7 @@ export default function GenresFilter({
           {/* Selected Group */}
           {(selectedParents.length > 0 || selectedChildrenFlat.length > 0) && (
             <div ref={selectedGroupRef}>
-            <CommandGroup className='bg-accent/40' aria-labelledby="Selected Genres">
+            <CommandGroup className='bg-accent/40 border-b' aria-labelledby="Selected Genres">
               {selectedParents.map((genre) => (
                 <CommandItem
                   key={`sel-parent-${genre.id}`}
@@ -273,7 +275,7 @@ export default function GenresFilter({
                   <span>{child.name}</span>
                 </CommandItem>
               ))}
-              <Button className="mt-1 mb-2" size={'sm'} variant={'ghost'} onClick={() => clearAll()}>Clear</Button>
+              {/* <Button className="mt-1 mb-2" size={'sm'} variant={'ghost'} onClick={() => clearAll()}>Clear</Button> */}
             {/* <CommandSeparator /> */}
             </CommandGroup>
             </div>
