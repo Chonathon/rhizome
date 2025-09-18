@@ -139,6 +139,8 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
 
             // Reheat the simulation when data or visibility changes
             fgRef.current.d3ReheatSimulation?.();
+            const isMobile = window.matchMedia('(max-width: 640px)').matches
+            fgRef.current.zoom(isMobile ? 0.12 : 0.22)
         }
     }, [preparedData, show]);
 
