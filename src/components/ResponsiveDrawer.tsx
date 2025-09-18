@@ -153,10 +153,8 @@ export function ResponsiveDrawer({
         if (next && !isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
       }}
       direction={isDesktop ? directionDesktop : "bottom"}
-      // When fully expanded and scrolled away from the top, restrict dragging to the handle
-      // to prevent accidental snap when the user intends to scroll.
-      // When not at max snap, allow drag from anywhere and disable content scrolling (handled by child).
-      handleOnly={!isDesktop && isAtMaxSnap && lockDragToHandleWhenScrolled && !isScrollAtTop}
+      // Disable content-driven snapping on mobile; drag via handle only
+      handleOnly={!isDesktop}
       dismissible={true}
       modal={false}
       {...(!isDesktop
@@ -178,9 +176,11 @@ export function ResponsiveDrawer({
           )}
           ref={cardRef}
         >
-          {!isDesktop && lockDragToHandleWhenScrolled && (
+          {!isDesktop && (
             <div className="w-full flex items-center justify-center select-none">
-              <DrawerHandle />
+              <DrawerHandle className="h-11 w-full flex items-center justify-center">
+                <span className="pointer-events-none block h-1 w-16 rounded-full bg-muted" />
+              </DrawerHandle>
             </div>
           )}
           {/* Header (mobile + desktop) inside panel */}

@@ -137,12 +137,10 @@ export function ArtistInfo({
           <>
             
 
-            {/* Scrolling Container: only scrollable on mobile when at max snap */}
+            {/* Scrolling Container: allow scrolling at all snaps (mobile + desktop) */}
             <div
               data-drawer-scroll
-              className={`w-full flex-1 min-h-0 flex flex-col gap-4 no-scrollbar pb-32 md:pb-16 
-                ${isDesktop ? 'overflow-y-auto' : (isAtMaxSnap ? 'overflow-y-auto' : 'overflow-hidden')}
-              `}
+              className={`w-full flex-1 min-h-0 flex flex-col gap-4 no-scrollbar pb-32 md:pb-16 overflow-y-auto`}
             >
               {/* Thumbnail */}
               <div
