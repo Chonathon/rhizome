@@ -132,6 +132,12 @@ function DrawerDescription({
   )
 }
 
+function DrawerHandle({
+  ...props
+}: React.ComponentProps<typeof DrawerPrimitive.Handle>) {
+  return <DrawerPrimitive.Handle data-slot="drawer-handle" {...props} />
+}
+
 export {
   Drawer,
   DrawerPortal,
@@ -139,6 +145,7 @@ export {
   DrawerTrigger,
   DrawerClose,
   DrawerContent,
+  DrawerHandle,
   DrawerHeader,
   DrawerFooter,
   DrawerTitle,

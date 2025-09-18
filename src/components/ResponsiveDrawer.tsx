@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, 
-  // DrawerHandle
+  DrawerHandle
  } from "@/components/ui/drawer";
 import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,7 @@ export function ResponsiveDrawer({
   contentClassName,
   bodyClassName,
   directionDesktop = "right",
-  snapPoints = [0.40, 0.9],
+  snapPoints = [0.50, 0.9],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 1200px)",
   showMobileHandle = false,
@@ -99,7 +99,8 @@ export function ResponsiveDrawer({
     }
     scrollElRef.current = el;
     const handleScroll = () => {
-      const atTop = (el?.scrollTop ?? 0) <= 0;
+      // Use a small tolerance to account for sub-pixel scroll values/bounce
+      const atTop = (el?.scrollTop ?? 0) <= 1;
       setIsScrollAtTop((prev) => (prev !== atTop ? atTop : prev));
     };
     // Initialize
@@ -152,7 +153,10 @@ export function ResponsiveDrawer({
         if (next && !isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
       }}
       direction={isDesktop ? directionDesktop : "bottom"}
-      handleOnly={!isDesktop && lockDragToHandleWhenScrolled && !isScrollAtTop}
+      // When fully expanded and scrolled away from the top, restrict dragging to the handle
+      // to prevent accidental snap when the user intends to scroll.
+      // When not at max snap, allow drag from anywhere and disable content scrolling (handled by child).
+      handleOnly={!isDesktop && isAtMaxSnap && lockDragToHandleWhenScrolled && !isScrollAtTop}
       dismissible={true}
       modal={false}
       {...(!isDesktop
@@ -176,7 +180,7 @@ export function ResponsiveDrawer({
         >
           {!isDesktop && lockDragToHandleWhenScrolled && (
             <div className="w-full flex items-center justify-center select-none">
-              {/* <DrawerHandle className="mt-1 mb-1" /> */}
+              <DrawerHandle />
             </div>
           )}
           {/* Header (mobile + desktop) inside panel */}

@@ -137,8 +137,13 @@ export function ArtistInfo({
           <>
             
 
-            {/* Scrolling Container */}
-            <div data-drawer-scroll className="w-full flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto no-scrollbar bp-32 md:pb16">
+            {/* Scrolling Container: only scrollable on mobile when at max snap */}
+            <div
+              data-drawer-scroll
+              className={`w-full flex-1 min-h-0 flex flex-col gap-4 no-scrollbar bp-32 md:pb16 
+                ${isDesktop ? 'overflow-y-auto' : (isAtMaxSnap ? 'overflow-y-auto' : 'overflow-hidden')}
+              `}
+            >
               {/* Thumbnail */}
               <div
                 className={`w-full overflow-hidden border-b border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none ${
