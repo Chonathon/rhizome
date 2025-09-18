@@ -12,7 +12,7 @@ type DrawerDirection = "left" | "right" | "top" | "bottom";
 export interface ResponsiveDrawerProps {
   show: boolean;
   onDismiss: () => void;
-  children: React.ReactNode | ((ctx: { isDesktop: boolean; isAtMaxSnap: boolean }) => React.ReactNode);
+  children: React.ReactNode | ((ctx: { isDesktop: boolean; isAtMaxSnap: boolean; isAtMinSnap: boolean }) => React.ReactNode);
   contentClassName?: string;
   bodyClassName?: string;
   directionDesktop?: Extract<DrawerDirection, "left" | "right">;
@@ -132,6 +132,11 @@ export function ResponsiveDrawer({
     return activeSnapIndex === snapPoints.length - 1;
   }, [activeSnapIndex, isDesktop, snapPoints.length]);
 
+  const isAtMinSnap = useMemo(() => {
+    if (isDesktop) return true;
+    return activeSnapIndex === 0;
+  }, [activeSnapIndex, isDesktop]);
+
   const cycleSnap = () => {
     if (isDesktop || !clickToCycleSnap) return;
     const idx = activeSnapIndex;
@@ -153,8 +158,11 @@ export function ResponsiveDrawer({
         if (next && !isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
       }}
       direction={isDesktop ? directionDesktop : "bottom"}
-      // Disable content-driven snapping on mobile; drag via handle only
-      handleOnly={!isDesktop}
+      // Reduce velocity-driven jumps between distant snap points
+      snapToSequentialPoint
+      // Conservative: on mobile, only the handle can drag between snaps.
+      // This eliminates unintended cycles from content taps/drags.
+      handleOnly={!isDesktop && lockDragToHandleWhenScrolled}
       dismissible={true}
       modal={false}
       {...(!isDesktop
@@ -170,16 +178,16 @@ export function ResponsiveDrawer({
       >
         <div
           className={cn(
-            "relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0",
+            "relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-hidden flex flex-col min-h-0",
             isDesktop ? "pl-4" : "py-3",
             bodyClassName,
           )}
           ref={cardRef}
         >
-          {!isDesktop && (
+          {!isDesktop && lockDragToHandleWhenScrolled && (
             <div className="w-full flex items-center justify-center select-none">
-              <DrawerHandle className="h-11 w-full flex items-center justify-center">
-                <span className="pointer-events-none block h-1 w-16 rounded-full bg-muted" />
+              <DrawerHandle className="z-50 relative h-11 w-full items-center justify-center">
+                <span className="pointer-events-none h-1 w-16 rounded-full bg-muted" />
               </DrawerHandle>
             </div>
           )}
@@ -243,7 +251,7 @@ export function ResponsiveDrawer({
             </div>
           )}
           {typeof children === "function"
-            ? children({ isDesktop, isAtMaxSnap })
+            ? children({ isDesktop, isAtMaxSnap, isAtMinSnap })
             : children}
         </div>
       </DrawerContent>
