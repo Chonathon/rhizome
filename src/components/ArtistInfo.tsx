@@ -116,7 +116,7 @@ export function ArtistInfo({
   ]
 
 
-  if (!show) return null;
+  // Keep mounted so the drawer can animate out even after deselect/show=false
 
   return (
     <ResponsiveDrawer
