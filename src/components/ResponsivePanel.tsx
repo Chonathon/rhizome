@@ -12,20 +12,28 @@ interface ResponsivePanelProps {
   className?: string
   side: "left" | "right" | "top" | "bottom"
   headerTitle?: React.ReactNode
+  onOpenChange?: (open: boolean) => void
 }
+
+// Track the currently open mobile panel so we can replace instead of stack.
+let currentMobilePanelCloser: null | (() => void) = null
 
 export function ResponsivePanel({ 
   trigger, 
   children, 
   className, 
   side, 
-  headerTitle }: ResponsivePanelProps) 
+  headerTitle,
+  onOpenChange,
+}: ResponsivePanelProps) 
 {
   const isDesktop = useMediaQuery("(min-width: 640px)")
+  const [open, setOpen] = React.useState(false)
+  const closeSelf = React.useCallback(() => setOpen(false), [])
 
   if (isDesktop) {
     return (
-      <Popover>
+      <Popover onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>{trigger}</PopoverTrigger>
         <PopoverContent side={side} align="start" className={className}>
           {children}
@@ -35,8 +43,37 @@ export function ResponsivePanel({
   }
 
   return (
-    <Drawer modal={false}>
-      <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+    <Drawer
+      modal={false}
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (next) {
+          // Replacing any other open mobile panel
+          if (currentMobilePanelCloser && currentMobilePanelCloser !== closeSelf) {
+            currentMobilePanelCloser()
+          }
+          currentMobilePanelCloser = closeSelf
+        } else {
+          if (currentMobilePanelCloser === closeSelf) currentMobilePanelCloser = null
+        }
+        onOpenChange?.(next)
+      }}
+    >
+      <DrawerTrigger asChild>
+        <span
+          onPointerDown={() => {
+            // Ensure any previously open mobile panel is closed before this opens
+            if (!open && currentMobilePanelCloser) {
+              currentMobilePanelCloser()
+              currentMobilePanelCloser = closeSelf
+            }
+          }}
+          className="inline-flex"
+        >
+          {trigger}
+        </span>
+      </DrawerTrigger>
       
       <DrawerContent className={cn("px-3 pb-3 mb-1 mx-1 bg-popover backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm")}>
         <div>
