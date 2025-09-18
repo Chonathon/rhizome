@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React from "react"
-import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon } from "lucide-react"
+import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, Mic } from "lucide-react"
 import { useState } from "react"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
@@ -53,6 +53,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild size="xl" >
                           <button onClick={() => setSearchOpen(true)}>
+                            <SearchIcon size={24}/>
                             <span>Search</span>
                           <Badge
                             className="text-xs text-muted-foreground"
@@ -65,6 +66,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild size="xl">
                           <a href="">
+                            <BookOpen />
                             <span>Collection</span>
                           </a>
                         </SidebarMenuButton>
@@ -77,6 +79,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={graph === "genres"} size="xl">
                           <button onClick={() => onGraphChange("genres") }>
+                          <Tag />
                             <span>Genres</span>
                           </button>
                         </SidebarMenuButton>
@@ -84,6 +87,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={graph === "artists" || graph === "similarArtists"} size="xl">
                           <button onClick={() => onGraphChange("artists")}>
+                            <Mic />
                             <span>Artists</span>
                           </button>
                         </SidebarMenuButton>
@@ -91,6 +95,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                     
                   </SidebarMenu>
                 </SidebarGroup>
+                
                 {/* {recentSelections.map((selection) => (
                   <SidebarMenu key={selection.id}>
                     <SidebarMenuItem>
