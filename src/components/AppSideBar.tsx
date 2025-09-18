@@ -39,9 +39,9 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
   return (
     <>
       <Sidebar className="" variant="floating">
-        <SidebarContent className="p-1 mt-2">
-              <SidebarGroupContent>
-                <div className="w-full p-3 -mt-3.5 -ml-1.5 mb-3"><button><img src={RhizomeLogo} alt="Rhizome Logo" className="h-9 w-auto mx-auto" onClick={onClick}/></button></div>
+        <SidebarContent className="">
+                <div className="w-full p-2.5 mb-3"><button><img src={RhizomeLogo} alt="Rhizome Logo" className="h-9 w-auto mx-auto" onClick={onClick}/></button></div>
+              <SidebarGroupContent className="flex flex-col gap-2">
               <SidebarGroup>
                 <SidebarMenu>
                       <SidebarMenuItem>
