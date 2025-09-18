@@ -37,7 +37,7 @@ export default function ArtistBadge({
               loading="lazy"
             />
           ) : (
-            <span className="w-full h-full rounded-full bg-muted text-[10px] leading-4 text-center">
+            <span className="w-full h-full rounded-full bg-muted text-[10px] leading-5 text-center">
               {initial}
             </span>
           )}
