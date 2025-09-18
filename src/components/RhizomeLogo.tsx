@@ -9,15 +9,57 @@ export function RhizomeLogo({ title = "Rhizome Logo", ...props }: Props) {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 40 40"
-      width={40}
-      height={40}
       fill="currentColor"
       role="img"
       aria-label={title}
       {...props}
     >
       <title>{title}</title>
-      {/* Simplified to a flat, themable mark using currentColor */}
+      {/* Decorative squares, clipped and tinted with currentColor */}
+      <defs>
+        <clipPath id="rhizo-clip">
+          <circle cx="20" cy="20" r="18" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#rhizo-clip)" opacity="0">
+        <rect
+          opacity="0.6"
+          x="16.6553"
+          y="6.5835"
+          width="19.5386"
+          height="19.5386"
+          rx="1"
+          transform="rotate(30 16.6553 6.5835)"
+        />
+        <rect
+          opacity="0.6"
+          x="20.2312"
+          y="6.11279"
+          width="19.5386"
+          height="19.5386"
+          rx="1"
+          transform="rotate(45 20.2312 6.11279)"
+        />
+        <rect
+          opacity="0.6"
+          x="23.8071"
+          y="6.5835"
+          width="19.5386"
+          height="19.5386"
+          rx="1"
+          transform="rotate(60 23.8071 6.5835)"
+        />
+        <rect
+          opacity="0.6"
+          x="30.0005"
+          y="10.1592"
+          width="19.5386"
+          height="19.5386"
+          rx="1"
+          transform="rotate(90 30.0005 10.1592)"
+        />
+      </g>
+      {/* Core dots, using currentColor for theming */}
       <path d="M6.87549 19.9998C6.87549 21.0355 6.03549 21.8755 4.99977 21.8755C3.96406 21.8755 3.12549 21.0355 3.12549 19.9998C3.12549 18.9641 3.96406 18.1255 4.99977 18.1255C6.03549 18.1255 6.87549 18.9641 6.87549 19.9998Z" />
       <path d="M11.8755 9.99977C11.8755 11.0355 11.0355 11.8755 9.99977 11.8755C8.96406 11.8755 8.12549 11.0355 8.12549 9.99977C8.12549 8.96406 8.96406 8.12549 9.99977 8.12549C11.0355 8.12549 11.8755 8.96406 11.8755 9.99977Z" />
       <path d="M11.8755 29.9998C11.8755 31.0355 11.0355 31.8755 9.99977 31.8755C8.96406 31.8755 8.12549 31.0355 8.12549 29.9998C8.12549 28.9641 8.96406 28.1255 9.99977 28.1255C11.0355 28.1255 11.8755 28.9641 11.8755 29.9998Z" />
@@ -35,4 +77,3 @@ export function RhizomeLogo({ title = "Rhizome Logo", ...props }: Props) {
 }
 
 export default RhizomeLogo;
-
