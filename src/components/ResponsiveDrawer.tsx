@@ -67,6 +67,7 @@ export function ResponsiveDrawer({
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const cardRef = React.useRef<HTMLDivElement | null>(null);
   const scrollElRef = React.useRef<HTMLElement | null>(null);
+  const closeTimerRef = React.useRef<number | null>(null);
 
   // keep open state in sync with `show`
   useEffect(() => {
@@ -111,6 +112,16 @@ export function ResponsiveDrawer({
     };
   }, [isDesktop, open, scrollContainerSelector]);
 
+  // Cleanup any pending close timers on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
+  }, []);
+
   // Map current snap value to closest index for robust comparisons
   const activeSnapIndex = useMemo(() => {
     const value = typeof activeSnap === "string" ? parseFloat(activeSnap) : activeSnap ?? 0;
@@ -153,8 +164,23 @@ export function ResponsiveDrawer({
       key={drawerKey}
       open={open}
       onOpenChange={(next) => {
+        // Clear any pending close callbacks when state changes
+        if (closeTimerRef.current) {
+          window.clearTimeout(closeTimerRef.current);
+          closeTimerRef.current = null;
+        }
+
         setOpen(next);
-        if (!next) onDismiss();
+
+        if (!next) {
+          // Defer parent dismissal to allow animate-out to play
+          closeTimerRef.current = window.setTimeout(() => {
+            closeTimerRef.current = null;
+            onDismiss();
+          }, 80);
+          return;
+        }
+
         if (next && !isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
       }}
       direction={isDesktop ? directionDesktop : "bottom"}
