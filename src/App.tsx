@@ -6,7 +6,6 @@ import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Artist, ArtistNodeLimitType, BadDataReport,
   Genre,
@@ -531,6 +530,8 @@ function App() {
         setSearchOpen={setSearchOpen}
         onClick={resetAppState}
         selectedGenre={selectedGenres[0]}
+        graph={graph}
+        onGraphChange={onTabChange}
       >
         <Toaster />
         <Gradient />
@@ -539,16 +540,7 @@ function App() {
             "fixed top-0 left-3 z-50 flex flex-col  items-start lg:flex-row gap-3 p-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
           }
           >
-               <Tabs
-                value={graph}
-                onValueChange={(val) => onTabChange(val as GraphType)}>
-                  <TabsList>
-                      <TabsTrigger
-                      onClick={() => onTabChange("genres")} value="genres">Genres</TabsTrigger>
-                    <TabsTrigger
-                    onClick={() => onTabChange('artists')} value="artists">Artists</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+               
                 { graph === 'artists' &&
                 <div className='flex flex-col items-start sm:flex-row gap-3'>
                    <GenresFilter
