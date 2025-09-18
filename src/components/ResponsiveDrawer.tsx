@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, 
-  // DrawerHandle
+  DrawerHandle
  } from "@/components/ui/drawer";
 import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ type DrawerDirection = "left" | "right" | "top" | "bottom";
 export interface ResponsiveDrawerProps {
   show: boolean;
   onDismiss: () => void;
-  children: React.ReactNode | ((ctx: { isDesktop: boolean; isAtMaxSnap: boolean }) => React.ReactNode);
+  children: React.ReactNode | ((ctx: { isDesktop: boolean; isAtMaxSnap: boolean; isAtMinSnap: boolean }) => React.ReactNode);
   contentClassName?: string;
   bodyClassName?: string;
   directionDesktop?: Extract<DrawerDirection, "left" | "right">;
@@ -49,7 +49,7 @@ export function ResponsiveDrawer({
   contentClassName,
   bodyClassName,
   directionDesktop = "right",
-  snapPoints = [0.40, 0.9],
+  snapPoints = [0.50, 0.9],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 1200px)",
   showMobileHandle = false,
@@ -67,6 +67,7 @@ export function ResponsiveDrawer({
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const cardRef = React.useRef<HTMLDivElement | null>(null);
   const scrollElRef = React.useRef<HTMLElement | null>(null);
+  const closeTimerRef = React.useRef<number | null>(null);
 
   // keep open state in sync with `show`
   useEffect(() => {
@@ -99,7 +100,8 @@ export function ResponsiveDrawer({
     }
     scrollElRef.current = el;
     const handleScroll = () => {
-      const atTop = (el?.scrollTop ?? 0) <= 0;
+      // Use a small tolerance to account for sub-pixel scroll values/bounce
+      const atTop = (el?.scrollTop ?? 0) <= 1;
       setIsScrollAtTop((prev) => (prev !== atTop ? atTop : prev));
     };
     // Initialize
@@ -109,6 +111,16 @@ export function ResponsiveDrawer({
       el?.removeEventListener('scroll', handleScroll as any);
     };
   }, [isDesktop, open, scrollContainerSelector]);
+
+  // Cleanup any pending close timers on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // Map current snap value to closest index for robust comparisons
   const activeSnapIndex = useMemo(() => {
@@ -131,6 +143,11 @@ export function ResponsiveDrawer({
     return activeSnapIndex === snapPoints.length - 1;
   }, [activeSnapIndex, isDesktop, snapPoints.length]);
 
+  const isAtMinSnap = useMemo(() => {
+    if (isDesktop) return true;
+    return activeSnapIndex === 0;
+  }, [activeSnapIndex, isDesktop]);
+
   const cycleSnap = () => {
     if (isDesktop || !clickToCycleSnap) return;
     const idx = activeSnapIndex;
@@ -147,12 +164,31 @@ export function ResponsiveDrawer({
       key={drawerKey}
       open={open}
       onOpenChange={(next) => {
+        // Clear any pending close callbacks when state changes
+        if (closeTimerRef.current) {
+          window.clearTimeout(closeTimerRef.current);
+          closeTimerRef.current = null;
+        }
+
         setOpen(next);
-        if (!next) onDismiss();
+
+        if (!next) {
+          // Defer parent dismissal to allow animate-out to play
+          closeTimerRef.current = window.setTimeout(() => {
+            closeTimerRef.current = null;
+            onDismiss();
+          }, 80);
+          return;
+        }
+
         if (next && !isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
       }}
       direction={isDesktop ? directionDesktop : "bottom"}
-      handleOnly={!isDesktop && lockDragToHandleWhenScrolled && !isScrollAtTop}
+      // Reduce velocity-driven jumps between distant snap points
+      snapToSequentialPoint
+      // Conservative: on mobile, only the handle can drag between snaps.
+      // This eliminates unintended cycles from content taps/drags.
+      handleOnly={!isDesktop && lockDragToHandleWhenScrolled}
       dismissible={true}
       modal={false}
       {...(!isDesktop
@@ -168,7 +204,7 @@ export function ResponsiveDrawer({
       >
         <div
           className={cn(
-            "relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-clip flex flex-col min-h-0",
+            "relative px-3 bg-sidebar backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm h-full w-full overflow-hidden flex flex-col min-h-0",
             isDesktop ? "pl-4" : "py-3",
             bodyClassName,
           )}
@@ -176,7 +212,9 @@ export function ResponsiveDrawer({
         >
           {!isDesktop && lockDragToHandleWhenScrolled && (
             <div className="w-full flex items-center justify-center select-none">
-              {/* <DrawerHandle className="mt-1 mb-1" /> */}
+              <DrawerHandle className="z-50 relative h-11 w-full items-center justify-center">
+                <span className="pointer-events-none h-1 w-16 rounded-full bg-muted" />
+              </DrawerHandle>
             </div>
           )}
           {/* Header (mobile + desktop) inside panel */}
@@ -239,7 +277,7 @@ export function ResponsiveDrawer({
             </div>
           )}
           {typeof children === "function"
-            ? children({ isDesktop, isAtMaxSnap })
+            ? children({ isDesktop, isAtMaxSnap, isAtMinSnap })
             : children}
         </div>
       </DrawerContent>

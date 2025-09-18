@@ -550,7 +550,7 @@ function App() {
                   </TabsList>
                 </Tabs>
                 { graph === 'artists' &&
-                <div className='flex gap-3'>
+                <div className='flex flex-col items-start sm:flex-row gap-3'>
                    <GenresFilter
                     key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
                     genres={[...genres, singletonParentGenre]}
