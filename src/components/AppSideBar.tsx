@@ -23,6 +23,7 @@ import { Genre, GraphType } from "@/types"
 import { Badge } from "./ui/badge"
 import RhizomeLogo from "@/components/RhizomeLogo"
 import MobileAppBar from "@/components/MobileAppBar"
+import { toast } from "sonner"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -82,10 +83,10 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       </SidebarMenuItem>
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild size="xl">
-                          <a href="">
+                          <button onClick={() => toast("Collections are coming soon ✨")}>
                             <BookOpen />
                             <span>Collection</span>
-                          </a>
+                          </button>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     </SidebarMenu>
