@@ -55,7 +55,7 @@ import RhizomeLogo from "@/components/RhizomeLogo";
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
   return (
-    <div className="fixed top-3.5 left-3 z-[60] transition-opacity duration-300 md:group-has-data-[state=expanded]/sidebar-wrapper:opacity-0 md:group-has-data-[state=expanded]/sidebar-wrapper:pointer-events-none">
+    <div className="fixed top-[14px] left-3 z-[60] transition-opacity duration-300 md:group-has-data-[state=expanded]/sidebar-wrapper:opacity-0 md:group-has-data-[state=expanded]/sidebar-wrapper:pointer-events-none">
       <button onClick={toggleSidebar} className="group/logo">
         <RhizomeLogo className="h-9 w-auto text-primary" />
         <span className="sr-only">Toggle Sidebar</span>

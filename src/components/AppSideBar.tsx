@@ -22,6 +22,7 @@ import { useRecentSelections } from "@/hooks/useRecentSelections"
 import { Genre, GraphType } from "@/types"
 import { Badge } from "./ui/badge"
 import RhizomeLogo from "@/components/RhizomeLogo"
+import { useSidebar } from "@/components/ui/sidebar"
 import MobileAppBar from "@/components/MobileAppBar"
 import { toast } from "sonner"
 
@@ -38,6 +39,7 @@ interface AppSidebarProps {
 export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { recentSelections } = useRecentSelections()
+  const { toggleSidebar } = useSidebar()
   //console.log("Recent selections in sidebar:", recentSelections);
 
   return (
@@ -46,7 +48,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
         <SidebarContent className="p-1 mt-2">
               {/* <SidebarGroupContent> */}
                 <div className="w-full p-3 -mt-3.5 -ml-1.5 mb-3">
-                  <button onClick={onClick} className="group/logo">
+                  <button onClick={toggleSidebar} className="group/logo">
                     <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
                   </button>
                 </div>

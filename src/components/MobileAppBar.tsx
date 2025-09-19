@@ -26,7 +26,7 @@ type MobileAppBarProps = {
  */
 export function MobileAppBar({ graph, onGraphChange, onOpenSearch }: MobileAppBarProps) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 px-3"
+    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 px-3 md:hidden"
     style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div
         className="pointer-events-auto mx-auto max-w-md rounded-full p-.5
