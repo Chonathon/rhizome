@@ -21,7 +21,7 @@ import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
 import { Genre } from "@/types"
 import { Badge } from "./ui/badge"
-import RhizomeLogo from "@/assets/RhizomeLogo.svg"
+import RhizomeLogo from "@/components/RhizomeLogo"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -173,7 +173,11 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
             <SidebarGroup>
               {/* <SidebarGroupLabel>Recent Selections</SidebarGroupLabel> */}
               <SidebarGroupContent>
-                <div className="w-full p-3 -mt-3.5 -ml-1.5 mb-3"><button><img src={RhizomeLogo} alt="Rhizome Logo" className="h-9 w-auto mx-auto" onClick={onClick}/></button></div>
+                <div className="w-full p-3 -mt-3.5 -ml-1.5 mb-3">
+                  <button onClick={onClick} className="group/logo">
+                    <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
+                  </button>
+                </div>
               <SidebarMenu>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild size="xl" >
