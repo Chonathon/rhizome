@@ -38,7 +38,7 @@ import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
 import NodeLimiter from './components/NodeLimiter'
 import useSimilarArtists from "@/hooks/useSimilarArtists";
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
 import { GenreInfo } from './components/GenreInfo';
 import GenresFilter from './components/GenresFilter';
@@ -50,6 +50,19 @@ import {
   DEFAULT_LIGHT_NODE_COLOR,
   TOP_ARTISTS_TO_FETCH, EMPTY_GENRE_FILTER_OBJECT, SINGLETON_PARENT_GENRE, GENRE_FILTER_CLUSTER_MODE
 } from "@/constants";
+import RhizomeLogo from "@/components/RhizomeLogo";
+
+function SidebarLogoTrigger() {
+  const { toggleSidebar } = useSidebar()
+  return (
+    <div className="fixed top-3.5 left-3 z-[60] transition-opacity duration-300 md:group-has-data-[state=expanded]/sidebar-wrapper:opacity-0 md:group-has-data-[state=expanded]/sidebar-wrapper:pointer-events-none">
+      <button onClick={toggleSidebar} className="group/logo">
+        <RhizomeLogo className="h-9 w-auto text-primary" />
+        <span className="sr-only">Toggle Sidebar</span>
+      </button>
+    </div>
+  )
+}
 
 function App() {
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
@@ -533,11 +546,12 @@ function App() {
         graph={graph}
         onGraphChange={onTabChange}
       >
+        <SidebarLogoTrigger />
         <Toaster />
         <Gradient />
         <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
           <div className={
-            "fixed top-3 z-50 pl-3 flex flex-col items-start lg:flex-row gap-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
+            "fixed top-3 z-50 pl-3 flex flex-col items-start lg:flex-row gap-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))] md:group-has-data-[state=collapsed]/sidebar-wrapper:left-16"
           }
           >
                
