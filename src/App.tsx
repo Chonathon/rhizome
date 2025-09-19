@@ -537,7 +537,7 @@ function App() {
         <Gradient />
         <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
           <div className={
-            "fixed top-3 left-3 z-50 flex flex-col items-start lg:flex-row gap-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
+            "fixed top-3 z-50 pl-3 flex flex-col items-start lg:flex-row gap-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
           }
           >
                
