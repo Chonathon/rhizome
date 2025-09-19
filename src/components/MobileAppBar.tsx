@@ -32,7 +32,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch }: MobileAppBa
          border border-border bg-popover/80 backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="w-full grid px-2 py-3 grid-cols-5">
+        <div className="w-full grid px-3 py-3 grid-cols-5">
           <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
@@ -78,7 +78,7 @@ function ToolbarButton({
       variant="ghost"
       size="xl"
       onClick={onClick}
-      className={`w-full font-medium rounded-full py-2 ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
+      className={`w-full font-regular rounded-full py-2 ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
     >
       {icon}
       <span className="text-[10px] leading-tight">{label}</span>
@@ -92,7 +92,7 @@ function MoreMenu() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="xl" className="w-full rounded-2xl py-2 text-muted-foreground">
           <MoreHorizontal className="size-6" />
-          <span className="text-[11px] leading-tight">More</span>
+          <span className="text-[10px] leading-tight">More</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="rounded-xl">
