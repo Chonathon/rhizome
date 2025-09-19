@@ -375,3 +375,7 @@ export const getRootGenreOfChild = (genre: Genre, genres: Genre[], genreClusterM
     });
   }
 }
+
+export const appendYoutubeWatchURL = (ytID: string) => {
+  return `https://www.youtube.com/watch?v=${ytID}`;
+}

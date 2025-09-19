@@ -31,7 +31,7 @@ import {
   primitiveArraysEqual,
   buildGenreTree,
   filterOutGenreTree,
-  fixWikiImageURL
+  fixWikiImageURL, appendYoutubeWatchURL
 } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
@@ -100,6 +100,7 @@ function App() {
     artistsDataFlagError,
     totalArtistsInDB,
     topArtists,
+    fetchArtistTopTracksYT,
   } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { theme } = useTheme();
@@ -177,6 +178,17 @@ function App() {
       setCanCreateSimilarArtistGraph(false);
     }
   }, [similarArtists]);
+
+  // code to test the new endpoint, will remove when ui component is implemented
+  useEffect(() => {
+    testFetchArtistTopTracks();
+  }, [selectedArtist]);
+  const testFetchArtistTopTracks = async () => {
+    if (selectedArtist) {
+      const link = await fetchArtistTopTracksYT(selectedArtist.id, selectedArtist.name);
+      if (link) console.log(appendYoutubeWatchURL(link[0]));
+    }
+  }
 
   const setArtistFromName = (name: string) => {
     const artist = currentArtists.find((a) => a.name === name);
