@@ -114,6 +114,19 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         return success;
     }
 
+    const fetchArtistTopTracksYT = async (artistID: string, artistName: string) => {
+        try {
+            const response = await axios.get(`${url}/artists/toptracks/${artistID}/${artistName}`);
+            const topTracks: string[] = response.data;
+            return topTracks;
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setArtistsError(err);
+            }
+        }
+        return [];
+    }
+
     return {
         artists,
         artistsLoading,
@@ -126,6 +139,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         totalArtistsInDB,
         topArtists,
         fetchMultipleGenresArtists,
+        fetchArtistTopTracksYT,
     };
 }
 
