@@ -26,13 +26,14 @@ type MobileAppBarProps = {
  */
 export function MobileAppBar({ graph, onGraphChange, onOpenSearch }: MobileAppBarProps) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 px-3 md:hidden">
+    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 px-3"
+    style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div
-        className="pointer-events-auto mx-auto max-w-md rounded-full
+        className="pointer-events-auto mx-auto max-w-md rounded-full p-.5
          border border-border bg-popover/80 backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        
       >
-        <div className="w-full grid px-3 py-3 grid-cols-5">
+        <div className="w-full grid grid-cols-5">
           <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
@@ -78,7 +79,7 @@ function ToolbarButton({
       variant="ghost"
       size="xl"
       onClick={onClick}
-      className={`w-full font-regular rounded-full py-2 ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
+      className={`w-full font-regular rounded-full py-4 ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
     >
       {icon}
       <span className="text-[10px] leading-tight">{label}</span>
@@ -90,7 +91,7 @@ function MoreMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="xl" className="w-full rounded-2xl py-2 text-muted-foreground">
+        <Button variant="ghost" size="xl" className="w-full rounded-full py-4 text-muted-foreground">
           <MoreHorizontal className="size-6" />
           <span className="text-[10px] leading-tight">More</span>
         </Button>
