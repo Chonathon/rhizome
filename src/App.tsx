@@ -599,7 +599,7 @@ function App() {
               show={showArtistNodeLimiter()}
             />
           </div>}
-          <div className="fixed flex flex-col h-auto right-4 top-4 justify-end gap-3 z-50">
+          <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               <ModeToggle />
               <ClusteringPanel 
                 clusterMode={genreClusterMode[0]}
