@@ -130,7 +130,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
           </SidebarContent>
         </SidebarContent>
                   <SidebarFooter className="mt-auto p-0 pb-1">
-                      <SidebarGroup>
+                      {/* <SidebarGroup>
                         <SidebarMenuButton  className="h-10 " size={"xl"} asChild >
                           <button onClick={onClick} className="">
                             <Settings size={20}/>
@@ -140,18 +140,24 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         <SidebarMenuButton  className="h-10 " size={"xl"} asChild>
                           <button onClick={onClick} className="">
                             <CircleHelp size={20} />
-                            <span>Help</span>
+                            <span>Support & Feedback</span>
                           </button>
                         </SidebarMenuButton>
-                      </SidebarGroup>
-                      {/* <div className="flex w-full justify-between">
-                        <button className="p-2.5 -mr-1 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
+                      </SidebarGroup> */}
+                      <div className="flex">
+                        <SidebarMenuButton  className="w-auto h-10 " size={"xl"} asChild>
+                          <button onClick={() => toast("Opening feedback dialogue...")} className="">
+                            <CircleHelp size={20} />
+                            {/* <span>Support & Feedback</span> */}
+                          </button>
+                        </SidebarMenuButton>
+                        {/* <button className="p-2.5 -mr-1 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
                           <Settings size={20}/>
                         </button>
                         <button className="p-2.5 -mr-.5 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
                           <CircleHelp size={20} />
-                        </button>
-                      </div> */}
+                        </button> */}
+                      </div>
                   </SidebarFooter>
         <SidebarRail />
       </Sidebar>
