@@ -1,0 +1,111 @@
+import React from "react"
+import { BookOpen, CircleHelp, Mic, MoreHorizontal, Search as SearchIcon, Tag } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { GraphType } from "@/types"
+import { toast } from "sonner"
+
+type MobileAppBarProps = {
+  graph: GraphType
+  onGraphChange: (g: GraphType) => void
+  onOpenSearch: () => void
+}
+
+/**
+ * Floating bottom app bar for small screens.
+ * Provides quick access to Search, Collection, Genres, Artists, and a More menu.
+ * Styled to match the existing glassy/rounded aesthetic.
+ */
+export function MobileAppBar({ graph, onGraphChange, onOpenSearch }: MobileAppBarProps) {
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 px-3 md:hidden">
+      <div
+        className="pointer-events-auto mx-auto max-w-md rounded-2xl border border-border bg-popover/80 backdrop-blur-md shadow-md supports-[backdrop-filter]:bg-popover/60"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="grid grid-cols-5">
+          <ToolbarButton
+            label="Search"
+            onClick={onOpenSearch}
+            icon={<SearchIcon className="size-5" />}
+          />
+          <ToolbarButton
+            label="Collection"
+            onClick={() => toast("Collections are coming soon ✨")}
+            icon={<BookOpen className="size-5" />}
+          />
+          <ToolbarButton
+            label="Genres"
+            active={graph === "genres"}
+            onClick={() => onGraphChange("genres")}
+            icon={<Tag className="size-5" />}
+          />
+          <ToolbarButton
+            label="Artists"
+            active={graph === "artists" || graph === "similarArtists"}
+            onClick={() => onGraphChange("artists")}
+            icon={<Mic className="size-5" />}
+          />
+          <MoreMenu />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ToolbarButton({
+  label,
+  icon,
+  onClick,
+  active,
+}: {
+  label: string
+  icon: React.ReactNode
+  onClick: () => void
+  active?: boolean
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="xl"
+      onClick={onClick}
+      className={`w-full rounded-2xl py-2 ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
+    >
+      {icon}
+      <span className="text-[11px] leading-tight">{label}</span>
+    </Button>
+  )
+}
+
+function MoreMenu() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="xl" className="w-full rounded-2xl py-2 text-muted-foreground">
+          <MoreHorizontal className="size-5" />
+          <span className="text-[11px] leading-tight">More</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={8} className="rounded-xl">
+        <DropdownMenuLabel>Rhizome</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => toast("Press ⌘K to Search. Tap Genres or Artists to explore.")}> 
+          <CircleHelp className="size-4" />
+          Help
+          <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+export default MobileAppBar
+

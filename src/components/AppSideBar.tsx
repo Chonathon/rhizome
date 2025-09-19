@@ -22,6 +22,7 @@ import { useRecentSelections } from "@/hooks/useRecentSelections"
 import { Genre, GraphType } from "@/types"
 import { Badge } from "./ui/badge"
 import RhizomeLogo from "@/components/RhizomeLogo"
+import MobileAppBar from "@/components/MobileAppBar"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -154,6 +155,12 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
         <SidebarRail />
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
+      {/* Mobile toolbar */}
+      <MobileAppBar
+        graph={graph}
+        onGraphChange={onGraphChange}
+        onOpenSearch={() => setSearchOpen(true)}
+      />
     </>
   )
 }
