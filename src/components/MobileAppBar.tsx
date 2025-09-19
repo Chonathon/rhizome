@@ -97,12 +97,9 @@ function MoreMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="rounded-xl">
-        <DropdownMenuLabel>Rhizome</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => toast("Press ⌘K to Search. Tap Genres or Artists to explore.")}> 
-          <CircleHelp className="size-4" />
+        <DropdownMenuItem onClick={() => toast("Opening feedback dialog...")}> 
+          <CircleHelp />
           Help
-          <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
