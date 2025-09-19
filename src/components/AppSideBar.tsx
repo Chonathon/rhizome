@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React from "react"
-import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, Mic } from "lucide-react"
+import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, Mic, Settings, CircleHelp } from "lucide-react"
 import { useState } from "react"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
@@ -42,12 +42,28 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
     <>
       <Sidebar className="" variant="floating">
         <SidebarContent className="p-1 mt-2">
-              <SidebarGroupContent>
+              {/* <SidebarGroupContent> */}
                 <div className="w-full p-3 -mt-3.5 -ml-1.5 mb-3">
                   <button onClick={onClick} className="group/logo">
                     <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
                   </button>
                 </div>
+          <SidebarContent className="">
+                {/* <div className="w-full justify-between flex p-2.5 mb-3"><button><img src={RhizomeLogo} alt="Rhizome Logo" className="h-9 w-auto mx-auto" onClick={onClick}/></button> */}
+                {/* Extra buttons top-right */}
+                {/* <div className="flex gap-1">
+                  <SidebarMenuButton  className="h-10 w-auto" size={"xl"}asChild >
+                            <button onClick={onClick} className="">
+                              <Settings size={20}/>
+                            </button>
+                          </SidebarMenuButton>
+                          <SidebarMenuButton  className="h-10 w-auto" size={"xl"}asChild>
+                            <button onClick={onClick} className="">
+                              <CircleHelp size={20} />
+                            </button>
+                          </SidebarMenuButton>
+                </div> */}
+              <SidebarGroupContent className="flex flex-col gap-2">
               <SidebarGroup>
                 <SidebarMenu>
                       <SidebarMenuItem>
@@ -95,21 +111,46 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                     
                   </SidebarMenu>
                 </SidebarGroup>
-                
+      {/* {selectedGenre && ( */}
                 {/* {recentSelections.map((selection) => (
                   <SidebarMenu key={selection.id}>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <a href="">
-                          <span>{selection.name}</span>
-                        </a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                  <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                  <a href="">
+                  <span>{selection.name}</span>
+                  </a>
+                  </SidebarMenuButton>
+                  </SidebarMenuItem>
                   </SidebarMenu>
-                ))} */}
+                  ))} */}
               </SidebarGroupContent>
       {/* )} */}
-      </SidebarContent>
+          </SidebarContent>
+        </SidebarContent>
+                  <SidebarFooter className="mt-auto p-0 pb-1">
+                      <SidebarGroup>
+                        <SidebarMenuButton  className="h-10 " size={"xl"} asChild >
+                          <button onClick={onClick} className="">
+                            <Settings size={20}/>
+                            <span>Settings</span>
+                          </button>
+                        </SidebarMenuButton>
+                        <SidebarMenuButton  className="h-10 " size={"xl"} asChild>
+                          <button onClick={onClick} className="">
+                            <CircleHelp size={20} />
+                            <span>Help</span>
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarGroup>
+                      {/* <div className="flex w-full justify-between">
+                        <button className="p-2.5 -mr-1 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
+                          <Settings size={20}/>
+                        </button>
+                        <button className="p-2.5 -mr-.5 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
+                          <CircleHelp size={20} />
+                        </button>
+                      </div> */}
+                  </SidebarFooter>
         <SidebarRail />
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
