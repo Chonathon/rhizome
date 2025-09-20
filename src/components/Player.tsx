@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import RhizomeLogo from "@/components/RhizomeLogo";
+import { Skeleton } from "@/components/ui/skeleton";
 
 declare global {
   interface Window {
@@ -334,9 +335,14 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
         <div className={`${collapsed ? 'sm:hidden flex group-hover:flex' : 'flex'} items-center justify-between gap-2 pl-2`}>
           {(() => {
             const headerDisplay = videoTitle || title || 'Player';
+            const headerLoading = loading || !ready || !currentVideoId;
             return (
               <div className="min-w-0 flex-1 h-10 items-center flex max-w-full">
-                {onTitleClick ? (
+                {headerLoading ? (
+                  <div className="w-full pr-2">
+                    <Skeleton className="h-4 w-4/5" />
+                  </div>
+                ) : onTitleClick ? (
                   <button
                     type="button"
                     onClick={onTitleClick}
@@ -420,18 +426,27 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
               )}
             </div>
             <div className="flex flex-col w-full">
-              <div className="flex items-center gap-2 mb-0.5">
+              <div className="flex items-center gap-1 mb-0.5 min-w-0 overflow-hidden">
                 {onTitleClick && title ? (
                   <button
                     type="button"
                     onClick={onTitleClick}
                     title={title}
-                    className="text-left text-md sm:text-sm font-medium text-foreground truncate hover:underline focus:outline-none"
+                    className="text-left flex-1 text-md sm:text-sm font-medium text-foreground hover:underline focus:outline-none"
                   >
                     {title}
                   </button>
                 ) : (
-                  <span className="text-md sm:text-sm font-medium text-foreground truncate">{title || 'Player'}</span>
+                  <span className="text-md sm:text-sm font-medium text-foreground">{title || 'Player'}</span>
+                )}
+                {collapsed && (
+                  (loading || !ready || !currentVideoId) ? (
+                    <div className="flex-1 min-w-0 pr-2">
+                      <Skeleton className="h-2 w-2/3" />
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground flex-1 min-w-0 truncate sm:text-sm text-md">{`· ${videoTitle || ''} adfadfasd`}</span>
+                  )
                 )}
               </div>
               <Progress
