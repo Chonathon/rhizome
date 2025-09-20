@@ -297,26 +297,36 @@ export function GenreInfo({
             {/* Content */}
             <div className="w-full flex flex-col gap-6">
 
-                  <div className={`flex flex-row 
-                    ${isDesktop ? 'gap-3' : 'items-center justify-between gap-3 mt-3'}`}>
-                    
-                    {!isDesktop && <Button
-                      disabled={genreArtistsLoading}
-                      size="xl"
-                      variant="secondary"
-                      onClick={() => selectedGenre && allArtists(selectedGenre)}
-                      className='flex-1'
-                    >
-                      <SquareArrowUp />All Artists
-                    </Button>}
-                {isDesktop && (
-                  <p
-                    onClick={() => setDesktopExpanded((prev) => !prev)}
-                    className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
-                  >
-                    {selectedGenre?.description || 'No description'}
-                  </p>
-                )}
+                  <div className={`flex flex-col gap-6 ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
+                    <div className="flex gap-3 w-full">
+                      <Button
+                        disabled={genreArtistsLoading || !!playLoading}
+                        size={isDesktop ? 'lg' : 'xl'}
+                        variant="default"
+                        className={isDesktop ? 'self-start' : 'flex-1'}
+                        onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
+                      >
+                        {playLoading ? <Loader2 className="animate-spin" size={24}/> : <CirclePlay size={24}/>} 
+                        Play
+                      </Button>
+                      <Button
+                        disabled={genreArtistsLoading}
+                        size={isDesktop ? 'lg' : 'xl'}
+                        variant="secondary"
+                        onClick={() => selectedGenre && allArtists(selectedGenre)}
+                        className={isDesktop ? 'self-start' : 'flex-1'}
+                      >
+                        <SquareArrowUp size={24}/>All Artists
+                      </Button>
+                    </div>
+                    {isDesktop && (
+                      <p
+                        onClick={() => setDesktopExpanded((prev) => !prev)}
+                        className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                      >
+                        {selectedGenre?.description || 'No description'}
+                      </p>
+                    )}
                   </div>
                    {!isDesktop && (
                     <p
@@ -417,24 +427,7 @@ export function GenreInfo({
                       );
                     })}
                     </div>
-                <Button
-                  disabled={genreArtistsLoading}
-                  size="lg"
-                  variant="secondary"
-                  onClick={() => selectedGenre && allArtists(selectedGenre)}
-                  className='mt-2 self-start'
-                >
-                  <SquareArrowUp />All Artists
-                </Button>
-                <Button
-                  disabled={genreArtistsLoading || !!playLoading}
-                  size="lg"
-                  className='mt-2 self-start'
-                  onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
-                >
-                  {playLoading ? <Loader2 className="animate-spin" /> : <CirclePlay />}
-                  Play Top Tracks
-                </Button>
+                
                 
                   </div>
                 )}
