@@ -3,7 +3,7 @@ import {fixWikiImageURL, formatNumber} from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
 import useArtists from "@/hooks/useArtists";
-import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info } from 'lucide-react';
+import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info, CirclePlay } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge} from './ui/badge';
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
@@ -31,6 +31,7 @@ interface GenreInfoProps {
   getArtistImageByName?: (name: string) => string | undefined;
   genreColorMap?: Map<string, string>;
   getArtistColor: (artist: Artist) => string;
+  onPlayGenre?: (genre: Genre) => void;
 }
 
 export function GenreInfo({
@@ -49,6 +50,7 @@ export function GenreInfo({
     topArtists,
     getArtistImageByName,
     genreColorMap,
+    onPlayGenre,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(true)
@@ -421,6 +423,14 @@ export function GenreInfo({
                   className='mt-2 self-start'
                 >
                   <SquareArrowUp />All Artists
+                </Button>
+                <Button
+                  disabled={genreArtistsLoading}
+                  size="lg"
+                  className='mt-2 self-start'
+                  onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
+                >
+                  <CirclePlay />Play Top Tracks
                 </Button>
                 
                   </div>

@@ -21,6 +21,7 @@ import { Toaster, toast } from 'sonner'
 import { useMediaQuery } from 'react-responsive';
 import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
+import Player from "@/components/Player";
 import { Search } from './components/Search';
 import {
   buildGenreColorMap,
@@ -31,7 +32,7 @@ import {
   primitiveArraysEqual,
   buildGenreTree,
   filterOutGenreTree,
-  fixWikiImageURL, appendYoutubeWatchURL
+  fixWikiImageURL
 } from "@/lib/utils";
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
@@ -104,6 +105,9 @@ function App() {
   } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { theme } = useTheme();
+  const [playerOpen, setPlayerOpen] = useState(false);
+  const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
+  const [playerTitle, setPlayerTitle] = useState<string | undefined>(undefined);
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -179,16 +183,47 @@ function App() {
     }
   }, [similarArtists]);
 
-  // code to test the new endpoint, will remove when ui component is implemented
-  useEffect(() => {
-    testFetchArtistTopTracks();
-  }, [selectedArtist]);
-  const testFetchArtistTopTracks = async () => {
-    if (selectedArtist) {
-      const link = await fetchArtistTopTracksYT(selectedArtist.id, selectedArtist.name);
-      if (link) console.log(appendYoutubeWatchURL(link[0]));
+  // Play handlers using embedded YouTube player
+  const onPlayArtist = async (artist: Artist) => {
+    try {
+      const ids = await fetchArtistTopTracksYT(artist.id, artist.name);
+      if (ids && ids.length > 0) {
+        setPlayerVideoIds(ids);
+        setPlayerTitle(artist.name);
+        setPlayerOpen(true);
+      } else toast.error('No YouTube tracks found for this artist');
+    } catch (e) {
+      toast.error('Unable to fetch YouTube tracks for artist');
     }
-  }
+  };
+
+  const onPlayGenre = async (genre: Genre) => {
+    try {
+      // Use available topArtists for the selected genre; fallback to current artists
+      const source = topArtists && topArtists.length ? topArtists : currentArtists;
+      const top = source.slice(0, 8);
+      const firstTrackIds = await Promise.all(
+        top.map(async (a) => {
+          try {
+            const ids = await fetchArtistTopTracksYT(a.id, a.name);
+            return ids && ids.length ? ids[0] : undefined;
+          } catch {
+            return undefined;
+          }
+        })
+      );
+      const videoIds = firstTrackIds.filter(Boolean) as string[];
+      if (videoIds.length === 0) {
+        toast.error('No YouTube tracks found for this genre');
+        return;
+      }
+      setPlayerVideoIds(videoIds);
+      setPlayerTitle(`${genre.name} — Top Tracks`);
+      setPlayerOpen(true);
+    } catch (e) {
+      toast.error('Unable to fetch YouTube tracks for genre');
+    }
+  };
 
   const setArtistFromName = (name: string) => {
     const artist = currentArtists.find((a) => a.name === name);
@@ -658,6 +693,7 @@ function App() {
                 getArtistImageByName={getArtistImageByName}
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
+                onPlayGenre={onPlayGenre}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
@@ -674,6 +710,7 @@ function App() {
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
+                onPlay={onPlayArtist}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
@@ -708,6 +745,14 @@ function App() {
               </div>
             </motion.div>
           </AnimatePresence>
+          <Player
+            open={playerOpen}
+            onOpenChange={setPlayerOpen}
+            videoIds={playerVideoIds}
+            title={playerTitle}
+            autoplay
+            anchor="bottom-left"
+          />
         </div>
       </AppSidebar>
     </SidebarProvider>

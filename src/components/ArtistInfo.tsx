@@ -34,6 +34,7 @@ interface ArtistInfoProps {
   genreColorMap?: Map<string, string>;
   getArtistColor: (artist: Artist) => string;
   getGenreNameById?: (id: string) => string | undefined;
+  onPlay?: (artist: Artist) => void;
 }
 
 export function ArtistInfo({
@@ -51,6 +52,7 @@ export function ArtistInfo({
   genreColorMap,
   getArtistColor,
   getGenreNameById,
+  onPlay,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -176,9 +178,7 @@ export function ArtistInfo({
                               variant="default"
                               // onClick={() => selectedArtist && allArtists(selectedArtist)}
                               className={isDesktop ? 'self-start' : 'flex-1'}
-                              onClick={() => (
-                                toast("Playing Artist...")
-                              )}
+                              onClick={() => selectedArtist && onPlay?.(selectedArtist)}
                               >
                               <CirclePlay size={24}/>Play
                             </Button>
