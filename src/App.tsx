@@ -298,9 +298,9 @@ function App() {
   };
 
   const setArtistFromName = (name: string) => {
-    const artist = currentArtists.find((a) => a.name === name) || artists.find((a) => a.name === name);
+    const artist = currentArtists.find((a) => a.name === name);
     if (artist) {
-      onTopArtistClick(artist);
+      onArtistNodeClick(artist);
     }
   }
 
@@ -311,7 +311,7 @@ function App() {
   }
 
   const getArtistByName = (name: string) => {
-    return currentArtists.find((a) => a.name === name) || artists.find((a) => a.name === name);
+    return currentArtists.find((a) => a.name === name);
   }
 
   const getGenreNameById = (id: string) => {

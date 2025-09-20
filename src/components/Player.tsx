@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward, Loader2 } from "lucide-react";
 import { appendYoutubeWatchURL } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { AnimatePresence, motion } from "framer-motion";
 
 declare global {
   interface Window {
@@ -230,15 +231,35 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
     onOpenChange(false);
   };
 
-  if (!open) return null;
+  // Allow selecting entity while loading by clicking the artwork/spinner
+  const onArtworkClick = (e: React.MouseEvent) => {
+    if (loading || !ready) {
+      e.stopPropagation();
+      onTitleClick?.();
+      return;
+    }
+    togglePlay();
+  };
+
+  // Approx video height for w-[240px] with 16:9 aspect ratio
+  const videoHeight = 240 * 9 / 16;
 
   return (
-    <div className={`fixed z-50 ${anchorClass(anchor)} w-[240px]`}>
+    <AnimatePresence initial={false}>
+      {open && (
+        <motion.div
+          key="player"
+          className={`fixed z-50 ${anchorClass(anchor)} w-[240px]`}
+          initial={{ opacity: 0, y: 12, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 12, scale: 0.98 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 26, mass: 0.6 }}
+        >
       <div className="group rounded-xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
         {/* Header: visible on hover when collapsed; always visible when expanded */}
         <div className={`${collapsed ? 'hidden group-hover:flex' : 'flex'} items-center justify-between gap-2 pl-2`}>
           {(() => {
-            const headerDisplay = headerPreferProvidedTitle ? (title || videoTitle || 'Player') : (videoTitle || title || 'Player');
+            const headerDisplay = videoTitle || title || 'Player';
             return (
               <div className="min-w-0">
                 {onTitleClick ? (
@@ -265,10 +286,15 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
             </Button>
           </div>
         </div>
-        {/* Video: keep iframe mounted even when collapsed to avoid destroying the player */}
-        <div className={`w-full bg-black ${collapsed ? 'h-0 overflow-hidden' : 'aspect-video'}`}>
-          <div ref={containerRef} className="w-full h-full" />
-        </div>
+        {/* Video: keep iframe mounted; animate collapse/expand */}
+        <motion.div
+          className="w-full bg-black overflow-hidden"
+          initial={false}
+          animate={{ height: collapsed ? 0 : videoHeight, opacity: collapsed ? 0 : 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+        >
+          <div ref={containerRef} className="w-full" style={{ height: videoHeight }} />
+        </motion.div>
         {/* Controls */}
         <div className="pl-2 flex items-center gap-2">
           {/* Progress + Artwork with hover play/pause */}
@@ -276,7 +302,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
             {displayArtwork && (
               <div
                 className="relative w-6 h-6 flex-none rounded-sm overflow-hidden cursor-pointer"
-                onClick={togglePlay}
+                onClick={onArtworkClick}
                 title={isPlaying ? 'Pause' : 'Play'}
                 aria-busy={loading || !ready}
               >
@@ -339,7 +365,9 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
           </Button>
         </div>
       </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
