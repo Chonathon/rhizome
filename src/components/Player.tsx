@@ -199,9 +199,9 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
 
   return (
     <div className={`fixed z-50 ${anchorClass(anchor)} w-[240px]`}>
-      <div className="rounded-3xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
+      <div className="group rounded-xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 p-2">
+        <div className="hidden group-hover:flex items-center justify-between gap-2 p-2">
           <div className="min-w-0">
             <div className="text-sm font-medium truncate">{title || 'Player'}</div>
             {hasPlaylist && (
@@ -226,17 +226,20 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
         {/* Controls */}
         <div className="p-2 flex items-center gap-2">
           {/* Progress */}
-          <Progress
-            value={percent}
-            onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
-            onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
-          />
-          {/* <div className="flex justify-between text-[11px] text-muted-foreground">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
-          </div> */}
+          <div className="w-full">
+            <span className="text-sm font-medium text-foreground">{title || 'Player'}</span>
+            <Progress
+              value={percent}
+              onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
+              onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
+            />
+            {/* <div className="flex justify-between text-[11px] text-muted-foreground">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div> */}
+          </div>
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-[1px]">
               {/* <Button variant="ghost" size="icon" onClick={prev} disabled={!hasPlaylist} title="Previous">
                 <SkipBack size={18}/>
               </Button> */}
