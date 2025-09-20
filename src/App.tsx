@@ -196,21 +196,25 @@ function App() {
     setPlayerLoadingKey(`artist:${artist.id}`);
     setPlayerSource('artist');
     setPlayerEntityName(artist.name);
+    // Show the player instantly with provisional metadata
+    setPlayerTitle(artist.name);
+    const imgEarly = typeof artist.image === 'string' && artist.image.trim()
+      ? fixWikiImageURL(artist.image as string)
+      : undefined;
+    setPlayerArtworkUrl(imgEarly);
+    setPlayerVideoIds([]); // clear any previous playlist immediately
+    setPlayerOpen(true);
     try {
       const ids = await fetchArtistTopTracksYT(artist.id, artist.name);
       if (req !== playRequest.current) return; // superseded by a newer request
       if (ids && ids.length > 0) {
         setPlayerVideoIds(ids);
-        setPlayerTitle(artist.name);
-        const img = typeof artist.image === 'string' && artist.image.trim()
-          ? fixWikiImageURL(artist.image as string)
-          : undefined;
-        setPlayerArtworkUrl(img);
-        setPlayerOpen(true);
+        // title/artwork already set above for instant UI
       } else {
         toast.error('No YouTube tracks found for this artist');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
+        setPlayerOpen(false);
       }
     } catch (e) {
       if (req === playRequest.current) {
@@ -218,6 +222,7 @@ function App() {
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
         setPlayerSource(undefined);
+        setPlayerOpen(false);
       }
     }
   };
@@ -228,6 +233,16 @@ function App() {
     setPlayerLoadingKey(`genre:${genre.id}`);
     setPlayerSource('genre');
     setPlayerEntityName(genre.name);
+    // Open player immediately with genre title and best-effort artwork
+    setPlayerTitle(`${genre.name}`);
+    {
+      const source = topArtists && topArtists.length ? topArtists : currentArtists;
+      const coverArtist = source.find(a => typeof a.image === 'string' && (a.image as string).trim());
+      const img = coverArtist ? fixWikiImageURL(coverArtist.image as string) : undefined;
+      setPlayerArtworkUrl(img);
+    }
+    setPlayerVideoIds([]);
+    setPlayerOpen(true);
     try {
       // Use available topArtists for the selected genre; fallback to current artists
       const source = topArtists && topArtists.length ? topArtists : currentArtists;
@@ -249,21 +264,18 @@ function App() {
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
         setPlayerSource(undefined);
+        setPlayerOpen(false);
         return;
       }
       setPlayerVideoIds(videoIds);
-      setPlayerTitle(`${genre.name}`);
-      // Try to use a genre-relevant artist image as cover; fallback to YouTube thumbnail in Player
-      const coverArtist = source.find(a => typeof a.image === 'string' && (a.image as string).trim());
-      const img = coverArtist ? fixWikiImageURL(coverArtist.image as string) : undefined;
-      setPlayerArtworkUrl(img);
-      setPlayerOpen(true);
+      // title/artwork already set for instant UI
     } catch (e) {
       if (req === playRequest.current) {
         toast.error('Unable to fetch YouTube tracks for genre');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
         setPlayerSource(undefined);
+        setPlayerOpen(false);
       }
     }
   };
