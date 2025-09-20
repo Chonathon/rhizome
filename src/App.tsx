@@ -112,6 +112,7 @@ function App() {
   const [playerLoading, setPlayerLoading] = useState<boolean>(false);
   const [playerLoadingKey, setPlayerLoadingKey] = useState<string | undefined>(undefined); // e.g., "artist:123" or "genre:abc"
   const playRequest = useRef(0);
+  const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -192,6 +193,7 @@ function App() {
     const req = ++playRequest.current;
     setPlayerLoading(true);
     setPlayerLoadingKey(`artist:${artist.id}`);
+    setPlayerSource('artist');
     try {
       const ids = await fetchArtistTopTracksYT(artist.id, artist.name);
       if (req !== playRequest.current) return; // superseded by a newer request
@@ -213,6 +215,7 @@ function App() {
         toast.error('Unable to fetch YouTube tracks for artist');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
+        setPlayerSource(undefined);
       }
     }
   };
@@ -221,6 +224,7 @@ function App() {
     const req = ++playRequest.current;
     setPlayerLoading(true);
     setPlayerLoadingKey(`genre:${genre.id}`);
+    setPlayerSource('genre');
     try {
       // Use available topArtists for the selected genre; fallback to current artists
       const source = topArtists && topArtists.length ? topArtists : currentArtists;
@@ -241,10 +245,11 @@ function App() {
         toast.error('No YouTube tracks found for this genre');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
+        setPlayerSource(undefined);
         return;
       }
       setPlayerVideoIds(videoIds);
-      setPlayerTitle(`${genre.name} — Top Tracks`);
+      setPlayerTitle(`${genre.name}`);
       // Try to use a genre-relevant artist image as cover; fallback to YouTube thumbnail in Player
       const coverArtist = source.find(a => typeof a.image === 'string' && (a.image as string).trim());
       const img = coverArtist ? fixWikiImageURL(coverArtist.image as string) : undefined;
@@ -255,13 +260,14 @@ function App() {
         toast.error('Unable to fetch YouTube tracks for genre');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
+        setPlayerSource(undefined);
       }
     }
   };
 
   const handlePlayerLoadingChange = (v: boolean) => {
     setPlayerLoading(v);
-    if (!v) setPlayerLoadingKey(undefined);
+    if (!v) { setPlayerLoadingKey(undefined); setPlayerSource(undefined); }
   };
 
   const setArtistFromName = (name: string) => {
@@ -796,6 +802,7 @@ function App() {
             artworkUrl={playerArtworkUrl}
             loading={playerLoading}
             onLoadingChange={handlePlayerLoadingChange}
+            headerPreferProvidedTitle={playerSource === 'genre'}
           />
         </div>
       </AppSidebar>

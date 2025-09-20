@@ -23,6 +23,7 @@ type PlayerProps = {
   artworkUrl?: string;
   loading?: boolean;
   onLoadingChange?: (loading: boolean) => void;
+  headerPreferProvidedTitle?: boolean;
 };
 
 // Load the YouTube IFrame API once
@@ -55,7 +56,7 @@ const anchorClass = (anchor: Anchor) => {
   }
 }
 
-export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl, loading, onLoadingChange }: PlayerProps) {
+export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl, loading, onLoadingChange, headerPreferProvidedTitle }: PlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -233,14 +234,16 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
   return (
     <div className={`fixed z-50 ${anchorClass(anchor)} w-[240px]`}>
       <div className="group rounded-xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
-        {/* Header */}
-        <div className="hidden group-hover:flex items-center justify-between gap-2 px-2">
-          <div className="min-w-0" title={videoTitle || undefined}>
-            <div className="text-sm font-medium truncate">{videoTitle || title || 'Player'}</div>
-            {/* {hasPlaylist && (
-              <div className="text-xs text-muted-foreground">{currentIndex + 1} / {videoIds.length}</div>
-            )} */}
-          </div>
+        {/* Header: visible on hover when collapsed; always visible when expanded */}
+        <div className={`${collapsed ? 'hidden group-hover:flex' : 'flex'} items-center justify-between gap-2 px-2`}>
+          {(() => {
+            const headerDisplay = headerPreferProvidedTitle ? (title || videoTitle || 'Player') : (videoTitle || title || 'Player');
+            return (
+              <div className="min-w-0" title={headerDisplay}>
+                <div className="text-sm font-medium truncate">{headerDisplay}</div>
+              </div>
+            );
+          })()}
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={() => setCollapsed((v) => !v)} title={collapsed ? 'Expand' : 'Minimize'}>
               {collapsed ? <ChevronsUp /> : <ChevronsDown />}          
