@@ -1,5 +1,5 @@
 import './App.css'
-import {useEffect, useMemo, useState} from 'react'
+import {useEffect, useMemo, useRef, useState} from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
@@ -109,6 +109,9 @@ function App() {
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
   const [playerTitle, setPlayerTitle] = useState<string | undefined>(undefined);
   const [playerArtworkUrl, setPlayerArtworkUrl] = useState<string | undefined>(undefined);
+  const [playerLoading, setPlayerLoading] = useState<boolean>(false);
+  const [playerLoadingKey, setPlayerLoadingKey] = useState<string | undefined>(undefined); // e.g., "artist:123" or "genre:abc"
+  const playRequest = useRef(0);
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -186,8 +189,12 @@ function App() {
 
   // Play handlers using embedded YouTube player
   const onPlayArtist = async (artist: Artist) => {
+    const req = ++playRequest.current;
+    setPlayerLoading(true);
+    setPlayerLoadingKey(`artist:${artist.id}`);
     try {
       const ids = await fetchArtistTopTracksYT(artist.id, artist.name);
+      if (req !== playRequest.current) return; // superseded by a newer request
       if (ids && ids.length > 0) {
         setPlayerVideoIds(ids);
         setPlayerTitle(artist.name);
@@ -196,13 +203,24 @@ function App() {
           : undefined;
         setPlayerArtworkUrl(img);
         setPlayerOpen(true);
-      } else toast.error('No YouTube tracks found for this artist');
+      } else {
+        toast.error('No YouTube tracks found for this artist');
+        setPlayerLoading(false);
+        setPlayerLoadingKey(undefined);
+      }
     } catch (e) {
-      toast.error('Unable to fetch YouTube tracks for artist');
+      if (req === playRequest.current) {
+        toast.error('Unable to fetch YouTube tracks for artist');
+        setPlayerLoading(false);
+        setPlayerLoadingKey(undefined);
+      }
     }
   };
 
   const onPlayGenre = async (genre: Genre) => {
+    const req = ++playRequest.current;
+    setPlayerLoading(true);
+    setPlayerLoadingKey(`genre:${genre.id}`);
     try {
       // Use available topArtists for the selected genre; fallback to current artists
       const source = topArtists && topArtists.length ? topArtists : currentArtists;
@@ -217,9 +235,12 @@ function App() {
           }
         })
       );
+      if (req !== playRequest.current) return; // superseded
       const videoIds = firstTrackIds.filter(Boolean) as string[];
       if (videoIds.length === 0) {
         toast.error('No YouTube tracks found for this genre');
+        setPlayerLoading(false);
+        setPlayerLoadingKey(undefined);
         return;
       }
       setPlayerVideoIds(videoIds);
@@ -230,8 +251,17 @@ function App() {
       setPlayerArtworkUrl(img);
       setPlayerOpen(true);
     } catch (e) {
-      toast.error('Unable to fetch YouTube tracks for genre');
+      if (req === playRequest.current) {
+        toast.error('Unable to fetch YouTube tracks for genre');
+        setPlayerLoading(false);
+        setPlayerLoadingKey(undefined);
+      }
     }
+  };
+
+  const handlePlayerLoadingChange = (v: boolean) => {
+    setPlayerLoading(v);
+    if (!v) setPlayerLoadingKey(undefined);
   };
 
   const setArtistFromName = (name: string) => {
@@ -703,6 +733,7 @@ function App() {
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
                 onPlayGenre={onPlayGenre}
+                playLoading={playerLoading && (!!selectedGenres[0] ? playerLoadingKey === `genre:${selectedGenres[0].id}` : false)}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
@@ -720,6 +751,7 @@ function App() {
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
                 onPlay={onPlayArtist}
+                playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
@@ -762,6 +794,8 @@ function App() {
             autoplay
             anchor="bottom-left"
             artworkUrl={playerArtworkUrl}
+            loading={playerLoading}
+            onLoadingChange={handlePlayerLoadingChange}
           />
         </div>
       </AppSidebar>

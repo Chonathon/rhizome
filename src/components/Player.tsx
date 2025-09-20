@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward } from "lucide-react";
+import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward, Loader2 } from "lucide-react";
 import { appendYoutubeWatchURL } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
@@ -21,6 +21,8 @@ type PlayerProps = {
   autoplay?: boolean;
   anchor?: Anchor;
   artworkUrl?: string;
+  loading?: boolean;
+  onLoadingChange?: (loading: boolean) => void;
 };
 
 // Load the YouTube IFrame API once
@@ -53,7 +55,7 @@ const anchorClass = (anchor: Anchor) => {
   }
 }
 
-export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl }: PlayerProps) {
+export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl, loading, onLoadingChange }: PlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -114,6 +116,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
             const fn = autoplay ? 'loadPlaylist' : 'cuePlaylist';
             playerRef.current?.[fn]?.(videoIds);
           }
+          try { onLoadingChange?.(false); } catch {}
         },
         onStateChange: (e: any) => {
           // YT.PlayerState: -1 unstarted, 0 ended, 1 playing, 2 paused, 3 buffering, 5 cued
@@ -133,6 +136,9 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
             const data = playerRef.current?.getVideoData?.();
             if (data && typeof data.title === 'string') setVideoTitle(data.title);
           } catch {}
+          if (state === 1 || state === 5) {
+            try { onLoadingChange?.(false); } catch {}
+          }
         },
         onError: () => {
           // If a video is blocked from embedding or unavailable, attempt to skip to the next one
@@ -218,6 +224,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
 
   const onClose = () => {
     try { playerRef.current?.stopVideo?.(); } catch {}
+    try { onLoadingChange?.(false); } catch {}
     onOpenChange(false);
   };
 
@@ -256,21 +263,30 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                 className="relative w-6 h-6 flex-none rounded-sm overflow-hidden cursor-pointer"
                 onClick={togglePlay}
                 title={isPlaying ? 'Pause' : 'Play'}
+                aria-busy={loading || !ready}
               >
-                <img
-                  src={displayArtwork}
-                  alt={(title || 'Track') + ' artwork'}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                <button
-                  type="button"
-                  className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-opacity group-hover:opacity-100 group-hover:bg-black/30"
-                  aria-label={isPlaying ? 'Pause' : 'Play'}
-                  onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                >
-                  {isPlaying ? <Pause size={16} className="text-white"/> : <Play size={16} className="text-white"/>}
-                </button>
+                {(loading || !ready) ? (
+                  <div className="w-full h-full grid place-items-center bg-muted/20">
+                    <Loader2 size={16} className="animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <>
+                    <img
+                      src={displayArtwork}
+                      alt={(title || 'Track') + ' artwork'}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-opacity group-hover:opacity-100 group-hover:bg-black/30"
+                      aria-label={isPlaying ? 'Pause' : 'Play'}
+                      onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                    >
+                      {isPlaying ? <Pause size={16} className="text-white"/> : <Play size={16} className="text-white"/>}
+                    </button>
+                  </>
+                )}
               </div>
             )}
             <div className="flex flex-col w-full">
