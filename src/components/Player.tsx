@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Pause, Play, SkipBack, SkipForward, ExternalLink, ChevronsDown, ChevronsUp, X } from "lucide-react";
+import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward } from "lucide-react";
 import { appendYoutubeWatchURL } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
@@ -227,7 +227,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
     <div className={`fixed z-50 ${anchorClass(anchor)} w-[240px]`}>
       <div className="group rounded-xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
         {/* Header */}
-        <div className="hidden group-hover:flex items-center justify-between gap-2 p-2">
+        <div className="hidden group-hover:flex items-center justify-between gap-2 px-2">
           <div className="min-w-0" title={videoTitle || undefined}>
             <div className="text-sm font-medium truncate">{videoTitle || title || 'Player'}</div>
             {/* {hasPlaylist && (
@@ -249,17 +249,31 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
         </div>
         {/* Controls */}
         <div className="p-2 flex items-center gap-2">
-          {/* Progress */}
-          <div className="w-full flex gap-2">
-              {displayArtwork && (
+          {/* Progress + Artwork with hover play/pause */}
+          <div className="w-full flex items-center gap-2">
+            {displayArtwork && (
+              <div
+                className="relative w-6 h-6 flex-none rounded-sm overflow-hidden cursor-pointer"
+                onClick={togglePlay}
+                title={isPlaying ? 'Pause' : 'Play'}
+              >
                 <img
                   src={displayArtwork}
                   alt={(title || 'Track') + ' artwork'}
-                  className="w-6 h-6 rounded-sm object-cover flex-none"
+                  className="w-full h-full object-cover"
                   loading="lazy"
                 />
-              )}
-            <div className="flex flex-col w-full -mr-3">
+                <button
+                  type="button"
+                  className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-opacity group-hover:opacity-100 group-hover:bg-black/30"
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
+                  onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                >
+                  {isPlaying ? <Pause size={16} className="text-white"/> : <Play size={16} className="text-white"/>}
+                </button>
+              </div>
+            )}
+            <div className="flex flex-col w-full">
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="text-sm font-medium text-foreground truncate">{title || 'Player'}</span>
               </div>
@@ -268,25 +282,19 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                 onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
                 onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
               />
-              {/* <div className="flex justify-between text-[11px] text-muted-foreground">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
-              </div> */}
             </div>
           </div>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-[1px]">
-              {/* <Button variant="ghost" size="icon" onClick={prev} disabled={!hasPlaylist} title="Previous">
-                <SkipBack size={18}/>
-              </Button> */}
-              <Button variant="ghost" size="icon" onClick={togglePlay} title={isPlaying ? 'Pause' : 'Play'}>
-                {isPlaying ? <Pause size={18}/> : <Play size={18}/>} 
-              </Button>
-              <Button variant="ghost" size="icon" onClick={next} disabled={!hasPlaylist} title="Next">
-                <SkipForward size={18}/>
-              </Button>
-            </div>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={next}
+            disabled={!hasPlaylist}
+            title="Next"
+            aria-label="Next"
+          >
+            <SkipForward size={18} />
+          </Button>
         </div>
       </div>
     </div>
