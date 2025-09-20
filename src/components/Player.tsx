@@ -261,23 +261,23 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
           {(() => {
             const headerDisplay = videoTitle || title || 'Player';
             return (
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1 max-w-full">
                 {onTitleClick ? (
                   <button
                     type="button"
                     onClick={onTitleClick}
                     title={headerDisplay}
-                    className="text-left text-sm font-medium truncate hover:underline focus:outline-none"
+                    className="block w-full text-left text-sm font-medium truncate hover:underline focus:outline-none"
                   >
                     {headerDisplay}
                   </button>
                 ) : (
-                  <div className="text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
+                  <div className="w-full text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
                 )}
               </div>
             );
           })()}
-          <div className="flex items-center gap-[1px]">
+          <div className="flex items-center gap-[1px] shrink-0">
             <Button variant="ghost" size="icon" onClick={() => setCollapsed((v) => !v)} title={collapsed ? 'Expand' : 'Minimize'}>
               {collapsed ? <ChevronsUp /> : <ChevronsDown />}          
             </Button>
