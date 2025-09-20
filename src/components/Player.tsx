@@ -236,7 +236,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
     <div className={`fixed z-50 ${anchorClass(anchor)} w-[240px]`}>
       <div className="group rounded-xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
         {/* Header: visible on hover when collapsed; always visible when expanded */}
-        <div className={`${collapsed ? 'hidden group-hover:flex' : 'flex'} items-center justify-between gap-2 px-2`}>
+        <div className={`${collapsed ? 'hidden group-hover:flex' : 'flex'} items-center justify-between gap-2 pl-2`}>
           {(() => {
             const headerDisplay = headerPreferProvidedTitle ? (title || videoTitle || 'Player') : (videoTitle || title || 'Player');
             return (
@@ -256,7 +256,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
               </div>
             );
           })()}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-[1px]">
             <Button variant="ghost" size="icon" onClick={() => setCollapsed((v) => !v)} title={collapsed ? 'Expand' : 'Minimize'}>
               {collapsed ? <ChevronsUp /> : <ChevronsDown />}          
             </Button>
@@ -270,7 +270,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
           <div ref={containerRef} className="w-full h-full" />
         </div>
         {/* Controls */}
-        <div className="p-2 flex items-center gap-2">
+        <div className="pl-2 flex items-center gap-2">
           {/* Progress + Artwork with hover play/pause */}
           <div className="w-full flex items-center gap-2">
             {displayArtwork && (
