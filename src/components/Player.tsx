@@ -393,16 +393,12 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
               title={isPlaying ? 'Pause' : 'Play'}
               aria-busy={loading || !ready}
             >
-              {(loading || !ready) ? (
-                <div className="w-full h-full grid place-items-center">
-                  <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 border-t-primary animate-spin" />
-                </div>
-              ) : displayArtwork ? (
+              {displayArtwork ? (
                 <>
                   <img
                     src={displayArtwork}
                     alt={(title || 'Track') + ' artwork'}
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover ${!ready || loading ? 'animate-pulse' : ''}`}
                     loading="lazy"
                   />
                   <button
@@ -432,22 +428,21 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                     type="button"
                     onClick={onTitleClick}
                     title={title}
-                    className="text-left flex-1 text-md sm:text-sm font-medium text-foreground hover:underline focus:outline-none"
+                    className={`text-left flex-1 text-md sm:text-sm font-medium text-foreground hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
                   >
                     {title}
                   </button>
                 ) : (
                   <span className="text-md sm:text-sm font-medium text-foreground">{title || 'Player'}</span>
                 )}
-                {collapsed && (
+                {/* Video TItle Sub-title */}
+                {/* {collapsed && (
                   (loading || !ready || !currentVideoId) ? (
-                    <div className="flex-1 min-w-0 pr-2">
-                      <Skeleton className="h-2 w-2/3" />
-                    </div>
+                   <span className="text-muted-foreground min-w-0 truncate sm:text-sm text-md">{``}</span>
                   ) : (
-                    <span className="text-muted-foreground flex-1 min-w-0 truncate sm:text-sm text-md">{`· ${videoTitle || ''} adfadfasd`}</span>
+                    <span className="text-muted-foreground min-w-0 truncate sm:text-sm text-md">{`· ${videoTitle || ''} adfadfasd`}</span>
                   )
-                )}
+                )} */}
               </div>
               <Progress
                 value={percent}
