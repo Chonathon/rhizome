@@ -198,8 +198,8 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
   if (!open) return null;
 
   return (
-    <div className={`fixed z-50 ${anchorClass(anchor)} w-[320px] md:w-[380px]`}>
-      <div className="rounded-xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
+    <div className={`fixed z-50 ${anchorClass(anchor)} w-[240px]`}>
+      <div className="rounded-3xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 p-2">
           <div className="min-w-0">
@@ -224,32 +224,29 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
           </div>
         )}
         {/* Controls */}
-        <div className="p-2 flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1">
-              <Button variant="secondary" size="icon" onClick={prev} disabled={!hasPlaylist} title="Previous">
-                <SkipBack size={18}/>
-              </Button>
-              <Button variant="default" size="icon" onClick={togglePlay} title={isPlaying ? 'Pause' : 'Play'}>
-                {isPlaying ? <Pause size={18}/> : <Play size={18}/>} 
-              </Button>
-              <Button variant="secondary" size="icon" onClick={next} disabled={!hasPlaylist} title="Next">
-                <SkipForward size={18}/>
-              </Button>
-            </div>
-            <Button variant="outline" size="sm" onClick={onOpenInYouTube} title="Open in YouTube">
-              <ExternalLink size={16}/>
-            </Button>
-          </div>
+        <div className="p-2 flex items-center gap-2">
+          {/* Progress */}
           <Progress
             value={percent}
-            className="h-2 cursor-pointer"
             onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
             onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
           />
-          <div className="flex justify-between text-[11px] text-muted-foreground">
+          {/* <div className="flex justify-between text-[11px] text-muted-foreground">
             <span>{formatTime(currentTime)}</span>
             <span>{formatTime(duration)}</span>
+          </div> */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
+              {/* <Button variant="ghost" size="icon" onClick={prev} disabled={!hasPlaylist} title="Previous">
+                <SkipBack size={18}/>
+              </Button> */}
+              <Button variant="ghost" size="icon" onClick={togglePlay} title={isPlaying ? 'Pause' : 'Play'}>
+                {isPlaying ? <Pause size={18}/> : <Play size={18}/>} 
+              </Button>
+              <Button variant="ghost" size="icon" onClick={next} disabled={!hasPlaylist} title="Next">
+                <SkipForward size={18}/>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
