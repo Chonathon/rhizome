@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Pause, Play, SkipBack, SkipForward, ExternalLink, Minimize2, Maximize2, X } from "lucide-react";
+import { Pause, Play, SkipBack, SkipForward, ExternalLink, ChevronsDown, ChevronsUp, X } from "lucide-react";
 import { appendYoutubeWatchURL } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
@@ -62,6 +62,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [videoTitle, setVideoTitle] = useState<string>("");
   const intervalRef = useRef<number | null>(null);
 
   const hasPlaylist = videoIds && videoIds.length > 1;
@@ -104,6 +105,10 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
           setReady(true);
           setDuration(playerRef.current?.getDuration?.() || 0);
           setCurrentIndex(0);
+          try {
+            const data = playerRef.current?.getVideoData?.();
+            if (data && typeof data.title === 'string') setVideoTitle(data.title);
+          } catch {}
           if (hasPlaylist) {
             // Cue/load playlist based on autoplay
             const fn = autoplay ? 'loadPlaylist' : 'cuePlaylist';
@@ -124,6 +129,10 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
           if (state === 1 || state === 5) {
             setDuration(playerRef.current?.getDuration?.() || 0);
           }
+          try {
+            const data = playerRef.current?.getVideoData?.();
+            if (data && typeof data.title === 'string') setVideoTitle(data.title);
+          } catch {}
         },
         onError: () => {
           // If a video is blocked from embedding or unavailable, attempt to skip to the next one
@@ -162,6 +171,10 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
       if (typeof d === 'number') setDuration(d);
       const idx = playerRef.current?.getPlaylistIndex?.();
       if (typeof idx === 'number') setCurrentIndex(idx);
+      try {
+        const data = playerRef.current?.getVideoData?.();
+        if (data && typeof data.title === 'string') setVideoTitle(data.title);
+      } catch {}
     }, 500);
     return () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
@@ -215,15 +228,15 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
       <div className="group rounded-xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
         {/* Header */}
         <div className="hidden group-hover:flex items-center justify-between gap-2 p-2">
-          <div className="min-w-0">
-            <div className="text-sm font-medium truncate">{title || 'Player'}</div>
-            {hasPlaylist && (
+          <div className="min-w-0" title={videoTitle || undefined}>
+            <div className="text-sm font-medium truncate">{videoTitle || title || 'Player'}</div>
+            {/* {hasPlaylist && (
               <div className="text-xs text-muted-foreground">{currentIndex + 1} / {videoIds.length}</div>
-            )}
+            )} */}
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={() => setCollapsed((v) => !v)} title={collapsed ? 'Expand' : 'Minimize'}>
-              {collapsed ? <Maximize2 size={18}/> : <Minimize2 size={18}/>}          
+              {collapsed ? <ChevronsUp /> : <ChevronsDown />}          
             </Button>
             <Button variant="ghost" size="icon" onClick={onClose} title="Close">
               <X size={18}/>
