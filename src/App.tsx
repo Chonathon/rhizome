@@ -341,6 +341,8 @@ function App() {
 
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
   const onShowAllArtists = (genre: Genre) => {
+    // Ensure the artists hook actually fetches data when switching via this path
+    if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
     if (!selectedGenres.length) setSelectedGenres([genre]); // safety in case no genre selected
     setGraph('artists');
     addRecentSelection(genre);
