@@ -24,6 +24,7 @@ type PlayerProps = {
   loading?: boolean;
   onLoadingChange?: (loading: boolean) => void;
   headerPreferProvidedTitle?: boolean;
+  onTitleClick?: () => void;
 };
 
 // Load the YouTube IFrame API once
@@ -56,7 +57,7 @@ const anchorClass = (anchor: Anchor) => {
   }
 }
 
-export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl, loading, onLoadingChange, headerPreferProvidedTitle }: PlayerProps) {
+export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl, loading, onLoadingChange, headerPreferProvidedTitle, onTitleClick }: PlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -239,8 +240,19 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
           {(() => {
             const headerDisplay = headerPreferProvidedTitle ? (title || videoTitle || 'Player') : (videoTitle || title || 'Player');
             return (
-              <div className="min-w-0" title={headerDisplay}>
-                <div className="text-sm font-medium truncate">{headerDisplay}</div>
+              <div className="min-w-0">
+                {onTitleClick ? (
+                  <button
+                    type="button"
+                    onClick={onTitleClick}
+                    title={headerDisplay}
+                    className="text-left text-sm font-medium truncate hover:underline focus:outline-none"
+                  >
+                    {headerDisplay}
+                  </button>
+                ) : (
+                  <div className="text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
+                )}
               </div>
             );
           })()}
@@ -294,7 +306,18 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
             )}
             <div className="flex flex-col w-full">
               <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-sm font-medium text-foreground truncate">{title || 'Player'}</span>
+                {onTitleClick && title ? (
+                  <button
+                    type="button"
+                    onClick={onTitleClick}
+                    title={title}
+                    className="text-left text-sm font-medium text-foreground truncate hover:underline focus:outline-none"
+                  >
+                    {title}
+                  </button>
+                ) : (
+                  <span className="text-sm font-medium text-foreground truncate">{title || 'Player'}</span>
+                )}
               </div>
               <Progress
                 value={percent}

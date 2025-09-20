@@ -113,6 +113,7 @@ function App() {
   const [playerLoadingKey, setPlayerLoadingKey] = useState<string | undefined>(undefined); // e.g., "artist:123" or "genre:abc"
   const playRequest = useRef(0);
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
+  const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -194,6 +195,7 @@ function App() {
     setPlayerLoading(true);
     setPlayerLoadingKey(`artist:${artist.id}`);
     setPlayerSource('artist');
+    setPlayerEntityName(artist.name);
     try {
       const ids = await fetchArtistTopTracksYT(artist.id, artist.name);
       if (req !== playRequest.current) return; // superseded by a newer request
@@ -225,6 +227,7 @@ function App() {
     setPlayerLoading(true);
     setPlayerLoadingKey(`genre:${genre.id}`);
     setPlayerSource('genre');
+    setPlayerEntityName(genre.name);
     try {
       // Use available topArtists for the selected genre; fallback to current artists
       const source = topArtists && topArtists.length ? topArtists : currentArtists;
@@ -267,7 +270,31 @@ function App() {
 
   const handlePlayerLoadingChange = (v: boolean) => {
     setPlayerLoading(v);
-    if (!v) { setPlayerLoadingKey(undefined); setPlayerSource(undefined); }
+    if (!v) { setPlayerLoadingKey(undefined); }
+  };
+
+  // Clear selection info when player is closed
+  useEffect(() => {
+    if (!playerOpen) {
+      setPlayerSource(undefined);
+      setPlayerEntityName(undefined);
+      setPlayerLoading(false);
+      setPlayerLoadingKey(undefined);
+    }
+  }, [playerOpen]);
+
+  const handlePlayerTitleClick = () => {
+    if (!playerEntityName || !playerSource) return;
+    if (playerSource === 'artist') {
+      const artistObj = getArtistByName(playerEntityName);
+      if (artistObj) {
+        onTopArtistClick(artistObj);
+      } else {
+        setArtistFromName(playerEntityName);
+      }
+    } else if (playerSource === 'genre') {
+      onGenreNameClick(playerEntityName);
+    }
   };
 
   const setArtistFromName = (name: string) => {
@@ -803,6 +830,7 @@ function App() {
             loading={playerLoading}
             onLoadingChange={handlePlayerLoadingChange}
             headerPreferProvidedTitle={playerSource === 'genre'}
+            onTitleClick={handlePlayerTitleClick}
           />
         </div>
       </AppSidebar>
