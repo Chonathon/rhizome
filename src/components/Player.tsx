@@ -95,6 +95,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
         rel: 0,
         modestbranding: 1,
         iv_load_policy: 3,
+        playsinline: 1,
         enablejsapi: 1,
         origin: window.location.origin,
       },
@@ -123,6 +124,12 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
           if (state === 1 || state === 5) {
             setDuration(playerRef.current?.getDuration?.() || 0);
           }
+        },
+        onError: () => {
+          // If a video is blocked from embedding or unavailable, attempt to skip to the next one
+          try {
+            if (hasPlaylist) playerRef.current?.nextVideo?.();
+          } catch {}
         }
       }
     });
@@ -223,12 +230,10 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
             </Button>
           </div>
         </div>
-        {/* Video */}
-        {!collapsed && (
-          <div className="w-full aspect-video bg-black">
-            <div ref={containerRef} className="w-full h-full" />
-          </div>
-        )}
+        {/* Video: keep iframe mounted even when collapsed to avoid destroying the player */}
+        <div className={`w-full bg-black ${collapsed ? 'h-0 overflow-hidden' : 'aspect-video'}`}>
+          <div ref={containerRef} className="w-full h-full" />
+        </div>
         {/* Controls */}
         <div className="p-2 flex items-center gap-2">
           {/* Progress */}
