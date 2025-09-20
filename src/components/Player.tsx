@@ -5,6 +5,7 @@ import { appendYoutubeWatchURL } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import RhizomeLogo from "@/components/RhizomeLogo";
 
 declare global {
   interface Window {
@@ -369,13 +370,10 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
         >
           {/* YouTube player mount target */}
           <div ref={containerRef} className="w-full" style={{ height: videoHeight }} />
-          {/* Centered loading spinner, shown until player is ready */}
+          {/* Centered animated Rhizome logo while player loads */}
           {(loading || !ready || !currentVideoId) && (
             <div className="absolute inset-0 grid place-items-center">
-              <div
-                className="h-8 w-8 rounded-full border-2 border-muted-foreground/30 border-t-primary animate-spin"
-                aria-label="Loading video"
-              />
+              <RhizomeLogo className="h-10 w-10 text-muted-foreground" title="Loading" animated />
             </div>
           )}
         </motion.div>

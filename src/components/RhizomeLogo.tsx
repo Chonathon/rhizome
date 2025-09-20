@@ -2,9 +2,10 @@ import * as React from "react";
 
 type Props = React.SVGProps<SVGSVGElement> & {
   title?: string;
+  animated?: boolean; // when true, always animate (not only on group hover)
 };
 
-export function RhizomeLogo({ title = "Rhizome Logo", ...props }: Props) {
+export function RhizomeLogo({ title = "Rhizome Logo", animated = false, ...props }: Props) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -62,7 +63,7 @@ export function RhizomeLogo({ title = "Rhizome Logo", ...props }: Props) {
       {/* Core dots, using currentColor for theming */}
       {/* Inner dots (closest to center): four nodes */}
       <g
-        className="group-hover/logo:animate-[pulse_2s_ease-in-out_infinite,spin_12s_linear_infinite] motion-reduce:animate-none will-change-transform"
+        className={`group-hover/logo:animate-[pulse_2s_ease-in-out_infinite,spin_12s_linear_infinite] ${animated ? 'animate-[pulse_2s_ease-in-out_infinite,spin_12s_linear_infinite]' : ''} motion-reduce:animate-none will-change-transform`}
         data-part="inner-dots"
         style={{ transformOrigin: '20px 20px' }}
       >
@@ -74,7 +75,7 @@ export function RhizomeLogo({ title = "Rhizome Logo", ...props }: Props) {
 
       {/* Outer dots (mid and outer ring): eight nodes */}
       <g
-        className="group-hover/logo:animate-[pulse_2s_ease-in-out_infinite,spin_16s_linear_infinite_reverse] motion-reduce:animate-none will-change-transform"
+        className={`group-hover/logo:animate-[pulse_2s_ease-in-out_infinite,spin_16s_linear_infinite_reverse] ${animated ? 'animate-[pulse_2s_ease-in-out_infinite,spin_16s_linear_infinite_reverse]' : ''} motion-reduce:animate-none will-change-transform`}
         data-part="outer-dots"
         style={{ transformOrigin: '20px 20px' }}
       >
