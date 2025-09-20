@@ -335,7 +335,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
           {(() => {
             const headerDisplay = videoTitle || title || 'Player';
             return (
-              <div className="min-w-0 flex-1 max-w-full">
+              <div className="min-w-0 flex-1 h-10 items-center flex max-w-full">
                 {onTitleClick ? (
                   <button
                     type="button"
@@ -351,7 +351,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
               </div>
             );
           })()}
-          <div className="flex items-center gap-[1px] shrink-0">
+          <div className="sm:group-hover:flex sm:hidden flex items-center gap-[1px] shrink-0">
             <Button variant="ghost" size="icon" onClick={() => setCollapsed((v) => !v)} title={collapsed ? 'Expand' : 'Minimize'}>
               {collapsed ? <ChevronsUp /> : <ChevronsDown />}          
             </Button>
