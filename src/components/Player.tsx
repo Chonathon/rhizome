@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward, Loader2 } from "lucide-react";
+import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward } from "lucide-react";
 import { appendYoutubeWatchURL } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { AnimatePresence, motion } from "framer-motion";
@@ -78,11 +78,11 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
 
   const hasPlaylist = videoIds && videoIds.length > 1;
   const currentVideoId = videoIds?.[currentIndex] || videoIds?.[0];
+  // Prefer provided artwork. Do NOT fall back to YouTube thumbnails; show a spinner instead while loading.
   const displayArtwork = useMemo(() => {
     if (artworkUrl && artworkUrl.trim().length > 0) return artworkUrl;
-    if (currentVideoId) return `https://img.youtube.com/vi/${currentVideoId}/mqdefault.jpg`;
     return undefined;
-  }, [artworkUrl, currentVideoId]);
+  }, [artworkUrl]);
 
   const mountPlayer = useCallback(async () => {
     if (!containerRef.current || !open) return;
@@ -340,12 +340,12 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                     type="button"
                     onClick={onTitleClick}
                     title={headerDisplay}
-                    className="block w-full text-left text-sm font-medium truncate hover:underline focus:outline-none"
+                    className="block w-full text-left sm:text-sm text-md font-medium truncate hover:underline focus:outline-none"
                   >
                     {headerDisplay}
                   </button>
                 ) : (
-                  <div className="w-full text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
+                  <div className="w-full text-md sm:text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
                 )}
               </div>
             );
@@ -361,48 +361,66 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
         </div>
         {/* Video: keep iframe mounted; animate collapse/expand */}
         <motion.div
-          className="w-full bg-black overflow-hidden"
+          className="relative w-full bg-black overflow-hidden"
           initial={false}
           animate={{ height: collapsed ? 0 : videoHeight, opacity: collapsed ? 0 : 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+          aria-busy={loading || !ready || !currentVideoId}
         >
+          {/* YouTube player mount target */}
           <div ref={containerRef} className="w-full" style={{ height: videoHeight }} />
+          {/* Centered loading spinner, shown until player is ready */}
+          {(loading || !ready || !currentVideoId) && (
+            <div className="absolute inset-0 grid place-items-center">
+              <div
+                className="h-8 w-8 rounded-full border-2 border-muted-foreground/30 border-t-primary animate-spin"
+                aria-label="Loading video"
+              />
+            </div>
+          )}
         </motion.div>
         {/* Controls */}
         <div className="pl-2 flex items-center gap-2">
           {/* Progress + Artwork with hover play/pause */}
           <div className="w-full flex items-center gap-2">
-            {displayArtwork && (
-              <div
-                className="relative w-6 h-6 flex-none rounded-sm overflow-hidden cursor-pointer"
-                onClick={onArtworkClick}
-                title={isPlaying ? 'Pause' : 'Play'}
-                aria-busy={loading || !ready}
-              >
-                {(loading || !ready) ? (
-                  <div className="w-full h-full grid place-items-center bg-muted/20">
-                    <Loader2 size={16} className="animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <>
-                    <img
-                      src={displayArtwork}
-                      alt={(title || 'Track') + ' artwork'}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-opacity group-hover:opacity-100 group-hover:bg-black/30"
-                      aria-label={isPlaying ? 'Pause' : 'Play'}
-                      onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                    >
-                      {isPlaying ? <Pause size={16} className="text-white"/> : <Play size={16} className="text-white"/>}
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
+            <div
+              className="relative w-6 h-6 flex-none rounded-sm overflow-hidden cursor-pointer bg-muted/20"
+              onClick={onArtworkClick}
+              title={isPlaying ? 'Pause' : 'Play'}
+              aria-busy={loading || !ready}
+            >
+              {(loading || !ready) ? (
+                <div className="w-full h-full grid place-items-center">
+                  <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 border-t-primary animate-spin" />
+                </div>
+              ) : displayArtwork ? (
+                <>
+                  <img
+                    src={displayArtwork}
+                    alt={(title || 'Track') + ' artwork'}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-opacity group-hover:opacity-100 group-hover:bg-black/30"
+                    aria-label={isPlaying ? 'Pause' : 'Play'}
+                    onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                  >
+                    {isPlaying ? <Pause size={16} className="text-white"/> : <Play size={16} className="text-white"/>}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="absolute inset-0 grid place-items-center"
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
+                  onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                >
+                  {isPlaying ? <Pause size={16} className="text-muted-foreground"/> : <Play size={16} className="text-muted-foreground"/>}
+                </button>
+              )}
+            </div>
             <div className="flex flex-col w-full">
               <div className="flex items-center gap-2 mb-0.5">
                 {onTitleClick && title ? (
@@ -410,12 +428,12 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                     type="button"
                     onClick={onTitleClick}
                     title={title}
-                    className="text-left text-sm font-medium text-foreground truncate hover:underline focus:outline-none"
+                    className="text-left text-md sm:text-sm font-medium text-foreground truncate hover:underline focus:outline-none"
                   >
                     {title}
                   </button>
                 ) : (
-                  <span className="text-sm font-medium text-foreground truncate">{title || 'Player'}</span>
+                  <span className="text-md sm:text-sm font-medium text-foreground truncate">{title || 'Player'}</span>
                 )}
               </div>
               <Progress
