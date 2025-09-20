@@ -108,6 +108,7 @@ function App() {
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
   const [playerTitle, setPlayerTitle] = useState<string | undefined>(undefined);
+  const [playerArtworkUrl, setPlayerArtworkUrl] = useState<string | undefined>(undefined);
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -190,6 +191,10 @@ function App() {
       if (ids && ids.length > 0) {
         setPlayerVideoIds(ids);
         setPlayerTitle(artist.name);
+        const img = typeof artist.image === 'string' && artist.image.trim()
+          ? fixWikiImageURL(artist.image as string)
+          : undefined;
+        setPlayerArtworkUrl(img);
         setPlayerOpen(true);
       } else toast.error('No YouTube tracks found for this artist');
     } catch (e) {
@@ -219,6 +224,10 @@ function App() {
       }
       setPlayerVideoIds(videoIds);
       setPlayerTitle(`${genre.name} — Top Tracks`);
+      // Try to use a genre-relevant artist image as cover; fallback to YouTube thumbnail in Player
+      const coverArtist = source.find(a => typeof a.image === 'string' && (a.image as string).trim());
+      const img = coverArtist ? fixWikiImageURL(coverArtist.image as string) : undefined;
+      setPlayerArtworkUrl(img);
       setPlayerOpen(true);
     } catch (e) {
       toast.error('Unable to fetch YouTube tracks for genre');
@@ -752,6 +761,7 @@ function App() {
             title={playerTitle}
             autoplay
             anchor="bottom-left"
+            artworkUrl={playerArtworkUrl}
           />
         </div>
       </AppSidebar>

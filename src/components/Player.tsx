@@ -20,6 +20,7 @@ type PlayerProps = {
   title?: string;
   autoplay?: boolean;
   anchor?: Anchor;
+  artworkUrl?: string;
 };
 
 // Load the YouTube IFrame API once
@@ -52,7 +53,7 @@ const anchorClass = (anchor: Anchor) => {
   }
 }
 
-export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left' }: PlayerProps) {
+export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl }: PlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -65,6 +66,11 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
 
   const hasPlaylist = videoIds && videoIds.length > 1;
   const currentVideoId = videoIds?.[currentIndex] || videoIds?.[0];
+  const displayArtwork = useMemo(() => {
+    if (artworkUrl && artworkUrl.trim().length > 0) return artworkUrl;
+    if (currentVideoId) return `https://img.youtube.com/vi/${currentVideoId}/mqdefault.jpg`;
+    return undefined;
+  }, [artworkUrl, currentVideoId]);
 
   const mountPlayer = useCallback(async () => {
     if (!containerRef.current || !open) return;
@@ -226,17 +232,29 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
         {/* Controls */}
         <div className="p-2 flex items-center gap-2">
           {/* Progress */}
-          <div className="w-full">
-            <span className="text-sm font-medium text-foreground">{title || 'Player'}</span>
-            <Progress
-              value={percent}
-              onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
-              onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
-            />
-            {/* <div className="flex justify-between text-[11px] text-muted-foreground">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
-            </div> */}
+          <div className="w-full flex gap-2">
+              {displayArtwork && (
+                <img
+                  src={displayArtwork}
+                  alt={(title || 'Track') + ' artwork'}
+                  className="w-6 h-6 rounded-sm object-cover flex-none"
+                  loading="lazy"
+                />
+              )}
+            <div className="flex flex-col w-full -mr-3">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-sm font-medium text-foreground truncate">{title || 'Player'}</span>
+              </div>
+              <Progress
+                value={percent}
+                onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
+                onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
+              />
+              {/* <div className="flex justify-between text-[11px] text-muted-foreground">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div> */}
+            </div>
           </div>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-[1px]">
