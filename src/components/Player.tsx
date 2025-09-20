@@ -4,6 +4,7 @@ import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward, Loader2 } from "
 import { appendYoutubeWatchURL } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { AnimatePresence, motion } from "framer-motion";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 declare global {
   interface Window {
@@ -69,6 +70,11 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
   const [currentIndex, setCurrentIndex] = useState(0);
   const [videoTitle, setVideoTitle] = useState<string>("");
   const intervalRef = useRef<number | null>(null);
+  // Desktop breakpoint aligned with ResponsiveDrawer
+  const isDesktop = useMediaQuery("(min-width: 1200px)");
+  // Track the computed top position so the player floats above the mobile drawer
+  const [anchoredTop, setAnchoredTop] = useState<number | null>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const hasPlaylist = videoIds && videoIds.length > 1;
   const currentVideoId = videoIds?.[currentIndex] || videoIds?.[0];
@@ -191,6 +197,71 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
     };
   }, [open]);
 
+  // Track the current top of the bottom sheet (ResponsiveDrawer) on mobile and anchor the player just above it
+  useEffect(() => {
+    if (!open || isDesktop) {
+      setAnchoredTop(null);
+      return;
+    }
+
+    let rafId: number | null = null;
+    const schedule = () => {
+      if (rafId != null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        compute();
+      });
+    };
+
+    const compute = () => {
+      try {
+        const nodes = Array.from(
+          document.querySelectorAll(
+            '[data-slot="drawer-content"][data-vaul-drawer-direction="bottom"]'
+          )
+        ) as HTMLElement[];
+        if (!nodes || nodes.length === 0) {
+          setAnchoredTop(null);
+          return;
+        }
+        // Prefer an explicitly open node; otherwise take the last one
+        const openNode = [...nodes].reverse().find((n) => n.getAttribute('data-state') !== 'closed');
+        const el = openNode || nodes[nodes.length - 1];
+        const rect = el.getBoundingClientRect();
+        // Position the player above the drawer: top = drawerTop - playerHeight - offset
+        const playerH = wrapperRef.current?.offsetHeight ?? 0;
+        const offset = 8; // visual gap from the sheet
+        const top = Math.max(8, rect.top - playerH - offset);
+        setAnchoredTop(top);
+      } catch {
+        setAnchoredTop(null);
+      }
+    };
+
+    compute();
+
+    const onResize = () => schedule();
+    window.addEventListener('resize', onResize);
+
+    // Observe DOM mutations that indicate snap/drag state changes
+    const observer = new MutationObserver(() => schedule());
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'data-state']
+    });
+
+    return () => {
+      window.removeEventListener('resize', onResize);
+      observer.disconnect();
+      if (rafId != null) {
+        window.cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    };
+  }, [open, isDesktop, collapsed]);
+
   const percent = useMemo(() => {
     if (!duration || duration <= 0) return 0;
     return Math.min(100, Math.max(0, (currentTime / duration) * 100));
@@ -249,15 +320,17 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
       {open && (
         <motion.div
           key="player"
-          className={`fixed z-50 ${anchorClass(anchor)} w-[240px]`}
+          className={`fixed z-[50] w-[240px] ${anchor.includes('left') ? 'left-4' : 'right-4'} ${(!isDesktop && anchoredTop != null) ? '' : (anchor.includes('top') ? 'top-4' : 'bottom-4')}`}
+          style={!isDesktop && anchoredTop != null ? { top: anchoredTop, bottom: 'auto' } : undefined}
           initial={{ opacity: 0, y: 12, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.98 }}
           transition={{ type: 'spring', stiffness: 300, damping: 26, mass: 0.6 }}
+          ref={wrapperRef}
         >
       <div className="group rounded-xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
         {/* Header: visible on hover when collapsed; always visible when expanded */}
-        <div className={`${collapsed ? 'hidden group-hover:flex' : 'flex'} items-center justify-between gap-2 pl-2`}>
+        <div className={`${collapsed ? 'sm:hidden flex group-hover:flex' : 'flex'} items-center justify-between gap-2 pl-2`}>
           {(() => {
             const headerDisplay = videoTitle || title || 'Player';
             return (
