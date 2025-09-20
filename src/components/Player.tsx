@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button";
 import { Pause, Play, SkipBack, SkipForward, ExternalLink, Minimize2, Maximize2, X } from "lucide-react";
 import { appendYoutubeWatchURL } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 declare global {
   interface Window {
@@ -176,7 +177,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
     if (hasPlaylist) playerRef.current.previousVideo?.();
   };
 
-  const seekTo = (clientX: number, element: HTMLDivElement | null) => {
+  const seekTo = (clientX: number, element: HTMLElement | null) => {
     if (!element || !playerRef.current || !duration) return;
     const rect = element.getBoundingClientRect();
     const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
@@ -240,13 +241,12 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
               <ExternalLink size={16}/>
             </Button>
           </div>
-          <div
-            className="relative h-2 rounded bg-muted cursor-pointer"
-            onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLDivElement)}
-            onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLDivElement)}
-          >
-            <div className="absolute left-0 top-0 h-full bg-primary rounded" style={{ width: `${percent}%` }} />
-          </div>
+          <Progress
+            value={percent}
+            className="h-2 cursor-pointer"
+            onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
+            onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
+          />
           <div className="flex justify-between text-[11px] text-muted-foreground">
             <span>{formatTime(currentTime)}</span>
             <span>{formatTime(duration)}</span>
@@ -263,4 +263,3 @@ function formatTime(sec: number) {
   const m = Math.floor(sec / 60);
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
-
