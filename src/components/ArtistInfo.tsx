@@ -179,11 +179,12 @@ export function ArtistInfo({
                               size={isDesktop ? "lg" : "xl"}
                               variant="default"
                               // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                              className={isDesktop ? 'self-start' : 'flex-1'}
+                              className={`${isDesktop ? 'self-start' : 'flex-1'} disabled:opacity-100`}
                               onClick={() => selectedArtist && onPlay?.(selectedArtist)}
                               disabled={!!playLoading}
+                              aria-busy={!!playLoading}
                               >
-                              {playLoading ? <Loader2 className="animate-spin" size={24}/> : <CirclePlay size={24}/>}
+                              {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
                               Play
                             </Button>
                            <Button

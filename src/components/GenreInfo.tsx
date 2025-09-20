@@ -301,12 +301,13 @@ export function GenreInfo({
                     <div className="flex gap-3 w-full">
                       <Button
                         disabled={genreArtistsLoading || !!playLoading}
+                        aria-busy={genreArtistsLoading || !!playLoading}
                         size={isDesktop ? 'lg' : 'xl'}
                         variant="default"
-                        className={isDesktop ? 'self-start' : 'flex-1'}
+                        className={`${isDesktop ? 'self-start' : 'flex-1'} disabled:opacity-100`}
                         onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
                       >
-                        {playLoading ? <Loader2 className="animate-spin" size={24}/> : <CirclePlay size={24}/>} 
+                        {playLoading ? <Loader2 className="animate-spin" aria-hidden /> : <CirclePlay />} 
                         Play
                       </Button>
                       <Button
