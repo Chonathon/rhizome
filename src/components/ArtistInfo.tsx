@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -34,6 +34,8 @@ interface ArtistInfoProps {
   genreColorMap?: Map<string, string>;
   getArtistColor: (artist: Artist) => string;
   getGenreNameById?: (id: string) => string | undefined;
+  onPlay?: (artist: Artist) => void;
+  playLoading?: boolean;
 }
 
 export function ArtistInfo({
@@ -51,6 +53,8 @@ export function ArtistInfo({
   genreColorMap,
   getArtistColor,
   getGenreNameById,
+  onPlay,
+  playLoading,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -175,12 +179,13 @@ export function ArtistInfo({
                               size={isDesktop ? "lg" : "xl"}
                               variant="default"
                               // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                              className={isDesktop ? 'self-start' : 'flex-1'}
-                              onClick={() => (
-                                toast("Playing Artist...")
-                              )}
+                              className={`${isDesktop ? 'self-start' : 'flex-1'} disabled:opacity-100`}
+                              onClick={() => selectedArtist && onPlay?.(selectedArtist)}
+                              disabled={!!playLoading}
+                              aria-busy={!!playLoading}
                               >
-                              <CirclePlay size={24}/>Play
+                              {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
+                              Play
                             </Button>
                            <Button
                               size={isDesktop ? "lg" : "xl"}
