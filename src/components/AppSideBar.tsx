@@ -44,7 +44,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
 
   return (
     <>
-      <Sidebar className="" variant="floating">
+      <Sidebar className="" variant="floating" collapsible="icon">
         <SidebarContent className="p-1 mt-2">
               {/* <SidebarGroupContent> */}
                 <div className="w-full p-3 -mt-3.5 -ml-1.5 mb-3">
@@ -74,9 +74,9 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         <SidebarMenuButton asChild size="xl" >
                           <button onClick={() => setSearchOpen(true)}>
                             <SearchIcon size={24}/>
-                            <span>Search</span>
+                            <span className="truncate group-data-[collapsible=icon]:hidden">Search</span>
                           <Badge
-                            className="text-xs text-muted-foreground"
+                            className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden"
                             variant="outline"
                             >⌘K
                             </Badge>
@@ -87,7 +87,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         <SidebarMenuButton asChild size="xl">
                           <button onClick={() => toast("Collections are coming soon ✨")}>
                             <BookOpen />
-                            <span>Collection</span>
+                            <span className="truncate group-data-[collapsible=icon]:hidden">Collection</span>
                           </button>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -100,7 +100,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         <SidebarMenuButton asChild isActive={graph === "genres"} size="xl">
                           <button onClick={() => onGraphChange("genres") }>
                           <Tag />
-                            <span>Genres</span>
+                            <span className="truncate group-data-[collapsible=icon]:hidden">Genres</span>
                           </button>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -108,7 +108,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         <SidebarMenuButton asChild isActive={graph === "artists" || graph === "similarArtists"} size="xl">
                           <button onClick={() => onGraphChange("artists")}>
                             <Mic />
-                            <span>Artists</span>
+                            <span className="truncate group-data-[collapsible=icon]:hidden">Artists</span>
                           </button>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
