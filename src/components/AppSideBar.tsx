@@ -44,7 +44,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
 
   return (
     <>
-      <Sidebar className="" variant="floating" collapsible="icon">
+      <Sidebar className="" variant="sidebar" collapsible="icon">
         <SidebarContent className="p-1 mt-2">
               {/* <SidebarGroupContent> */}
                 <div className="w-full p-3 -mt-3.5 -ml-1.5 mb-3">
@@ -70,7 +70,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               <SidebarGroupContent className="flex flex-col gap-2">
               <SidebarGroup>
                 <SidebarMenu>
-                      <SidebarMenuItem>
+                      <SidebarMenuItem className="">
                         <SidebarMenuButton asChild size="xl" >
                           <button onClick={() => setSearchOpen(true)}>
                             <SearchIcon size={24}/>
