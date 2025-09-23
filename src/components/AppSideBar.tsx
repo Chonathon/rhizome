@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React from "react"
-import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, Mic, Settings, CircleHelp } from "lucide-react"
+import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp } from "lucide-react"
 import { useState } from "react"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
@@ -107,7 +107,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={graph === "artists" || graph === "similarArtists"} size="xl">
                           <button onClick={() => onGraphChange("artists")}>
-                            <Mic />
+                            <MicVocal />
                             <span className="truncate group-data-[collapsible=icon]:hidden">Artists</span>
                           </button>
                         </SidebarMenuButton>
