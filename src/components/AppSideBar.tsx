@@ -45,11 +45,11 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
   return (
     <>
       <Sidebar className="" variant="sidebar" collapsible="icon">
-        <SidebarContent className="p-1 mt-2">
+        <SidebarContent className="p-1">
               {/* <SidebarGroupContent> */}
-                <div className="w-full p-3 -mt-3.5 -ml-1.5 mb-3">
+                <div className="w-full flex group-data-[state=expanded]:justify-start justify-center p-2 mb-6">
                   <button onClick={toggleSidebar} className="group/logo">
-                    <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
+                    <RhizomeLogo className="h-10 w-auto mx-auto text-primary" />
                   </button>
                 </div>
           <SidebarContent className="">
@@ -67,48 +67,48 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                             </button>
                           </SidebarMenuButton>
                 </div> */}
-              <SidebarGroupContent className="flex flex-col gap-2">
+              <SidebarGroupContent className="flex gap-4 flex-col">
               <SidebarGroup>
-                <SidebarMenu>
+                <SidebarMenu className="gap-4">
                       <SidebarMenuItem className="">
-                        <SidebarMenuButton asChild size="xl" >
+                        <SidebarMenuButton asChild variant="outline" size="xl" >
                           <button onClick={() => setSearchOpen(true)}>
                             <SearchIcon size={24}/>
-                            <span className="truncate group-data-[collapsible=icon]:hidden">Search</span>
-                          <Badge
-                            className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden"
+                            <span className="truncate">Search</span>
+                          {/* <Badge
+                            className="text-xs text-muted-foreground"
                             variant="outline"
                             >⌘K
-                            </Badge>
+                            </Badge> */}
                           </button>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild size="xl">
+                        <SidebarMenuButton asChild variant="outline" size="xl">
                           <button onClick={() => toast("Collections are coming soon ✨")}>
                             <BookOpen />
-                            <span className="truncate group-data-[collapsible=icon]:hidden">Collection</span>
+                            <span className="truncate">Collection</span>
                           </button>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     </SidebarMenu>
               </SidebarGroup>
                 <SidebarGroup>
-              <SidebarMenu>
-                  <SidebarGroupLabel className="pl-3">Explore</SidebarGroupLabel>
+              <SidebarMenu className="gap-4">
+                  {/* <SidebarGroupLabel className="pl-3">Explore</SidebarGroupLabel> */}
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={graph === "genres"} size="xl">
+                        <SidebarMenuButton asChild variant="outline" isActive={graph === "genres"} size="xl">
                           <button onClick={() => onGraphChange("genres") }>
                           <Tag />
-                            <span className="truncate group-data-[collapsible=icon]:hidden">Genres</span>
+                            <span className="truncate">Genres</span>
                           </button>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={graph === "artists" || graph === "similarArtists"} size="xl">
+                        <SidebarMenuButton asChild variant="outline" isActive={graph === "artists" || graph === "similarArtists"} size="xl">
                           <button onClick={() => onGraphChange("artists")}>
                             <MicVocal />
-                            <span className="truncate group-data-[collapsible=icon]:hidden">Artists</span>
+                            <span className="truncate">Artists</span>
                           </button>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -131,7 +131,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
       {/* )} */}
           </SidebarContent>
         </SidebarContent>
-                  <SidebarFooter className="mt-auto p-0 pb-1">
+                  <SidebarFooter className="mt-auto flex items-center p-0 pb-3">
                       {/* <SidebarGroup>
                         <SidebarMenuButton  className="h-10 " size={"xl"} asChild >
                           <button onClick={onClick} className="">
@@ -146,8 +146,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                           </button>
                         </SidebarMenuButton>
                       </SidebarGroup> */}
-                      <div className="flex">
-                        <SidebarMenuButton  className="w-auto h-10 " size={"xl"} asChild>
+                        <SidebarMenuButton variant="outline" className="w-auto h-10 " size={"xl"} asChild>
                           <button onClick={() => toast("Opening feedback dialogue...")} className="">
                             <CircleHelp size={20} />
                             {/* <span>Support & Feedback</span> */}
@@ -159,7 +158,6 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         <button className="p-2.5 -mr-.5 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
                           <CircleHelp size={20} />
                         </button> */}
-                      </div>
                   </SidebarFooter>
         <SidebarRail />
       </Sidebar>

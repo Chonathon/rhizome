@@ -456,7 +456,7 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
     <ul
       data-slot="sidebar-menu"
       data-sidebar="menu"
-      className={cn("flex w-full min-w-0 flex-col gap-1", className)}
+      className={cn("flex w-full min-w-0 flex-col group-data-[collapsible=icon]:items-center gap-1", className)}
       {...props}
     />
   )
@@ -480,13 +480,13 @@ const sidebarMenuButtonVariants = cva(
       variant: {
         default: "hover:text-sidebar-accent-foreground",
         outline:
-          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
+          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
       size: {
         default: "h-8 text-sm",
         sm: "h-7 text-xs",
         lg: "h-12 text-sm group-data-[collapsible=icon]:p-0!",
-        xl: "h-10 text-xl data-[active=true]:font-semibold font-semibold text-muted-foreground group-data-[collapsible=icon]:[&>svg]:size-7 [&>svg]:size-5 group-data-[collapsible=icon]:p-0!",
+        xl: "h-10 text-xl data-[active=true]:font-semibold font-semibold text-muted-foreground group-data-[collapsible=icon]:[&>svg]:size-6 [&>svg]:size-5 group-data-[collapsible=icon]:p-6! group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:justify-center",
       },
     },
     defaultVariants: {
