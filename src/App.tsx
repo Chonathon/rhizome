@@ -14,6 +14,7 @@ import {
   GraphType, InitialGenreFilter,
   NodeLink, Tag
 } from "@/types";
+import { Header } from "@/components/Header"
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
 import { Toaster, toast } from 'sonner'
@@ -554,6 +555,9 @@ function App() {
             "fixed top-3 z-50 pl-3 flex flex-col items-start lg:flex-row gap-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))] md:group-has-data-[state=collapsed]/sidebar-wrapper:left-16"
           }
           >
+            <Header />
+          {/* <div className='fixed top-0 left-0'>
+          </div> */}
                
                 { graph === 'artists' &&
                 <div className='flex flex-col items-start sm:flex-row gap-3'>

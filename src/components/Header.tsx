@@ -1,0 +1,31 @@
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { SidebarTrigger } from "@/components/ui/sidebar"
+import { BreadcrumbHeader } from "./BreadcrumbHeader"
+export function Header() {
+  return (
+    <header className="flex bg-transparent w-full backdrop-blur-sm z-50 shrink-0 items-center gap-2 h-[48px]">
+      <div className="flex w-full items-center gap-1 pl-4 pr-3 lg:gap-2 ">
+        {/* <SidebarTrigger className="-ml-1" /> */}
+        {/* <Separator
+          orientation="vertical"
+          className="mx-2 data-[orientation=vertical]:h-4"
+        /> */}
+        <h1 className="text-base font-medium">Genres</h1>
+        {/* Right items */}
+        <div className="ml-auto flex items-center gap-2">
+          {/* <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
+            <a
+              href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
+              rel="noopener noreferrer"
+              target="_blank"
+              className="dark:text-foreground"
+            >
+              GitHub
+            </a>
+          </Button> */}
+        </div>
+      </div>
+    </header>
+  )
+}

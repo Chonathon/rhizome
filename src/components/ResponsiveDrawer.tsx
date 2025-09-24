@@ -48,7 +48,7 @@ export function ResponsiveDrawer({
   children,
   contentClassName,
   bodyClassName,
-  directionDesktop = "right",
+  directionDesktop = "left",
   snapPoints = [0.50, 0.9],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 1200px)",
@@ -200,7 +200,7 @@ export function ResponsiveDrawer({
         : {})}
     >
       <DrawerContent
-        className={cn("w-full h-full", isDesktop ? "max-w-sm px-2" : "", contentClassName)}
+        className={cn("w-full h-full", isDesktop ? "max-w-sm px-2 ml-[64px]" : "", contentClassName)}
       >
         <div
           className={cn(
