@@ -552,10 +552,11 @@ function App() {
         <Gradient />
         <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
           <div className={
-            "fixed top-3 z-50 pl-3 flex flex-col items-start lg:flex-row gap-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))] md:group-has-data-[state=collapsed]/sidebar-wrapper:left-16"
+            "fixed w-full top-3 z-50 pl-3 flex justify-center flex-col items-start lg:flex-row gap-3 "
           }
+          // md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))] md:group-has-data-[state=collapsed]/sidebar-wrapper:left-16
           >
-            <Header />
+            {/* <Header /> */}
           {/* <div className='fixed top-0 left-0'>
           </div> */}
                
