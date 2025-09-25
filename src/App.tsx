@@ -636,7 +636,7 @@ function App() {
             <motion.div
               className={`
                   fixed left-1/2 transform -translate-x-1/2 z-50
-                  flex flex-col gap-4
+                  flex flex-col gap-4 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))] md:group-has-data-[state=collapsed]/sidebar-wrapper:left-16
                   ${
                     isMobile
                       ? "w-full px-4 items-center bottom-4"
