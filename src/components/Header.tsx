@@ -6,7 +6,7 @@ import { useSidebar } from "@/components/ui/sidebar"
 export function Header() {
   const { state } = useSidebar()
   return (
-    <header className={`flex bg-sidebar w-full ${state === "collapsed" ? "border-0" : "border-b"} backdrop-blur-sm z-50 shrink-0 items-center gap-2 h-[64px]`}>
+    <header className={`flex w-full ${state === "collapsed" ? "border-0" : "bg-sidebar border-b"} z-50 shrink-0 items-center gap-2 h-[52px]`}>
       <div className="flex w-full items-center gap-1 pl-4 pr-3 lg:gap-2 ">
         {/* <SidebarTrigger className="-ml-1" /> */}
         {/* <Separator
