@@ -559,12 +559,10 @@ function App() {
               left: "var(--sidebar-gap)",
             }}
           >
-            <Header />
-          {/* <div className='fixed top-0 left-0'>
-          </div> */}
-               
-                { graph === 'artists' &&
-                <div className='flex flex-col items-start sm:flex-row gap-3'>
+            <Header 
+            content={
+              graph === 'artists' &&
+                <div className='flex flex-col w-full justify-center sm:flex-row gap-3'>
                    <GenresFilter
                     key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
                     genres={[...genres, singletonParentGenre]}
@@ -582,6 +580,33 @@ function App() {
                   </Button>
                 </div>
                 }
+              
+              
+              
+            
+            />
+          {/* <div className='fixed top-0 left-0'>
+          </div> */}
+               
+                {/* { graph === 'artists' &&
+                <div className='flex flex-col items-start sm:flex-row gap-3'>
+                   <GenresFilter
+                    key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
+                    genres={[...genres, singletonParentGenre]}
+                    genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
+                    graphType={graph}
+                    onGenreSelectionChange={onGenreFilterSelectionChange}
+                    initialSelection={initialGenreFilter}
+                   />
+
+                  <Button size='lg' variant='outline'>Mood & Activity
+                    <ChevronDown />
+                  </Button>
+                  <Button size='lg' className='self-start' variant='outline'>Decade
+                    <ChevronDown />
+                  </Button>
+                </div>
+                } */}
           </div>
                 <GenresForceGraph
                   graphData={currentGenres}

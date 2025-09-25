@@ -21,7 +21,7 @@ export function Header({ content }: HeaderProps) {
         /> */}
         <h1 className="text-base font-medium">Genres</h1>
         {/* Right items */}
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex w-full items-center gap-2">
 
           {content}
           {/* <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
