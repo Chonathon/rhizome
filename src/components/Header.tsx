@@ -3,7 +3,13 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { BreadcrumbHeader } from "./BreadcrumbHeader"
 import { useSidebar } from "@/components/ui/sidebar"
-export function Header() {
+
+interface HeaderProps {
+  content?: React.ReactNode;
+}
+
+
+export function Header({ content }: HeaderProps) {
   const { state } = useSidebar()
   return (
     <header className={`flex w-full ${state === "collapsed" ? "border-0" : "bg-sidebar border-b"} z-50 shrink-0 items-center gap-2 h-[52px]`}>
@@ -16,6 +22,8 @@ export function Header() {
         <h1 className="text-base font-medium">Genres</h1>
         {/* Right items */}
         <div className="ml-auto flex items-center gap-2">
+
+          {content}
           {/* <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
             <a
               href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
