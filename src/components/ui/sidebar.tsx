@@ -486,7 +486,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button relative flex w-full items-center gap-2 overflow-hidden rounded-md p-3 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:text-foreground focus-visible:ring-2 active:text-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open] group-has-data-[sidebar=menu-badge]/menu-item:pr-8 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-5! group-data-[collapsible=icon]:p-2!  [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:transition-transform group-data-[collapsible=icon]:[&>svg]:absolute group-data-[collapsible=icon]:[&>svg]:left-1/2 group-data-[collapsible=icon]:[&>svg]:-translate-x-1/2",
+  "peer/menu-button relative flex w-full items-center gap-2 overflow-hidden rounded-md p-3 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:text-foreground focus-visible:ring-2 active:text-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open] group-has-data-[sidebar=menu-badge]/menu-item:pr-8 group-data-[collapsible=icon]:mx-auto [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:transition-transform g",
   {
     variants: {
       variant: {
@@ -498,7 +498,7 @@ const sidebarMenuButtonVariants = cva(
         default: "h-8 text-sm",
         sm: "h-7 text-xs",
         lg: "h-12 text-sm group-data-[collapsible=icon]:p-0!",
-        xl: "h-10 text-xl group-data-[collapsible=icon]:p-6! data-[active=true]:font-semibold font-semibold text-muted-foreground group-data-[collapsible=icon]:size-6! [&>svg]:size-6 backdropblur-sm bg-transparent",
+        xl: "h-10 text-xl group-data-[collapsible=icon]:p-3! data-[active=true]:font-semibold font-semibold text-muted-foreground  [&>svg]:size-6 backdropblur-sm bg-transparent",
       },
     },
     defaultVariants: {

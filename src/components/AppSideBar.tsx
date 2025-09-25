@@ -48,7 +48,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
         <SidebarContent className="p-1">
               {/* <SidebarGroupContent> */}
                 <div className="w-full  justify-center p-2 mb-6">
-                  <button onClick={}} className="group/logo">
+                  <button onClick={toggleSidebar} className="group/logo">
                     <RhizomeLogo className="h-10 w-auto mx-auto text-primary" />
                   </button>
                 </div>
