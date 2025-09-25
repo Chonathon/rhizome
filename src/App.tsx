@@ -560,9 +560,15 @@ function App() {
             }}
           >
             <Header 
+            selectedGenre={selectedGenres[0]?.name}
+            selectedArtist={selectedArtist}
+            graph={graph}
+            toggleListView={() => {}}
+            showListView={false}
+            hideArtistCard={() => setShowArtistCard(false)}
             content={
               graph === 'artists' &&
-                <div className='flex flex-col w-full justify-center sm:flex-row gap-3'>
+                <div className='flex mr-[var(--sidebar-gap)] flex-col w-full justify-center sm:flex-row gap-3'>
                    <GenresFilter
                     key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
                     genres={[...genres, singletonParentGenre]}
@@ -572,10 +578,10 @@ function App() {
                     initialSelection={initialGenreFilter}
                    />
 
-                  <Button size='lg' variant='outline'>Mood & Activity
+                  <Button size='default' variant='outline'>Mood & Activity
                     <ChevronDown />
                   </Button>
-                  <Button size='lg' className='self-start' variant='outline'>Decade
+                  <Button size='default' className='self-start' variant='outline'>Decade
                     <ChevronDown />
                   </Button>
                 </div>

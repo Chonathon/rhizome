@@ -219,7 +219,7 @@ export default function GenresFilter({
     }}
       trigger={
         // Collapsed Genres Button
-        <Button size="lg" variant="outline" className={`${totalSelected > 0 ? "px-4" : ""}`}> 
+        <Button size="default" variant="outline" className={`${totalSelected > 0 ? "px-4" : ""}`}> 
         {totalSelected === 1
         ? (selectedParents[0]?.name ?? selectedChildrenFlat[0]?.child.name)
         : "Genres" }
@@ -228,7 +228,7 @@ export default function GenresFilter({
               size="icon"
               variant="secondary"
               aria-label="Clear all filters"
-              className="-m-1.5 w-7 h-7 group"
+              className="-m-1.5 w-6 h-6 group"
               onMouseDown={(e) => e.preventDefault()}
               onClick={(e) => { e.stopPropagation(); clearAll(); }}
               title="Clear all genre selections"
