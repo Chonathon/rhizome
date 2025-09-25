@@ -33,9 +33,8 @@ export function BreadcrumbHeader({
                 >
                     <Breadcrumb
                     className="
-                    h-[54px]
-                    inline-flex items-center gap-2 py-3
-                    transition-all
+                    inline-flex items-center gap-2
+                    transition-all 
                     '
                     ">
                         <BreadcrumbList>

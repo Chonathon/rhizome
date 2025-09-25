@@ -26,6 +26,8 @@ export function Header({ content, selectedGenre, selectedArtist, graph, toggleLi
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         /> */}
+        {/* Right items */}
+        <div className="flex w-full items-center gap-2">
         <BreadcrumbHeader
           selectedGenre={selectedGenre}
           selectedArtist={selectedArtist}
@@ -34,8 +36,6 @@ export function Header({ content, selectedGenre, selectedArtist, graph, toggleLi
           showListView={showListView}
           hideArtistCard={hideArtistCard}
         />
-        {/* Right items */}
-        <div className="flex w-full items-center gap-2">
 
           {content}
           {/* <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
