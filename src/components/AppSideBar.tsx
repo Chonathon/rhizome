@@ -152,6 +152,12 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                             {/* <span>Support & Feedback</span> */}
                           </button>
                         </SidebarMenuButton>
+                        <SidebarMenuButton variant="outline" className="" size={"xl"} asChild>
+                          <button onClick={() => toggleSidebar()}>
+                            <CircleHelp size={20} />
+                            {/* <span>Support & Feedback</span> */}
+                          </button>
+                        </SidebarMenuButton>
                         {/* <button className="p-2.5 -mr-1 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
                           <Settings size={20}/>
                         </button>

@@ -200,7 +200,7 @@ export function ResponsiveDrawer({
         : {})}
     >
       <DrawerContent
-        className={cn("w-full h-full", isDesktop ? "max-w-sm px-2 ml-[64px]" : "", contentClassName)}
+        className={cn("w-full h-full", isDesktop ? "max-w-sm px-2" : "", contentClassName)}
       >
         <div
           className={cn(
