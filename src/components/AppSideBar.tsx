@@ -146,15 +146,15 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                           </button>
                         </SidebarMenuButton>
                       </SidebarGroup> */}
-                        <SidebarMenuButton variant="outline" className="" size={"xl"} asChild>
+                        <SidebarMenuButton variant="" className="" size={"xl"} asChild>
                           <button onClick={() => toast("Opening feedback dialogue...")} className="">
                             <CircleHelp size={20} />
                             {/* <span>Support & Feedback</span> */}
                           </button>
                         </SidebarMenuButton>
-                        <SidebarMenuButton variant="outline" className="" size={"xl"} asChild>
+                        <SidebarMenuButton variant="" className="" size={"xl"} asChild>
                           <button onClick={() => toggleSidebar()}>
-                            <CircleHelp size={20} />
+                            <SidebarIcon size={20} />
                             {/* <span>Support & Feedback</span> */}
                           </button>
                         </SidebarMenuButton>
