@@ -46,12 +46,19 @@ import { GenreInfo } from './components/GenreInfo';
 import GenresFilter from './components/GenresFilter';
 import {useTheme} from "next-themes";
 import {
-  DEFAULT_DARK_NODE_COLOR, DEFAULT_ARTIST_LIMIT_TYPE,
-  DEFAULT_CLUSTER_MODE, DEFAULT_GENRE_LIMIT_TYPE,
+  DEFAULT_DARK_NODE_COLOR,
+  DEFAULT_ARTIST_LIMIT_TYPE,
+  DEFAULT_CLUSTER_MODE,
+  DEFAULT_GENRE_LIMIT_TYPE,
   DEFAULT_NODE_COUNT,
   DEFAULT_LIGHT_NODE_COLOR,
-  TOP_ARTISTS_TO_FETCH, EMPTY_GENRE_FILTER_OBJECT, SINGLETON_PARENT_GENRE, GENRE_FILTER_CLUSTER_MODE
+  TOP_ARTISTS_TO_FETCH,
+  EMPTY_GENRE_FILTER_OBJECT,
+  SINGLETON_PARENT_GENRE,
+  GENRE_FILTER_CLUSTER_MODE,
+  MAX_YTID_QUEUE_SIZE
 } from "@/constants";
+import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 
 function App() {
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
@@ -102,6 +109,8 @@ function App() {
     totalArtistsInDB,
     topArtists,
     fetchArtistTopTracksYT,
+    fetchGenreTopTracksYT,
+    artistsYTLoading,
   } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { theme } = useTheme();
@@ -114,6 +123,7 @@ function App() {
   const playRequest = useRef(0);
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
+  const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, string[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -177,6 +187,16 @@ function App() {
     setGenreColorMap(buildGenreColorMap(genres, genreRoots));
   }, [genres, genreLinks]);
 
+  // Fetches top tracks of selected genre yt ids in the background
+  useEffect(() => {
+    updateGenrePlayerIDs();
+  }, [topArtists]);
+
+  // Fetches top tracks of selected artist yt ids in the background
+  useEffect(() => {
+    updateArtistPlayerIDs();
+  }, [selectedArtist]);
+
   useEffect(() => {
     if (canCreateSimilarArtistGraph) {
       if (similarArtists.length > 1) {
@@ -189,8 +209,25 @@ function App() {
     }
   }, [similarArtists]);
 
+  const updateGenrePlayerIDs = async () => {
+    if (topArtists && topArtists.length && !playerIDQueue.has(selectedGenreIDs[0])) {
+      const genreTracks = await fetchGenreTopTracksYT(topArtists.map(t => {
+        return { id: t.id, name: t.name };
+      }));
+      playerIDQueue.set(selectedGenreIDs[0], genreTracks);
+    }
+  }
+
+  const updateArtistPlayerIDs = async () => {
+    if (selectedArtist && !playerIDQueue.has(selectedArtist.id)) {
+      const artistTracks = await fetchArtistTopTracksYT(selectedArtist.id, selectedArtist.name);
+      playerIDQueue.set(selectedArtist.id, artistTracks);
+    }
+  }
+
   // Play handlers using embedded YouTube player
   const onPlayArtist = async (artist: Artist) => {
+    if (artistsYTLoading) return;
     const req = ++playRequest.current;
     setPlayerLoading(true);
     setPlayerLoadingKey(`artist:${artist.id}`);
@@ -205,7 +242,8 @@ function App() {
     setPlayerVideoIds([]); // clear any previous playlist immediately
     setPlayerOpen(true);
     try {
-      const ids = await fetchArtistTopTracksYT(artist.id, artist.name);
+      //const ids = await fetchArtistTopTracksYT(artist.id, artist.name);
+      const ids = playerIDQueue.get(artist.id);
       if (req !== playRequest.current) return; // superseded by a newer request
       if (ids && ids.length > 0) {
         setPlayerVideoIds(ids);
@@ -228,6 +266,7 @@ function App() {
   };
 
   const onPlayGenre = async (genre: Genre) => {
+    if (artistsYTLoading) return;
     const req = ++playRequest.current;
     setPlayerLoading(true);
     setPlayerLoadingKey(`genre:${genre.id}`);
@@ -245,21 +284,22 @@ function App() {
     setPlayerOpen(true);
     try {
       // Use available topArtists for the selected genre; fallback to current artists
-      const source = topArtists && topArtists.length ? topArtists : currentArtists;
-      const top = source.slice(0, 8);
-      const firstTrackIds = await Promise.all(
-        top.map(async (a) => {
-          try {
-            const ids = await fetchArtistTopTracksYT(a.id, a.name);
-            return ids && ids.length ? ids[0] : undefined;
-          } catch {
-            return undefined;
-          }
-        })
-      );
+      // const source = topArtists && topArtists.length ? topArtists : currentArtists;
+      // const top = source.slice(0, 8);
+      // const firstTrackIds = await Promise.all(
+      //   top.map(async (a) => {
+      //     try {
+      //       const ids = await fetchArtistTopTracksYT(a.id, a.name);
+      //       return ids && ids.length ? ids[0] : undefined;
+      //     } catch {
+      //       return undefined;
+      //     }
+      //   })
+      // );
       if (req !== playRequest.current) return; // superseded
-      const videoIds = firstTrackIds.filter(Boolean) as string[];
-      if (videoIds.length === 0) {
+      //const videoIds = firstTrackIds.filter(Boolean) as string[];
+      const videoIds = playerIDQueue.get(genre.id);
+      if (!videoIds || videoIds.length === 0) {
         toast.error('No YouTube tracks found for this genre');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
@@ -780,7 +820,8 @@ function App() {
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
                 onPlayGenre={onPlayGenre}
-                playLoading={playerLoading && (!!selectedGenres[0] ? playerLoadingKey === `genre:${selectedGenres[0].id}` : false)}
+                //playLoading={playerLoading && (!!selectedGenres[0] ? playerLoadingKey === `genre:${selectedGenres[0].id}` : false)}
+                playLoading={artistsYTLoading}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
@@ -798,7 +839,8 @@ function App() {
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
                 onPlay={onPlayArtist}
-                playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
+                //playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
+                playLoading={artistsYTLoading}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

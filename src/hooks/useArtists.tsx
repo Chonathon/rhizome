@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {Artist, ArtistNodeLimitType, BadDataReport, NodeLink} from "@/types";
+import {Artist, ArtistNodeLimitType, BadDataReport, BasicNode, NodeLink} from "@/types";
 import axios, {AxiosError} from "axios";
 import {envBoolean} from "@/lib/utils";
 import {DEFAULT_NODE_COUNT, TOP_ARTISTS_TO_FETCH} from "@/constants";
@@ -18,6 +18,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
     const [artistsDataFlagError, setArtistsDataFlagError] = useState<AxiosError>();
     const [totalArtistsInDB, setTotalArtistsInDB] = useState<number>(DEFAULT_NODE_COUNT);
     const [topArtists, setTopArtists] = useState<Artist[]>([]);
+    const [artistsYTLoading, setArtistsYTLoading] = useState<boolean>(false);
     const [artistsYTError, setArtistsYTError] = useState<AxiosError>();
 
     const fetchArtists = async () => {
@@ -119,6 +120,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
 
     const fetchArtistTopTracksYT = async (artistID: string, artistName: string) => {
         resetArtistsYTError();
+        setArtistsYTLoading(true);
         try {
             const response = await axios.get(`${url}/artists/toptracks/${artistID}/${artistName}`);
             const topTracks: string[] = response.data;
@@ -127,6 +129,25 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
             if (err instanceof AxiosError) {
                 setArtistsYTError(err);
             }
+        } finally {
+            setArtistsYTLoading(false);
+        }
+        return [];
+    }
+
+    const fetchGenreTopTracksYT = async (topArtists: BasicNode[]) => {
+        resetArtistsYTError();
+        setArtistsYTLoading(true);
+        try {
+            const response = await axios.post(`${url}/artists/toptracks/multiple`, { artists: topArtists });
+            const topTracks: string[] = response.data;
+            return topTracks;
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setArtistsYTError(err);
+            }
+        } finally {
+            setArtistsYTLoading(false);
         }
         return [];
     }
@@ -152,6 +173,8 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         resetArtistsError,
         resetArtistsYTError,
         resetArtistsDataFlagError,
+        fetchGenreTopTracksYT,
+        artistsYTLoading,
     };
 }
 
