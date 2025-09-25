@@ -47,7 +47,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
       <Sidebar className="" variant="sidebar" collapsible="icon">
         <SidebarContent className="p-1">
               {/* <SidebarGroupContent> */}
-                <div className="w-full flex group-data-[state=expanded]:justify-start justify-center p-2 mb-6">
+                <div className="w-full  justify-center p-2 mb-6">
                   <button onClick={toggleSidebar} className="group/logo">
                     <RhizomeLogo className="h-10 w-auto mx-auto text-primary" />
                   </button>
@@ -131,7 +131,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
       {/* )} */}
           </SidebarContent>
         </SidebarContent>
-                  <SidebarFooter className="mt-auto flex items-center p-0 pb-3">
+                  <SidebarFooter className="mt-auto flex pb-3">
                       {/* <SidebarGroup>
                         <SidebarMenuButton  className="h-10 " size={"xl"} asChild >
                           <button onClick={onClick} className="">
@@ -146,7 +146,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                           </button>
                         </SidebarMenuButton>
                       </SidebarGroup> */}
-                        <SidebarMenuButton variant="outline" className="w-auto h-10 " size={"xl"} asChild>
+                        <SidebarMenuButton variant="outline" className="" size={"xl"} asChild>
                           <button onClick={() => toast("Opening feedback dialogue...")} className="">
                             <CircleHelp size={20} />
                             {/* <span>Support & Feedback</span> */}
