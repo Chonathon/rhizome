@@ -2,9 +2,11 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { BreadcrumbHeader } from "./BreadcrumbHeader"
+import { useSidebar } from "@/components/ui/sidebar"
 export function Header() {
+  const { state } = useSidebar()
   return (
-    <header className="flex bg-transparent w-full backdrop-blur-sm z-50 shrink-0 items-center gap-2 h-[48px]">
+    <header className={`flex bg-sidebar w-full ${state === "collapsed" ? "border-0" : "border-b"} backdrop-blur-sm z-50 shrink-0 items-center gap-2 h-[64px]`}>
       <div className="flex w-full items-center gap-1 pl-4 pr-3 lg:gap-2 ">
         {/* <SidebarTrigger className="-ml-1" /> */}
         {/* <Separator
