@@ -6,6 +6,7 @@ import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/components/ui/sidebar";
 
 type DrawerDirection = "left" | "right" | "top" | "bottom";
 
@@ -62,6 +63,7 @@ export function ResponsiveDrawer({
   scrollContainerSelector = '[data-drawer-scroll]',
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
+  const { state: sidebarState } = useSidebar();
   const [open, setOpen] = useState(false);
   const [activeSnap, setActiveSnap] = useState<number | string | null>(snapPoints[0] ?? 0.9);
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
@@ -159,6 +161,33 @@ export function ResponsiveDrawer({
 
   const drawerKey = isDesktop ? "desktop" : "mobile";
 
+  // Offset the desktop drawer so it anchors to the content edge (leaving the sidebar visible)
+  const desktopSideOffset: React.CSSProperties | undefined = React.useMemo(() => {
+    if (!isDesktop) return undefined;
+    const gapVar = "var(--sidebar-gap)";
+    if (directionDesktop === "left") {
+      return { marginLeft: gapVar } as React.CSSProperties;
+    }
+    return { marginRight: gapVar } as React.CSSProperties;
+  }, [isDesktop, directionDesktop]);
+
+  // Prevent overlay from covering the sidebar region on desktop
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!isDesktop) {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "0px");
+      return;
+    }
+    if (directionDesktop === "left") {
+      root.style.setProperty("--overlay-left", "var(--sidebar-gap)");
+      root.style.setProperty("--overlay-right", "0px");
+    } else {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "var(--sidebar-gap)");
+    }
+  }, [isDesktop, directionDesktop, sidebarState]);
+
   return (
     <Drawer
       key={drawerKey}
@@ -201,6 +230,7 @@ export function ResponsiveDrawer({
     >
       <DrawerContent
         className={cn("w-full h-full", isDesktop ? "max-w-sm px-2" : "", contentClassName)}
+        style={desktopSideOffset}
       >
         <div
           className={cn(

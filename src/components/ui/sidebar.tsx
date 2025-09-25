@@ -126,11 +126,23 @@ function SidebarProvider({
     [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
   )
 
+  // Expose sidebar sizing as global CSS variables so portaled components (e.g., Drawer)
+  // can position relative to the sidebar even when not inside the provider DOM tree.
+  React.useEffect(() => {
+    const root = document.documentElement
+    root.style.setProperty("--sidebar-width", SIDEBAR_WIDTH)
+    root.style.setProperty("--sidebar-width-icon", SIDEBAR_WIDTH_ICON)
+    // No persistent sidebar gap on mobile; on desktop choose based on expanded/collapsed
+    const gap = isMobile ? "0px" : open ? SIDEBAR_WIDTH : SIDEBAR_WIDTH_ICON
+    root.style.setProperty("--sidebar-gap", gap)
+  }, [open, isMobile])
+
   return (
     <SidebarContext.Provider value={contextValue}>
       <TooltipProvider delayDuration={0}>
         <div
           data-slot="sidebar-wrapper"
+          data-state={state}
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH,

@@ -29,6 +29,7 @@ function DrawerClose({
 
 function DrawerOverlay({
   className,
+  style,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Overlay>) {
   return (
@@ -38,6 +39,13 @@ function DrawerOverlay({
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
         className
       )}
+      // Leave space for the app sidebar on desktop by honoring root-level CSS vars.
+      // These vars are set by SidebarProvider and ResponsiveDrawer.
+      style={{
+        left: "var(--overlay-left, 0px)",
+        right: "var(--overlay-right, 0px)",
+        ...style,
+      }}
       {...props}
     />
   )
