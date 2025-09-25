@@ -71,20 +71,20 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               <SidebarGroup>
                 <SidebarMenu className="gap-4">
                       <SidebarMenuItem className="">
-                        <SidebarMenuButton asChild variant="outline" size="xl" >
+                        <SidebarMenuButton asChild variant="" size="xl" >
                           <button onClick={() => setSearchOpen(true)}>
                             <SearchIcon size={24}/>
                             <span className="truncate">Search</span>
                           {/* <Badge
                             className="text-xs text-muted-foreground"
-                            variant="outline"
+                            variant=""
                             >⌘K
                             </Badge> */}
                           </button>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild variant="outline" size="xl">
+                        <SidebarMenuButton asChild variant="" size="xl">
                           <button onClick={() => toast("Collections are coming soon ✨")}>
                             <BookOpen />
                             <span className="truncate">Collection</span>
@@ -97,7 +97,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               <SidebarMenu className="gap-4">
                   {/* <SidebarGroupLabel className="pl-3">Explore</SidebarGroupLabel> */}
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild variant="outline" isActive={graph === "genres"} size="xl">
+                        <SidebarMenuButton asChild variant="" isActive={graph === "genres"} size="xl">
                           <button onClick={() => onGraphChange("genres") }>
                           <Tag />
                             <span className="truncate">Genres</span>
@@ -105,7 +105,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild variant="outline" isActive={graph === "artists" || graph === "similarArtists"} size="xl">
+                        <SidebarMenuButton asChild variant="" isActive={graph === "artists" || graph === "similarArtists"} size="xl">
                           <button onClick={() => onGraphChange("artists")}>
                             <MicVocal />
                             <span className="truncate">Artists</span>
