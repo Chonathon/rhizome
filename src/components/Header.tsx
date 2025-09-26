@@ -28,14 +28,14 @@ export function Header({ content, selectedGenre, selectedArtist, graph, toggleLi
         /> */}
         {/* Right items */}
         <div className="flex w-full items-center gap-2">
-        <BreadcrumbHeader
+        {/* <BreadcrumbHeader
           selectedGenre={selectedGenre}
           selectedArtist={selectedArtist}
           graph={graph}
           toggleListView={toggleListView}
           showListView={showListView}
           hideArtistCard={hideArtistCard}
-        />
+        /> */}
 
           {content}
           {/* <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
