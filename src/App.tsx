@@ -566,7 +566,7 @@ function App() {
         <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
           <motion.div
             className={
-              "fixed top-0 right-0 z-50 pt-2 pl-3 flex justify-left flex-col items-start lg:flex-row gap-3"
+              "fixed top-0 left-0 z-50 pt-2 pl-3 flex justify-left flex-col items-start lg:flex-row gap-3"
             }
             style={{
               left: "var(--sidebar-gap)",
