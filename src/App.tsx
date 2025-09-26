@@ -111,6 +111,7 @@ function App() {
     fetchArtistTopTracksYT,
     fetchGenreTopTracksYT,
     artistsYTLoading,
+    artistYTLoadingKey,
   } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { theme } = useTheme();
@@ -189,12 +190,12 @@ function App() {
 
   // Fetches top tracks of selected genre yt ids in the background
   useEffect(() => {
-    updateGenrePlayerIDs();
+    updateGenrePlayerIDs().then(() => console.log('loaded genre ytids'));
   }, [topArtists]);
 
   // Fetches top tracks of selected artist yt ids in the background
   useEffect(() => {
-    updateArtistPlayerIDs();
+    updateArtistPlayerIDs().then(() => console.log('loaded artist ytids'));
   }, [selectedArtist]);
 
   useEffect(() => {
@@ -211,23 +212,29 @@ function App() {
 
   const updateGenrePlayerIDs = async () => {
     if (topArtists && topArtists.length && !playerIDQueue.has(selectedGenreIDs[0])) {
-      const genreTracks = await fetchGenreTopTracksYT(topArtists.map(t => {
-        return { id: t.id, name: t.name };
-      }));
-      playerIDQueue.set(selectedGenreIDs[0], genreTracks);
+      const currentGenreName = selectedGenres[0].name;
+      console.log(`started yt fetch for ${currentGenreName}`)
+      const currentGenreID = selectedGenreIDs[0];
+      const currentTopArtists = topArtists.map(t => {
+        return {id: t.id, name: t.name};
+      })
+      const genreTracks = await fetchGenreTopTracksYT(currentGenreName, currentTopArtists);
+      playerIDQueue.set(currentGenreID, genreTracks);
+      console.log(`finished yt fetch for ${currentGenreName}`)
     }
   }
 
   const updateArtistPlayerIDs = async () => {
     if (selectedArtist && !playerIDQueue.has(selectedArtist.id)) {
-      const artistTracks = await fetchArtistTopTracksYT(selectedArtist.id, selectedArtist.name);
-      playerIDQueue.set(selectedArtist.id, artistTracks);
+      const currentSelectedArtist = { id: selectedArtist.id, name: selectedArtist.name };
+      const artistTracks = await fetchArtistTopTracksYT(currentSelectedArtist.id, currentSelectedArtist.name);
+      playerIDQueue.set(currentSelectedArtist.id, artistTracks);
     }
   }
 
   // Play handlers using embedded YouTube player
   const onPlayArtist = async (artist: Artist) => {
-    if (artistsYTLoading) return;
+    //if (artistsYTLoading) return;
     const req = ++playRequest.current;
     setPlayerLoading(true);
     setPlayerLoadingKey(`artist:${artist.id}`);
@@ -266,10 +273,10 @@ function App() {
   };
 
   const onPlayGenre = async (genre: Genre) => {
-    if (artistsYTLoading) return;
+    if (isPlayerLoadingGenre()) return;
     const req = ++playRequest.current;
     setPlayerLoading(true);
-    setPlayerLoadingKey(`genre:${genre.id}`);
+    setPlayerLoadingKey(`genre:${genre.name}`);
     setPlayerSource('genre');
     setPlayerEntityName(genre.name);
     // Open player immediately with genre title and best-effort artwork
@@ -324,6 +331,28 @@ function App() {
     setPlayerLoading(v);
     if (!v) { setPlayerLoadingKey(undefined); }
   };
+
+  const isPlayerLoadingGenre = () => {
+    let loading = false;
+    if (artistsYTLoading) {
+      loading = !!selectedGenres[0] ? artistYTLoadingKey === `genre:${selectedGenres[0].name}` : false;
+    }
+    if (playerLoading) {
+      loading = !!selectedGenres[0] ? playerLoadingKey === `genre:${selectedGenres[0].name}` : false;
+    }
+    return loading;
+  }
+
+  const isPlayerLoadingArtist = () => {
+    let loading = false;
+    if (artistsYTLoading) {
+      loading =  !!selectedArtist ? artistYTLoadingKey === `artist:${selectedArtist.id}` : false;
+    }
+    if (playerLoading) {
+      loading =  !!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false;
+    }
+    return loading;
+  }
 
   // Clear selection info when player is closed
   useEffect(() => {
@@ -821,7 +850,7 @@ function App() {
                 getArtistColor={getArtistColor}
                 onPlayGenre={onPlayGenre}
                 //playLoading={playerLoading && (!!selectedGenres[0] ? playerLoadingKey === `genre:${selectedGenres[0].id}` : false)}
-                playLoading={artistsYTLoading}
+                playLoading={isPlayerLoadingGenre()}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
@@ -840,7 +869,7 @@ function App() {
                 getGenreNameById={getGenreNameById}
                 onPlay={onPlayArtist}
                 //playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
-                playLoading={artistsYTLoading}
+                playLoading={isPlayerLoadingArtist()}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

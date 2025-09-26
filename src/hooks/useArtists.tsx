@@ -19,6 +19,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
     const [totalArtistsInDB, setTotalArtistsInDB] = useState<number>(DEFAULT_NODE_COUNT);
     const [topArtists, setTopArtists] = useState<Artist[]>([]);
     const [artistsYTLoading, setArtistsYTLoading] = useState<boolean>(false);
+    const [artistYTLoadingKey, setArtistYTLoadingKey] = useState<string>('');
     const [artistsYTError, setArtistsYTError] = useState<AxiosError>();
 
     const fetchArtists = async () => {
@@ -121,6 +122,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
     const fetchArtistTopTracksYT = async (artistID: string, artistName: string) => {
         resetArtistsYTError();
         setArtistsYTLoading(true);
+        setArtistYTLoadingKey(`artist:${artistID}`);
         try {
             const response = await axios.get(`${url}/artists/toptracks/${artistID}/${artistName}`);
             const topTracks: string[] = response.data;
@@ -131,13 +133,15 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
             }
         } finally {
             setArtistsYTLoading(false);
+            setArtistYTLoadingKey('');
         }
         return [];
     }
 
-    const fetchGenreTopTracksYT = async (topArtists: BasicNode[]) => {
+    const fetchGenreTopTracksYT = async (genreName: string, topArtists: BasicNode[]) => {
         resetArtistsYTError();
         setArtistsYTLoading(true);
+        setArtistYTLoadingKey(`genre:${genreName}`);
         try {
             const response = await axios.post(`${url}/artists/toptracks/multiple`, { artists: topArtists });
             const topTracks: string[] = response.data;
@@ -148,6 +152,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
             }
         } finally {
             setArtistsYTLoading(false);
+            setArtistYTLoadingKey('');
         }
         return [];
     }
@@ -175,6 +180,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         resetArtistsDataFlagError,
         fetchGenreTopTracksYT,
         artistsYTLoading,
+        artistYTLoadingKey,
     };
 }
 
