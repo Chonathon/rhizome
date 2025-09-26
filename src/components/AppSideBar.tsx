@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React from "react"
-import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp } from "lucide-react"
+import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope } from "lucide-react"
 import { useState } from "react"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
@@ -96,7 +96,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                 <SidebarGroup>
               <SidebarMenu className="gap-4">
                   {/* <SidebarGroupLabel className="pl-3">Explore</SidebarGroupLabel> */}
-                      <SidebarMenuItem>
+                      {/* <SidebarMenuItem>
                         <SidebarMenuButton asChild variant="" isActive={graph === "genres"} size="xl">
                           <button onClick={() => onGraphChange("genres") }>
                           <Tag />
@@ -111,8 +111,15 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                             <span className="truncate">Artists</span>
                           </button>
                         </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    
+                      </SidebarMenuItem> */}
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={true} size="xl">
+                        <button>
+                          <Telescope />
+                          <span>Explore</span>
+                        </button>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroup>
     
