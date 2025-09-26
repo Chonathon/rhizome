@@ -1,6 +1,6 @@
 import './App.css'
 import {useEffect, useMemo, useState} from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Divide, TextSearch } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -12,7 +12,7 @@ import {
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
   GraphType, InitialGenreFilter,
-  NodeLink, Tag
+  NodeLink, Tag, 
 } from "@/types";
 import { Header } from "@/components/Header"
 import { motion, AnimatePresence } from "framer-motion";
@@ -598,7 +598,9 @@ function App() {
                     onClick={() => onTabChange('artists')} value="artists">Artists</TabsTrigger>
                   </TabsList>
                 </Tabs>
+
                
+                  
                 { graph === 'artists' &&
                 <div className='flex flex-col items-start sm:flex-row gap-3'>
                    <GenresFilter
@@ -610,14 +612,22 @@ function App() {
                     initialSelection={initialGenreFilter}
                    />
 
-                  <Button size='lg' variant='outline'>Mood & Activity
+                  <Button size='lg' variant='outline'
+                  onClick={() => toast('Opens a filter menu for Moods & Activities...')}
+                  >Mood & Activity
                     <ChevronDown />
                   </Button>
-                  <Button size='lg' className='self-start' variant='outline'>Decade
+                  <Button size='lg' className='self-start' variant='outline'
+                  onClick={() => toast('Opens a filter menu for decades...')}
+                  >Decade
                     <ChevronDown />
                   </Button>
                 </div>
                 }
+                <Button size='lg' className='self-start' variant='outline'
+                  onClick={() => toast('Filters the current view based on your text input...')} >
+                    <TextSearch />Find
+                  </Button>
           </div>
                 <GenresForceGraph
                   graphData={currentGenres}
