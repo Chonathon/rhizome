@@ -1,7 +1,6 @@
 import './App.css'
 import {useEffect, useMemo, useState} from 'react'
 import { ChevronDown, Divide, TextSearch } from 'lucide-react'
-import { ChevronDown, Divide, TextSearch } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -13,7 +12,6 @@ import {
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
   GraphType, InitialGenreFilter,
-  NodeLink, Tag, 
   NodeLink, Tag, 
 } from "@/types";
 import { Header } from "@/components/Header"
@@ -35,7 +33,6 @@ import {
   filterOutGenreTree,
   fixWikiImageURL, appendYoutubeWatchURL
 } from "@/lib/utils";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
