@@ -1,6 +1,7 @@
 import './App.css'
 import {useEffect, useMemo, useState} from 'react'
 import { ChevronDown, Divide, TextSearch } from 'lucide-react'
+import { ChevronDown, Divide, TextSearch } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -12,6 +13,7 @@ import {
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
   GraphType, InitialGenreFilter,
+  NodeLink, Tag, 
   NodeLink, Tag, 
 } from "@/types";
 import { Header } from "@/components/Header"
@@ -612,7 +614,9 @@ function App() {
                     onClick={() => onTabChange('artists')} value="artists">Artists</TabsTrigger>
                   </TabsList>
                 </Tabs>
+
                
+                  
                 { graph === 'artists' &&
                 <div className='flex flex-col items-start sm:flex-row gap-3'>
                    <GenresFilter
