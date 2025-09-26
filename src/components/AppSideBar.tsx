@@ -72,7 +72,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               <SidebarGroup>
                 <SidebarMenu className="gap-4">
                       <SidebarMenuItem className="">
-                        <SidebarMenuButton asChild variant="" size="xl" >
+                        <SidebarMenuButton asChild size="xl" >
                           <button onClick={() => setSearchOpen(true)}>
                             <SearchIcon size={24}/>
                             <span className="truncate">Search</span>
@@ -85,7 +85,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild variant="" size="xl">
+                        <SidebarMenuButton asChild size="xl">
                           <button onClick={() => toast("Collections are coming soon ✨")}>
                             <BookOpen />
                             <span className="truncate">Collection</span>
@@ -98,7 +98,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               <SidebarMenu className="gap-4">
                   {/* <SidebarGroupLabel className="pl-3">Explore</SidebarGroupLabel> */}
                       {/* <SidebarMenuItem>
-                        <SidebarMenuButton asChild variant="" isActive={graph === "genres"} size="xl">
+                        <SidebarMenuButton asChild isActive={graph === "genres"} size="xl">
                           <button onClick={() => onGraphChange("genres") }>
                           <Tag />
                             <span className="truncate">Genres</span>
@@ -106,7 +106,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild variant="" isActive={graph === "artists" || graph === "similarArtists"} size="xl">
+                        <SidebarMenuButton asChild isActive={graph === "artists" || graph === "similarArtists"} size="xl">
                           <button onClick={() => onGraphChange("artists")}>
                             <MicVocal />
                             <span className="truncate">Artists</span>
@@ -143,18 +143,19 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                           </button>
                         </SidebarMenuButton>
                       </SidebarGroup> */}
-                        <SidebarMenuButton variant="" className="" size={"xl"} asChild>
-                          <button onClick={() => toast("Opening feedback dialogue...")} className="">
-                            <CircleHelp size={20} />
-                            {/* <span>Support & Feedback</span> */}
-                          </button>
-                        </SidebarMenuButton>
-                        <SidebarMenuButton variant="" className="" size={"xl"} asChild>
-                          <button onClick={() => toggleSidebar()}>
-                            <SidebarIcon size={20} />
-                            {/* <span>Support & Feedback</span> */}
-                          </button>
-                        </SidebarMenuButton>
+                        <SidebarMenu className="gap-4">
+                          <SidebarMenuButton className="" size={"xl"} asChild>
+                            <button onClick={() => toast("Opening feedback dialogue...")} className="">
+                              <CircleHelp size={20} />
+                              {/* <span>Support & Feedback</span> */}
+                            </button>
+                          </SidebarMenuButton>
+                          <SidebarMenuButton className="" size={"xl"} asChild>
+                            <button onClick={() => toggleSidebar()}>
+                              <SidebarIcon size={20} />
+                            </button>
+                          </SidebarMenuButton>
+                        </SidebarMenu>
                         {/* <button className="p-2.5 -mr-1 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
                           <Settings size={20}/>
                         </button>
