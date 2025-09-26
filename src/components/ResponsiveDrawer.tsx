@@ -247,8 +247,8 @@ export function ResponsiveDrawer({
           ...(isDesktop
             ? ({
                 // Leave space below the header and a bottom gap to keep the drawer floating
-                "--drawer-top": "calc(var(--app-header-height, 52px) + 8px)",
-                "--drawer-bottom": "12px",
+                "--drawer-top": "calc(var(--app-header-height, 52px))",
+                "--drawer-bottom": "4px",
               } as React.CSSProperties)
             : {}),
         }}
