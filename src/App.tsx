@@ -610,9 +610,7 @@ function App() {
                     onClick={() => onTabChange('artists')} value="artists">Artists</TabsTrigger>
                   </TabsList>
                 </Tabs>
-
                
-                  
                 { graph === 'artists' &&
                 <div className='flex flex-col items-start sm:flex-row gap-3'>
                    <GenresFilter
