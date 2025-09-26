@@ -177,6 +177,8 @@ export function ResponsiveDrawer({
     if (!isDesktop) {
       root.style.setProperty("--overlay-left", "0px");
       root.style.setProperty("--overlay-right", "0px");
+      root.style.setProperty("--overlay-top", "0px");
+      root.style.setProperty("--overlay-bottom", "0px");
       return;
     }
     if (directionDesktop === "left") {
@@ -186,6 +188,16 @@ export function ResponsiveDrawer({
       root.style.setProperty("--overlay-left", "0px");
       root.style.setProperty("--overlay-right", "var(--sidebar-gap)");
     }
+    // Keep the overlay vertically aligned with the floating drawer on desktop
+    root.style.setProperty("--overlay-top", "calc(var(--app-header-height, 52px) + 8px)");
+    root.style.setProperty("--overlay-bottom", "12px");
+
+    return () => {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "0px");
+      root.style.setProperty("--overlay-top", "0px");
+      root.style.setProperty("--overlay-bottom", "0px");
+    };
   }, [isDesktop, directionDesktop, sidebarState]);
 
   return (
@@ -229,8 +241,17 @@ export function ResponsiveDrawer({
         : {})}
     >
       <DrawerContent
-        className={cn("w-full h-full", isDesktop ? "max-w-sm px-2 mt-[48px]" : "", contentClassName)}
-        style={desktopSideOffset}
+        className={cn("w-full", isDesktop ? "max-w-sm px-2" : "", contentClassName)}
+        style={{
+          ...(desktopSideOffset as React.CSSProperties),
+          ...(isDesktop
+            ? ({
+                // Leave space below the header and a small bottom gap to keep the drawer floating
+                "--drawer-top": "calc(var(--app-header-height, 52px))",
+                "--drawer-bottom": "4px",
+              } as React.CSSProperties)
+            : {}),
+        }}
       >
         <div
           className={cn(

@@ -552,7 +552,7 @@ function App() {
         <Toaster />
         <Gradient />
         <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
-          <div
+          <motion.div
             className={
               "fixed top-0 right-0 z-50 pt-2 pl-3 flex justify-left flex-col items-start lg:flex-row gap-3"
             }
@@ -628,7 +628,7 @@ function App() {
                   onClick={() => toast('Filters the current view based on your text input...')} >
                     <TextSearch />Find
                   </Button>
-          </div>
+          </motion.div>
                 <GenresForceGraph
                   graphData={currentGenres}
                   onNodeClick={onGenreNodeClick}
