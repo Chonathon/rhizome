@@ -33,6 +33,7 @@ import {
   filterOutGenreTree,
   fixWikiImageURL
 } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
@@ -587,6 +588,16 @@ function App() {
                 </div>
                 }
             /> */}
+            <Tabs
+                value={graph}
+                onValueChange={(val) => onTabChange(val as GraphType)}>
+                  <TabsList>
+                      <TabsTrigger
+                      onClick={() => onTabChange("genres")} value="genres">Genres</TabsTrigger>
+                    <TabsTrigger
+                    onClick={() => onTabChange('artists')} value="artists">Artists</TabsTrigger>
+                  </TabsList>
+                </Tabs>
                
                 { graph === 'artists' &&
                 <div className='flex flex-col items-start sm:flex-row gap-3'>
@@ -599,10 +610,10 @@ function App() {
                     initialSelection={initialGenreFilter}
                    />
 
-                  <Button size='default' variant='outline'>Mood & Activity
+                  <Button size='lg' variant='outline'>Mood & Activity
                     <ChevronDown />
                   </Button>
-                  <Button size='default' className='self-start' variant='outline'>Decade
+                  <Button size='lg' className='self-start' variant='outline'>Decade
                     <ChevronDown />
                   </Button>
                 </div>

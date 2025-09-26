@@ -115,18 +115,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                     
                   </SidebarMenu>
                 </SidebarGroup>
-      {/* {selectedGenre && ( */}
-                {/* {recentSelections.map((selection) => (
-                  <SidebarMenu key={selection.id}>
-                  <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                  <a href="">
-                  <span>{selection.name}</span>
-                  </a>
-                  </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  </SidebarMenu>
-                  ))} */}
+    
               </SidebarGroupContent>
       {/* )} */}
           </SidebarContent>

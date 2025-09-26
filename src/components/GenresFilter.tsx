@@ -219,7 +219,7 @@ export default function GenresFilter({
     }}
       trigger={
         // Collapsed Genres Button
-        <Button size="default" variant="outline" className={`${totalSelected > 0 ? "px-4" : ""}`}> 
+        <Button size="lg" variant="outline" className={`${totalSelected > 0 ? "px-4" : ""}`}> 
         {totalSelected === 1
         ? (selectedParents[0]?.name ?? selectedChildrenFlat[0]?.child.name)
         : "Genres" }
