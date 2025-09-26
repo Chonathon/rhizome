@@ -228,7 +228,7 @@ export default function GenresFilter({
               size="icon"
               variant="secondary"
               aria-label="Clear all filters"
-              className="-m-1.5 w-7 h-7 group"
+              className="-m-1.5 w-6 h-6 group"
               onMouseDown={(e) => e.preventDefault()}
               onClick={(e) => { e.stopPropagation(); clearAll(); }}
               title="Clear all genre selections"

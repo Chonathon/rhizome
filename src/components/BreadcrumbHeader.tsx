@@ -1,28 +1,30 @@
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from './ui/breadcrumb'
-import { LucideIcon, ChevronDown, ChevronUp } from 'lucide-react'
-import {Artist, BasicNode, GraphType} from '@/types'
+import { ChevronDown, ChevronUp, Tag, MicVocal } from 'lucide-react'
+import {Artist, GraphType} from '@/types'
 import { Button } from "@/components/ui/button"
-import useGenres from "@/hooks/useGenres";
+import { useSidebar } from "@/components/ui/sidebar"
 
 interface BreadcrumbHeaderProps {
     selectedGenre: string | undefined;
     selectedArtist: Artist | undefined;
-    HomeIcon: LucideIcon;
+    graph: GraphType;
     toggleListView: () => void;
     showListView: boolean;
-    reset: () => void;
     hideArtistCard: () => void;
 }
 
 export function BreadcrumbHeader({
     selectedGenre,
     selectedArtist,
-    HomeIcon,
+    graph,
     toggleListView,
     showListView,
-    reset,
     hideArtistCard
 }: BreadcrumbHeaderProps) {
+    const { toggleSidebar } = useSidebar();
+    const isArtists = graph === 'artists' || graph === 'similarArtists';
+    const ActiveIcon = isArtists ? MicVocal : Tag;
+    const activeLabel = isArtists ? 'Artists' : 'Genres';
 
     return (
         <div>
@@ -31,18 +33,18 @@ export function BreadcrumbHeader({
                 >
                     <Breadcrumb
                     className="
-                    h-[54px]
                     inline-flex items-center gap-2
-                    px-2 py-3
-                    bg-background border backdrop-blur-xs border-border shadow-md rounded-full
-                    transition-all
+                    transition-all 
                     '
                     ">
                         <BreadcrumbList>
-                            {/* Home icon - always visible */}
+                            {/* Active app sidebar menu button (icon + label) */}
                             <BreadcrumbItem>
-                                <BreadcrumbLink onClick={() => reset()}>
-                                    <HomeIcon size={20} />
+                                <BreadcrumbLink asChild>
+                                    <button className="inline-flex items-center gap-2">
+                                        <ActiveIcon size={20} />
+                                        <span className="hidden sm:inline">{activeLabel}</span>
+                                    </button>
                                 </BreadcrumbLink>
                             </BreadcrumbItem>
                             {/* Show selected genre if available */}

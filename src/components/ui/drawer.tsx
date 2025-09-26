@@ -29,6 +29,7 @@ function DrawerClose({
 
 function DrawerOverlay({
   className,
+  style,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Overlay>) {
   return (
@@ -38,6 +39,15 @@ function DrawerOverlay({
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
         className
       )}
+      // Leave space for the app sidebar on desktop by honoring root-level CSS vars.
+      // These vars are set by SidebarProvider and ResponsiveDrawer.
+      style={{
+        left: "var(--overlay-left, 0px)",
+        right: "var(--overlay-right, 0px)",
+        top: "var(--overlay-top, 0px)",
+        bottom: "var(--overlay-bottom, 0px)",
+        ...style,
+      }}
       {...props}
     />
   )
@@ -61,8 +71,9 @@ function DrawerContent({
           "data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-lg",
           // Use dynamic viewport height for mobile browsers and remove bottom offset
           "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] data-[vaul-drawer-direction=bottom]:rounded-3xl",
-          "data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=right]:sm:max-w-sm",
-          "data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-full data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=left]:sm:max-w-sm",
+          // Side drawers honor top/bottom CSS vars to avoid overflowing the viewport
+          "data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=right]:sm:max-w-sm data-[vaul-drawer-direction=right]:top-[var(--drawer-top,0px)] data-[vaul-drawer-direction=right]:bottom-[var(--drawer-bottom,0px)]",
+          "data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-full data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=left]:top-[var(--drawer-top,0px)] data-[vaul-drawer-direction=left]:bottom-[var(--drawer-bottom,0px)]",
           className
         )}
         {...props}
