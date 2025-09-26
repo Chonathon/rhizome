@@ -553,13 +553,13 @@ function App() {
         <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
           <div
             className={
-              "fixed top-0 right-0 z-50 flex justify-center flex-col items-start lg:flex-row gap-3"
+              "fixed top-0 right-0 z-50 pt-2 pl-3 flex justify-left flex-col items-start lg:flex-row gap-3"
             }
             style={{
               left: "var(--sidebar-gap)",
             }}
           >
-            <Header 
+            {/* <Header 
             selectedGenre={selectedGenres[0]?.name}
             selectedArtist={selectedArtist}
             graph={graph}
@@ -586,15 +586,9 @@ function App() {
                   </Button>
                 </div>
                 }
-              
-              
-              
-            
-            />
-          {/* <div className='fixed top-0 left-0'>
-          </div> */}
+            /> */}
                
-                {/* { graph === 'artists' &&
+                { graph === 'artists' &&
                 <div className='flex flex-col items-start sm:flex-row gap-3'>
                    <GenresFilter
                     key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
@@ -605,14 +599,14 @@ function App() {
                     initialSelection={initialGenreFilter}
                    />
 
-                  <Button size='lg' variant='outline'>Mood & Activity
+                  <Button size='default' variant='outline'>Mood & Activity
                     <ChevronDown />
                   </Button>
-                  <Button size='lg' className='self-start' variant='outline'>Decade
+                  <Button size='default' className='self-start' variant='outline'>Decade
                     <ChevronDown />
                   </Button>
                 </div>
-                } */}
+                }
           </div>
                 <GenresForceGraph
                   graphData={currentGenres}
