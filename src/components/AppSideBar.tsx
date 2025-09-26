@@ -34,9 +34,10 @@ interface AppSidebarProps {
   setSearchOpen: (open: boolean) => void;
   graph: GraphType;
   onGraphChange: (g: GraphType) => void;
+  resetAppState: () => void;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { recentSelections } = useRecentSelections()
   const { toggleSidebar } = useSidebar()
@@ -48,7 +49,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
         <SidebarContent className="p-1">
               {/* <SidebarGroupContent> */}
                 <div className="w-full justify-center pt-1 pl-1 mb-6">
-                  <button onClick={toggleSidebar} className="group/logo">
+                  <button onClick={resetAppState} className="group/logo">
                     <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
                   </button>
                 </div>

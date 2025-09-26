@@ -559,6 +559,7 @@ function App() {
         selectedGenre={selectedGenres[0]}
         graph={graph}
         onGraphChange={onTabChange}
+        resetAppState={resetAppState}
       >
         <SidebarLogoTrigger />
         <Toaster />
