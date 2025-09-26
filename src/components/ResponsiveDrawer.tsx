@@ -229,7 +229,7 @@ export function ResponsiveDrawer({
         : {})}
     >
       <DrawerContent
-        className={cn("w-full h-full", isDesktop ? "max-w-sm px-2" : "", contentClassName)}
+        className={cn("w-full h-full", isDesktop ? "max-w-sm px-2 mt-[54px]" : "", contentClassName)}
         style={desktopSideOffset}
       >
         <div
