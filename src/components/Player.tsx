@@ -15,7 +15,7 @@ declare global {
   }
 }
 
-type Anchor = "bottom-left" | "bottom-right" | "top-left" | "top-right";
+type Anchor = "bottom-left" | "bottom-right" | "bottom-center" | "top-left" | "top-right";
 
 type PlayerProps = {
   open: boolean;
