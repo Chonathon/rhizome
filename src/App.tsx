@@ -1,5 +1,5 @@
 import './App.css'
-import {useEffect, useMemo, useState} from 'react'
+import {useEffect, useMemo, useRef, useState} from 'react'
 import { ChevronDown, Divide, TextSearch } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
@@ -21,6 +21,7 @@ import { Toaster, toast } from 'sonner'
 import { useMediaQuery } from 'react-responsive';
 import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
+import Player from "@/components/Player";
 import { Search } from './components/Search';
 import {
   buildGenreColorMap,
@@ -118,6 +119,15 @@ function App() {
   } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { theme } = useTheme();
+  const [playerOpen, setPlayerOpen] = useState(false);
+  const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
+  const [playerTitle, setPlayerTitle] = useState<string | undefined>(undefined);
+  const [playerArtworkUrl, setPlayerArtworkUrl] = useState<string | undefined>(undefined);
+  const [playerLoading, setPlayerLoading] = useState<boolean>(false);
+  const [playerLoadingKey, setPlayerLoadingKey] = useState<string | undefined>(undefined); // e.g., "artist:123" or "genre:abc"
+  const playRequest = useRef(0);
+  const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
+  const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -193,16 +203,125 @@ function App() {
     }
   }, [similarArtists]);
 
-  // code to test the new endpoint, will remove when ui component is implemented
-  useEffect(() => {
-    testFetchArtistTopTracks();
-  }, [selectedArtist]);
-  const testFetchArtistTopTracks = async () => {
-    if (selectedArtist) {
-      const link = await fetchArtistTopTracksYT(selectedArtist.id, selectedArtist.name);
-      if (link) console.log(appendYoutubeWatchURL(link[0]));
+  // Play handlers using embedded YouTube player
+  const onPlayArtist = async (artist: Artist) => {
+    const req = ++playRequest.current;
+    setPlayerLoading(true);
+    setPlayerLoadingKey(`artist:${artist.id}`);
+    setPlayerSource('artist');
+    setPlayerEntityName(artist.name);
+    // Show the player instantly with provisional metadata
+    setPlayerTitle(artist.name);
+    const imgEarly = typeof artist.image === 'string' && artist.image.trim()
+      ? fixWikiImageURL(artist.image as string)
+      : undefined;
+    setPlayerArtworkUrl(imgEarly);
+    setPlayerVideoIds([]); // clear any previous playlist immediately
+    setPlayerOpen(true);
+    try {
+      const ids = await fetchArtistTopTracksYT(artist.id, artist.name);
+      if (req !== playRequest.current) return; // superseded by a newer request
+      if (ids && ids.length > 0) {
+        setPlayerVideoIds(ids);
+        // title/artwork already set above for instant UI
+      } else {
+        toast.error('No YouTube tracks found for this artist');
+        setPlayerLoading(false);
+        setPlayerLoadingKey(undefined);
+        setPlayerOpen(false);
+      }
+    } catch (e) {
+      if (req === playRequest.current) {
+        toast.error('Unable to fetch YouTube tracks for artist');
+        setPlayerLoading(false);
+        setPlayerLoadingKey(undefined);
+        setPlayerSource(undefined);
+        setPlayerOpen(false);
+      }
     }
-  }
+  };
+
+  const onPlayGenre = async (genre: Genre) => {
+    const req = ++playRequest.current;
+    setPlayerLoading(true);
+    setPlayerLoadingKey(`genre:${genre.id}`);
+    setPlayerSource('genre');
+    setPlayerEntityName(genre.name);
+    // Open player immediately with genre title and best-effort artwork
+    setPlayerTitle(`${genre.name}`);
+    {
+      const source = topArtists && topArtists.length ? topArtists : currentArtists;
+      const coverArtist = source.find(a => typeof a.image === 'string' && (a.image as string).trim());
+      const img = coverArtist ? fixWikiImageURL(coverArtist.image as string) : undefined;
+      setPlayerArtworkUrl(img);
+    }
+    setPlayerVideoIds([]);
+    setPlayerOpen(true);
+    try {
+      // Use available topArtists for the selected genre; fallback to current artists
+      const source = topArtists && topArtists.length ? topArtists : currentArtists;
+      const top = source.slice(0, 8);
+      const firstTrackIds = await Promise.all(
+        top.map(async (a) => {
+          try {
+            const ids = await fetchArtistTopTracksYT(a.id, a.name);
+            return ids && ids.length ? ids[0] : undefined;
+          } catch {
+            return undefined;
+          }
+        })
+      );
+      if (req !== playRequest.current) return; // superseded
+      const videoIds = firstTrackIds.filter(Boolean) as string[];
+      if (videoIds.length === 0) {
+        toast.error('No YouTube tracks found for this genre');
+        setPlayerLoading(false);
+        setPlayerLoadingKey(undefined);
+        setPlayerSource(undefined);
+        setPlayerOpen(false);
+        return;
+      }
+      setPlayerVideoIds(videoIds);
+      // title/artwork already set for instant UI
+    } catch (e) {
+      if (req === playRequest.current) {
+        toast.error('Unable to fetch YouTube tracks for genre');
+        setPlayerLoading(false);
+        setPlayerLoadingKey(undefined);
+        setPlayerSource(undefined);
+        setPlayerOpen(false);
+      }
+    }
+  };
+
+  const handlePlayerLoadingChange = (v: boolean) => {
+    setPlayerLoading(v);
+    if (!v) { setPlayerLoadingKey(undefined); }
+  };
+
+  // Clear selection info when player is closed
+  useEffect(() => {
+    if (!playerOpen) {
+      setPlayerSource(undefined);
+      setPlayerEntityName(undefined);
+      setPlayerLoading(false);
+      setPlayerLoadingKey(undefined);
+    }
+  }, [playerOpen]);
+
+  const handlePlayerTitleClick = () => {
+    if (!playerEntityName || !playerSource) return;
+    if (playerSource === 'artist') {
+      const artistObj = getArtistByName(playerEntityName);
+      if (artistObj) {
+        onTopArtistClick(artistObj);
+      } else {
+        setArtistFromName(playerEntityName);
+      }
+    } else if (playerSource === 'genre') {
+      onGenreNameClick(playerEntityName);
+    }
+  };
 
   const setArtistFromName = (name: string) => {
     const artist = currentArtists.find((a) => a.name === name);
@@ -236,6 +355,8 @@ function App() {
 
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
   const onShowAllArtists = (genre: Genre) => {
+    // Ensure the artists hook actually fetches data when switching via this path
+    if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
     if (!selectedGenres.length) setSelectedGenres([genre]); // safety in case no genre selected
     setGraph('artists');
     addRecentSelection(genre);
@@ -718,6 +839,8 @@ function App() {
                 getArtistImageByName={getArtistImageByName}
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
+                onPlayGenre={onPlayGenre}
+                playLoading={playerLoading && (!!selectedGenres[0] ? playerLoadingKey === `genre:${selectedGenres[0].id}` : false)}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
@@ -734,6 +857,8 @@ function App() {
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
+                onPlay={onPlayArtist}
+                playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
@@ -768,6 +893,19 @@ function App() {
               </div>
             </motion.div>
           </AnimatePresence>
+          <Player
+            open={playerOpen}
+            onOpenChange={setPlayerOpen}
+            videoIds={playerVideoIds}
+            title={playerTitle}
+            autoplay
+            anchor="bottom-left"
+            artworkUrl={playerArtworkUrl}
+            loading={playerLoading}
+            onLoadingChange={handlePlayerLoadingChange}
+            headerPreferProvidedTitle={playerSource === 'genre'}
+            onTitleClick={handlePlayerTitleClick}
+          />
         </div>
       </AppSidebar>
     </SidebarProvider>

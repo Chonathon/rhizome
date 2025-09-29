@@ -225,16 +225,25 @@ export default function GenresFilter({
         : "Genres" }
           {totalSelected > 0 ? (
             <Button
+              asChild
               size="icon"
               variant="secondary"
-              aria-label="Clear all filters"
               className="-m-1.5 w-6 h-6 group"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={(e) => { e.stopPropagation(); clearAll(); }}
-              title="Clear all genre selections"
             >
-              {totalSelected > 1 ? <span className=" text-xs leading-none">{totalSelected}</span> : <X className="h-4 w-4" />}
-              
+              <span
+                role="button"
+                tabIndex={-1}
+                aria-label="Clear all filters"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => { e.stopPropagation(); clearAll(); }}
+                title="Clear all genre selections"
+              >
+                {totalSelected > 1 ? (
+                  <span className=" text-xs leading-none">{totalSelected}</span>
+                ) : (
+                  <X className="h-4 w-4" />
+                )}
+              </span>
             </Button>
           ) : (
             <ChevronDown />
