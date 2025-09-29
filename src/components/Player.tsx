@@ -29,6 +29,10 @@ type PlayerProps = {
   onLoadingChange?: (loading: boolean) => void;
   headerPreferProvidedTitle?: boolean;
   onTitleClick?: () => void;
+  // Pixels between the sidebar edge and the player when no drawer is open
+  sidebarGapPx?: number;
+  // Pixels between the drawer edge and the player when a left drawer is open
+  drawerGapPx?: number;
 };
 
 // Load the YouTube IFrame API once
@@ -62,7 +66,7 @@ const anchorClass = (anchor: Anchor) => {
   }
 }
 
-export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl, loading, onLoadingChange, headerPreferProvidedTitle, onTitleClick }: PlayerProps) {
+export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl, loading, onLoadingChange, headerPreferProvidedTitle, onTitleClick, sidebarGapPx = 12, drawerGapPx = 0 }: PlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -302,8 +306,8 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
           if (rect.right > drawerRight) drawerRight = rect.right;
         }
 
-        const gapSpacing = 16; // px, consistent with left-4
-        const drawerSpacing = 8; // small visual gap from the drawer edge
+        const gapSpacing = sidebarGapPx; // configurable distance from sidebar edge
+        const drawerSpacing = drawerGapPx; // configurable distance from drawer edge
         const left = Math.max(baseLeft + gapSpacing, drawerRight > 0 ? drawerRight + drawerSpacing : 0);
         setAnchoredLeft(left || null);
       } catch {
@@ -333,7 +337,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
         rafId = null;
       }
     };
-  }, [open, isDesktop, anchor]);
+  }, [open, isDesktop, anchor, sidebarGapPx, drawerGapPx]);
 
   const percent = useMemo(() => {
     if (!duration || duration <= 0) return 0;
@@ -403,7 +407,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
               ? {
                   left: anchoredLeft != null
                     ? anchoredLeft
-                    : ("calc(var(--sidebar-gap, 0px) + 16px)" as unknown as number),
+                    : `calc(var(--sidebar-gap, 0px) + ${sidebarGapPx}px)`,
                 }
               : {}),
           }}
