@@ -899,7 +899,7 @@ function App() {
             videoIds={playerVideoIds}
             title={playerTitle}
             autoplay
-            anchor="bottom-center"
+            anchor="bottom-left"
             artworkUrl={playerArtworkUrl}
             loading={playerLoading}
             onLoadingChange={handlePlayerLoadingChange}
