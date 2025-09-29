@@ -54,6 +54,7 @@ function loadYTApi(): Promise<any> {
 const anchorClass = (anchor: Anchor) => {
   switch (anchor) {
     case 'bottom-left': return 'left-4 bottom-4';
+    case 'bottom-center': return 'left-1/2 right-1/2 bottom-4';
     case 'bottom-right': return 'right-4 bottom-4';
     case 'top-left': return 'left-4 top-4';
     case 'top-right': return 'right-4 top-4';
@@ -322,7 +323,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
       {open && (
         <motion.div
           key="player"
-          className={`fixed z-[50] w-[240px] ${anchor.includes('left') ? 'left-4' : 'right-4'} ${(!isDesktop && anchoredTop != null) ? '' : (anchor.includes('top') ? 'top-4' : 'bottom-4')}`}
+          className={`fixed z-[50] w-[320px] ${anchor.includes('left') ? 'left-4' : 'right-4'} ${(!isDesktop && anchoredTop != null) ? '' : (anchor.includes('top') ? 'top-4' : 'bottom-16')}`}
           style={!isDesktop && anchoredTop != null ? { top: anchoredTop, bottom: 'auto' } : undefined}
           initial={{ opacity: 0, y: 12, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
