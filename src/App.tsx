@@ -864,15 +864,15 @@ function App() {
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
             {/* TODO: Consider replace with dismissible toast and adding reference to selected genre */}
               <div
-                className={`flex justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
-                <ResetButton
-                  onClick={() => {
-                    setGraph('genres')
-                    // setSelectedArtist(undefined)
-                  }
-                  }
-                  show={graph === 'artists' && selectedGenres.length === 1}
-                />
+                className={`sm:hidden flex justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
+                  <ResetButton
+                    onClick={() => {
+                      setGraph('genres')
+                      // setSelectedArtist(undefined)
+                    }
+                    }
+                    show={graph === 'artists' && selectedGenres.length === 1}
+                  />
                 <motion.div
                   layout
                   // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
