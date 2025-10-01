@@ -344,7 +344,6 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                   </div>
                 ) : onTitleClick ? (
                   <span
-                    // type="
                     onClick={onTitleClick}
                     title={headerDisplay}
                     className="block w-full text-left sm:text-sm text-md font-medium truncate"
