@@ -161,15 +161,17 @@ export function ResponsiveDrawer({
 
   const drawerKey = isDesktop ? "desktop" : "mobile";
 
-  // Offset the desktop drawer so it anchors to the content edge (leaving the sidebar visible)
+  // Control whether we apply the desktop side offset margin. We turn it off just before closing
+  // so the Vaul translate animation can fully dismiss without leaving a sliver at the sidebar gap.
+  const [useDesktopOffset, setUseDesktopOffset] = useState(true);
   const desktopSideOffset: React.CSSProperties | undefined = React.useMemo(() => {
-    if (!isDesktop) return undefined;
+    if (!isDesktop || !useDesktopOffset) return undefined;
     const gapVar = "var(--sidebar-gap)";
     if (directionDesktop === "left") {
       return { marginLeft: gapVar } as React.CSSProperties;
     }
     return { marginRight: gapVar } as React.CSSProperties;
-  }, [isDesktop, directionDesktop]);
+  }, [isDesktop, useDesktopOffset, directionDesktop]);
 
   // Prevent overlay from covering the sidebar region on desktop
   useEffect(() => {
@@ -223,18 +225,34 @@ export function ResponsiveDrawer({
           closeTimerRef.current = null;
         }
 
-        setOpen(next);
-
         if (!next) {
-          // Defer parent dismissal to allow animate-out to play
-          closeTimerRef.current = window.setTimeout(() => {
-            closeTimerRef.current = null;
-            onDismiss();
-          }, 80);
-          return;
+          if (isDesktop) {
+            // Remove the desktop offset first, then close on the next frame
+            setUseDesktopOffset(false);
+            requestAnimationFrame(() => {
+              setOpen(false);
+              // Defer parent dismissal to allow animate-out to play
+              closeTimerRef.current = window.setTimeout(() => {
+                closeTimerRef.current = null;
+                onDismiss();
+              }, 80);
+            });
+            return;
+          } else {
+            setOpen(false);
+            // Defer parent dismissal to allow animate-out to play
+            closeTimerRef.current = window.setTimeout(() => {
+              closeTimerRef.current = null;
+              onDismiss();
+            }, 80);
+            return;
+          }
         }
 
-        if (next && !isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
+        // Opening
+        if (isDesktop) setUseDesktopOffset(true);
+        setOpen(true);
+        if (!isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
       }}
       direction={isDesktop ? directionDesktop : "bottom"}
       // Reduce velocity-driven jumps between distant snap points
