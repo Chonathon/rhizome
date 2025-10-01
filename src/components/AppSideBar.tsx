@@ -15,13 +15,16 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React from "react"
-import { Icon, Undo2, Plus, BadgeIcon } from "lucide-react"
+import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope} from "lucide-react"
 import { useState } from "react"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
-import { Genre } from "@/types"
+import { Genre, GraphType } from "@/types"
 import { Badge } from "./ui/badge"
 import RhizomeLogo from "@/components/RhizomeLogo"
+import { useSidebar } from "@/components/ui/sidebar"
+import MobileAppBar from "@/components/MobileAppBar"
+import { toast } from "sonner"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -29,203 +32,146 @@ interface AppSidebarProps {
   selectedGenre?: Genre;
   children: React.ReactNode;
   setSearchOpen: (open: boolean) => void;
+  graph: GraphType;
+  onGraphChange: (g: GraphType) => void;
+  resetAppState: () => void;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { recentSelections } = useRecentSelections()
+  const { toggleSidebar } = useSidebar()
   //console.log("Recent selections in sidebar:", recentSelections);
 
   return (
     <>
-      <Sidebar className="" variant="floating">
-        <SidebarContent className="p-1 mt-2">
-          
-          {/* <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClick}
-          ><RhizomeLogo /></Button> */}
-        {/* {selectedGenre ? (
-          <>
-            <SidebarHeader className="mb-2">
-              <span>{selectedGenre.name}</span>
-              <p
-                onClick={() => setIsExpanded((prev) => !prev)}
-                className={`text-sm break-words text-muted-foreground cursor-pointer hover:text-gray-400 
-              ${
-                  isExpanded
-                    ? "text-muted-foreground"
-                    : "line-clamp-3 overflow-hidden"
-                }`}
-              >{selectedGenre.description}</p>
-              
-            </SidebarHeader>
-              <div className="flex flex-col gap-4">
-                {selectedGenre.subgenre_of.length > 0 && (
-                    <SidebarGroup>
-                      <SidebarGroupLabel>Subgenre of</SidebarGroupLabel>
-                      <SidebarGroupContent>
-                        <SidebarMenu>
-                          {selectedGenre.subgenre_of.map((subgenreOf, index) => (
-                              <SidebarMenuItem key={`subgenreOf-${index}`}>
-                                <SidebarMenuButton asChild onClick={() => onLinkedGenreClick(subgenreOf.id)}>
-                                  <a>
-                                    <span>{subgenreOf.name}</span>
-                                  </a>
-                                </SidebarMenuButton>
-                              </SidebarMenuItem>
-                          ))}
-                        </SidebarMenu>
-                      </SidebarGroupContent>
-                    </SidebarGroup>
-                )}
-
-                {selectedGenre.subgenres.length > 0 && (
-                    <SidebarGroup>
-                      <SidebarGroupLabel>Subgenres</SidebarGroupLabel>
-                      <SidebarMenu>
-                        {selectedGenre.subgenres.map((subgenre, index) => (
-                            <SidebarMenuItem key={`subgenre-${index}`}>
-                              <SidebarMenuButton asChild onClick={() => onLinkedGenreClick(subgenre.id)}>
-                                <a>
-                                  <span>{subgenre.name}</span>
-                                </a>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                      </SidebarMenu>
-                    </SidebarGroup>
-                )}
-
-                {selectedGenre.fusion_of.length > 0 && (
-                    <SidebarGroup>
-                      <SidebarGroupLabel>Fusion of</SidebarGroupLabel>
-                      <SidebarMenu>
-                        {selectedGenre.fusion_of.map((fusionOf, index) => (
-                            <SidebarMenuItem key={`fusion-${index}`}>
-                              <SidebarMenuButton asChild>
-                                <a>
-                                  <span>{fusionOf.name}</span>
-                                </a>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                      </SidebarMenu>
-                    </SidebarGroup>
-                )}
-
-                {selectedGenre.fusion_genres.length > 0 && (
-                    <SidebarGroup>
-                      <SidebarGroupLabel>Fusion genres</SidebarGroupLabel>
-                      <SidebarMenu>
-                        {selectedGenre.fusion_genres.map((fusion, index) => (
-                            <SidebarMenuItem key={`fusion-${index}`}>
-                              <SidebarMenuButton asChild onClick={() => onLinkedGenreClick(fusion.id)}>
-                                <a>
-                                  <span>{fusion.name}</span>
-                                </a>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                      </SidebarMenu>
-                    </SidebarGroup>
-                )}
-
-                {selectedGenre.influenced_by.length > 0 && (
-                    <SidebarGroup>
-                      <SidebarGroupLabel>Influenced by</SidebarGroupLabel>
-                      <SidebarMenu>
-                        {selectedGenre.influenced_by.map((influencedBy, index) => (
-                            <SidebarMenuItem key={`influencedBy-${index}`}>
-                              <SidebarMenuButton asChild onClick={() => onLinkedGenreClick(influencedBy.id)}>
-                                <a>
-                                  <span>{influencedBy.name}</span>
-                                </a>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                      </SidebarMenu>
-                    </SidebarGroup>
-                )}
-
-                {selectedGenre.influenced_genres.length > 0 && (
-                    <SidebarGroup>
-                      <SidebarGroupLabel>Influenced</SidebarGroupLabel>
-                      <SidebarMenu>
-                        {selectedGenre.influenced_genres.map((influencedGenres, index) => (
-                            <SidebarMenuItem key={`influencedGenre-${index}`}>
-                              <SidebarMenuButton asChild onClick={() => onLinkedGenreClick(influencedGenres.id)}>
-                                <a>
-                                  <span>{influencedGenres.name}</span>
-                                </a>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                      </SidebarMenu>
-                    </SidebarGroup>
-                )}
-
-              </div>
-
-          </>
-        ) : ( */}
-            <SidebarGroup>
-              {/* <SidebarGroupLabel>Recent Selections</SidebarGroupLabel> */}
-              <SidebarGroupContent>
-                <div className="w-full p-3 -mt-3.5 -ml-1.5 mb-3">
-                  <button onClick={onClick} className="group/logo">
+      <Sidebar className="" variant="sidebar" collapsible="icon">
+        <SidebarContent className="p-1">
+              {/* <SidebarGroupContent> */}
+                <div className="w-full justify-center pt-1 pl-1 mb-6">
+                  <button onClick={resetAppState} className="group/logo">
                     <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
                   </button>
                 </div>
-              <SidebarMenu>
+          <SidebarContent className="">
+                {/* <div className="w-full justify-between flex p-2.5 mb-3"><button><img src={RhizomeLogo} alt="Rhizome Logo" className="h-9 w-auto mx-auto" onClick={onClick}/></button> */}
+                {/* Extra buttons top-right */}
+                {/* <div className="flex gap-1">
+                  <SidebarMenuButton  className="h-10 w-auto" size={"xl"}asChild >
+                            <button onClick={onClick} className="">
+                              <Settings size={20}/>
+                            </button>
+                          </SidebarMenuButton>
+                          <SidebarMenuButton  className="h-10 w-auto" size={"xl"}asChild>
+                            <button onClick={onClick} className="">
+                              <CircleHelp size={20} />
+                            </button>
+                          </SidebarMenuButton>
+                </div> */}
+              <SidebarGroupContent className="flex gap-4 flex-col">
+              <SidebarGroup>
+                <SidebarMenu className="gap-4">
+                      <SidebarMenuItem className="">
+                        <SidebarMenuButton asChild size="xl" >
+                          <button onClick={() => setSearchOpen(true)}>
+                            <SearchIcon size={24}/>
+                            <span className="truncate">Search</span>
+                          {/* <Badge
+                            className="text-xs text-muted-foreground"
+                            variant=""
+                            >⌘K
+                            </Badge> */}
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild size="xl">
+                          <button onClick={() => toast("Collections are coming soon ✨")}>
+                            <BookOpen />
+                            <span className="truncate">Collection</span>
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    </SidebarMenu>
+              </SidebarGroup>
+                <SidebarGroup>
+              <SidebarMenu className="gap-4">
+                  {/* <SidebarGroupLabel className="pl-3">Explore</SidebarGroupLabel> */}
+                      {/* <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={graph === "genres"} size="xl">
+                          <button onClick={() => onGraphChange("genres") }>
+                          <Tag />
+                            <span className="truncate">Genres</span>
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={graph === "artists" || graph === "similarArtists"} size="xl">
+                          <button onClick={() => onGraphChange("artists")}>
+                            <MicVocal />
+                            <span className="truncate">Artists</span>
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem> */}
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild size="xl" >
-                        
-                        <button onClick={() => setSearchOpen(true)}>
-                          <span>Search</span>
-                        <Badge
-                          className="text-xs text-muted-foreground"
-                          variant="outline"
-                          >⌘K
-                          </Badge>
+                      <SidebarMenuButton asChild isActive={true} size="xl">
+                        <button>
+                          <Telescope />
+                          <span>Explore</span>
                         </button>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild size="xl">
-                        <a href="">
-                          <span>Collection</span>
-                        </a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={true} size="xl">
-                        <a href="">
-                          <span>Explore</span>
-                        </a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    
                   </SidebarMenu>
-                {/* {recentSelections.map((selection) => (
-                  <SidebarMenu key={selection.id}>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <a href="">
-                          <span>{selection.name}</span>
-                        </a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                ))} */}
+                </SidebarGroup>
+    
               </SidebarGroupContent>
-            </SidebarGroup>
       {/* )} */}
-      </SidebarContent>
+          </SidebarContent>
+        </SidebarContent>
+                  <SidebarFooter className="mt-auto flex pb-3">
+                      {/* <SidebarGroup>
+                        <SidebarMenuButton  className="h-10 " size={"xl"} asChild >
+                          <button onClick={onClick} className="">
+                            <Settings size={20}/>
+                            <span>Settings</span>
+                          </button>
+                        </SidebarMenuButton>
+                        <SidebarMenuButton  className="h-10 " size={"xl"} asChild>
+                          <button onClick={onClick} className="">
+                            <CircleHelp size={20} />
+                            <span>Support & Feedback</span>
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarGroup> */}
+                        <SidebarMenu className="gap-4">
+                          <SidebarMenuButton className="" size={"xl"} asChild>
+                            <button onClick={() => toast("Opening feedback dialogue...")} className="">
+                              <CircleHelp size={20} />
+                              {/* <span>Support & Feedback</span> */}
+                            </button>
+                          </SidebarMenuButton>
+                          <SidebarMenuButton className="" size={"xl"} asChild>
+                            <button onClick={() => toggleSidebar()}>
+                              <SidebarIcon size={20} />
+                            </button>
+                          </SidebarMenuButton>
+                        </SidebarMenu>
+                        {/* <button className="p-2.5 -mr-1 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
+                          <Settings size={20}/>
+                        </button>
+                        <button className="p-2.5 -mr-.5 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
+                          <CircleHelp size={20} />
+                        </button> */}
+                  </SidebarFooter>
         <SidebarRail />
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
+      {/* Mobile toolbar */}
+      {/* <MobileAppBar
+        graph={graph}
+        onGraphChange={onGraphChange}
+        onOpenSearch={() => setSearchOpen(true)}
+      /> */}
     </>
   )
 }

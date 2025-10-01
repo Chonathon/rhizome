@@ -1,20 +1,20 @@
 import './App.css'
 import {useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Divide, TextSearch } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Artist, ArtistNodeLimitType, BadDataReport,
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
   GraphType, InitialGenreFilter,
-  NodeLink, Tag
+  NodeLink, Tag, 
 } from "@/types";
+import { Header } from "@/components/Header"
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
 import { Toaster, toast } from 'sonner'
@@ -32,15 +32,16 @@ import {
   primitiveArraysEqual,
   buildGenreTree,
   filterOutGenreTree,
-  fixWikiImageURL
+  fixWikiImageURL, appendYoutubeWatchURL
 } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
 import NodeLimiter from './components/NodeLimiter'
 import useSimilarArtists from "@/hooks/useSimilarArtists";
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
 import { GenreInfo } from './components/GenreInfo';
 import GenresFilter from './components/GenresFilter';
@@ -52,6 +53,19 @@ import {
   DEFAULT_LIGHT_NODE_COLOR,
   TOP_ARTISTS_TO_FETCH, EMPTY_GENRE_FILTER_OBJECT, SINGLETON_PARENT_GENRE, GENRE_FILTER_CLUSTER_MODE
 } from "@/constants";
+import RhizomeLogo from "@/components/RhizomeLogo";
+
+function SidebarLogoTrigger() {
+  const { toggleSidebar } = useSidebar()
+  return (
+    <div className="fixed hidden md:block top-[14px] left-3 z-[60] transition-opacity duration-300 md:group-has-data-[state=expanded]/sidebar-wrapper:opacity-0 md:group-has-data-[state=expanded]/sidebar-wrapper:pointer-events-none">
+      <button onClick={toggleSidebar} className="group/logo">
+        {/* <RhizomeLogo className="h-9 w-auto text-primary" /> */}
+        <span className="sr-only">Toggle Sidebar</span>
+      </button>
+    </div>
+  )
+}
 
 function App() {
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
@@ -664,15 +678,51 @@ function App() {
         setSearchOpen={setSearchOpen}
         onClick={resetAppState}
         selectedGenre={selectedGenres[0]}
+        graph={graph}
+        onGraphChange={onTabChange}
+        resetAppState={resetAppState}
       >
+        <SidebarLogoTrigger />
         <Toaster />
         <Gradient />
         <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
-          <div className={
-            "fixed top-0 left-3 z-50 flex flex-col  items-start lg:flex-row gap-3 p-3 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))]"
-          }
+          <motion.div
+            className={
+              "fixed top-0 left-0 z-50 pt-2 pl-3 flex justify-left flex-col items-start lg:flex-row gap-3"
+            }
+            style={{
+              left: "var(--sidebar-gap)",
+            }}
           >
-               <Tabs
+            {/* <Header 
+            selectedGenre={selectedGenres[0]?.name}
+            selectedArtist={selectedArtist}
+            graph={graph}
+            toggleListView={() => {}}
+            showListView={false}
+            hideArtistCard={() => setShowArtistCard(false)}
+            content={
+              graph === 'artists' &&
+                <div className='flex mr-[var(--sidebar-gap)] flex-col w-full justify-center sm:flex-row gap-3'>
+                   <GenresFilter
+                    key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
+                    genres={[...genres, singletonParentGenre]}
+                    genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
+                    graphType={graph}
+                    onGenreSelectionChange={onGenreFilterSelectionChange}
+                    initialSelection={initialGenreFilter}
+                   />
+
+                  <Button size='default' variant='outline'>Mood & Activity
+                    <ChevronDown />
+                  </Button>
+                  <Button size='default' className='self-start' variant='outline'>Decade
+                    <ChevronDown />
+                  </Button>
+                </div>
+                }
+            /> */}
+            <Tabs
                 value={graph}
                 onValueChange={(val) => onTabChange(val as GraphType)}>
                   <TabsList>
@@ -682,6 +732,7 @@ function App() {
                     onClick={() => onTabChange('artists')} value="artists">Artists</TabsTrigger>
                   </TabsList>
                 </Tabs>
+               
                 { graph === 'artists' &&
                 <div className='flex flex-col items-start sm:flex-row gap-3'>
                    <GenresFilter
@@ -693,15 +744,23 @@ function App() {
                     initialSelection={initialGenreFilter}
                    />
 
-                  <Button size='lg' variant='outline'>Mood & Activity
+                  <Button size='lg' variant='outline'
+                  onClick={() => toast('Opens a filter menu for Moods & Activities...')}
+                  >Mood & Activity
                     <ChevronDown />
                   </Button>
-                  <Button size='lg' className='self-start' variant='outline'>Decade
+                  <Button size='lg' className='self-start' variant='outline'
+                  onClick={() => toast('Opens a filter menu for decades...')}
+                  >Decade
                     <ChevronDown />
                   </Button>
                 </div>
                 }
-          </div>
+                <Button size='lg' className='self-start' variant='outline'
+                  onClick={() => toast('Filters the current view based on your text input...')} >
+                    <TextSearch />Find
+                  </Button>
+          </motion.div>
                 <GenresForceGraph
                   graphData={currentGenres}
                   onNodeClick={onGenreNodeClick}
@@ -740,7 +799,8 @@ function App() {
               show={showArtistNodeLimiter()}
             />
           </div>}
-          <div className="fixed flex flex-col h-auto right-4 top-4 justify-end gap-3 z-50">
+          {/* right controls */}
+          <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               <ModeToggle />
               <ClusteringPanel 
                 clusterMode={genreClusterMode[0]}
@@ -757,7 +817,7 @@ function App() {
             <motion.div
               className={`
                   fixed left-1/2 transform -translate-x-1/2 z-50
-                  flex flex-col gap-4
+                  flex flex-col gap-4 md:group-has-data-[state=expanded]/sidebar-wrapper:left-[calc(var(--sidebar-width))] md:group-has-data-[state=collapsed]/sidebar-wrapper:left-16
                   ${
                     isMobile
                       ? "w-full px-4 items-center bottom-4"
@@ -804,15 +864,15 @@ function App() {
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
             {/* TODO: Consider replace with dismissible toast and adding reference to selected genre */}
               <div
-                className={`flex justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
-                <ResetButton
-                  onClick={() => {
-                    setGraph('genres')
-                    // setSelectedArtist(undefined)
-                  }
-                  }
-                  show={graph === 'artists' && selectedGenres.length === 1}
-                />
+                className={`sm:hidden flex justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
+                  <ResetButton
+                    onClick={() => {
+                      setGraph('genres')
+                      // setSelectedArtist(undefined)
+                    }
+                    }
+                    show={graph === 'artists' && selectedGenres.length === 1}
+                  />
                 <motion.div
                   layout
                   // className={`${graph === 'artists' ? 'flex-grow' : ''}`}

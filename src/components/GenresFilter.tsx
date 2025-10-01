@@ -228,7 +228,7 @@ export default function GenresFilter({
               asChild
               size="icon"
               variant="secondary"
-              className="-m-1.5 w-7 h-7 group"
+              className="-m-1.5 w-6 h-6 group"
             >
               <span
                 role="button"

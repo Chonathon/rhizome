@@ -38,8 +38,8 @@ export default function NodeLimiter({ initialValue, onChange, totalNodes, nodeTy
     return show ? (
         <div
         className="
-        flex gap-2 p-2 items-center
-        rounded-2xl border border-accent dark:border-input shadow-sm bg-accent dark:dark:bg-background backdrop-blur-sm">
+        flex gap-2 items-center
+        ">
             <p className="text-muted-foreground">Displaying</p>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
