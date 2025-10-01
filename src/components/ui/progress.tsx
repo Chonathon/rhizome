@@ -13,7 +13,7 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
     return (
         <div
           ref={ref}
-          className={cn("relative cursor-pointer h-0.5 w-full overflow-hidden rounded-full bg-muted", className)}
+          className={cn("relative cursor-pointer sm:hover:h-2 transition-all h-2 sm:h-0.5 w-full overflow-hidden rounded-full bg-muted", className)}
           {...props}
         >
           <div

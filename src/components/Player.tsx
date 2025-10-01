@@ -428,7 +428,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                     type="button"
                     onClick={onTitleClick}
                     title={title}
-                    className={`text-left flex-1 text-md sm:text-sm font-medium text-foreground hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
+                    className={`text-left flex-1 leading-4 sm:leading-normal text-md sm:text-sm font-medium text-foreground hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
                   >
                     {title}
                   </button>
@@ -444,11 +444,11 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                   )
                 )} */}
               </div>
-              <Progress
+                <Progress
                 value={percent}
                 onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
                 onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
-              />
+                />
             </div>
           </div>
           <Button
