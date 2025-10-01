@@ -86,7 +86,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       </SidebarMenuItem>
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild size="xl">
-                          <button onClick={() => toast("Collections are coming soon ✨")}>
+                          <button onClick={() => window.dispatchEvent(new Event('auth:open'))}>
                             <BookOpen />
                             <span className="truncate">Collection</span>
                           </button>
