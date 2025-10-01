@@ -343,14 +343,14 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                     <Skeleton className="h-4 w-4/5" />
                   </div>
                 ) : onTitleClick ? (
-                  <button
-                    type="button"
+                  <span
+                    // type="
                     onClick={onTitleClick}
                     title={headerDisplay}
-                    className="block w-full text-left sm:text-sm text-md font-medium truncate hover:underline focus:outline-none"
+                    className="block w-full text-left sm:text-sm text-md font-medium truncate"
                   >
                     {headerDisplay}
-                  </button>
+                  </span>
                 ) : (
                   <div className="w-full text-md sm:text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
                 )}
