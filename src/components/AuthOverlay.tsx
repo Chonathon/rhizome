@@ -36,7 +36,7 @@ const isMobile = useMediaQuery("(max-width: 640px)");
           </div>
           <DialogTitle className="sm:text-3xl text-2xl text-center">Create a free account to start your collection</DialogTitle>
           <DialogDescription className="text-md text-center">
-            Add artists to your collection from Rhizome, or import your entire library from <strong>Last.FM</strong>, <strong>Deezer</strong>, <strong>Spotify</strong>, and more!
+            Add artists to your collection from Rhizome, or import your entire library from <strong>Last.FM</strong>, <strong>Deezer</strong>, <strong>Spotify</strong>, and more... soon!
           </DialogDescription>
         </DialogHeader>
          <form>
@@ -93,7 +93,8 @@ const isMobile = useMediaQuery("(max-width: 640px)");
                   </div>
                   <Input id="password" type="password" required />
                 </div>
-                <Button type="submit" size="lg" className="w-full mt-2">
+                <Button type="submit" size="lg" className="w-full mt-2"
+                onClick={() => toast('Oof, not even email sign-up is implemented 😬')}>
                   Sign up
                 </Button>
               </div>
