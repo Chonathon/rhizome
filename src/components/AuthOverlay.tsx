@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,6 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 
 function AuthOverlay() {
   const [open, setOpen] = useState(false);
-const isDesktop = useMediaQuery("(min-width: 1024px)");
 const isMobile = useMediaQuery("(max-width: 640px)");
 
   useEffect(() => {
@@ -27,9 +26,16 @@ const isMobile = useMediaQuery("(max-width: 640px)");
     };
   }, []);
 
+const emailRef = useRef<HTMLInputElement>(null);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="bg-card max-h-[calc(100dvh-3rem)] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="bg-card max-h-[calc(100dvh-3rem)] overflow-y-auto sm:max-w-lg"
+      onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          emailRef.current?.focus();
+        }}
+      >
         <DialogHeader >
           <div>
             <RhizomeLogo className="mx-auto mb-4 h-11 sm:h-14 w-auto" />
@@ -61,7 +67,7 @@ const isMobile = useMediaQuery("(max-width: 640px)");
                       fill="currentColor"
                     />
                   </svg>
-                  {isMobile ? '' : 'Sign up with Apple'}
+                  {isMobile ? '' : 'Sign up with Google'}
                 </Button>
               </div>
               {/* Divider */}
@@ -78,6 +84,7 @@ const isMobile = useMediaQuery("(max-width: 640px)");
                     id="email"
                     type="email"
                     placeholder="m@example.com"
+                    ref={emailRef}
                     required
                   />
                 </div>
