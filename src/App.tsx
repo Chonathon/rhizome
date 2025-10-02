@@ -69,6 +69,9 @@ function SidebarLogoTrigger() {
 }
 
 function App() {
+  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number }
+  const genresGraphRef = useRef<GraphHandle | null>(null);
+  const artistsGraphRef = useRef<GraphHandle | null>(null);
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
   const selectedGenreIDs = useMemo(() => {
     return selectedGenres.map(genre => genre.id);
@@ -763,6 +766,7 @@ function App() {
                   </Button>
           </motion.div>
                 <GenresForceGraph
+                  ref={genresGraphRef as any}
                   graphData={currentGenres}
                   onNodeClick={onGenreNodeClick}
                   loading={genresLoading}
@@ -773,6 +777,7 @@ function App() {
                   selectedGenreId={selectedGenres[0]?.id}
                 />
                 <ArtistsForceGraph
+                    ref={artistsGraphRef as any}
                     artists={currentArtists}
                     artistLinks={currentArtistLinks}
                     loading={artistsLoading}
@@ -785,7 +790,16 @@ function App() {
                 />
 
           {!isMobile && <div className='z-20 fixed bottom-4 right-4'>
-            <ZoomButtons />
+            <ZoomButtons
+              onZoomIn={() => {
+                const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+                ref?.zoomIn();
+              }}
+              onZoomOut={() => {
+                const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+                ref?.zoomOut();
+              }}
+            />
             <NodeLimiter
                 totalNodes={genres.length}
                 nodeType={'genres'}
