@@ -73,7 +73,7 @@ function AuthOverlay() {
                 </div>
                 <div className="grid gap-3">
                   <div className="flex items-center">
-                    <Label className=" font-medium" htmlFor="password">Password</Label>
+                    <Label className="font-medium" htmlFor="password">Password</Label>
                     <a
                       href="#"
                       className="ml-auto text-sm underline-offset-4 hover:underline"
