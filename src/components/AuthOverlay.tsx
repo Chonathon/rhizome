@@ -102,7 +102,7 @@ const emailRef = useRef<HTMLInputElement>(null);
                 </div>
                 <Button type="submit" size="lg" className="w-full mt-2"
                 onClick={() => toast('Oof, not even email sign-up is implemented 😬')}>
-                  Sign up
+                  Continue
                 </Button>
               </div>
               <div className="text-center text-sm">
