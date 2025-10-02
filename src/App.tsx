@@ -150,7 +150,7 @@ function App() {
     localStorage.setItem('dagMode', JSON.stringify(dagMode));
   }, [dagMode]);
 
-  // Zoom hotkeys only (+ / -)
+  // Zoom hotkeys (+ / -)
   useHotkeys({
     onZoomIn: () => {
       const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
@@ -799,7 +799,7 @@ function App() {
                     computeArtistColor={getArtistColor}
                 />
 
-            <div className='z-20 fixed bottom-16 right-4'>
+            <div className='z-20 fixed bottom-16 right-3'>
               <ZoomButtons
                 onZoomIn={() => {
                   const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
@@ -811,7 +811,7 @@ function App() {
                 }}
               />
             </div>
-          {!isMobile && <div className='z-20 fixed bottom-4 right-4'>
+          {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
             <NodeLimiter
                 totalNodes={genres.length}
                 nodeType={'genres'}
