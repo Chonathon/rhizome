@@ -54,6 +54,7 @@ import {
   TOP_ARTISTS_TO_FETCH, EMPTY_GENRE_FILTER_OBJECT, SINGLETON_PARENT_GENRE, GENRE_FILTER_CLUSTER_MODE
 } from "@/constants";
 import RhizomeLogo from "@/components/RhizomeLogo";
+import AuthOverlay from '@/components/AuthOverlay';
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -908,6 +909,7 @@ function App() {
           />
         </div>
       </AppSidebar>
+      <AuthOverlay />
     </SidebarProvider>
   );
 }
