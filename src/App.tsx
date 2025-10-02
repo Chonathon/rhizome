@@ -789,17 +789,19 @@ function App() {
                     computeArtistColor={getArtistColor}
                 />
 
+            <div className='z-20 fixed bottom-16 right-4'>
+              <ZoomButtons
+                onZoomIn={() => {
+                  const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+                  ref?.zoomIn();
+                }}
+                onZoomOut={() => {
+                  const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+                  ref?.zoomOut();
+                }}
+              />
+            </div>
           {!isMobile && <div className='z-20 fixed bottom-4 right-4'>
-            <ZoomButtons
-              onZoomIn={() => {
-                const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                ref?.zoomIn();
-              }}
-              onZoomOut={() => {
-                const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                ref?.zoomOut();
-              }}
-            />
             <NodeLimiter
                 totalNodes={genres.length}
                 nodeType={'genres'}

@@ -8,17 +8,7 @@ type ZoomButtonsProps = {
 
 const ZoomButtons: React.FC<ZoomButtonsProps> = ({ onZoomIn, onZoomOut }) => {
   return (
-    <div className='flex-col w-fit -space-x-px rounded-full overflow-clip border rtl:space-x-reverse'>
-      <Button
-        variant='outline'
-        size='icon'
-        className='rounded-none border-none shadow-none focus-visible:z-10'
-        onClick={onZoomOut}
-        aria-label='Zoom out'
-      >
-        <ZoomOutIcon />
-        <span className='sr-only'>Zoom out</span>
-      </Button>
+    <div className='flex flex-col w-fit -space-x-px rounded-full overflow-clip border rtl:space-x-reverse'>
       <Button
         variant='outline'
         size='icon'
@@ -28,6 +18,16 @@ const ZoomButtons: React.FC<ZoomButtonsProps> = ({ onZoomIn, onZoomOut }) => {
       >
         <ZoomInIcon />
         <span className='sr-only'>Zoom in</span>
+      </Button>
+      <Button
+        variant='outline'
+        size='icon'
+        className='rounded-none border-none shadow-none focus-visible:z-10'
+        onClick={onZoomOut}
+        aria-label='Zoom out'
+      >
+        <ZoomOutIcon />
+        <span className='sr-only'>Zoom out</span>
       </Button>
     </div>
   )
