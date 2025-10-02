@@ -54,6 +54,7 @@ import {
   TOP_ARTISTS_TO_FETCH, EMPTY_GENRE_FILTER_OBJECT, SINGLETON_PARENT_GENRE, GENRE_FILTER_CLUSTER_MODE
 } from "@/constants";
 import RhizomeLogo from "@/components/RhizomeLogo";
+import ZoomButtons from '@/components/ZoomButtons';
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -784,6 +785,7 @@ function App() {
                 />
 
           {!isMobile && <div className='z-20 fixed bottom-4 right-4'>
+            <ZoomButtons />
             <NodeLimiter
                 totalNodes={genres.length}
                 nodeType={'genres'}
