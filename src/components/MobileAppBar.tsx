@@ -29,7 +29,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch }: MobileAppBa
     <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 px-[80px] md:hidden"
     style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div
-        className="pointer-events-auto mx-auto rounded-full
+        className="pointer-events-auto mx-auto rounded-full w-fit
          border border-border bg-popover/80 backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
         
       >
@@ -85,7 +85,7 @@ function ToolbarButton({
       variant="ghost"
       size="xl"
       onClick={onClick}
-      className={`font-regular rounded-full ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
+      className={`font-regular max-w-[56px] rounded-full ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
     >
       {icon}
       {/* <span className="text-[10px] leading-tight">{label}</span> */}
