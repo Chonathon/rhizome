@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import RhizomeLogo from "./RhizomeLogo";
+
 
 
 function AuthOverlay() {
@@ -25,17 +27,21 @@ function AuthOverlay() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="bg-card h-auto w-[min(100vh-[4rem])] max-w-none">
+      <DialogContent className="bg-card max-h-[calc(100dvh-3rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader >
-          <DialogTitle className="text-3xl text-center">Create a free account to start your collection</DialogTitle>
+          <div>
+            <RhizomeLogo className="mx-auto mb-4 h-16 w-auto" />
+          </div>
+          <DialogTitle className="sm:text-3xl text-2xl text-center">Create a free account to start your collection</DialogTitle>
           <DialogDescription className="text-md text-center">
-            Add artists to your collection from Rhizome, or import your entire library from Last.FM, Deezer, Spotify, and more!
+            Add artists to your collection from Rhizome, or import your entire library from <strong>Last.FM</strong>, <strong>Deezer</strong>, <strong>Spotify</strong>, and more!
           </DialogDescription>
         </DialogHeader>
          <form>
-            <div className="grid gap-6">
-              <div className="flex flex-col gap-4">
-                <Button variant="outline" className="w-full"
+            <div className="grid gap-8 py-4">
+              {/* OAuth */}
+              <div className="flex flex-row sm:flex-col gap-4">
+                <Button variant="outline" size="xl" type="button"
                 onClick={() => toast('Apple sign-in not yet implemented 🙃')}>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
@@ -43,9 +49,9 @@ function AuthOverlay() {
                       fill="currentColor"
                     />
                   </svg>
-                  Sign up with Apple
+                  {'Sign up with Apple'}
                 </Button>
-                <Button variant="outline" className="w-full"
+                <Button variant="outline" size="xl" type="button"
                 onClick={() => toast('Google sign-in not yet implemented 🙃')}>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
@@ -56,13 +62,15 @@ function AuthOverlay() {
                   Sign up with Google
                 </Button>
               </div>
+              {/* Divider */}
               <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
                 <span className="bg-card text-muted-foreground relative z-10 px-2">
                   Or continue with
                 </span>
               </div>
-              <div className="grid gap-6">
-                <div className="grid gap-3">
+              {/* Email sign up */}
+              <div className="grid gap-4">
+                <div className="grid gap-1.5">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
@@ -71,9 +79,9 @@ function AuthOverlay() {
                     required
                   />
                 </div>
-                <div className="grid gap-3">
+                <div className="grid gap-1.5">
                   <div className="flex items-center">
-                    <Label className="font-medium" htmlFor="password">Password</Label>
+                    <Label htmlFor="password">Password</Label>
                     <a
                       href="#"
                       className="ml-auto text-sm underline-offset-4 hover:underline"
@@ -83,14 +91,14 @@ function AuthOverlay() {
                   </div>
                   <Input id="password" type="password" required />
                 </div>
-                <Button type="submit" size="lg" className="w-full">
+                <Button type="submit" size="lg" className="w-full mt-2">
                   Sign up
                 </Button>
               </div>
               <div className="text-center text-sm">
                 Already have an account?{" "}
                 <a href="#" className="underline underline-offset-4">
-                  Sign up
+                  Log in
                 </a>
               </div>
             </div>
