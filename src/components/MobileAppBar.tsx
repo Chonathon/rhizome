@@ -26,19 +26,32 @@ type MobileAppBarProps = {
  */
 export function MobileAppBar({ graph, onGraphChange, onOpenSearch }: MobileAppBarProps) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-50 px-[80px] md:hidden"
+    <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-3 z-50 md:hidden"
     style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div
-        className="pointer-events-auto mx-auto rounded-full w-fit
-         border border-border bg-popover/80 backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
+        className="pointer-events-auto rounded-full w-fit
+         border border-border bg-sidebar backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
         
       >
-        <div className="w-full grid grid-cols-4">
+        <div className="w-fit grid grid-cols-1">
           <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
             icon={<SearchIcon className="size-6" />}
           />
+        </div>
+      </div>
+      <div
+        className="pointer-events-auto rounded-full w-fit
+         border border-border bg-sidebar backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
+        
+      >
+        <div className="w-fit grid grid-cols-3">
+          {/* <ToolbarButton
+            label="Search"
+            onClick={onOpenSearch}
+            icon={<SearchIcon className="size-6" />}
+          /> */}
           <ToolbarButton
             label="Collection"
             onClick={() => toast("Collections are coming soon ✨")}

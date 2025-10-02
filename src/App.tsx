@@ -877,6 +877,7 @@ function App() {
                 <motion.div
                   layout
                   // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
+                  className='hidden'
                 >
                   <Search
                     onGenreSelect={onGenreNodeClick}
