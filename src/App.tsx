@@ -55,6 +55,7 @@ import {
 } from "@/constants";
 import RhizomeLogo from "@/components/RhizomeLogo";
 import ZoomButtons from '@/components/ZoomButtons';
+import useHotkeys from '@/hooks/useHotkeys';
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -149,11 +150,22 @@ function App() {
     localStorage.setItem('dagMode', JSON.stringify(dagMode));
   }, [dagMode]);
 
-  // Custom escape key functionality
+  // Zoom hotkeys only (+ / -)
+  useHotkeys({
+    onZoomIn: () => {
+      const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+      ref?.zoomIn?.();
+    },
+    onZoomOut: () => {
+      const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+      ref?.zoomOut?.();
+    },
+  }, [graph]);
+
+  // Restore standalone Escape handling (deselect)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        // Prefer logical selection state over UI visibility flags
         if (graph === 'genres' && selectedGenres.length){
           deselectGenre();
           return;
@@ -165,21 +177,19 @@ function App() {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [selectedArtist, selectedGenres]);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [graph, selectedArtist, selectedGenres]);
 
-  // Custom command-K key functionality for search
+  // Restore Cmd/Ctrl+K handling (search)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setSearchOpen((prev) => !prev);
       }
-    }
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down)
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
   }, []);
 
   // Sets current artists/links shown in the graph when artists are fetched from the DB

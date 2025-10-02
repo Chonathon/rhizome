@@ -15,6 +15,7 @@ const ZoomButtons: React.FC<ZoomButtonsProps> = ({ onZoomIn, onZoomOut }) => {
         className='rounded-none border-none border-l shadow-none focus-visible:z-10'
         onClick={onZoomIn}
         aria-label='Zoom in'
+        title='Zoom in'
       >
         <ZoomInIcon />
         <span className='sr-only'>Zoom in</span>
@@ -25,6 +26,7 @@ const ZoomButtons: React.FC<ZoomButtonsProps> = ({ onZoomIn, onZoomOut }) => {
         className='rounded-none border-none shadow-none focus-visible:z-10'
         onClick={onZoomOut}
         aria-label='Zoom out'
+        title='Zoom out'
       >
         <ZoomOutIcon />
         <span className='sr-only'>Zoom out</span>
