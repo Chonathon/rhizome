@@ -167,11 +167,11 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
       {/* Mobile toolbar */}
-      {/* <MobileAppBar
+      <MobileAppBar
         graph={graph}
         onGraphChange={onGraphChange}
         onOpenSearch={() => setSearchOpen(true)}
-      /> */}
+      />
     </>
   )
 }
