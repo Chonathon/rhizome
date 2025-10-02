@@ -42,12 +42,12 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
     useImperativeHandle(ref, () => ({
         zoomIn: () => {
             const cur = zoomRef.current || 1;
-            const target = Math.min(20, cur * 1.2);
+            const target = Math.min(20, cur * 2.2);
             fgRef.current?.zoom?.(target, 400);
         },
         zoomOut: () => {
             const cur = zoomRef.current || 1;
-            const target = Math.max(0.03, cur / 1.2);
+            const target = Math.max(0.03, cur / 2.2);
             fgRef.current?.zoom?.(target, 400);
         },
         zoomTo: (k: number, ms = 400) => {
