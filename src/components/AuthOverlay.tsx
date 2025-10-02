@@ -11,11 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import RhizomeLogo from "./RhizomeLogo";
-
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 
 function AuthOverlay() {
   const [open, setOpen] = useState(false);
+const isDesktop = useMediaQuery("(min-width: 1024px)");
+const isMobile = useMediaQuery("(max-width: 640px)");
 
   useEffect(() => {
     const handleOpen = () => setOpen(true);
@@ -30,7 +32,7 @@ function AuthOverlay() {
       <DialogContent className="bg-card max-h-[calc(100dvh-3rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader >
           <div>
-            <RhizomeLogo className="mx-auto mb-4 h-16 w-auto" />
+            <RhizomeLogo className="mx-auto mb-4 h-11 sm:h-14 w-auto" />
           </div>
           <DialogTitle className="sm:text-3xl text-2xl text-center">Create a free account to start your collection</DialogTitle>
           <DialogDescription className="text-md text-center">
@@ -41,7 +43,7 @@ function AuthOverlay() {
             <div className="grid gap-8 py-4">
               {/* OAuth */}
               <div className="flex flex-row sm:flex-col gap-4">
-                <Button variant="outline" size="xl" type="button"
+                <Button className="flex-1 sm:p-2 p-4" variant="outline" size={isMobile ? "xl" : "default"} type="button"
                 onClick={() => toast('Apple sign-in not yet implemented 🙃')}>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
@@ -49,9 +51,9 @@ function AuthOverlay() {
                       fill="currentColor"
                     />
                   </svg>
-                  {'Sign up with Apple'}
+                  {isMobile ? '' : 'Sign up with Apple'}
                 </Button>
-                <Button variant="outline" size="xl" type="button"
+                <Button className="flex-1 sm:p-2 p-4" variant="outline" size={isMobile ? "xl" : "default"} type="button"
                 onClick={() => toast('Google sign-in not yet implemented 🙃')}>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
@@ -59,7 +61,7 @@ function AuthOverlay() {
                       fill="currentColor"
                     />
                   </svg>
-                  Sign up with Google
+                  {isMobile ? '' : 'Sign up with Apple'}
                 </Button>
               </div>
               {/* Divider */}
