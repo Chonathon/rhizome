@@ -187,13 +187,15 @@ export function Search({
                     className="flex items-center justify-between gap-2"
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <BadgeIndicator
-                        type={meta.type}
-                        name={selection.name}
-                        color={meta.color}
-                        imageUrl={meta.imageUrl}
-                        className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
-                      />
+                      <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
+                        <BadgeIndicator
+                          type={meta.type}
+                          name={selection.name}
+                          color={meta.color}
+                          imageUrl={meta.imageUrl}
+                          className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
+                        />
+                      </div>
                       <span className="truncate">{selection.name}</span>
                     </div>
                     <Button
