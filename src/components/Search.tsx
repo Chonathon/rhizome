@@ -251,7 +251,10 @@ export function Search({
             : filteredSearchableItems.length}
           open={open}
           onOpenChange={setOpen}
-          className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] max-w-lg sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full"
+          className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] max-w-lg sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full min-h-0"
+          commandProps={{
+            className: "h-full min-h-0 grid grid-rows-[auto_minmax(0,1fr)]"
+          }}
       >
         <CommandInput
             placeholder="Search..."
@@ -261,8 +264,7 @@ export function Search({
         />
         <CommandList
           className={cn(
-            "max-h-none flex h-full flex-1 min-h-0 flex-col",
-            showSearchResults ? "overflow-y-auto" : "overflow-hidden"
+            "max-h-none min-h-0 overflow-y-auto"
           )}
         >
           {searchLoading && <Loading />}
@@ -315,8 +317,8 @@ export function Search({
             </>
           ) : (
             <div className="flex h-full min-h-0">
-              <div className="flex h-full w-40 shrink-0 flex-col border-r border-border bg-muted/10">
-                <div className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+              <div className="sticky top-0 flex h-full w-40 shrink-0 self-start flex-col ">
+                <div className="flex flex-1 flex-col gap-1 p-3">
                   {categoryConfigurations.map((config) => (
                     <button
                       key={config.key}
