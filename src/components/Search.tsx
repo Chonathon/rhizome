@@ -291,7 +291,18 @@ export function Search({
           onOpenChange={setOpen}
           className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] max-w-lg sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full min-h-0"
           commandProps={{
-            className: "h-full min-h-0 grid grid-rows-[auto_minmax(0,1fr)]"
+            className: cn(
+              "h-full min-h-0 grid grid-rows-[auto_minmax(0,1fr)]",
+              "[&_[data-slot=command-input-wrapper]]:shadow-none",
+              "[&_[data-slot=command-input-wrapper]]:focus-within:shadow-none",
+              "[&_[data-slot=command-input-wrapper]]:focus-within:ring-0",
+              "[&_[data-slot=command-input-wrapper]]:focus-within:outline-none",
+              "[&_[data-slot=command-input]]:focus:outline-none",
+              "[&_[data-slot=command-input]]:focus:ring-0",
+              "[&_[data-slot=command-input]]:focus:shadow-none",
+              "[&_[data-slot=command-input]]:focus-visible:outline-none",
+              "[&_[data-slot=command-input]]:focus-visible:ring-0"
+            )
           }}
       >
         <CommandInput
