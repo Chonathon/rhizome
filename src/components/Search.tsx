@@ -7,13 +7,32 @@ import { X, Search as SearchIcon } from "lucide-react"
 import { motion } from "framer-motion";
 import { isGenre } from "@/lib/utils"
 import { Artist, BasicNode, Genre, GraphType } from "@/types";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Loading } from "@/components/Loading";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useMediaQuery } from "react-responsive";
 import useSearch from "@/hooks/useSearch";
 import {SEARCH_DEBOUNCE_MS} from "@/constants";
+
+const SEARCH_PAGE_SIZE = 50;
+const SEARCH_PREFETCH_THRESHOLD = 10;
+
+function SkeletonRow() {
+  return (
+    <div className="flex items-center justify-between gap-2 px-2 py-2">
+      <div className="flex min-w-0 items-center gap-2">
+        <Skeleton className="h-6 w-6 rounded-full flex-shrink-0" />
+        <Skeleton className="h-4 w-[40%] max-w-[220px]" />
+      </div>
+      <Skeleton className="h-5 w-14 rounded" />
+    </div>
+  );
+}
+
+function SkeletonList({ count = 8 }: { count?: number }) {
+  return <>{Array.from({ length: count }).map((_, i) => <SkeletonRow key={i} />)}</>;
+}
 
 interface SearchProps {
   onGenreSelect: (genre: Genre) => void;
@@ -57,9 +76,16 @@ export function Search({
   const [inputValue, setInputValue] = useState<string>("");
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<CategoryKey>("recents");
+  const [pendingCategoryKey, setPendingCategoryKey] = useState<CategoryKey | null>(null);
+  const [, startCategoryTransition] = useTransition();
+  const [visibleResultCount, setVisibleResultCount] = useState(SEARCH_PAGE_SIZE);
   const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
   const { searchResults, searchLoading, searchError } = useSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const rawSearchTerm = inputValue.trim().toLowerCase();
+  const deferredSearchTerm = useDeferredValue(rawSearchTerm);
+  const isFiltering = rawSearchTerm !== deferredSearchTerm;
 
   const resolvedArtists = useMemo(() => {
     if (!availableArtists?.length) {
@@ -94,19 +120,48 @@ export function Search({
     return () => clearTimeout(timeout);
   }, [inputValue, SEARCH_DEBOUNCE_MS]);
 
+  useEffect(() => {
+    setVisibleResultCount(SEARCH_PAGE_SIZE);
+  }, [rawSearchTerm]);
 
-  // Filter the searchable items. This is problematic with bands of the same name, for now it just uses the first one in the results
+
+  // Filter the searchable items only when a term is present, deduping by display name
   const filteredSearchableItems = useMemo(() => {
-    const seenNames = new Set<string>();
-    return [...resolvedArtists, ...searchResults, ...genres].filter((item) => {
-      if (!item.name.toLowerCase().includes(inputValue.toLowerCase())) return false;
-      if (seenNames.has(item.name)) return false;
-      seenNames.add(item.name);
-      return true;
+    if (!deferredSearchTerm) {
+      return [];
     }
-    )},
-      [genres, searchResults, resolvedArtists, inputValue]
-  );
+
+    const seenNames = new Set<string>();
+    const results: BasicNode[] = [];
+
+    const matchAndPush = (item: BasicNode) => {
+      const normalized = item.name.toLowerCase();
+      if (!normalized.includes(deferredSearchTerm)) {
+        return;
+      }
+      if (seenNames.has(item.name)) {
+        return;
+      }
+      seenNames.add(item.name);
+      results.push(item);
+    };
+
+    resolvedArtists.forEach(matchAndPush);
+    searchResults.forEach(matchAndPush);
+    genres.forEach(matchAndPush);
+
+    return results;
+  }, [deferredSearchTerm, genres, searchResults, resolvedArtists]);
+
+  const totalResultCount = filteredSearchableItems.length;
+
+  const visibleSearchResults = useMemo(() => {
+    if (visibleResultCount >= totalResultCount) {
+      return filteredSearchableItems;
+    }
+
+    return filteredSearchableItems.slice(0, visibleResultCount);
+  }, [filteredSearchableItems, visibleResultCount, totalResultCount]);
 
   const categoryConfigurations = useMemo<CategoryConfig[]>(() => {
     return [
@@ -149,10 +204,59 @@ export function Search({
     }
 
     const fallback = categoryConfigurations[0]?.key ?? "recents";
+    setPendingCategoryKey(null);
     setActiveCategory(fallback);
   }, [activeCategory, categoryConfigurations]);
 
-  const showSearchResults = inputValue.trim().length > 0;
+  useEffect(() => {
+    if (pendingCategoryKey !== null && !categoryConfigurations.some((config) => config.key === pendingCategoryKey)) {
+      setPendingCategoryKey(null);
+    }
+  }, [pendingCategoryKey, categoryConfigurations]);
+
+  useEffect(() => {
+    if (pendingCategoryKey !== null && activeCategory === pendingCategoryKey) {
+      setPendingCategoryKey(null);
+    }
+  }, [activeCategory, pendingCategoryKey]);
+
+  const handleCategorySelect = useCallback((key: CategoryKey) => {
+    if (key === activeCategory && pendingCategoryKey === null) {
+      return;
+    }
+
+    if (key === pendingCategoryKey) {
+      return;
+    }
+
+    setPendingCategoryKey(key);
+    startCategoryTransition(() => {
+      setActiveCategory(key);
+    });
+  }, [activeCategory, pendingCategoryKey, startCategoryTransition]);
+
+  const highlightedCategoryKey = pendingCategoryKey ?? activeCategory;
+
+  const showSearchResults = rawSearchTerm.length > 0;
+
+  const handleResultPrefetch = useCallback((index: number) => {
+    if (!showSearchResults) {
+      return;
+    }
+
+    if (index < visibleResultCount - SEARCH_PREFETCH_THRESHOLD) {
+      return;
+    }
+
+    setVisibleResultCount((prev) => {
+      if (prev >= totalResultCount) {
+        return prev;
+      }
+
+      const next = prev + SEARCH_PAGE_SIZE;
+      return Math.min(next, totalResultCount);
+    });
+  }, [showSearchResults, totalResultCount, visibleResultCount]);
 
   useEffect(() => {
     if (!open) {
@@ -188,7 +292,8 @@ export function Search({
       }
 
       event.preventDefault();
-      setActiveCategory(configs[nextIndex].key);
+      const nextKey = configs[nextIndex].key;
+      handleCategorySelect(nextKey);
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -196,7 +301,7 @@ export function Search({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, showSearchResults, categoryConfigurations, activeCategory]);
+  }, [open, showSearchResults, categoryConfigurations, handleCategorySelect]);
 
   const isArtistWithDetail = (node: BasicNode): node is Artist => {
     return 'tags' in node && Array.isArray((node as Artist).tags);
@@ -247,6 +352,7 @@ export function Search({
     addRecentSelection(selection);
     setOpen(false);
   }
+
   const { theme, setTheme } = useTheme()
 
   const activeCategoryConfig = categoryConfigurations.find((config) => config.key === activeCategory);
@@ -316,7 +422,6 @@ export function Search({
             "max-h-none min-h-0 overflow-y-auto"
           )}
         >
-          {searchLoading && <Loading />}
           <CommandEmpty>
             {showSearchResults
               ? "No results found."
@@ -325,31 +430,37 @@ export function Search({
           {showSearchResults ? (
             <>
               <CommandGroup heading="All Results">
-                {filteredSearchableItems.map((item, i) => {
-                  const meta = getIndicatorMeta(item);
-                  const isGenreItem = meta.type === 'genre';
+                {searchLoading || isFiltering ? (
+                  <SkeletonList />
+                ) : (
+                  visibleSearchResults.map((item, i) => {
+                    const meta = getIndicatorMeta(item);
+                    const isGenreItem = meta.type === 'genre';
 
-                  return (
-                    <CommandItem
-                      key={`${item.id}-${i}`}
-                      value={`${item.name}::${item.id}`}
-                      onSelect={() => onItemSelect(item)}
-                      className="flex items-center justify-between gap-2"
-                    >
-                      <div className="flex min-w-0 items-center gap-2">
-                        <BadgeIndicator
-                          type={meta.type}
-                          name={item.name}
-                          color={meta.color}
-                          imageUrl={meta.imageUrl}
-                          className={cn('flex-shrink-0', isGenreItem ? 'size-2' : undefined)}
-                        />
-                        <span className="truncate">{item.name}</span>
-                      </div>
-                      <Badge variant="secondary">{meta.type}</Badge>
-                    </CommandItem>
-                  );
-                })}
+                    return (
+                      <CommandItem
+                        key={`${item.id}-${i}`}
+                        value={`${item.name}::${item.id}`}
+                        onSelect={() => onItemSelect(item)}
+                        className="flex items-center justify-between gap-2"
+                        onFocus={() => handleResultPrefetch(i)}
+                        onPointerEnter={() => handleResultPrefetch(i)}
+                      >
+                        <div className="flex min-w-0 items-center gap-2">
+                          <BadgeIndicator
+                            type={meta.type}
+                            name={item.name}
+                            color={meta.color}
+                            imageUrl={meta.imageUrl}
+                            className={cn('flex-shrink-0', isGenreItem ? 'size-2' : undefined)}
+                          />
+                          <span className="truncate">{item.name}</span>
+                        </div>
+                        <Badge variant="secondary">{meta.type}</Badge>
+                      </CommandItem>
+                    );
+                  })
+                )}
               </CommandGroup>
               <CommandGroup heading="Actions">
                 <CommandItem
@@ -373,11 +484,11 @@ export function Search({
                       type="button"
                       className={cn(
                         "rounded-md px-2 py-2 text-left text-sm font-medium transition-colors",
-                        activeCategory === config.key
+                        highlightedCategoryKey === config.key
                           ? "bg-accent text-accent-foreground"
                           : "text-muted-foreground hover:text-foreground"
                       )}
-                      onClick={() => setActiveCategory(config.key)}
+                      onClick={() => handleCategorySelect(config.key)}
                     >
                       {config.label}
                     </button>
