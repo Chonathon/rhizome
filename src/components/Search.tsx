@@ -419,7 +419,7 @@ export function Search({
         />
         <CommandList
           className={cn(
-            "max-h-none min-h-0 overflow-y-auto"
+            "max-h-none min-h-0 overflow-y-auto no-scrollbar"
           )}
         >
           <CommandEmpty>
