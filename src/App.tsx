@@ -917,6 +917,8 @@ function App() {
                     selectedArtist={selectedArtist}
                     open={searchOpen}
                     setOpen={setSearchOpen}
+                    genreColorMap={genreColorMap}
+                    getArtistColor={getArtistColor}
                   />
 
                 </motion.div>
