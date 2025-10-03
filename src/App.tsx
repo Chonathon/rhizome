@@ -1,6 +1,7 @@
 import './App.css'
-import {useEffect, useMemo, useRef, useState} from 'react'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import { ChevronDown, Divide, TextSearch } from 'lucide-react'
+import axios from 'axios'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -32,7 +33,8 @@ import {
   primitiveArraysEqual,
   buildGenreTree,
   filterOutGenreTree,
-  fixWikiImageURL, appendYoutubeWatchURL
+  fixWikiImageURL, appendYoutubeWatchURL,
+  envBoolean,
 } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -57,6 +59,17 @@ import RhizomeLogo from "@/components/RhizomeLogo";
 import AuthOverlay from '@/components/AuthOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
+import CollectionDiscoveryControl from '@/components/CollectionDiscoveryControl';
+
+const API_URL = envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
+  ? import.meta.env.VITE_LOCALHOST
+  : (import.meta.env.VITE_SERVER_URL
+      || (import.meta.env.DEV ? '/api' : `https://rhizome-server-production.up.railway.app`));
+
+const MAX_DISCOVERY_DEGREE = 3;
+const MAX_DISCOVERY_NEIGHBORS = 30;
+const MAX_DISCOVERY_NODES = 400;
+const MAX_DISCOVERY_REQUESTS_PER_DEPTH = 24;
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -98,6 +111,19 @@ function App() {
   const [genreNodeCount, setGenreNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [artistNodeCount, setArtistNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [collectionNodeCount, setCollectionNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
+  const [collectionDegree, setCollectionDegree] = useState<number>(0);
+  const [collectionDiscoveryLoading, setCollectionDiscoveryLoading] = useState<boolean>(false);
+  const [collectionDiscoveryArtists, setCollectionDiscoveryArtists] = useState<Artist[]>([]);
+  const [collectionDiscoveryLinks, setCollectionDiscoveryLinks] = useState<NodeLink[]>([]);
+  const [collectionDiscoveryDepth, setCollectionDiscoveryDepth] = useState<Map<string, number>>(
+    () => new Map<string, number>()
+  );
+  const collectionSimilarCacheRef = useRef<Map<string, Artist[]>>(new Map());
+  const fallbackArtistCacheRef = useRef<Map<string, Artist>>(new Map());
+  const handleCollectionDegreeChange = useCallback((value: number) => {
+    const clamped = Math.max(0, Math.min(MAX_DISCOVERY_DEGREE, value));
+    setCollectionDegree(clamped);
+  }, []);
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
@@ -307,6 +333,295 @@ function App() {
       return s && t && allowed.has(s) && allowed.has(t);
     });
   }, [collectionFilteredLinks, collectionFinalArtists]);
+
+  useEffect(() => {
+    const baseDepth = new Map<string, number>();
+    const baseIds = new Set<string>();
+    collectionFinalArtists.forEach((artist) => {
+      if (artist?.id) {
+        baseDepth.set(artist.id, 0);
+        baseIds.add(artist.id);
+      }
+    });
+
+    if (
+      graph !== 'collection' ||
+      collectionDegree <= 0 ||
+      collectionFinalArtists.length === 0
+    ) {
+      setCollectionDiscoveryArtists([]);
+      setCollectionDiscoveryLinks([]);
+      setCollectionDiscoveryDepth(baseDepth);
+      setCollectionDiscoveryLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const canonicalKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+
+    const baseLinkKeys = new Set<string>();
+    collectionFinalLinks.forEach((link) => {
+      const source = typeof link.source === 'string' ? link.source : (link as any)?.source?.id;
+      const target = typeof link.target === 'string' ? link.target : (link as any)?.target?.id;
+      if (source && target) {
+        baseLinkKeys.add(canonicalKey(source, target));
+      }
+    });
+
+    const artistById = new Map<string, Artist>();
+    collectionFinalArtists.forEach((artist) => {
+      if (artist?.id) artistById.set(artist.id, artist);
+    });
+
+    const knownByName = new Map<string, Artist>();
+    const registerKnown = (artist?: Artist) => {
+      if (!artist?.name) return;
+      const key = artist.name.trim().toLowerCase();
+      if (!knownByName.has(key)) knownByName.set(key, artist);
+    };
+
+    collectionFinalArtists.forEach(registerKnown);
+    currentArtists.forEach(registerKnown);
+    displayArtists.forEach(registerKnown);
+    fallbackArtistCacheRef.current.forEach((artist) => registerKnown(artist));
+
+    const slugFromName = (name: string) =>
+      name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    const resolveFallbackArtist = (name: string): Artist | undefined => {
+      if (!name) return undefined;
+      const key = name.trim().toLowerCase();
+      const existing = knownByName.get(key);
+      if (existing) return existing;
+      const slug = slugFromName(name);
+      const cacheKey = `stub:${slug}`;
+      const cached = fallbackArtistCacheRef.current.get(cacheKey);
+      if (cached) {
+        registerKnown(cached);
+        return cached;
+      }
+      const stub: Artist = {
+        id: cacheKey,
+        name: name.trim(),
+        listeners: 1,
+        playcount: 1,
+        tags: [],
+        genres: [],
+        similar: [],
+        bio: { link: '', summary: '', content: '' },
+        noMBID: true,
+        inCollection: false,
+      };
+      fallbackArtistCacheRef.current.set(cacheKey, stub);
+      registerKnown(stub);
+      return stub;
+    };
+
+    const fallbackSimilarForId = (sourceId: string): Artist[] => {
+      const sourceArtist = artistById.get(sourceId);
+      if (!sourceArtist) return [];
+      const names = Array.isArray(sourceArtist.similar) ? sourceArtist.similar : [];
+      const seen = new Set<string>();
+      const results: Artist[] = [];
+      names.forEach((name) => {
+        const candidate = resolveFallbackArtist(name);
+        if (!candidate?.id) return;
+        if (baseIds.has(candidate.id) || seen.has(candidate.id)) return;
+        seen.add(candidate.id);
+        results.push({ ...candidate, id: candidate.id, inCollection: false });
+      });
+      return results;
+    };
+
+    const fetchSimilar = async (artistId: string): Promise<Artist[]> => {
+      if (!artistId) return [];
+      const cache = collectionSimilarCacheRef.current.get(artistId);
+      if (cache) return cache;
+
+      let combined: Artist[] = [];
+      try {
+        const response = await axios.get<Artist[]>(`${API_URL}/artists/similar/${artistId}`);
+        const data = Array.isArray(response.data) ? response.data : [];
+        combined = data
+          .map((artist) => {
+            const rawId = (artist as any)?.id;
+            const id = typeof rawId === 'number' ? String(rawId) : rawId;
+            if (!id) return undefined;
+            return {
+              ...artist,
+              id,
+              inCollection: baseIds.has(id),
+            } as Artist;
+          })
+          .filter((artist): artist is Artist => !!artist?.id);
+      } catch (error) {
+        console.error('Failed to fetch similar artists for', artistId, error);
+      }
+
+      const fallback = fallbackSimilarForId(artistId);
+      if (fallback.length) {
+        const existingIds = new Set(combined.map((artist) => artist.id));
+        fallback.forEach((artist) => {
+          if (!artist.id || existingIds.has(artist.id)) return;
+          combined.push(artist);
+          existingIds.add(artist.id);
+        });
+      }
+
+      collectionSimilarCacheRef.current.set(artistId, combined);
+      return combined;
+    };
+
+    const explore = async () => {
+      setCollectionDiscoveryLoading(true);
+      const maxDepth = Math.min(collectionDegree, MAX_DISCOVERY_DEGREE);
+      const visited = new Map(baseDepth);
+      const newNodes = new Map<string, Artist>();
+      const newLinks: NodeLink[] = [];
+      const allLinkKeys = new Set(baseLinkKeys);
+
+      let frontierIds = collectionFinalArtists
+        .map((artist) => artist?.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+      try {
+        for (let depth = 0; depth < maxDepth && frontierIds.length; depth++) {
+          if (cancelled) return;
+
+          const nextFrontier = new Set<string>();
+
+          for (let i = 0; i < frontierIds.length; i += MAX_DISCOVERY_REQUESTS_PER_DEPTH) {
+            if (cancelled) return;
+            const chunk = frontierIds.slice(i, i + MAX_DISCOVERY_REQUESTS_PER_DEPTH);
+            const responses = await Promise.all(
+              chunk.map(async (sourceId) => {
+                const neighbors = await fetchSimilar(sourceId);
+                return { sourceId, neighbors: neighbors.slice(0, MAX_DISCOVERY_NEIGHBORS) };
+              })
+            );
+
+            for (const { sourceId, neighbors } of responses) {
+              if (cancelled) return;
+              for (const neighbor of neighbors) {
+                const rawId = neighbor?.id;
+                const neighborId = typeof rawId === 'string'
+                  ? rawId
+                  : typeof rawId === 'number'
+                    ? String(rawId)
+                    : undefined;
+
+                if (!neighborId || neighborId === sourceId) continue;
+
+                const neighborDepth = depth + 1;
+                const linkKey = canonicalKey(sourceId, neighborId);
+
+                if (!allLinkKeys.has(linkKey)) {
+                  newLinks.push({ source: sourceId, target: neighborId, linkType: 'similar' });
+                  allLinkKeys.add(linkKey);
+                }
+
+                const existingDepth = visited.get(neighborId);
+                if (existingDepth === undefined || neighborDepth < existingDepth) {
+                  visited.set(neighborId, neighborDepth);
+                }
+
+                if (!baseIds.has(neighborId) && !newNodes.has(neighborId)) {
+                  newNodes.set(neighborId, {
+                    ...neighbor,
+                    id: neighborId,
+                    inCollection: false,
+                  } as Artist);
+                }
+
+                const canExploreDeeper = neighborDepth < maxDepth && newNodes.size < MAX_DISCOVERY_NODES;
+                if (canExploreDeeper && (existingDepth === undefined || neighborDepth < existingDepth)) {
+                  nextFrontier.add(neighborId);
+                }
+
+                if (newNodes.size >= MAX_DISCOVERY_NODES) break;
+              }
+
+              if (newNodes.size >= MAX_DISCOVERY_NODES) break;
+            }
+
+            if (newNodes.size >= MAX_DISCOVERY_NODES) break;
+          }
+
+          frontierIds = Array.from(nextFrontier);
+          if (newNodes.size >= MAX_DISCOVERY_NODES) break;
+        }
+
+        if (!cancelled) {
+          setCollectionDiscoveryArtists(Array.from(newNodes.values()));
+          setCollectionDiscoveryLinks(newLinks);
+          setCollectionDiscoveryDepth(visited);
+        }
+      } finally {
+        if (!cancelled) {
+          setCollectionDiscoveryLoading(false);
+        }
+      }
+    };
+
+    explore();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    collectionDegree,
+    collectionFinalArtists,
+    collectionFinalLinks,
+    currentArtists,
+    displayArtists,
+    graph,
+  ]);
+
+  const collectionGraphArtists: Artist[] = useMemo(() => {
+    const base = collectionFinalArtists.map((artist) => ({ ...artist, inCollection: true }));
+    if (!collectionDiscoveryArtists.length) return base;
+    const baseIds = new Set(collectionFinalArtists.map((artist) => artist.id));
+    const extras = collectionDiscoveryArtists
+      .filter((artist) => artist?.id && !baseIds.has(artist.id))
+      .map((artist) => ({ ...artist, inCollection: false }));
+    return [...base, ...extras];
+  }, [collectionFinalArtists, collectionDiscoveryArtists]);
+
+  const collectionGraphLinks: NodeLink[] = useMemo(() => {
+    if (!collectionDiscoveryLinks.length) return collectionFinalLinks;
+    const merged = [...collectionFinalLinks];
+    const canonicalKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+    const existingKeys = new Set<string>();
+    collectionFinalLinks.forEach((link) => {
+      const source = typeof link.source === 'string' ? link.source : (link as any)?.source?.id;
+      const target = typeof link.target === 'string' ? link.target : (link as any)?.target?.id;
+      if (source && target) existingKeys.add(canonicalKey(source, target));
+    });
+
+    collectionDiscoveryLinks.forEach((link) => {
+      const source = typeof link.source === 'string' ? link.source : (link as any)?.source?.id;
+      const target = typeof link.target === 'string' ? link.target : (link as any)?.target?.id;
+      if (!source || !target) return;
+      const key = canonicalKey(source, target);
+      if (existingKeys.has(key)) return;
+      merged.push({ source, target, linkType: 'similar' });
+      existingKeys.add(key);
+    });
+
+    return merged;
+  }, [collectionFinalLinks, collectionDiscoveryLinks]);
+
+  const collectionGraphDepth = useMemo(() => {
+    const map = new Map<string, number>();
+    collectionFinalArtists.forEach((artist) => {
+      if (artist?.id) map.set(artist.id, 0);
+    });
+    collectionDiscoveryDepth.forEach((depth, id) => {
+      if (typeof id === 'string') map.set(id, depth);
+    });
+    return map;
+  }, [collectionFinalArtists, collectionDiscoveryDepth]);
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
@@ -535,8 +850,17 @@ function App() {
   }
 
   const similarArtistFilter = (similarArtists: string[]) => {
-    const source = graph === 'collection' ? collectionFilteredArtists : currentArtists;
-    return similarArtists.filter(s => source.some(a => a.name === s));
+    if (graph === 'collection') {
+      const sourceNames = new Set<string>();
+      collectionFilteredArtists.forEach((artist) => {
+        if (artist?.name) sourceNames.add(artist.name);
+      });
+      collectionDiscoveryArtists.forEach((artist) => {
+        if (artist?.name) sourceNames.add(artist.name);
+      });
+      return similarArtists.filter((name) => sourceNames.has(name));
+    }
+    return similarArtists.filter((name) => currentArtists.some((artist) => artist.name === name));
   }
 
   const createSimilarArtistGraph = (artistResult: Artist) => {
@@ -934,13 +1258,14 @@ function App() {
                 />
                 <ArtistsForceGraph
                     ref={artistsGraphRef as any}
-                    artists={graph === 'collection' ? collectionFinalArtists.map(a => ({...a, inCollection: true})) : displayArtists}
-                    artistLinks={graph === 'collection' ? collectionFinalLinks : currentArtistLinks}
+                    artists={graph === 'collection' ? collectionGraphArtists : displayArtists}
+                    artistLinks={graph === 'collection' ? collectionGraphLinks : currentArtistLinks}
                     loading={graph === 'collection' ? false : artistsLoading}
                     onNodeClick={onArtistNodeClick}
                     selectedArtistId={selectedArtist?.id}
                     show={graph === 'collection' ? true : ((graph === "artists" || graph === "similarArtists") && !artistsError)}
                     computeArtistColor={getArtistColor}
+                    discoveryDepthById={graph === 'collection' ? collectionGraphDepth : undefined}
                 />
 
             <div className='z-20 fixed bottom-[52%] sm:bottom-16 right-3'>
@@ -955,29 +1280,43 @@ function App() {
                 }}
               />
             </div>
-          {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
-            <NodeLimiter
-                totalNodes={genres.length}
-                nodeType={'genres'}
-                initialValue={genreNodeCount}
-                onChange={onGenreNodeCountChange}
-                show={showGenreNodeLimiter()}
-            />
-            <NodeLimiter
-              totalNodes={totalArtistsInDB}
-              nodeType={'artists'}
-              initialValue={currentArtists.length}
-              onChange={(value) => artistNodeCountSelection(value)}
-              show={showArtistNodeLimiter()}
-            />
-            <NodeLimiter
-              totalNodes={collectionFilteredArtists.length}
-              nodeType={'collection'}
-              initialValue={collectionFinalArtists.length}
-              onChange={(value) => setCollectionNodeCount(value)}
-              show={showCollectionNodeLimiter()}
-            />
-          </div>}
+          <div className='z-20 fixed bottom-4 right-3 flex flex-col items-end gap-3'>
+            {!isMobile && (
+              <>
+                <NodeLimiter
+                  totalNodes={genres.length}
+                  nodeType={'genres'}
+                  initialValue={genreNodeCount}
+                  onChange={onGenreNodeCountChange}
+                  show={showGenreNodeLimiter()}
+                />
+                <NodeLimiter
+                  totalNodes={totalArtistsInDB}
+                  nodeType={'artists'}
+                  initialValue={currentArtists.length}
+                  onChange={(value) => artistNodeCountSelection(value)}
+                  show={showArtistNodeLimiter()}
+                />
+                <NodeLimiter
+                  totalNodes={collectionFilteredArtists.length}
+                  nodeType={'collection'}
+                  initialValue={collectionFinalArtists.length}
+                  onChange={(value) => setCollectionNodeCount(value)}
+                  show={showCollectionNodeLimiter()}
+                />
+              </>
+            )}
+            {graph === 'collection' && (
+              <CollectionDiscoveryControl
+                degree={collectionDegree}
+                onDegreeChange={handleCollectionDegreeChange}
+                maxDegree={MAX_DISCOVERY_DEGREE}
+                loading={collectionDiscoveryLoading}
+                disabled={collectionFinalArtists.length === 0}
+                discoveryCount={collectionDiscoveryArtists.length}
+              />
+            )}
+          </div>
           {/* right controls */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               <ModeToggle />
