@@ -708,8 +708,8 @@ function App() {
       >
         <SidebarLogoTrigger />
         <Toaster />
-        <Gradient />
-        <div className="fixed inset-0 overflow-hidden no-scrollbar">
+        <div className="fixed inset-0 z-0 overflow-hidden no-scrollbar">
+          <Gradient />
           <motion.div
             className={
               "fixed top-0 left-0 z-50 pt-2 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
