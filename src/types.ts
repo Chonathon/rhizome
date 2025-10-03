@@ -57,7 +57,7 @@ export interface LastFMBio {
     content: string;
 }
 
-export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'parentGenre';
+export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'parentGenre' | 'collection';
 
 export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion';
 

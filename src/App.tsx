@@ -97,6 +97,7 @@ function App() {
   const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>(DEFAULT_ARTIST_LIMIT_TYPE);
   const [genreNodeCount, setGenreNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [artistNodeCount, setArtistNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
+  const [collectionNodeCount, setCollectionNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
@@ -148,6 +149,21 @@ function App() {
       sessionStorage.setItem('sessionCollection', JSON.stringify(sessionCollectionIds));
     } catch {}
   }, [sessionCollectionIds]);
+
+  // Store full artist objects for the session collection graph
+  const [sessionCollectionById, setSessionCollectionById] = useState<Record<string, Artist>>(() => {
+    try {
+      const raw = sessionStorage.getItem('sessionCollectionArtists');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {} as Record<string, Artist>;
+    }
+  });
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('sessionCollectionArtists', JSON.stringify(sessionCollectionById));
+    } catch {}
+  }, [sessionCollectionById]);
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -226,10 +242,71 @@ function App() {
       if (set.has(artist.id)) set.delete(artist.id); else set.add(artist.id);
       return Array.from(set);
     });
+    setSessionCollectionById(prev => {
+      const next = { ...prev } as Record<string, Artist>;
+      if (next[artist.id]) delete next[artist.id]; else next[artist.id] = { ...artist, inCollection: true };
+      return next;
+    });
     // Keep selected artist(s) objects in sync for immediate UI feedback
     setSelectedArtist(prev => prev && prev.id === artist.id ? { ...prev, inCollection: !prev.inCollection } as Artist : prev);
     setSelectedArtistNoGenre(prev => prev && prev.id === artist.id ? { ...prev, inCollection: !prev.inCollection } as Artist : prev);
   };
+
+  // Build collection graph data from session collection
+  const collectionArtists: Artist[] = useMemo(() => {
+    return Object.values(sessionCollectionById);
+  }, [sessionCollectionById]);
+  const collectionLinks: NodeLink[] = useMemo(() => {
+    const links: NodeLink[] = [];
+    const byName = new Map<string, Artist>();
+    collectionArtists.forEach(a => byName.set(a.name, a));
+    const seen = new Set<string>();
+    collectionArtists.forEach(a => {
+      (a.similar || []).forEach(simName => {
+        const b = byName.get(simName);
+        if (b && a.id !== b.id) {
+          const key = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
+          if (!seen.has(key)) {
+            links.push({ source: a.id, target: b.id, linkType: 'similar' });
+            seen.add(key);
+          }
+        }
+      });
+    });
+    return links;
+  }, [collectionArtists]);
+
+  // Apply genre filter to collection graph
+  const collectionFilteredArtists: Artist[] = useMemo(() => {
+    if (!selectedGenres.length) return collectionArtists;
+    const selected = new Set(selectedGenres.map(g => g.id));
+    return collectionArtists.filter(a => (a.genres || []).some(g => selected.has(g)));
+  }, [collectionArtists, selectedGenres]);
+  const collectionFilteredLinks: NodeLink[] = useMemo(() => {
+    if (!selectedGenres.length) return collectionLinks;
+    const allowed = new Set(collectionFilteredArtists.map(a => a.id));
+    return collectionLinks.filter(l => {
+      const s = typeof l.source === 'string' ? l.source : (l as any)?.source?.id;
+      const t = typeof l.target === 'string' ? l.target : (l as any)?.target?.id;
+      return s && t && allowed.has(s) && allowed.has(t);
+    });
+  }, [collectionLinks, collectionFilteredArtists]);
+
+  // Sort and cap collection by node limiter
+  const collectionSortedArtists: Artist[] = useMemo(() => {
+    return [...collectionFilteredArtists].sort((a, b) => (b[artistNodeLimitType] as number) - (a[artistNodeLimitType] as number));
+  }, [collectionFilteredArtists, artistNodeLimitType]);
+  const collectionFinalArtists: Artist[] = useMemo(() => {
+    return collectionSortedArtists.slice(0, Math.min(collectionNodeCount, collectionSortedArtists.length));
+  }, [collectionSortedArtists, collectionNodeCount]);
+  const collectionFinalLinks: NodeLink[] = useMemo(() => {
+    const allowed = new Set(collectionFinalArtists.map(a => a.id));
+    return collectionFilteredLinks.filter(l => {
+      const s = typeof l.source === 'string' ? l.source : (l as any)?.source?.id;
+      const t = typeof l.target === 'string' ? l.target : (l as any)?.target?.id;
+      return s && t && allowed.has(s) && allowed.has(t);
+    });
+  }, [collectionFilteredLinks, collectionFinalArtists]);
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
@@ -371,20 +448,23 @@ function App() {
   };
 
   const setArtistFromName = (name: string) => {
-    const artist = currentArtists.find((a) => a.name === name);
+    const source = graph === 'collection' ? collectionFilteredArtists : currentArtists;
+    const artist = source.find((a) => a.name === name);
     if (artist) {
       onArtistNodeClick(artist);
     }
   }
 
   const getArtistImageByName = (name: string) => {
-    const a = currentArtists.find((x) => x.name === name);
+    const source = graph === 'collection' ? collectionFilteredArtists : currentArtists;
+    const a = source.find((x) => x.name === name);
     const raw = a?.image as string | undefined;
     return raw ? fixWikiImageURL(raw) : undefined;
   }
 
   const getArtistByName = (name: string) => {
-    return currentArtists.find((a) => a.name === name);
+    const source = graph === 'collection' ? collectionFilteredArtists : currentArtists;
+    return source.find((a) => a.name === name);
   }
 
   const getGenreNameById = (id: string) => {
@@ -419,7 +499,7 @@ function App() {
   }
 
   const onArtistNodeClick = (artist: Artist) => {
-    if (graph === 'artists') {
+    if (graph === 'artists' || graph === 'collection') {
       setSelectedArtist(artist);
       setShowArtistCard(true);
       addRecentSelection(artist);
@@ -455,7 +535,8 @@ function App() {
   }
 
   const similarArtistFilter = (similarArtists: string[]) => {
-    return similarArtists.filter(s => currentArtists.some(a => a.name === s));
+    const source = graph === 'collection' ? collectionFilteredArtists : currentArtists;
+    return similarArtists.filter(s => source.some(a => a.name === s));
   }
 
   const createSimilarArtistGraph = (artistResult: Artist) => {
@@ -508,6 +589,10 @@ function App() {
     } else return false;
   }
 
+  const showCollectionNodeLimiter = () => {
+    return graph === 'collection';
+  }
+
   const onLinkedGenreClick = (genreID: string) => {
     const newGenre = genres.find((g) => g.id === genreID);
     if (newGenre) {
@@ -534,9 +619,13 @@ function App() {
       setSelectedGenres([]);
       setShowArtistCard(false);
       setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
-    } else {
+    } else if (graphType === 'artists') {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
+    } else if (graphType === 'collection') {
+      setGraph('collection');
+      setShowArtistCard(false);
+      // keep other state; graph will consume collectionArtists/links
     }
   }
 
@@ -769,16 +858,18 @@ function App() {
                 </div>
                 }
             /> */}
-            <Tabs
-                value={graph}
-                onValueChange={(val) => onTabChange(val as GraphType)}>
-                  <TabsList>
+            {graph !== 'collection' && (
+              <Tabs
+                  value={graph}
+                  onValueChange={(val) => onTabChange(val as GraphType)}>
+                    <TabsList>
+                        <TabsTrigger
+                        onClick={() => onTabChange("genres")} value="genres">Genres</TabsTrigger>
                       <TabsTrigger
-                      onClick={() => onTabChange("genres")} value="genres">Genres</TabsTrigger>
-                    <TabsTrigger
-                    onClick={() => onTabChange('artists')} value="artists">Artists</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                      onClick={() => onTabChange('artists')} value="artists">Artists</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+            )}
                
                 { graph === 'artists' &&
                 <div className='flex flex-col items-start sm:flex-row gap-3'>
@@ -803,6 +894,28 @@ function App() {
                   </Button>
                 </div>
                 }
+                { graph === 'collection' &&
+                  <div className='flex flex-col items-start sm:flex-row gap-3'>
+                    <GenresFilter
+                      key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
+                      genres={[...genres, singletonParentGenre]}
+                      genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
+                      graphType={graph}
+                      onGenreSelectionChange={onGenreFilterSelectionChange}
+                      initialSelection={initialGenreFilter}
+                    />
+                    <Button size='lg' variant='outline'
+                      onClick={() => toast('Opens a filter menu for Moods & Activities...')}
+                    >Mood & Activity
+                      <ChevronDown />
+                    </Button>
+                    <Button size='lg' className='self-start' variant='outline'
+                      onClick={() => toast('Opens a filter menu for decades...')}
+                    >Decade
+                      <ChevronDown />
+                    </Button>
+                  </div>
+                }
                 <Button size='lg' className='self-start' variant='outline'
                   onClick={() => toast('Filters the current view based on your text input...')} >
                     <TextSearch />Find
@@ -821,14 +934,12 @@ function App() {
                 />
                 <ArtistsForceGraph
                     ref={artistsGraphRef as any}
-                    artists={displayArtists}
-                    artistLinks={currentArtistLinks}
-                    loading={artistsLoading}
+                    artists={graph === 'collection' ? collectionFinalArtists.map(a => ({...a, inCollection: true})) : displayArtists}
+                    artistLinks={graph === 'collection' ? collectionFinalLinks : currentArtistLinks}
+                    loading={graph === 'collection' ? false : artistsLoading}
                     onNodeClick={onArtistNodeClick}
                     selectedArtistId={selectedArtist?.id}
-                    show={
-                        (graph === "artists" || graph === "similarArtists") && !artistsError
-                    }
+                    show={graph === 'collection' ? true : ((graph === "artists" || graph === "similarArtists") && !artistsError)}
                     computeArtistColor={getArtistColor}
                 />
 
@@ -858,6 +969,13 @@ function App() {
               initialValue={currentArtists.length}
               onChange={(value) => artistNodeCountSelection(value)}
               show={showArtistNodeLimiter()}
+            />
+            <NodeLimiter
+              totalNodes={collectionFilteredArtists.length}
+              nodeType={'collection'}
+              initialValue={collectionFinalArtists.length}
+              onChange={(value) => setCollectionNodeCount(value)}
+              show={showCollectionNodeLimiter()}
             />
           </div>}
           {/* right controls */}

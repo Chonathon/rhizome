@@ -85,8 +85,9 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild size="xl">
-                          <button onClick={() => window.dispatchEvent(new Event('auth:open'))}>
+                        <SidebarMenuButton asChild size="xl" isActive={graph === 'collection'}>
+                          {/* Temporarily navigate to the in-session Collection graph instead of opening auth */}
+                          <button onClick={() => onGraphChange('collection')}>
                             <BookOpen />
                             <span className="truncate">Collection</span>
                           </button>
@@ -114,8 +115,8 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarMenuItem> */}
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={true} size="xl">
-                        <button>
+                      <SidebarMenuButton asChild isActive={graph !== 'collection'} size="xl">
+                        <button onClick={() => onGraphChange('genres')}>
                           <Telescope />
                           <span>Explore</span>
                         </button>

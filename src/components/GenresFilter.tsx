@@ -208,7 +208,7 @@ export default function GenresFilter({
     return true;
   }
 
-  if (graphType !== "artists") return null;
+  if (!(graphType === "artists" || graphType === "collection")) return null;
 
   return (
     // ResponsivePanel + Command = ComboBox

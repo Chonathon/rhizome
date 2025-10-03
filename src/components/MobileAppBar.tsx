@@ -54,7 +54,8 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch }: MobileAppBa
           /> */}
           <ToolbarButton
             label="Collection"
-            onClick={() => toast("Collections are coming soon ✨")}
+            active={graph === 'collection'}
+            onClick={() => onGraphChange('collection')}
             icon={<BookOpen className="size-6" />}
           />
           <ToolbarButton
@@ -126,4 +127,3 @@ function MoreMenu() {
 }
 
 export default MobileAppBar
-
