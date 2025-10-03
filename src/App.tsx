@@ -800,7 +800,7 @@ function App() {
                     computeArtistColor={getArtistColor}
                 />
 
-            <div className='z-20 fixed bottom-16 right-3'>
+            <div className='z-20 fixed bottom-[52%] sm:bottom-16 right-3'>
               <ZoomButtons
                 onZoomIn={() => {
                   const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
