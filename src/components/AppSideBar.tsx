@@ -115,7 +115,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       </SidebarMenuItem> */}
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={true} size="xl">
-                        <button>
+                        <button onClick={resetAppState}>
                           <Telescope />
                           <span>Explore</span>
                         </button>
@@ -171,6 +171,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
         graph={graph}
         onGraphChange={onGraphChange}
         onOpenSearch={() => setSearchOpen(true)}
+        resetAppState={resetAppState}
       />
     </>
   )
