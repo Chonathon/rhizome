@@ -395,7 +395,7 @@ export function Search({
             : filteredSearchableItems.length}
           open={open}
           onOpenChange={setOpen}
-          className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] max-w-lg sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full min-h-0"
+          className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full min-h-0"
           commandProps={{
             className: cn(
               "h-full min-h-0 grid grid-rows-[auto_minmax(0,1fr)]",
