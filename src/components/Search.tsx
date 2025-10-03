@@ -478,11 +478,11 @@ export function Search({
             <div className="flex h-full min-h-0 flex-col sm:flex-row">
               <div
                 className={cn(
-                  "flex -mx-3 border-b border-border bg-background px-3 pb-2",
-                  "sm:sticky sm:top-0 sm:mx-0 sm:h-full sm:w-40 sm:flex-col sm:self-start sm:border-b-0 sm:border-r sm:bg-transparent sm:px-0 sm:pb-0"
+                  "flex bg-background",
+                  "sm:sticky sm:top-0 sm:mx-0 sm:h-full sm:w-40 sm:flex-col sm:self-start  sm:bg-transparent sm:px-0 sm:pb-0"
                 )}
               >
-                <div className="flex gap-2 overflow-x-auto py-2 sm:flex-1 sm:flex-col sm:gap-1 sm:overflow-visible sm:p-3">
+                <div className="flex px-2 gap-2 overflow-x-auto py-2 sm:flex-1 sm:flex-col no-scrollbar sm:gap-1 sm:overflow-visible sm:p-3">
                   {categoryConfigurations.map((config) => (
                     <button
                       key={config.key}
@@ -501,7 +501,7 @@ export function Search({
                   ))}
                 </div>
               </div>
-              <div className="flex-1 min-h-0 overflow-y-auto p-3">
+              <div className="flex-1 min-h-0 overflow-y-auto sm:p-3">
                 {activeCategoryConfig && (
                   <CommandGroup heading={activeCategoryConfig.label} className="px-0">
                     {activeCategoryConfig.items.length === 0 ? (
