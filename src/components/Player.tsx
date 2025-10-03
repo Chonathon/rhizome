@@ -15,7 +15,7 @@ declare global {
   }
 }
 
-type Anchor = "bottom-left" | "bottom-right" | "top-left" | "top-right";
+type Anchor = "bottom-left" | "bottom-right" | "bottom-center" | "top-left" | "top-right";
 
 type PlayerProps = {
   open: boolean;
@@ -29,6 +29,10 @@ type PlayerProps = {
   onLoadingChange?: (loading: boolean) => void;
   headerPreferProvidedTitle?: boolean;
   onTitleClick?: () => void;
+  // Pixels between the sidebar edge and the player when no drawer is open
+  sidebarGapPx?: number;
+  // Pixels between the drawer edge and the player when a left drawer is open
+  drawerGapPx?: number;
 };
 
 // Load the YouTube IFrame API once
@@ -54,6 +58,7 @@ function loadYTApi(): Promise<any> {
 const anchorClass = (anchor: Anchor) => {
   switch (anchor) {
     case 'bottom-left': return 'left-4 bottom-4';
+    case 'bottom-center': return 'left-1/2 right-1/2 bottom-4';
     case 'bottom-right': return 'right-4 bottom-4';
     case 'top-left': return 'left-4 top-4';
     case 'top-right': return 'right-4 top-4';
@@ -61,7 +66,7 @@ const anchorClass = (anchor: Anchor) => {
   }
 }
 
-export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl, loading, onLoadingChange, headerPreferProvidedTitle, onTitleClick }: PlayerProps) {
+export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl, loading, onLoadingChange, headerPreferProvidedTitle, onTitleClick, sidebarGapPx = 12, drawerGapPx = 0 }: PlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -76,6 +81,9 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
   const isDesktop = useMediaQuery("(min-width: 1200px)");
   // Track the computed top position so the player floats above the mobile drawer
   const [anchoredTop, setAnchoredTop] = useState<number | null>(null);
+  // Track the computed left position so the player sits to the right
+  // of the sidebar and any active left-side drawer on desktop
+  const [anchoredLeft, setAnchoredLeft] = useState<number | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const hasPlaylist = videoIds && videoIds.length > 1;
@@ -264,6 +272,73 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
     };
   }, [open, isDesktop, collapsed]);
 
+  // Track the current left offset on desktop so the player sits to the right
+  // of the sidebar and any open left-side responsive drawer
+  useEffect(() => {
+    if (!open || !isDesktop || !anchor.includes('left')) {
+      setAnchoredLeft(null);
+      return;
+    }
+
+    let rafId: number | null = null;
+    const schedule = () => {
+      if (rafId != null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        compute();
+      });
+    };
+
+    const compute = () => {
+      try {
+        // Base offset from the sidebar gap element (which reflects expanded/collapsed widths)
+        const gapEl = document.querySelector('[data-slot="sidebar-gap"]') as HTMLElement | null;
+        const baseLeft = gapEl ? gapEl.getBoundingClientRect().right : 0;
+
+        // If there is an open left-side drawer, position to the right of it
+        const nodes = Array.from(
+          document.querySelectorAll('[data-slot="drawer-content"][data-vaul-drawer-direction="left"]')
+        ) as HTMLElement[];
+        const openNodes = nodes.filter((n) => n.getAttribute('data-state') !== 'closed');
+        let drawerRight = 0;
+        for (const el of openNodes) {
+          const rect = el.getBoundingClientRect();
+          if (rect.right > drawerRight) drawerRight = rect.right;
+        }
+
+        const gapSpacing = sidebarGapPx; // configurable distance from sidebar edge
+        const drawerSpacing = drawerGapPx; // configurable distance from drawer edge
+        const left = Math.max(baseLeft + gapSpacing, drawerRight > 0 ? drawerRight + drawerSpacing : 0);
+        setAnchoredLeft(left || null);
+      } catch {
+        setAnchoredLeft(null);
+      }
+    };
+
+    compute();
+
+    const onResize = () => schedule();
+    window.addEventListener('resize', onResize);
+
+    // Observe DOM mutations for sidebar open/collapse and drawer state changes
+    const observer = new MutationObserver(() => schedule());
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'data-state']
+    });
+
+    return () => {
+      window.removeEventListener('resize', onResize);
+      observer.disconnect();
+      if (rafId != null) {
+        window.cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    };
+  }, [open, isDesktop, anchor, sidebarGapPx, drawerGapPx]);
+
   const percent = useMemo(() => {
     if (!duration || duration <= 0) return 0;
     return Math.min(100, Math.max(0, (currentTime / duration) * 100));
@@ -323,7 +398,19 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
         <motion.div
           key="player"
           className={`fixed z-[50] w-[240px] ${anchor.includes('left') ? 'left-4' : 'right-4'} ${(!isDesktop && anchoredTop != null) ? '' : (anchor.includes('top') ? 'top-4' : 'bottom-4')}`}
-          style={!isDesktop && anchoredTop != null ? { top: anchoredTop, bottom: 'auto' } : undefined}
+          style={{
+            // On mobile, anchor above any open bottom sheet
+            ...( (!isDesktop && anchoredTop != null) ? { top: anchoredTop, bottom: 'auto' as const } : {}),
+            // Desktop left anchor: if a left drawer is open use measured px,
+            // otherwise rely on the CSS var so it always tracks the sidebar gap.
+            ...( isDesktop && anchor.includes('left')
+              ? {
+                  left: anchoredLeft != null
+                    ? anchoredLeft
+                    : `calc(var(--sidebar-gap, 0px) + ${sidebarGapPx}px)`,
+                }
+              : {}),
+          }}
           initial={{ opacity: 0, y: 12, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -343,14 +430,13 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                     <Skeleton className="h-4 w-4/5" />
                   </div>
                 ) : onTitleClick ? (
-                  <button
-                    type="button"
+                  <span
                     onClick={onTitleClick}
                     title={headerDisplay}
-                    className="block w-full text-left sm:text-sm text-md font-medium truncate hover:underline focus:outline-none"
+                    className="block w-full text-left sm:text-sm text-md font-medium truncate"
                   >
                     {headerDisplay}
-                  </button>
+                  </span>
                 ) : (
                   <div className="w-full text-md sm:text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
                 )}
@@ -428,7 +514,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                     type="button"
                     onClick={onTitleClick}
                     title={title}
-                    className={`text-left flex-1 text-md sm:text-sm font-medium text-foreground hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
+                    className={`text-left flex-1 leading-4 sm:leading-normal text-md sm:text-sm font-medium text-foreground hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
                   >
                     {title}
                   </button>
@@ -444,11 +530,11 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
                   )
                 )} */}
               </div>
-              <Progress
+                <Progress
                 value={percent}
                 onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
                 onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
-              />
+                />
             </div>
           </div>
           <Button

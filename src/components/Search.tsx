@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button"
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
+import { BadgeIndicator } from "@/components/BadgeIndicator"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
 import { X, Search as SearchIcon } from "lucide-react"
 import { motion } from "framer-motion";
-import {isGenre} from "@/lib/utils"
-import {Artist, BasicNode, Genre, GraphType} from "@/types";
-import {useEffect, useRef, useState} from "react";
+import { isGenre } from "@/lib/utils"
+import { Artist, BasicNode, Genre, GraphType } from "@/types";
+import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
-import {Loading} from "@/components/Loading";
+import { Loading } from "@/components/Loading";
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useMediaQuery } from "react-responsive";
@@ -25,9 +26,22 @@ interface SearchProps {
   selectedArtist?: Artist;
   open: boolean;
   setOpen: (open: boolean) => void;
+  genreColorMap?: Map<string, string>;
+  getArtistColor?: (artist: Artist) => string;
 }
 
-export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres = [], selectedGenres, selectedArtist, open, setOpen }: SearchProps) {
+export function Search({
+  onGenreSelect,
+  onArtistSelect,
+  currentArtists,
+  genres = [],
+  selectedGenres,
+  selectedArtist,
+  open,
+  setOpen,
+  genreColorMap,
+  getArtistColor,
+}: SearchProps) {
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");
@@ -59,6 +73,32 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
     )},
       [genres, searchResults, currentArtists]
   );
+
+  const isArtistWithDetail = (node: BasicNode): node is Artist => {
+    return 'tags' in node && Array.isArray((node as Artist).tags);
+  };
+
+  const getIndicatorMeta = (item: BasicNode) => {
+    if (isGenre(item)) {
+      return {
+        type: 'genre' as const,
+        color: genreColorMap?.get(item.id),
+        imageUrl: undefined,
+      };
+    }
+
+    const maybeArtist = item as Partial<Artist>;
+    const image = typeof maybeArtist.image === 'string' && maybeArtist.image.trim().length > 0
+      ? maybeArtist.image
+      : undefined;
+    const color = getArtistColor && isArtistWithDetail(item) ? getArtistColor(item) : undefined;
+
+    return {
+      type: 'artist' as const,
+      color,
+      imageUrl: image,
+    };
+  };
 
   // Clears the selection on remount
   useEffect(() => {
@@ -97,18 +137,18 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
             ${isMobile ? "w-full" : "hidden"}`}
           onClick={() => setOpen(true)}
         >
-          <div className="flex gap-2 items-center animate-fade-in">
+          <div className="flex gap-2 items-center animate-fade-in min-w-0">
             <SearchIcon size={20}></SearchIcon>
             {selectedGenres?.length ? (
-              selectedGenres[0].name
+              <span className="truncate">{selectedGenres[0].name}</span>
             ) : selectedArtist ? (
-              selectedArtist.name
+              <span className="truncate">{selectedArtist.name}</span>
             ) : (
               <div className="flex text-muted-foreground items-center gap-2">
                 Search
               {isMobile ? 
                 "" : <Badge
-                className="text-xs text-muted-foreground"
+                className="text-xs text-muted-foreground flex-shrink-0"
                 variant="outline"
                 >⌘K
                 </Badge>}
@@ -119,10 +159,11 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
       </motion.div>
       <CommandDialog
           key={filteredSearchableItems.length
-              ? filteredSearchableItems[filteredSearchableItems.length - 1].name
-              : filteredSearchableItems.length}
+            ? filteredSearchableItems[filteredSearchableItems.length - 1].id
+            : filteredSearchableItems.length}
           open={open}
           onOpenChange={setOpen}
+          className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full"
       >
         <CommandInput
             placeholder="Search..."
@@ -130,58 +171,87 @@ export function Search({ onGenreSelect, onArtistSelect, currentArtists, genres =
             onValueChange={setInputValue}
             ref={inputRef}
         />
-        <CommandList>
+        <CommandList className="max-h-none flex-1 overflow-y-auto">
           {searchLoading && <Loading />}
           <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>
           {recentSelections.length > 0 && (
             <CommandGroup heading="Recent Selections">
-              {recentSelections.map((selection) => (
-                <CommandItem
-                  key={selection.id}
-                  onSelect={() => onItemSelect(selection)}
-                  className="flex items-center justify-between"
+              {recentSelections.map((selection) => {
+                const meta = getIndicatorMeta(selection);
+                const isGenreSelection = meta.type === 'genre';
+
+                return (
+                  <CommandItem
+                    key={selection.id}
+                    onSelect={() => onItemSelect(selection)}
+                    className="flex items-center justify-between gap-2"
                   >
-                  {selection.name}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeRecentSelection(selection.id);
-                    }}
-                    className="-m-2"
-                  >
-                    <X />
-                  </Button>
-                </CommandItem>
-              ))}
+                    <div className="flex min-w-0 items-center gap-2">
+                      <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
+                        <BadgeIndicator
+                          type={meta.type}
+                          name={selection.name}
+                          color={meta.color}
+                          imageUrl={meta.imageUrl}
+                          className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
+                        />
+                      </div>
+                      <span className="truncate">{selection.name}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeRecentSelection(selection.id);
+                      }}
+                      className="-m-2"
+                    >
+                      <X />
+                    </Button>
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           )}
-                  <CommandGroup heading="Actions">
-                    <CommandItem
-                            key={"toggle-theme"}
-                            onSelect={() => {
-                              setTheme(theme === "light" ? "dark" : "light");
-                            }}
-                            className="flex items-center justify-between"
-                          >
-                            {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-                    
-                          </CommandItem>
-                  </CommandGroup>
-          {recentSelections.length > 0 && <CommandSeparator />}
+          <CommandGroup heading="Actions">
+            <CommandItem
+              key={"toggle-theme"}
+              onSelect={() => {
+                setTheme(theme === "light" ? "dark" : "light");
+              }}
+              className="flex items-center justify-between"
+            >
+              {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            </CommandItem>
+          </CommandGroup>
+          {/* {recentSelections.length > 0 && <CommandSeparator />} */}
           {inputValue && (
               <CommandGroup heading="All Results">
-                {filteredSearchableItems.map((item, i) => (
+                {filteredSearchableItems.map((item, i) => {
+                  const meta = getIndicatorMeta(item);
+                  const isGenreItem = meta.type === 'genre';
+
+                  return (
                     <CommandItem
                         key={`${item.id}-${i}`}
                         onSelect={() => onItemSelect(item)}
-                        className="flex items-center justify-between"
+                        className="flex items-center justify-between gap-2"
                     >
-                      {item.name}
-                      <Badge variant="secondary">{isGenre(item) ? 'genre' : 'artist'}</Badge>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <BadgeIndicator
+                          type={meta.type}
+                          name={item.name}
+                          color={meta.color}
+                          imageUrl={meta.imageUrl}
+                          className={cn('flex-shrink-0', isGenreItem ? 'size-2' : undefined)}
+                        />
+                        <span className="truncate">{item.name}</span>
+                      </div>
+                      <Badge variant="secondary">{meta.type}</Badge>
                     </CommandItem>
-                ))}
+                  );
+                })}
               </CommandGroup>
           )}
         </CommandList>

@@ -6,6 +6,7 @@ import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/components/ui/sidebar";
 
 type DrawerDirection = "left" | "right" | "top" | "bottom";
 
@@ -48,10 +49,10 @@ export function ResponsiveDrawer({
   children,
   contentClassName,
   bodyClassName,
-  directionDesktop = "right",
+  directionDesktop = "left",
   snapPoints = [0.50, 0.9],
   clickToCycleSnap = true,
-  desktopQuery = "(min-width: 1200px)",
+  desktopQuery = "(min-width: 768px)",
   showMobileHandle = false,
   handleHeightPx = 28,
   showMobileHeader = true,
@@ -62,6 +63,7 @@ export function ResponsiveDrawer({
   scrollContainerSelector = '[data-drawer-scroll]',
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
+  const { state: sidebarState } = useSidebar();
   const [open, setOpen] = useState(false);
   const [activeSnap, setActiveSnap] = useState<number | string | null>(snapPoints[0] ?? 0.9);
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
@@ -159,6 +161,59 @@ export function ResponsiveDrawer({
 
   const drawerKey = isDesktop ? "desktop" : "mobile";
 
+  // Control whether we apply the desktop side offset margin. We turn it off just before closing
+  // so the Vaul translate animation can fully dismiss without leaving a sliver at the sidebar gap.
+  const [useDesktopOffset, setUseDesktopOffset] = useState(true);
+  const desktopSideOffset: React.CSSProperties | undefined = React.useMemo(() => {
+    if (!isDesktop || !useDesktopOffset) return undefined;
+    const gapVar = "var(--sidebar-gap)";
+    if (directionDesktop === "left") {
+      return { marginLeft: gapVar } as React.CSSProperties;
+    }
+    return { marginRight: gapVar } as React.CSSProperties;
+  }, [isDesktop, useDesktopOffset, directionDesktop]);
+
+  // Prevent overlay from covering the sidebar region on desktop
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!isDesktop) {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "0px");
+      root.style.setProperty("--overlay-top", "0px");
+      root.style.setProperty("--overlay-bottom", "0px");
+      root.style.setProperty("--overlay-top", "0px");
+      root.style.setProperty("--overlay-bottom", "0px");
+      return;
+    }
+    if (directionDesktop === "left") {
+      root.style.setProperty("--overlay-left", "var(--sidebar-gap)");
+      root.style.setProperty("--overlay-right", "0px");
+    } else {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "var(--sidebar-gap)");
+    }
+    // Keep the overlay vertically aligned with the floating drawer on desktop
+    root.style.setProperty("--overlay-top", "calc(var(--app-header-height, 52px) + 8px)");
+    root.style.setProperty("--overlay-bottom", "12px");
+
+    return () => {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "0px");
+      root.style.setProperty("--overlay-top", "0px");
+      root.style.setProperty("--overlay-bottom", "0px");
+    };
+    // Keep the overlay vertically aligned with the floating drawer on desktop
+    root.style.setProperty("--overlay-top", "calc(var(--app-header-height, 52px) + 8px)");
+    root.style.setProperty("--overlay-bottom", "12px");
+
+    return () => {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "0px");
+      root.style.setProperty("--overlay-top", "0px");
+      root.style.setProperty("--overlay-bottom", "0px");
+    };
+  }, [isDesktop, directionDesktop, sidebarState]);
+
   return (
     <Drawer
       key={drawerKey}
@@ -170,18 +225,34 @@ export function ResponsiveDrawer({
           closeTimerRef.current = null;
         }
 
-        setOpen(next);
-
         if (!next) {
-          // Defer parent dismissal to allow animate-out to play
-          closeTimerRef.current = window.setTimeout(() => {
-            closeTimerRef.current = null;
-            onDismiss();
-          }, 80);
-          return;
+          if (isDesktop) {
+            // Remove the desktop offset first, then close on the next frame
+            setUseDesktopOffset(false);
+            requestAnimationFrame(() => {
+              setOpen(false);
+              // Defer parent dismissal to allow animate-out to play
+              closeTimerRef.current = window.setTimeout(() => {
+                closeTimerRef.current = null;
+                onDismiss();
+              }, 80);
+            });
+            return;
+          } else {
+            setOpen(false);
+            // Defer parent dismissal to allow animate-out to play
+            closeTimerRef.current = window.setTimeout(() => {
+              closeTimerRef.current = null;
+              onDismiss();
+            }, 80);
+            return;
+          }
         }
 
-        if (next && !isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
+        // Opening
+        if (isDesktop) setUseDesktopOffset(true);
+        setOpen(true);
+        if (!isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
       }}
       direction={isDesktop ? directionDesktop : "bottom"}
       // Reduce velocity-driven jumps between distant snap points
@@ -200,7 +271,17 @@ export function ResponsiveDrawer({
         : {})}
     >
       <DrawerContent
-        className={cn("w-full h-full", isDesktop ? "max-w-sm px-2" : "", contentClassName)}
+        className={cn("w-full", isDesktop ? "max-w-sm px-2" : "h-full", contentClassName)}
+        style={{
+          ...(desktopSideOffset as React.CSSProperties),
+          ...(isDesktop
+            ? ({
+                // Leave space below the header and a bottom gap to keep the drawer floating
+                "--drawer-top": "calc(var(--app-header-height, 52px))",
+                "--drawer-bottom": "4px",
+              } as React.CSSProperties)
+            : {}),
+        }}
       >
         <div
           className={cn(
