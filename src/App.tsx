@@ -59,8 +59,6 @@ import RhizomeLogo from "@/components/RhizomeLogo";
 import AuthOverlay from '@/components/AuthOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
-import CollectionDiscoveryControl from '@/components/CollectionDiscoveryControl';
-
 const API_URL = envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
   ? import.meta.env.VITE_LOCALHOST
   : (import.meta.env.VITE_SERVER_URL
@@ -1306,16 +1304,6 @@ function App() {
                 />
               </>
             )}
-            {graph === 'collection' && (
-              <CollectionDiscoveryControl
-                degree={collectionDegree}
-                onDegreeChange={handleCollectionDegreeChange}
-                maxDegree={MAX_DISCOVERY_DEGREE}
-                loading={collectionDiscoveryLoading}
-                disabled={collectionFinalArtists.length === 0}
-                discoveryCount={collectionDiscoveryArtists.length}
-              />
-            )}
           </div>
           {/* right controls */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
@@ -1324,7 +1312,15 @@ function App() {
                 clusterMode={genreClusterMode[0]}
                 setClusterMode={onGenreClusterModeChange}
                 dagMode={dagMode} 
-                setDagMode={setDagMode} />
+                setDagMode={setDagMode}
+                showDiscovery={graph === 'collection'}
+                discoveryDegree={collectionDegree}
+                onDiscoveryDegreeChange={handleCollectionDegreeChange}
+                discoveryLoading={collectionDiscoveryLoading}
+                discoveryDisabled={collectionFinalArtists.length === 0}
+                discoveryCount={collectionDiscoveryArtists.length}
+                discoveryMax={MAX_DISCOVERY_DEGREE}
+              />
               <DisplayPanel
                 genreArtistCountThreshold={genreSizeThreshold}
                 setGenreArtistCountThreshold={setGenreSizeThreshold}

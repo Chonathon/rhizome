@@ -3,17 +3,38 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Spline } from "lucide-react";
+import { Spline, Loader2 } from "lucide-react";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
 
 interface ClusteringPanelProps {
     clusterMode: GenreClusterMode;
     setClusterMode: (mode: GenreClusterMode[]) => void;
     dagMode: boolean;
     setDagMode: (enabled: boolean) => void;
+    showDiscovery?: boolean;
+    discoveryDegree?: number;
+    onDiscoveryDegreeChange?: (value: number) => void;
+    discoveryLoading?: boolean;
+    discoveryDisabled?: boolean;
+    discoveryCount?: number;
+    discoveryMax?: number;
 }
 
-export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, setDagMode }: ClusteringPanelProps) {
+export default function ClusteringPanel({
+    clusterMode,
+    setClusterMode,
+    dagMode,
+    setDagMode,
+    showDiscovery = false,
+    discoveryDegree = 0,
+    onDiscoveryDegreeChange,
+    discoveryLoading = false,
+    discoveryDisabled = false,
+    discoveryCount = 0,
+    discoveryMax = 3,
+}: ClusteringPanelProps) {
     const options = [
         { id: "subgenre", label: "Hierarchy", description: "Clusters genres based on their parent-child relationships, such as 'rock' and its subgenre 'alternative rock'." },
         { id: "influence", label: "Influence", description: "Visualizes how genres have influenced each other over time, revealing historical connections and the evolution of musical styles." },
@@ -82,6 +103,33 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
                     </div>
                     <Switch checked={dagMode} onCheckedChange={setDagMode} />
                 </div>
+                {showDiscovery && (
+                    <div className="flex flex-col gap-3 w-full px-3 pb-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex flex-col">
+                                <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">Discovery radius</span>
+                                <span className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                                    Surface similar artists up to {discoveryDegree} hop{discoveryDegree === 1 ? '' : 's'} away.
+                                </span>
+                            </div>
+                            <Badge variant="outline" className="shrink-0 px-2 text-xs font-semibold">
+                                {discoveryLoading ? <Loader2 className="size-3 animate-spin" /> : discoveryCount > 0 ? `+${discoveryCount}` : '0'}
+                            </Badge>
+                        </div>
+                        <Slider
+                            value={[Math.min(discoveryDegree, discoveryMax)]}
+                            onValueChange={([value]) => onDiscoveryDegreeChange?.(value)}
+                            min={0}
+                            max={discoveryMax}
+                            step={1}
+                            disabled={discoveryDisabled || discoveryLoading}
+                        />
+                        <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                            <span>0</span>
+                            <span>{discoveryMax} hops</span>
+                        </div>
+                    </div>
+                )}
             </RadioGroup>
         </ResponsivePanel>
     )
