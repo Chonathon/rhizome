@@ -193,6 +193,12 @@ function App() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
+  useEffect(() => {
+    if (searchOpen && isBeforeArtistLoad) {
+      setIsBeforeArtistLoad(false);
+    }
+  }, [searchOpen, isBeforeArtistLoad]);
+
   // Sets current artists/links shown in the graph when artists are fetched from the DB
   useEffect(() => {
     setCurrentArtists(artists);
@@ -911,6 +917,7 @@ function App() {
                     onGenreSelect={onGenreNodeClick}
                     onArtistSelect={createSimilarArtistGraph}
                     currentArtists={currentArtists}
+                    availableArtists={artists}
                     genres={currentGenres?.nodes}
                     graphState={graph}
                     selectedGenres={selectedGenres}

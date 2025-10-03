@@ -20,6 +20,7 @@ interface SearchProps {
   onArtistSelect: (artist: Artist) => void;
   graphState: GraphType;
   currentArtists: Artist[];
+  availableArtists?: Artist[];
   genres?: Genre[];
   selectedGenres?: Genre[];
   selectedArtist?: Artist;
@@ -42,6 +43,7 @@ export function Search({
   onGenreSelect,
   onArtistSelect,
   currentArtists,
+  availableArtists,
   genres = [],
   selectedGenres,
   selectedArtist,
@@ -58,6 +60,25 @@ export function Search({
   const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
   const { searchResults, searchLoading, searchError } = useSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const resolvedArtists = useMemo(() => {
+    if (!availableArtists?.length) {
+      return currentArtists;
+    }
+
+    if (!currentArtists.length) {
+      return availableArtists;
+    }
+
+    const byId = new Map<string, Artist>();
+    [...availableArtists, ...currentArtists].forEach((artist) => {
+      if (!byId.has(artist.id)) {
+        byId.set(artist.id, artist);
+      }
+    });
+
+    return Array.from(byId.values());
+  }, [availableArtists, currentArtists]);
 
   // Debouncing
   useEffect(() => {
@@ -77,14 +98,14 @@ export function Search({
   // Filter the searchable items. This is problematic with bands of the same name, for now it just uses the first one in the results
   const filteredSearchableItems = useMemo(() => {
     const seenNames = new Set<string>();
-    return [...currentArtists, ...searchResults, ...genres].filter((item) => {
+    return [...resolvedArtists, ...searchResults, ...genres].filter((item) => {
       if (!item.name.toLowerCase().includes(inputValue.toLowerCase())) return false;
       if (seenNames.has(item.name)) return false;
       seenNames.add(item.name);
       return true;
     }
     )},
-      [genres, searchResults, currentArtists, inputValue]
+      [genres, searchResults, resolvedArtists, inputValue]
   );
 
   const categoryConfigurations = useMemo<CategoryConfig[]>(() => {
@@ -98,7 +119,7 @@ export function Search({
       {
         key: "artists",
         label: "Artists",
-        items: currentArtists,
+        items: resolvedArtists,
         emptyMessage: "No artists available yet.",
       },
       {
@@ -120,7 +141,7 @@ export function Search({
         emptyMessage: "Mood & activity filters coming soon.",
       },
     ];
-  }, [currentArtists, genres, recentSelections]);
+  }, [resolvedArtists, genres, recentSelections]);
 
   useEffect(() => {
     if (categoryConfigurations.some((config) => config.key === activeCategory)) {
