@@ -6,11 +6,6 @@ import { useTheme } from "next-themes";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, drawHatchedCircleOverlay, drawDashedRing, PatternStyle } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
-const alphaHex = (value: number) => {
-    const clamped = Math.max(0, Math.min(1, value));
-    return Math.round(clamped * 255).toString(16).padStart(2, '0');
-};
-
 export type GraphHandle = {
     zoomIn: () => void;
     zoomOut: () => void;
@@ -75,7 +70,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     maxLinksToShow = 6000,
     minLabelPx = 8,
     strokeMinPx = 13,
-    discoveryDepthById,
+    discoveryDepthById: _discoveryDepthById,
 }, ref) => {
     const { theme } = useTheme();
 
@@ -279,26 +274,6 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         return colorById.get(artist.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
     };
 
-    const depthFor = (id?: string): number => {
-        if (!id || !discoveryDepthById) return 0;
-        return discoveryDepthById.get(id) ?? 0;
-    };
-
-    const radiusScaleForDepth = (depth: number): number => {
-        if (depth <= 0) return 1;
-        return Math.max(0.55, 1 - depth * 0.18);
-    };
-
-    const fillAlphaForDepth = (depth: number): number => {
-        if (depth <= 0) return 1;
-        return Math.max(0.35, 0.88 - depth * 0.2);
-    };
-
-    const linkAlphaForDepth = (depth: number): number => {
-        if (depth <= 0) return 1;
-        return Math.max(0.25, 0.7 - depth * 0.18);
-    };
-
     return !show ? null : loading ? (<div className="flex-1 h-[calc(100vh-104px)] w-full">
         <Loading />
     </div>) : (
@@ -312,24 +287,14 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
                 const connectedToSelected = !!selectedArtistId && (s === selectedArtistId || t === selectedArtistId);
                 const base = (s && colorById.get(s)) || (theme === 'dark' ? '#ffffff' : '#000000');
-                const depthS = depthFor(s);
-                const depthT = depthFor(t);
-                const depthAlpha = (depthS > 0 || depthT > 0)
-                    ? Math.min(linkAlphaForDepth(depthS), linkAlphaForDepth(depthT))
-                    : 1;
-                const alphaValue = selectedArtistId
-                    ? (connectedToSelected ? 1 : 0.18 * depthAlpha)
-                    : 0.5 * depthAlpha;
-                return base + alphaHex(alphaValue);
+                const alpha = selectedArtistId ? (connectedToSelected ? 'ff' : '30') : '80';
+                return base + alpha;
             }}
             linkWidth={(l: any) => {
+                if (!selectedArtistId) return 1;
                 const s = typeof l.source === 'string' ? l.source : l.source?.id;
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
-                const depthS = depthFor(s);
-                const depthT = depthFor(t);
-                const discoveryEdge = depthS > 0 || depthT > 0;
-                if (!selectedArtistId) return discoveryEdge ? 0.7 : 1;
-                return (s === selectedArtistId || t === selectedArtistId) ? 2.5 : (discoveryEdge ? 0.5 : 0.6);
+                return (s === selectedArtistId || t === selectedArtistId) ? 2.5 : 0.6;
             }}
             linkCurvature={preparedData.links.length <= curvedLinksAbove ? curvedLinkCurvature : 0}
             onNodeClick={onNodeClick}
@@ -350,20 +315,14 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
 
                 // draw node circle sized by listeners (match GenresForceGraph style)
                 const rBase = radiusFor(artist);
-                const depth = depthFor(artist.id);
-                const isDiscovery = depth > 0;
                 const isSelected = !!selectedArtistId && artist.id === selectedArtistId;
                 const isNeighbor = !!selectedArtistId && neighborsById.get(selectedArtistId)?.has(artist.id);
-                const radiusScale = isSelected ? 1 : radiusScaleForDepth(depth);
-                const r = (isSelected ? rBase * 1.4 : rBase) * radiusScale;
+                const r = isSelected ? rBase * 1.4 : rBase;
 
                 // Dim non-neighbors when a selection exists
                 const hasSelection = !!selectedArtistId;
                 const dimmed = hasSelection && !isSelected && !isNeighbor;
-                let fillAlpha = isSelected ? 1 : fillAlphaForDepth(depth);
-                if (isNeighbor) fillAlpha = Math.max(fillAlpha, 0.85);
-                if (dimmed) fillAlpha = Math.min(fillAlpha, 0.18);
-                const color = accent + alphaHex(fillAlpha);
+                const color = accent + (dimmed ? '30' : 'ff');
                 drawCircleNode(ctx, x, y, r, color);
 
                 // Non-color, non-size indicator for "in collection" artists
@@ -372,9 +331,6 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                     drawHatchedCircleOverlay(ctx, x, y, r - 0.75, theme, indicatorStyle, indicatorAlpha, globalScale, indicatorLinePx);
                     // Tasteful dashed ring just inside the node edge (constant on-screen thickness)
                     drawDashedRing(ctx, x, y, Math.max(1, r - 1.0), theme, ringAlpha, ringDash as [number, number], 2, globalScale);
-                } else if (isDiscovery) {
-                    // Give discovered nodes a soft outer ring so they stand out from the collection
-                    drawDashedRing(ctx, x, y, Math.max(1, r + 2), theme, 0.4, [6, 6], 1.5, globalScale);
                 }
 
                 // Emphasize selection ring
@@ -394,7 +350,6 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 if (isSelected) alpha = 1;
                 else if (isNeighbor) alpha = Math.max(alpha, 0.85);
                 else if (hasSelection) alpha = Math.min(alpha, 0.2);
-                else if (isDiscovery) alpha = Math.max(alpha, Math.min(0.7, 0.85 - depth * 0.15));
                 const label = node.name;
                 const yOffset = yOffsetByIdRef.current.get(artist.id) || 0;
                 drawLabelBelow(ctx, label, x, y, r, theme, alpha, LABEL_FONT_SIZE, yOffset);
@@ -402,8 +357,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
             nodePointerAreaPaint={(node, color, ctx, globalScale) => {
                 ctx.fillStyle = color;
                 const artist = node as Artist;
-                const depth = depthFor(artist.id);
-                const r = radiusFor(artist) * radiusScaleForDepth(depth) + 24 / (globalScale || 1);
+                const r = radiusFor(artist) + 24 / (globalScale || 1);
                 const nodeX = node.x || 0;
                 const nodeY = node.y || 0;
                 ctx.beginPath();
