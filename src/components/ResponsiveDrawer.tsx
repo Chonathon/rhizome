@@ -52,7 +52,7 @@ export function ResponsiveDrawer({
   directionDesktop = "left",
   snapPoints = [0.50, 0.9],
   clickToCycleSnap = true,
-  desktopQuery = "(min-width: 1200px)",
+  desktopQuery = "(min-width: 768px)",
   showMobileHandle = false,
   handleHeightPx = 28,
   showMobileHeader = true,
