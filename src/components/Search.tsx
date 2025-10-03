@@ -171,7 +171,7 @@ export function Search({
             onValueChange={setInputValue}
             ref={inputRef}
         />
-        <CommandList>
+        <CommandList className="max-h-none flex-1 overflow-y-auto">
           {searchLoading && <Loading />}
           <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>
           {recentSelections.length > 0 && (
