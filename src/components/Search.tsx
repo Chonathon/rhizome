@@ -163,7 +163,7 @@ export function Search({
             : filteredSearchableItems.length}
           open={open}
           onOpenChange={setOpen}
-          className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] max-w-lg sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full"
+          className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full"
       >
         <CommandInput
             placeholder="Search..."
