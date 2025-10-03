@@ -29,6 +29,15 @@ interface SearchProps {
   getArtistColor?: (artist: Artist) => string;
 }
 
+type CategoryKey = 'recents' | 'artists' | 'genres' | 'decade' | 'moodActivity';
+
+interface CategoryConfig {
+  key: CategoryKey;
+  label: string;
+  items: BasicNode[];
+  emptyMessage: string;
+}
+
 export function Search({
   onGenreSelect,
   onArtistSelect,
@@ -45,7 +54,7 @@ export function Search({
   // const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");
   const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<"recents" | "artists" | "genres">("recents");
+  const [activeCategory, setActiveCategory] = useState<CategoryKey>("recents");
   const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
   const { searchResults, searchLoading, searchError } = useSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -78,31 +87,39 @@ export function Search({
       [genres, searchResults, currentArtists, inputValue]
   );
 
-  const categoryConfigurations = useMemo(() => {
-    const configs = [
+  const categoryConfigurations = useMemo<CategoryConfig[]>(() => {
+    return [
       {
-        key: "recents" as const,
+        key: "recents",
         label: "Recents",
         items: recentSelections,
+        emptyMessage: "No recent searches yet.",
       },
       {
-        key: "artists" as const,
+        key: "artists",
         label: "Artists",
         items: currentArtists,
+        emptyMessage: "No artists available yet.",
       },
       {
-        key: "genres" as const,
+        key: "genres",
         label: "Genres",
         items: genres,
+        emptyMessage: "No genres available yet.",
+      },
+      {
+        key: "decade",
+        label: "Decade",
+        items: [],
+        emptyMessage: "Decade filters coming soon.",
+      },
+      {
+        key: "moodActivity",
+        label: "Mood & Activity",
+        items: [],
+        emptyMessage: "Mood & activity filters coming soon.",
       },
     ];
-
-    return configs.filter((config) => {
-      if (config.key === "recents") {
-        return true;
-      }
-      return config.items.length > 0;
-    });
   }, [currentArtists, genres, recentSelections]);
 
   useEffect(() => {
@@ -271,9 +288,7 @@ export function Search({
           <CommandEmpty>
             {showSearchResults
               ? "No results found."
-              : activeCategoryConfig
-                ? `No ${activeCategoryConfig.label.toLowerCase()} yet.`
-                : "Nothing to show yet."}
+              : activeCategoryConfig?.emptyMessage ?? "Nothing to show yet."}
           </CommandEmpty>
           {showSearchResults ? (
             <>
@@ -339,47 +354,53 @@ export function Search({
               <div className="flex-1 min-h-0 overflow-y-auto p-3">
                 {activeCategoryConfig && (
                   <CommandGroup heading={activeCategoryConfig.label} className="px-0">
-                    {activeCategoryConfig.items.map((item) => {
-                      const meta = getIndicatorMeta(item);
-                      const isGenreSelection = meta.type === 'genre';
-                      const isRecentCategory = activeCategoryConfig.key === 'recents';
+                    {activeCategoryConfig.items.length === 0 ? (
+                      <div className="px-2 py-3 text-sm text-muted-foreground">
+                        {activeCategoryConfig.emptyMessage}
+                      </div>
+                    ) : (
+                      activeCategoryConfig.items.map((item) => {
+                        const meta = getIndicatorMeta(item);
+                        const isGenreSelection = meta.type === 'genre';
+                        const isRecentCategory = activeCategoryConfig.key === 'recents';
 
-                      return (
-                        <CommandItem
-                          key={item.id}
-                          onSelect={() => onItemSelect(item)}
-                          className="flex items-center justify-between gap-2"
-                        >
-                          <div className="flex min-w-0 items-center gap-2">
-                            <div className={cn("flex items-center", isGenreSelection ? 'p-1.5' : undefined)}>
-                              <BadgeIndicator
-                                type={meta.type}
-                                name={item.name}
-                                color={meta.color}
-                                imageUrl={meta.imageUrl}
-                                className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
-                              />
+                        return (
+                          <CommandItem
+                            key={item.id}
+                            onSelect={() => onItemSelect(item)}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            <div className="flex min-w-0 items-center gap-2">
+                              <div className={cn("flex items-center", isGenreSelection ? 'p-1.5' : undefined)}>
+                                <BadgeIndicator
+                                  type={meta.type}
+                                  name={item.name}
+                                  color={meta.color}
+                                  imageUrl={meta.imageUrl}
+                                  className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
+                                />
+                              </div>
+                              <span className="truncate">{item.name}</span>
                             </div>
-                            <span className="truncate">{item.name}</span>
-                          </div>
-                          {isRecentCategory ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeRecentSelection(item.id);
-                              }}
-                              className="-m-2"
-                            >
-                              <X />
-                            </Button>
-                          ) : (
-                            <Badge variant="secondary">{meta.type}</Badge>
-                          )}
-                        </CommandItem>
-                      );
-                    })}
+                            {isRecentCategory ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeRecentSelection(item.id);
+                                }}
+                                className="-m-2"
+                              >
+                                <X />
+                              </Button>
+                            ) : (
+                              <Badge variant="secondary">{meta.type}</Badge>
+                            )}
+                          </CommandItem>
+                        );
+                      })
+                    )}
                   </CommandGroup>
                 )}
                 <CommandGroup heading="Actions" className="px-0">
