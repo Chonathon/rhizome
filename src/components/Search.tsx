@@ -172,16 +172,16 @@ export function Search({
         emptyMessage: "No recent searches yet.",
       },
       {
-        key: "artists",
-        label: "Artists",
-        items: resolvedArtists,
-        emptyMessage: "No artists available yet.",
-      },
-      {
         key: "genres",
         label: "Genres",
         items: genres,
         emptyMessage: "No genres available yet.",
+      },
+      {
+        key: "artists",
+        label: "Artists",
+        items: resolvedArtists,
+        emptyMessage: "No artists available yet.",
       },
       {
         key: "decade",
