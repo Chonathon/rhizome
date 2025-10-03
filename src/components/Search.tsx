@@ -114,6 +114,52 @@ export function Search({
     setActiveCategory(fallback);
   }, [activeCategory, categoryConfigurations]);
 
+  const showSearchResults = inputValue.trim().length > 0;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || showSearchResults) {
+        return;
+      }
+
+      const target = event.target;
+      if (!(target instanceof HTMLElement) || !target.closest("[data-slot='command']")) {
+        return;
+      }
+
+      const configs = categoryConfigurations;
+      if (configs.length === 0) {
+        return;
+      }
+
+      const currentIndex = configs.findIndex((config) => config.key === activeCategory);
+      if (currentIndex === -1) {
+        return;
+      }
+
+      const nextIndex = event.shiftKey
+        ? (currentIndex - 1 + configs.length) % configs.length
+        : (currentIndex + 1) % configs.length;
+
+      if (nextIndex === currentIndex) {
+        return;
+      }
+
+      event.preventDefault();
+      setActiveCategory(configs[nextIndex].key);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, showSearchResults, categoryConfigurations, activeCategory]);
+
   const isArtistWithDetail = (node: BasicNode): node is Artist => {
     return 'tags' in node && Array.isArray((node as Artist).tags);
   };
@@ -165,7 +211,6 @@ export function Search({
   }
   const { theme, setTheme } = useTheme()
 
-  const showSearchResults = inputValue.trim().length > 0;
   const activeCategoryConfig = categoryConfigurations.find((config) => config.key === activeCategory);
 
   return (
@@ -214,7 +259,11 @@ export function Search({
             onValueChange={setInputValue}
             ref={inputRef}
         />
-        <CommandList className={cn("max-h-none flex-1", showSearchResults ? "overflow-y-auto" : "overflow-hidden")}
+        <CommandList
+          className={cn(
+            "max-h-none flex h-full flex-1 min-h-0 flex-col",
+            showSearchResults ? "overflow-y-auto" : "overflow-hidden"
+          )}
         >
           {searchLoading && <Loading />}
           <CommandEmpty>
@@ -265,9 +314,9 @@ export function Search({
               </CommandGroup>
             </>
           ) : (
-            <div className="flex h-full min-h-[300px]">
-              <div className="w-40 shrink-0 border-r border-border bg-muted/10">
-                <div className="flex flex-col gap-1 p-3">
+            <div className="flex h-full min-h-0">
+              <div className="flex h-full w-40 shrink-0 flex-col border-r border-border bg-muted/10">
+                <div className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
                   {categoryConfigurations.map((config) => (
                     <button
                       key={config.key}
@@ -285,7 +334,7 @@ export function Search({
                   ))}
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-3">
+              <div className="flex-1 min-h-0 overflow-y-auto p-3">
                 {activeCategoryConfig && (
                   <CommandGroup heading={activeCategoryConfig.label} className="px-0">
                     {activeCategoryConfig.items.map((item) => {
