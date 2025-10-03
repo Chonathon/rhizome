@@ -475,15 +475,21 @@ export function Search({
               </CommandGroup>
             </>
           ) : (
-            <div className="flex h-full min-h-0">
-              <div className="sticky top-0 flex h-full w-40 shrink-0 self-start flex-col ">
-                <div className="flex flex-1 flex-col gap-1 p-3">
+            <div className="flex h-full min-h-0 flex-col sm:flex-row">
+              <div
+                className={cn(
+                  "flex -mx-3 border-b border-border bg-background px-3 pb-2",
+                  "sm:sticky sm:top-0 sm:mx-0 sm:h-full sm:w-40 sm:flex-col sm:self-start sm:border-b-0 sm:border-r sm:bg-transparent sm:px-0 sm:pb-0"
+                )}
+              >
+                <div className="flex gap-2 overflow-x-auto py-2 sm:flex-1 sm:flex-col sm:gap-1 sm:overflow-visible sm:p-3">
                   {categoryConfigurations.map((config) => (
                     <button
                       key={config.key}
                       type="button"
                       className={cn(
-                        "rounded-md px-2 py-2 text-left text-sm font-medium transition-colors",
+                        "flex-shrink-0 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors whitespace-nowrap",
+                        "sm:w-full",
                         highlightedCategoryKey === config.key
                           ? "bg-accent text-accent-foreground"
                           : "text-muted-foreground hover:text-foreground"
