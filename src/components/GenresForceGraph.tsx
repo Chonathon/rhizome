@@ -25,11 +25,13 @@ interface GenresForceGraphProps {
     colorMap?: Map<string, string>;
     // Selected genre id to highlight and focus
     selectedGenreId?: string;
+    width?: number;
+    height?: number;
 }
 
 // Styling shared via graphStyle utils
 
-const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId }, ref) => {
+const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId, width, height }, ref) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
@@ -294,6 +296,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
              d3VelocityDecay={.75}    // How springy tugs feel; smaller → more inertia
             cooldownTime={20000} // How long to run the simulation before stopping
             autoPauseRedraw={false}
+            width={width}
+            height={height}
             graphData={preparedData}
             dagMode={dag ? 'radialin' : undefined}
             dagLevelDistance={200}

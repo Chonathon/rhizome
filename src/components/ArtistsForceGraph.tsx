@@ -39,6 +39,9 @@ interface ArtistsForceGraphProps {
     minLabelPx?: number;
     // Minimum size at which to draw the halo stroke. Default 13.
     strokeMinPx?: number;
+    // Explicit size for the canvas (viewport)
+    width?: number;
+    height?: number;
 }
 
 const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({ 
@@ -57,6 +60,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     maxLinksToShow = 6000,
     minLabelPx = 8,
     strokeMinPx = 13,
+    width,
+    height,
 }, ref) => {
     const { theme } = useTheme();
 
@@ -244,12 +249,14 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         return colorById.get(artist.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
     };
 
-    return !show ? null : loading ? (<div className="flex-1 h-[calc(100vh-104px)] w-full">
+    return !show ? null : loading ? (<div className="flex-1 w-full" style={{ height: height ?? '100%' }}>
         <Loading />
     </div>) : (
         (<ForceGraph
             ref={fgRef as any}
             graphData={preparedData}
+            width={width}
+            height={height}
             // Always show links per request
             linkVisibility={() => true}
             linkColor={(l: any) => {
