@@ -12,7 +12,7 @@ const ZoomButtons: React.FC<ZoomButtonsProps> = ({ onZoomIn, onZoomOut }) => {
       <Button
         variant='outline'
         size='icon'
-        className='rounded-none border-0 shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-none focus-visible:border-transparent first:rounded-t-full'
+        className='rounded-none border-0 border-b shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-none focus-visible:border-transparent first:rounded-t-full'
         onClick={onZoomIn}
         aria-label='Zoom in'
         title='Zoom in'

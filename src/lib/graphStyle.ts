@@ -3,6 +3,8 @@
 export const LABEL_FONT_SIZE = 12;
 export const DEFAULT_LABEL_FADE_START = .1;
 export const DEFAULT_LABEL_FADE_END = .3;
+// Default upward screen-space offset (in px) to lift a focused node on mobile
+export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
 
 export const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
@@ -15,6 +17,22 @@ export function labelAlphaForZoom(
   const denom = Math.max(1e-6, end - start);
   const t = Math.max(0, Math.min(1, (k - start) / denom));
   return smoothstep(t);
+}
+
+// Convert a screen-space pixel offset to world-space, given current zoom k
+export function worldOffsetForScreenOffset(px: number, k: number): number {
+  return px / Math.max(k || 1, 1e-6);
+}
+
+// Convenience: apply an upward drawer offset for mobile when centering
+export function applyMobileDrawerYOffset(
+  y: number,
+  k: number,
+  isMobile: boolean,
+  offsetPx: number = DEFAULT_MOBILE_CENTER_OFFSET_PX
+): number {
+  if (!isMobile || !offsetPx) return y;
+  return y + worldOffsetForScreenOffset(offsetPx, k);
 }
 
 export function estimateLabelWidth(name: string, fontPx = LABEL_FONT_SIZE): number {

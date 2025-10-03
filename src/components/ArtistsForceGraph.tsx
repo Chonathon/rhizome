@@ -3,7 +3,7 @@ import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useS
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
 export type GraphHandle = {
@@ -39,6 +39,9 @@ interface ArtistsForceGraphProps {
     minLabelPx?: number;
     // Minimum size at which to draw the halo stroke. Default 13.
     strokeMinPx?: number;
+    // Explicit size for the canvas (viewport)
+    width?: number;
+    height?: number;
 }
 
 const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({ 
@@ -57,6 +60,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     maxLinksToShow = 6000,
     minLabelPx = 8,
     strokeMinPx = 13,
+    width,
+    height,
 }, ref) => {
     const { theme } = useTheme();
 
@@ -195,7 +200,10 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         const centerToNode = () => {
             const x = node.x ?? 0;
             const y = node.y ?? 0;
-            fgRef.current!.centerAt(x, y, 600);
+            const isMobile = window.matchMedia('(max-width: 640px)').matches;
+            const k = zoomRef.current || 1;
+            const yAdjusted = applyMobileDrawerYOffset(y, k, isMobile);
+            fgRef.current!.centerAt(x, yAdjusted, 600);
             // Choose a friendly zoom level
             const targetK = Math.max(0.8, Math.min(2.2, (zoomRef.current || 1) < 1 ? 1.2 : zoomRef.current));
             fgRef.current!.zoom(targetK, 600);
@@ -241,12 +249,14 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         return colorById.get(artist.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
     };
 
-    return !show ? null : loading ? (<div className="flex-1 h-[calc(100vh-104px)] w-full">
+    return !show ? null : loading ? (<div className="flex-1 w-full" style={{ height: height ?? '100%' }}>
         <Loading />
     </div>) : (
         (<ForceGraph
             ref={fgRef as any}
             graphData={preparedData}
+            width={width}
+            height={height}
             // Always show links per request
             linkVisibility={() => true}
             linkColor={(l: any) => {
