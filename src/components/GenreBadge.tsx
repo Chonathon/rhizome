@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { BadgeIndicator } from '@/components/BadgeIndicator';
 
 interface GenreBadgeProps {
   name: string;
@@ -22,9 +23,11 @@ export default function GenreBadge({
         onClick={onClick}
         className="cursor-pointer inline-flex items-center gap-1.5"
       >
-        <span
-        className="inline-block rounded-full h-2 w-2"
-        style={{ backgroundColor: genreColor ?? '#ffffff' }}
+        <BadgeIndicator
+          type="genre"
+          name={name}
+          color={genreColor}
+          className="size-2"
         />
         {name}
       </Button>
