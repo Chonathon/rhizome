@@ -321,6 +321,7 @@ export function Search({
                   return (
                     <CommandItem
                       key={`${item.id}-${i}`}
+                      value={`${item.name}::${item.id}`}
                       onSelect={() => onItemSelect(item)}
                       className="flex items-center justify-between gap-2"
                     >
@@ -388,6 +389,7 @@ export function Search({
                         return (
                           <CommandItem
                             key={item.id}
+                            value={`${item.name}::${item.id}`}
                             onSelect={() => onItemSelect(item)}
                             className="flex items-center justify-between gap-2"
                           >
