@@ -225,7 +225,7 @@ export function Search({
               {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
             </CommandItem>
           </CommandGroup>
-          {recentSelections.length > 0 && <CommandSeparator />}
+          {/* {recentSelections.length > 0 && <CommandSeparator />} */}
           {inputValue && (
               <CommandGroup heading="All Results">
                 {filteredSearchableItems.map((item, i) => {
