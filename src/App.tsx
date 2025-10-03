@@ -55,6 +55,8 @@ import {
 } from "@/constants";
 import RhizomeLogo from "@/components/RhizomeLogo";
 import AuthOverlay from '@/components/AuthOverlay';
+import ZoomButtons from '@/components/ZoomButtons';
+import useHotkeys from '@/hooks/useHotkeys';
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -69,6 +71,9 @@ function SidebarLogoTrigger() {
 }
 
 function App() {
+  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number }
+  const genresGraphRef = useRef<GraphHandle | null>(null);
+  const artistsGraphRef = useRef<GraphHandle | null>(null);
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
   const selectedGenreIDs = useMemo(() => {
     return selectedGenres.map(genre => genre.id);
@@ -146,11 +151,22 @@ function App() {
     localStorage.setItem('dagMode', JSON.stringify(dagMode));
   }, [dagMode]);
 
-  // Custom escape key functionality
+  // Zoom hotkeys (+ / -)
+  useHotkeys({
+    onZoomIn: () => {
+      const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+      ref?.zoomIn?.();
+    },
+    onZoomOut: () => {
+      const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+      ref?.zoomOut?.();
+    },
+  }, [graph]);
+
+  // Restore standalone Escape handling (deselect)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        // Prefer logical selection state over UI visibility flags
         if (graph === 'genres' && selectedGenres.length){
           deselectGenre();
           return;
@@ -162,21 +178,19 @@ function App() {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [selectedArtist, selectedGenres]);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [graph, selectedArtist, selectedGenres]);
 
-  // Custom command-K key functionality for search
+  // Restore Cmd/Ctrl+K handling (search)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setSearchOpen((prev) => !prev);
       }
-    }
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down)
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
   }, []);
 
   // Sets current artists/links shown in the graph when artists are fetched from the DB
@@ -763,6 +777,7 @@ function App() {
                   </Button>
           </motion.div>
                 <GenresForceGraph
+                  ref={genresGraphRef as any}
                   graphData={currentGenres}
                   onNodeClick={onGenreNodeClick}
                   loading={genresLoading}
@@ -773,6 +788,7 @@ function App() {
                   selectedGenreId={selectedGenres[0]?.id}
                 />
                 <ArtistsForceGraph
+                    ref={artistsGraphRef as any}
                     artists={currentArtists}
                     artistLinks={currentArtistLinks}
                     loading={artistsLoading}
@@ -784,7 +800,19 @@ function App() {
                     computeArtistColor={getArtistColor}
                 />
 
-          {!isMobile && <div className='z-20 fixed bottom-4 right-4'>
+            <div className='z-20 fixed bottom-16 right-3'>
+              <ZoomButtons
+                onZoomIn={() => {
+                  const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+                  ref?.zoomIn();
+                }}
+                onZoomOut={() => {
+                  const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+                  ref?.zoomOut();
+                }}
+              />
+            </div>
+          {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
             <NodeLimiter
                 totalNodes={genres.length}
                 nodeType={'genres'}

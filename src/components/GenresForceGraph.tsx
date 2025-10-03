@@ -1,5 +1,5 @@
 import {Genre, GenreClusterMode, GenreGraphData, NodeLink} from "@/types";
-import React, {useEffect, useRef, useMemo, useState} from "react";
+import React, {forwardRef, useEffect, useImperativeHandle, useRef, useMemo, useState} from "react";
 import ForceGraph, {ForceGraphMethods, GraphData, NodeObject} from "react-force-graph-2d";
 import {Loading} from "./Loading";
 import {forceCollide} from 'd3-force';
@@ -7,6 +7,13 @@ import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE } from "@/lib/graphStyle";
+
+export type GraphHandle = {
+    zoomIn: () => void;
+    zoomOut: () => void;
+    zoomTo: (k: number, ms?: number) => void;
+    getZoom: () => number;
+}
 
 interface GenresForceGraphProps {
     graphData?: GenreGraphData;
@@ -22,7 +29,7 @@ interface GenresForceGraphProps {
 
 // Styling shared via graphStyle utils
 
-const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId }) => {
+const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId }, ref) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
@@ -30,6 +37,25 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
     const { theme } = useTheme();
+
+    // Expose simple zoom API to parent
+    useImperativeHandle(ref, () => ({
+        zoomIn: () => {
+            const cur = zoomRef.current || 1;
+            const target = Math.min(20, cur * 2.2);
+            fgRef.current?.zoom?.(target, 400);
+        },
+        zoomOut: () => {
+            const cur = zoomRef.current || 1;
+            const target = Math.max(0.03, cur / 2.2);
+            fgRef.current?.zoom?.(target, 400);
+        },
+        zoomTo: (k: number, ms = 400) => {
+            const target = Math.max(0.03, Math.min(20, k));
+            fgRef.current?.zoom?.(target, ms);
+        },
+        getZoom: () => zoomRef.current || 1,
+    }), []);
 
     const preparedData: GraphData<Genre, NodeLink> = useMemo(() => {
         if (!graphData) return { nodes: [], links: [] };
@@ -292,6 +318,6 @@ const GenresForceGraph: React.FC<GenresForceGraphProps> = ({ graphData, onNodeCl
             nodePointerAreaPaint={nodePointerAreaPaint}
         />
     )
-}
+});
 
 export default GenresForceGraph;

@@ -1,10 +1,17 @@
 import {Artist, NodeLink} from "@/types";
-import React, {useEffect, useMemo, useRef, useState} from "react";
+import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from "react";
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
+
+export type GraphHandle = {
+    zoomIn: () => void;
+    zoomOut: () => void;
+    zoomTo: (k: number, ms?: number) => void;
+    getZoom: () => number;
+}
 
 interface ArtistsForceGraphProps {
     artists: Artist[];
@@ -34,7 +41,7 @@ interface ArtistsForceGraphProps {
     strokeMinPx?: number;
 }
 
-const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
+const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({ 
     artists,
     artistLinks,
     onNodeClick,
@@ -50,7 +57,7 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     maxLinksToShow = 6000,
     minLabelPx = 8,
     strokeMinPx = 13,
-}) => {
+}, ref) => {
     const { theme } = useTheme();
 
     const preparedData: GraphData<Artist, NodeLink> = useMemo(() => {
@@ -78,6 +85,25 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
+
+    // Expose simple zoom API to parent
+    useImperativeHandle(ref, () => ({
+        zoomIn: () => {
+            const cur = zoomRef.current || 1;
+            const target = Math.min(20, cur * 2.2);
+            fgRef.current?.zoom?.(target, 400);
+        },
+        zoomOut: () => {
+            const cur = zoomRef.current || 1;
+            const target = Math.max(0.03, cur / 2.2);
+            fgRef.current?.zoom?.(target, 400);
+        },
+        zoomTo: (k: number, ms = 400) => {
+            const target = Math.max(0.03, Math.min(20, k));
+            fgRef.current?.zoom?.(target, ms);
+        },
+        getZoom: () => zoomRef.current || 1,
+    }), []);
 
     // Animate label y-offset on hover using simple easing
     useEffect(() => {
@@ -306,6 +332,6 @@ const ArtistsForceGraph: React.FC<ArtistsForceGraphProps> = ({
             }}
         />)
     )
-}
+});
 
 export default ArtistsForceGraph;
