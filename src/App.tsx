@@ -134,6 +134,20 @@ function App() {
   const playRequest = useRef(0);
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
+  // Prototype: in-session collection state (temporary)
+  const [sessionCollectionIds, setSessionCollectionIds] = useState<string[]>(() => {
+    try {
+      const raw = sessionStorage.getItem('sessionCollection');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('sessionCollection', JSON.stringify(sessionCollectionIds));
+    } catch {}
+  }, [sessionCollectionIds]);
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -198,6 +212,24 @@ function App() {
     setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
   }, [artists]);
+
+  // Decorate artists with inCollection for rendering only
+  const sessionCollectionSet = useMemo(() => new Set(sessionCollectionIds), [sessionCollectionIds]);
+  const displayArtists: Artist[] = useMemo(() => {
+    return currentArtists.map(a => ({ ...a, inCollection: sessionCollectionSet.has(a.id) }));
+  }, [currentArtists, sessionCollectionSet]);
+
+  // Toggle add/remove for this session
+  const toggleSessionCollection = (artist: Artist) => {
+    setSessionCollectionIds(prev => {
+      const set = new Set(prev);
+      if (set.has(artist.id)) set.delete(artist.id); else set.add(artist.id);
+      return Array.from(set);
+    });
+    // Keep selected artist(s) objects in sync for immediate UI feedback
+    setSelectedArtist(prev => prev && prev.id === artist.id ? { ...prev, inCollection: !prev.inCollection } as Artist : prev);
+    setSelectedArtistNoGenre(prev => prev && prev.id === artist.id ? { ...prev, inCollection: !prev.inCollection } as Artist : prev);
+  };
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
@@ -789,7 +821,7 @@ function App() {
                 />
                 <ArtistsForceGraph
                     ref={artistsGraphRef as any}
-                    artists={currentArtists}
+                    artists={displayArtists}
                     artistLinks={currentArtistLinks}
                     loading={artistsLoading}
                     onNodeClick={onArtistNodeClick}
@@ -888,6 +920,8 @@ function App() {
                 getGenreNameById={getGenreNameById}
                 onPlay={onPlayArtist}
                 playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
+                onToggleCollection={toggleSessionCollection}
+                isInCollection={selectedArtist ? sessionCollectionSet.has(selectedArtist.id) : false}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

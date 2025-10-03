@@ -36,6 +36,8 @@ export interface Artist extends BasicNode {
     endDate?: string;
     image?: string;
     badDataFlag?: boolean;
+    // Optional flag: user has added this artist to their collection
+    inCollection?: boolean;
 }
 
 export interface BasicNode {

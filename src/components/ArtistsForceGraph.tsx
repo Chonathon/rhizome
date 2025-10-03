@@ -3,7 +3,7 @@ import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useS
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, drawHatchedCircleOverlay, drawDashedRing, PatternStyle } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
 export type GraphHandle = {
@@ -22,6 +22,12 @@ interface ArtistsForceGraphProps {
     // Selected artist id to highlight and focus
     selectedArtistId?: string;
     computeArtistColor: (artist: Artist) => string;
+    // Prototype: tweak collection indicator styles
+    indicatorStyle?: PatternStyle;
+    indicatorAlpha?: number;
+    indicatorLinePx?: number;
+    ringAlpha?: number;
+    ringDash?: [number, number];
     // Use curved links only when the number of rendered links is at or below this threshold.
     // If exceeded, links are straight (0 curvature) to improve performance.
     curvedLinksAbove?: number;
@@ -49,6 +55,11 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     show,
     selectedArtistId,
     computeArtistColor,
+    indicatorStyle = 'diagonal',
+    indicatorAlpha = 0.5,
+    indicatorLinePx = 4,
+    ringAlpha = 0.8,
+    ringDash = [12, 8],
     curvedLinksAbove = 1500,
     curvedLinkCurvature = 0.2,
     hideLinksBelowZoom = 0.1,
@@ -291,6 +302,14 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 const dimmed = hasSelection && !isSelected && !isNeighbor;
                 const color = accent + (dimmed ? '30' : 'ff');
                 drawCircleNode(ctx, x, y, r, color);
+
+                // Non-color, non-size indicator for "in collection" artists
+                if (artist.inCollection) {
+                    // Subtle hatch overlay within the circle – anchored to the node, not canvas
+                    drawHatchedCircleOverlay(ctx, x, y, r - 0.75, theme, indicatorStyle, indicatorAlpha, globalScale, indicatorLinePx);
+                    // Tasteful dashed ring just inside the node edge (constant on-screen thickness)
+                    drawDashedRing(ctx, x, y, Math.max(1, r - 1.0), theme, ringAlpha, ringDash as [number, number], 2, globalScale);
+                }
 
                 // Emphasize selection ring
                 if (isSelected) {
