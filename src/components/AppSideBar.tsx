@@ -144,7 +144,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarGroup> */}
                         <SidebarMenu className="gap-4">
-                          <SidebarMenuButton className="" size={"xl"} tooltip="Feedback & Support" asChild>
+                          <SidebarMenuButton className="" size={"xl"} tooltip="Feedback & Requests" asChild>
                             <button onClick={() => window.dispatchEvent(new Event('feedback:open'))}>
                               <CircleHelp size={20} />
                               {/* <span>Support & Feedback</span> */}
