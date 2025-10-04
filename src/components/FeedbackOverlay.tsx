@@ -33,9 +33,9 @@ function FeedbackOverlay() {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="bg-card max-h-[calc(100dvh-3rem)] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle className="">Feedback & Requests</DialogTitle>
-                    <DialogDescription className="">
-                        We'd love to hear your thoughts! Please reach out with any feedback, questions, or issues you encounter while using Rhizome.
+                    <DialogTitle>Feedback & Requests</DialogTitle>
+                    <DialogDescription>
+                        We're just getting started. Let us know how we can improve Rhizome!
                     </DialogDescription>
                 </DialogHeader>
                 <FieldSet>
