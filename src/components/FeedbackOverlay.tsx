@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-
-interface FeedbackOverlayProps {
-}
-
-
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+  FieldTitle,
+} from "@/components/ui/field"
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 function FeedbackOverlay() {
     const [open, setOpen] = useState(false);
@@ -23,12 +32,30 @@ function FeedbackOverlay() {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="bg-card max-h-[calc(100dvh-3rem)] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle className="sm:text-3xl text-2xl text-center">Feedback & Support</DialogTitle>
-                    <DialogDescription className="text-md text-center">
+                    <DialogTitle className="sm:text-xl text-2xl">Feedback & Support</DialogTitle>
+                    <DialogDescription className="">
                         We'd love to hear your thoughts! Please reach out with any feedback, questions, or issues you encounter while using Rhizome.
                     </DialogDescription>
                 </DialogHeader>
-                
+                <FieldSet>
+              <Field>
+                <FieldLabel htmlFor="feedback-comments">
+                  Comments
+                </FieldLabel>
+                <Textarea
+                  id="feedback-comments"
+                  placeholder="Add any additional comments"
+                  className="resize-none"
+                />
+              </Field>
+                  <Field>
+                    <FieldLabel className="sr-only" htmlFor="attachment">
+                      Attach an image (optional)
+                    </FieldLabel>
+                    <Input id="attachment" type="file" />
+                              </Field>
+                  <Button type="submit">Submit</Button>
+          </FieldSet>
                     </DialogContent>
             </Dialog>
         );
