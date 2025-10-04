@@ -58,10 +58,10 @@ function FeedbackOverlay() {
                   {/* <Button type="submit">Submit</Button> */}
           </FieldSet>
             <DialogFooter>
-                <DialogClose asChild>
+                <DialogClose className="flex-1" asChild>
                     <Button variant="outline">Close</Button>
                 </DialogClose>
-                <DialogClose asChild>
+                <DialogClose className="flex-1" asChild>
                     <Button onClick={() => toast('Thanks for the tip, we\'re on it!')} type="submit">Submit
                     </Button>
                 </DialogClose>
