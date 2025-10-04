@@ -33,7 +33,7 @@ function FeedbackOverlay() {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="bg-card max-h-[calc(100dvh-3rem)] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle className="sm:text-xl text-2xl">Feedback & Support</DialogTitle>
+                    <DialogTitle className="">Feedback & Support</DialogTitle>
                     <DialogDescription className="">
                         We'd love to hear your thoughts! Please reach out with any feedback, questions, or issues you encounter while using Rhizome.
                     </DialogDescription>
@@ -55,16 +55,15 @@ function FeedbackOverlay() {
                     </FieldLabel>
                     <Input id="attachment" type="file" />
                               </Field>
-                  {/* <Button type="submit">Submit</Button> */}
           </FieldSet>
             <DialogFooter>
                 <DialogClose className="flex-1" asChild>
                     <Button variant="outline">Close</Button>
-                </DialogClose>
-                <DialogClose className="flex-1" asChild>
-                    <Button onClick={() => toast.success('Got it. Thanks for the tip!')} type="submit">Submit
+                </DialogClose> 
+                    {/* feedback:success → toast.success + setOpen(false) + setSubmitting(false) */}
+                    <Button className="flex-1" onClick={() => toast.success('Got it. Thanks for the tip!')} 
+                    type="submit" disabled={true}>Submit
                     </Button>
-                </DialogClose>
             </DialogFooter>
                     </DialogContent>
             </Dialog>
