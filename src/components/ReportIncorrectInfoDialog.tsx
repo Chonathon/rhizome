@@ -68,14 +68,14 @@ export function ReportIncorrectInfoDialog({
         </DialogHeader>
 
         <form
-          className="grid gap-4 py-3"
+          className="grid gap-4"
           onSubmit={(e) => {
             e.preventDefault();
             handleSubmit();
           }}
         >
           <div className="grid gap-2">
-            <Label htmlFor="reason" className="text-sm font-medium">
+            <Label htmlFor="reason" className="text-sm sr-only font-medium">
               Reason
             </Label>
             <Select value={reason ?? undefined} onValueChange={setReason}>
@@ -95,7 +95,7 @@ export function ReportIncorrectInfoDialog({
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="details" className="text-sm font-medium">
+            <Label htmlFor="details" className="text-sm sr-only font-medium">
               Details (optional)
             </Label>
             <Textarea

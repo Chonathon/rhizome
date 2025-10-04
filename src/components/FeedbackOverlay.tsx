@@ -40,13 +40,13 @@ function FeedbackOverlay() {
                 </DialogHeader>
                 <FieldSet>
               <Field>
-                <FieldLabel htmlFor="feedback-comments">
+                <FieldLabel className="sr-only" htmlFor="feedback-comments">
                   Comments
                 </FieldLabel>
                 <Textarea
                   id="feedback-comments"
-                  placeholder="Add any additional comments"
-                  className="resize-none"
+                  placeholder=""
+                  className="resize-none min-h-[160px] "
                 />
               </Field>
                   <Field>
