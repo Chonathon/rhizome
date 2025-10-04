@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Button } from "@/components/ui/button"
 
 import { cn } from "@/lib/utils"
 
@@ -29,7 +30,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
     }
 
     const baseClasses = cn(
-      "file:text-foreground flex placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-10 w-full min-w-0 rounded-md border bg-transparent px-3 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:items-center file:h-10 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm items-center",
+      "file:text-foreground flex placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 dark:hover:bg-input/50 border-input h-10 w-full min-w-0 rounded-md border bg-transparent px-3 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:items-center file:h-10 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm items-center",
       type === "file" ? "py-0 self-start leading-[2.5rem] pr-10" : "py-1",
       "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
       "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
@@ -49,17 +50,17 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
             {...props}
           />
           {hasFile && !disabled ? (
-            <button
+            <Button
               type="button"
+              variant={"ghost"}
               aria-label="Clear file"
               onClick={clearFile}
               className={cn(
-                "absolute right-2 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded text-muted-foreground",
-                "hover:bg-accent/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                "absolute right-2 top-1/2 -translate-y-1/2 "
               )}
             >
               ×
-            </button>
+            </Button>
           ) : null}
         </div>
       )

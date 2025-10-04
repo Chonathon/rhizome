@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import {
   Field,
   FieldContent,
@@ -15,6 +15,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 function FeedbackOverlay() {
     const [open, setOpen] = useState(false);
@@ -54,8 +55,17 @@ function FeedbackOverlay() {
                     </FieldLabel>
                     <Input id="attachment" type="file" />
                               </Field>
-                  <Button type="submit">Submit</Button>
+                  {/* <Button type="submit">Submit</Button> */}
           </FieldSet>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button variant="outline">Close</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                    <Button onClick={() => toast('Thanks for the tip, we\'re on it!')} type="submit">Submit
+                    </Button>
+                </DialogClose>
+            </DialogFooter>
                     </DialogContent>
             </Dialog>
         );
