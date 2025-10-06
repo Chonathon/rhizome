@@ -59,6 +59,10 @@ import RhizomeLogo from "@/components/RhizomeLogo";
 import AuthOverlay from '@/components/AuthOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
+import { Scope, Mode, View } from '@/state/controlSchema'
+import { useScopedControlsState } from '@/state/scopedControls'
+import { computeScopeChanges, type ScopeChange } from '@/state/scopeChanges'
+import { FeedbackOverlay } from '@/components/FeedbackOverlay'
 const API_URL = envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
   ? import.meta.env.VITE_LOCALHOST
   : (import.meta.env.VITE_SERVER_URL
@@ -79,6 +83,12 @@ function SidebarLogoTrigger() {
       </button>
     </div>
   )
+}
+
+function graphToScope(graph: GraphType): Scope {
+  const mode: Mode = graph === 'collection' ? 'collection' : 'explore'
+  const view: View = graph === 'genres' || graph === 'parentGenre' ? 'genres' : 'artists'
+  return `${mode}:${view}` as Scope
 }
 
 function App() {
@@ -118,6 +128,11 @@ function App() {
   );
   const collectionSimilarCacheRef = useRef<Map<string, Artist[]>>(new Map());
   const fallbackArtistCacheRef = useRef<Map<string, Artist>>(new Map());
+  const scope = useMemo<Scope>(() => graphToScope(graph), [graph])
+  const { store } = useScopedControlsState()
+  const [scopeChanges, setScopeChanges] = useState<ScopeChange[]>([])
+  const [overlayVisible, setOverlayVisible] = useState(false)
+  const previousScopeRef = useRef<Scope>(scope)
   const handleCollectionDegreeChange = useCallback((value: number) => {
     const clamped = Math.max(0, Math.min(MAX_DISCOVERY_DEGREE, value));
     setCollectionDegree(clamped);
@@ -188,6 +203,16 @@ function App() {
       sessionStorage.setItem('sessionCollectionArtists', JSON.stringify(sessionCollectionById));
     } catch {}
   }, [sessionCollectionById]);
+
+  useEffect(() => {
+    const prev = previousScopeRef.current
+    if (prev === scope) return
+
+    const changes = computeScopeChanges(prev, scope, store)
+    setScopeChanges(changes)
+    setOverlayVisible(changes.length > 0)
+    previousScopeRef.current = scope
+  }, [scope, store])
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -1309,6 +1334,7 @@ function App() {
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               <ModeToggle />
               <ClusteringPanel 
+                scope={scope}
                 clusterMode={genreClusterMode[0]}
                 setClusterMode={onGenreClusterModeChange}
                 dagMode={dagMode} 
@@ -1422,6 +1448,12 @@ function App() {
             onLoadingChange={handlePlayerLoadingChange}
             headerPreferProvidedTitle={playerSource === 'genre'}
             onTitleClick={handlePlayerTitleClick}
+          />
+          <FeedbackOverlay
+            scope={scope}
+            changes={scopeChanges}
+            visible={overlayVisible}
+            onClose={() => setOverlayVisible(false)}
           />
         </div>
       </AppSidebar>
