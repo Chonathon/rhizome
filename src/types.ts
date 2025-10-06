@@ -16,6 +16,7 @@ export interface Genre extends BasicNode {
     badDataFlag?: boolean;
     rootGenres: string[];
     specificRootGenres: RootGenreNode[];
+    topArtists?: BasicNode[];
 }
 
 export interface Tag {
@@ -36,6 +37,8 @@ export interface Artist extends BasicNode {
     endDate?: string;
     image?: string;
     badDataFlag?: boolean;
+    topTracks?: TopTrack[];
+    noTopTracks?: boolean;
 }
 
 export interface BasicNode {
@@ -99,3 +102,16 @@ export interface InitialGenreFilter {
     isRoot: boolean;
     parents: Record<string, Set<string>>;
 }
+
+export interface TopTrack extends TopTrackPlayIDs{
+    title: string;
+    artistName: string;
+}
+
+export interface TopTrackPlayIDs {
+    youtube?: string;
+    spotify?: string;
+    apple?: string;
+}
+
+export type PlayerType = 'youtube' | 'spotify' | 'apple';

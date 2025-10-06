@@ -12,7 +12,7 @@ import {
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
   GraphType, InitialGenreFilter,
-  NodeLink, Tag,
+  NodeLink, Tag, TopTrack,
 } from "@/types";
 import { Header } from "@/components/Header"
 import { motion, AnimatePresence } from "framer-motion";
@@ -57,7 +57,7 @@ import {
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
-  MAX_YTID_QUEUE_SIZE
+  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -208,6 +208,7 @@ function App() {
   useEffect(() => {
     setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
+
   }, [artists]);
 
   // Initializes the genre graph data after fetching genres from DB
@@ -244,10 +245,25 @@ function App() {
       const currentGenreName = selectedGenres[0].name;
       console.log(`started yt fetch for ${currentGenreName}`)
       const currentGenreID = selectedGenreIDs[0];
+      const genreTracks: TopTrack[] = [];
+      topArtists.forEach((artist) => {
+        if (!artist.noTopTracks) {
+          if (artist.topTracks) {
+            for (const track of artist.topTracks) {
+              if (track[DEFAULT_PLAYER]) {
+                genreTracks.push(track);
+                break;
+              }
+            }
+          } else {
+            console.log('artist might have tracks, fetching from web...')
+
+          }
+        }
+      })
       const currentTopArtists = topArtists.map(t => {
         return {id: t.id, name: t.name};
       })
-      const genreTracks = await fetchGenreTopTracksYT(currentGenreName, currentTopArtists);
       playerIDQueue.set(currentGenreID, genreTracks);
       console.log(`finished yt fetch for ${currentGenreName}`)
     }
