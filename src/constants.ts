@@ -62,7 +62,7 @@ export const EMPTY_GENRE_FILTER_OBJECT: InitialGenreFilter = {
     parents: {},
 };
 
-export const MAX_YTID_QUEUE_SIZE = 500;
+export const MAX_YTID_QUEUE_SIZE = 200;
 
 export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
 export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';

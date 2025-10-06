@@ -30,9 +30,8 @@ import {
   isSingletonGenre,
   mixColors,
   primitiveArraysEqual,
-  buildGenreTree,
-  filterOutGenreTree,
-  fixWikiImageURL, appendYoutubeWatchURL
+  fixWikiImageURL,
+  until,
 } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -128,10 +127,9 @@ function App() {
     artistsDataFlagError,
     totalArtistsInDB,
     topArtists,
-    fetchArtistTopTracksYT,
-    fetchGenreTopTracksYT,
-    artistsYTLoading,
-    artistYTLoadingKey,
+    fetchArtistTopTracks,
+    artistsPlayIDsLoading,
+    artistPlayIDLoadingKey,
   } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { theme } = useTheme();
@@ -144,7 +142,7 @@ function App() {
   const playRequest = useRef(0);
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
-  const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, string[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
+  const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -157,6 +155,12 @@ function App() {
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
+
+  // refs and effects for checking current loading play ids
+  const artistsPlayIDsLoadingRef = useRef(artistsPlayIDsLoading);
+  const artistPlayIDLoadingKeyRef = useRef(artistPlayIDLoadingKey);
+  useEffect(() => { artistsPlayIDsLoadingRef.current = artistsPlayIDsLoading; }, [artistsPlayIDsLoading]);
+  useEffect(() => { artistPlayIDLoadingKeyRef.current = artistPlayIDLoadingKey; }, [artistPlayIDLoadingKey]);
 
   useEffect(() => {
     localStorage.setItem('dagMode', JSON.stringify(dagMode));
@@ -208,7 +212,6 @@ function App() {
   useEffect(() => {
     setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
-
   }, [artists]);
 
   // Initializes the genre graph data after fetching genres from DB
@@ -218,14 +221,14 @@ function App() {
     setGenreColorMap(buildGenreColorMap(genres, genreRoots));
   }, [genres, genreLinks]);
 
-  // Fetches top tracks of selected genre yt ids in the background
+  // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
-    updateGenrePlayerIDs().then(() => console.log('loaded genre ytids'));
+    updateGenrePlayerIDs();
   }, [topArtists]);
 
-  // Fetches top tracks of selected artist yt ids in the background
+  // Fetches top tracks of selected artist player ids in the background
   useEffect(() => {
-    updateArtistPlayerIDs().then(() => console.log('loaded artist ytids'));
+    updateArtistPlayerIDs();
   }, [selectedArtist]);
 
   useEffect(() => {
@@ -240,13 +243,12 @@ function App() {
     }
   }, [similarArtists]);
 
+  // Add genre play IDs to the playerIDQueue on genre click
   const updateGenrePlayerIDs = async () => {
     if (topArtists && topArtists.length && !playerIDQueue.has(selectedGenreIDs[0])) {
-      const currentGenreName = selectedGenres[0].name;
-      console.log(`started yt fetch for ${currentGenreName}`)
       const currentGenreID = selectedGenreIDs[0];
       const genreTracks: TopTrack[] = [];
-      topArtists.forEach((artist) => {
+      for (const artist of topArtists) {
         if (!artist.noTopTracks) {
           if (artist.topTracks) {
             for (const track of artist.topTracks) {
@@ -256,33 +258,52 @@ function App() {
               }
             }
           } else {
-            console.log('artist might have tracks, fetching from web...')
-
+            // Shouldn't reach this (every genre top artist has been pre-fetched) but fetches tracks just in case
+            console.log(`${artist.name} might have tracks, fetching from web...`);
+            const artistTopTracks = await fetchArtistTopTracks(artist.id, artist.name);
+            if (artistTopTracks) {
+              for (const track of artistTopTracks) {
+                if (track[DEFAULT_PLAYER]) {
+                  genreTracks.push(track);
+                  break;
+                }
+              }
+            }
           }
         }
-      })
-      const currentTopArtists = topArtists.map(t => {
-        return {id: t.id, name: t.name};
-      })
+      }
       playerIDQueue.set(currentGenreID, genreTracks);
-      console.log(`finished yt fetch for ${currentGenreName}`)
     }
   }
 
+  // Add artist play IDs to the playerIDQueue on genre click
   const updateArtistPlayerIDs = async () => {
     if (selectedArtist && !playerIDQueue.has(selectedArtist.id)) {
-      const currentSelectedArtist = { id: selectedArtist.id, name: selectedArtist.name };
-      const artistTracks = await fetchArtistTopTracksYT(currentSelectedArtist.id, currentSelectedArtist.name);
-      playerIDQueue.set(currentSelectedArtist.id, artistTracks);
+      const currentSelectedArtist = {
+        id: selectedArtist.id,
+        name: selectedArtist.name,
+        noTopTracks: selectedArtist.noTopTracks,
+        topTracks: selectedArtist.topTracks
+      };
+      if (!currentSelectedArtist.noTopTracks) {
+        if (currentSelectedArtist.topTracks) {
+          playerIDQueue.set(currentSelectedArtist.id, currentSelectedArtist.topTracks);
+        } else {
+          const artistTracks = await fetchArtistTopTracks(currentSelectedArtist.id, currentSelectedArtist.name);
+          if (artistTracks) {
+            playerIDQueue.set(currentSelectedArtist.id, artistTracks);
+          }
+        }
+      }
     }
   }
 
   // Play handlers using embedded YouTube player
   const onPlayArtist = async (artist: Artist) => {
-    //if (artistsYTLoading) return;
     const req = ++playRequest.current;
+    const artistLoadingKey = `artist:${artist.id}`;
     setPlayerLoading(true);
-    setPlayerLoadingKey(`artist:${artist.id}`);
+    setPlayerLoadingKey(artistLoadingKey);
     setPlayerSource('artist');
     setPlayerEntityName(artist.name);
     // Show the player instantly with provisional metadata
@@ -294,21 +315,24 @@ function App() {
     setPlayerVideoIds([]); // clear any previous playlist immediately
     setPlayerOpen(true);
     try {
-      //const ids = await fetchArtistTopTracksYT(artist.id, artist.name);
-      const ids = playerIDQueue.get(artist.id);
+      // wait until artist's tracks are done loading
+      if (artistsPlayIDsLoading && artistPlayIDLoadingKey === artistLoadingKey) {
+        await until(() => !artistsPlayIDsLoadingRef.current || artistPlayIDLoadingKeyRef.current !== artistLoadingKey);
+      }
+      const playerIDs = getSpecificPlayerIDs(artist.id);
       if (req !== playRequest.current) return; // superseded by a newer request
-      if (ids && ids.length > 0) {
-        setPlayerVideoIds(ids);
+      if (playerIDs && playerIDs.length > 0) {
+        setPlayerVideoIds(playerIDs);
         // title/artwork already set above for instant UI
       } else {
-        toast.error('No YouTube tracks found for this artist');
+        toast.error('No tracks found for this artist');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
         setPlayerOpen(false);
       }
     } catch (e) {
       if (req === playRequest.current) {
-        toast.error('Unable to fetch YouTube tracks for artist');
+        toast.error('Unable to fetch tracks for artist');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
         setPlayerSource(undefined);
@@ -318,10 +342,10 @@ function App() {
   };
 
   const onPlayGenre = async (genre: Genre) => {
-    if (isPlayerLoadingGenre()) return;
     const req = ++playRequest.current;
+    const genreLoadingKey = `genre:${genre.id}`;
     setPlayerLoading(true);
-    setPlayerLoadingKey(`genre:${genre.name}`);
+    setPlayerLoadingKey(genreLoadingKey);
     setPlayerSource('genre');
     setPlayerEntityName(genre.name);
     // Open player immediately with genre title and best-effort artwork
@@ -335,35 +359,26 @@ function App() {
     setPlayerVideoIds([]);
     setPlayerOpen(true);
     try {
-      // Use available topArtists for the selected genre; fallback to current artists
-      // const source = topArtists && topArtists.length ? topArtists : currentArtists;
-      // const top = source.slice(0, 8);
-      // const firstTrackIds = await Promise.all(
-      //   top.map(async (a) => {
-      //     try {
-      //       const ids = await fetchArtistTopTracksYT(a.id, a.name);
-      //       return ids && ids.length ? ids[0] : undefined;
-      //     } catch {
-      //       return undefined;
-      //     }
-      //   })
-      // );
       if (req !== playRequest.current) return; // superseded
-      //const videoIds = firstTrackIds.filter(Boolean) as string[];
-      const videoIds = playerIDQueue.get(genre.id);
-      if (!videoIds || videoIds.length === 0) {
-        toast.error('No YouTube tracks found for this genre');
+      // wait until genre tracks are loaded (shouldn't happen, here for safety)
+      if (artistsPlayIDsLoading && genre.topArtists) {
+        const loadingIDs = genre.topArtists.map(artist => `artist:${artist.id}`);
+        await until(() => !artistsPlayIDsLoadingRef.current || !loadingIDs.includes(artistPlayIDLoadingKeyRef.current));
+      }
+      const playerIDs = getSpecificPlayerIDs(genre.id);
+      if (!playerIDs || playerIDs.length === 0) {
+        toast.error('No tracks found for this genre');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
         setPlayerSource(undefined);
         setPlayerOpen(false);
         return;
       }
-      setPlayerVideoIds(videoIds);
+      setPlayerVideoIds(playerIDs);
       // title/artwork already set for instant UI
     } catch (e) {
       if (req === playRequest.current) {
-        toast.error('Unable to fetch YouTube tracks for genre');
+        toast.error('Unable to fetch tracks for genre');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
         setPlayerSource(undefined);
@@ -371,6 +386,18 @@ function App() {
       }
     }
   };
+
+  // Returns only the play IDs of the DEFAULT_PLAYER from an artist/genre
+  const getSpecificPlayerIDs = (id: string) => {
+    let ids: string[] = [];
+    const topTracks = playerIDQueue.get(id);
+    if (topTracks && topTracks.length > 0) {
+      for (const track of topTracks) {
+        if (track[DEFAULT_PLAYER]) ids.push(track[DEFAULT_PLAYER]);
+      }
+    }
+    return ids;
+  }
 
   const handlePlayerLoadingChange = (v: boolean) => {
     setPlayerLoading(v);
@@ -378,25 +405,11 @@ function App() {
   };
 
   const isPlayerLoadingGenre = () => {
-    let loading = false;
-    if (artistsYTLoading) {
-      loading = !!selectedGenres[0] ? artistYTLoadingKey === `genre:${selectedGenres[0].name}` : false;
-    }
-    if (playerLoading) {
-      loading = !!selectedGenres[0] ? playerLoadingKey === `genre:${selectedGenres[0].name}` : false;
-    }
-    return loading;
+    return playerLoading && !!selectedGenres[0] && playerLoadingKey === `genre:${selectedGenres[0].name}`;
   }
 
   const isPlayerLoadingArtist = () => {
-    let loading = false;
-    if (artistsYTLoading) {
-      loading =  !!selectedArtist ? artistYTLoadingKey === `artist:${selectedArtist.id}` : false;
-    }
-    if (playerLoading) {
-      loading =  !!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false;
-    }
-    return loading;
+    return playerLoading && !!selectedArtist && playerLoadingKey === `artist:${selectedArtist.id}`;
   }
 
   // Clear selection info when player is closed

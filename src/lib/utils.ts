@@ -55,6 +55,19 @@ export const arraySubsetOf = (a: Array<string | number>, b: Array<string | numbe
   return b.every(v => a.includes(v));
 }
 
+// Wait on a function to return true
+export const until = (get: () => boolean, interval = 200, abort = 15000) => {
+  return new Promise<void>((resolve, reject) => {
+    const start = Date.now();
+    const tick = () => {
+      if (get()) return resolve();
+      if (Date.now() - start > abort) return reject(new Error('until timeout'));
+      setTimeout(tick, interval);
+    };
+    tick();
+  });
+};
+
 export const generateArtistLinks = (artist: Artist, similarCount: number) => {
   const links = [];
   for (let i = 0; i < similarCount - 1; i++) {
