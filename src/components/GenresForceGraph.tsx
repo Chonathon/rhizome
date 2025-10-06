@@ -6,7 +6,7 @@ import {forceCollide} from 'd3-force';
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset } from "@/lib/graphStyle";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -25,11 +25,13 @@ interface GenresForceGraphProps {
     colorMap?: Map<string, string>;
     // Selected genre id to highlight and focus
     selectedGenreId?: string;
+    width?: number;
+    height?: number;
 }
 
 // Styling shared via graphStyle utils
 
-const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId }, ref) => {
+const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId, width, height }, ref) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
@@ -220,7 +222,10 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         const centerToNode = () => {
             const x = node.x ?? 0;
             const y = node.y ?? 0;
-            fgRef.current!.centerAt(x, y, 600);
+            const isMobile = window.matchMedia('(max-width: 640px)').matches;
+            const k = zoomRef.current || 1;
+            const yAdjusted = applyMobileDrawerYOffset(y, k, isMobile);
+            fgRef.current!.centerAt(x, yAdjusted, 600);
             const targetK = Math.max(0.7, Math.min(2.0, (zoomRef.current || 1) < 1 ? 1.15 : zoomRef.current));
             fgRef.current!.zoom(targetK, 600);
         };
@@ -291,6 +296,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
              d3VelocityDecay={.75}    // How springy tugs feel; smaller → more inertia
             cooldownTime={20000} // How long to run the simulation before stopping
             autoPauseRedraw={false}
+            width={width}
+            height={height}
             graphData={preparedData}
             dagMode={dag ? 'radialin' : undefined}
             dagLevelDistance={200}

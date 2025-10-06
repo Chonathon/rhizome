@@ -74,6 +74,7 @@ function App() {
   type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number }
   const genresGraphRef = useRef<GraphHandle | null>(null);
   const artistsGraphRef = useRef<GraphHandle | null>(null);
+  const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
   const selectedGenreIDs = useMemo(() => {
     return selectedGenres.map(genre => genre.id);
@@ -134,6 +135,14 @@ function App() {
   const playRequest = useRef(0);
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
+
+  // Track window size and pass to ForceGraph for reliable resizing
+  useEffect(() => {
+    const update = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -699,8 +708,8 @@ function App() {
       >
         <SidebarLogoTrigger />
         <Toaster />
-        <Gradient />
-        <div className="relative h-screen w-screen overflow-hidden no-scrollbar">
+        <div className="fixed inset-0 z-0 overflow-hidden no-scrollbar">
+          <Gradient />
           <motion.div
             className={
               "fixed top-0 left-0 z-50 pt-2 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
@@ -786,6 +795,8 @@ function App() {
                   clusterModes={genreClusterMode}
                   colorMap={genreColorMap}
                   selectedGenreId={selectedGenres[0]?.id}
+                  width={viewport.width || undefined}
+                  height={viewport.height || undefined}
                 />
                 <ArtistsForceGraph
                     ref={artistsGraphRef as any}
@@ -798,6 +809,8 @@ function App() {
                         (graph === "artists" || graph === "similarArtists") && !artistsError
                     }
                     computeArtistColor={getArtistColor}
+                    width={viewport.width || undefined}
+                    height={viewport.height || undefined}
                 />
 
             <div className='z-20 fixed bottom-[52%] sm:bottom-16 right-3'>

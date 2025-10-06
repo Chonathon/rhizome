@@ -17,6 +17,7 @@ type MobileAppBarProps = {
   graph: GraphType
   onGraphChange: (g: GraphType) => void
   onOpenSearch: () => void
+  resetAppState: () => void;
 }
 
 /**
@@ -24,7 +25,7 @@ type MobileAppBarProps = {
  * Provides quick access to Search, Collection, Genres, Artists, and a More menu.
  * Styled to match the existing glassy/rounded aesthetic.
  */
-export function MobileAppBar({ graph, onGraphChange, onOpenSearch }: MobileAppBarProps) {
+export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState }: MobileAppBarProps) {
   return (
     <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-3 z-50 md:hidden"
     style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
@@ -54,13 +55,13 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch }: MobileAppBa
           /> */}
           <ToolbarButton
             label="Collection"
-            onClick={() => toast("Collections are coming soon ✨")}
+            onClick={() => window.dispatchEvent(new Event('auth:open'))}
             icon={<BookOpen className="size-6" />}
           />
           <ToolbarButton
             label="Explore"
             active={graph === "genres"}
-            onClick={() => onGraphChange("genres")}
+            onClick={resetAppState}
             icon={<Telescope className="size-6" />}
           />
           {/* <ToolbarButton
