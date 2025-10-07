@@ -55,12 +55,12 @@ function FeedbackOverlay() {
                   className="resize-none min-h-[160px] "
                 />
               </Field>
-                  <Field>
+                  {/* <Field>
                     <FieldLabel className="sr-only" htmlFor="attachment">
                       Attach an image (optional)
                     </FieldLabel>
                     <Input id="attachment" type="file" />
-                              </Field>
+                              </Field> */}
                   <Field className="rounded-xl border border-border/60 bg-transparent px-3 py-3">
                     <div className="flex items-center justify-between gap-4">
                       <div>
