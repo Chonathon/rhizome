@@ -54,7 +54,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch }: MobileAppBa
           /> */}
           <ToolbarButton
             label="Collection"
-            onClick={() => toast("Collections are coming soon ✨")}
+            onClick={() => window.dispatchEvent(new Event('auth:open'))}
             icon={<BookOpen className="size-6" />}
           />
           <ToolbarButton
@@ -116,7 +116,7 @@ function MoreMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="rounded-xl">
-        <DropdownMenuItem onClick={() => toast("Opening feedback dialog...")}> 
+        <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}> 
           <CircleHelp />
           Help
         </DropdownMenuItem>
