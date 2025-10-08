@@ -396,7 +396,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
       {open && (
         <motion.div
           key="player"
-          className={`fixed z-[50] w-[240px] ${anchor.includes('left') ? 'left-4' : 'right-4'} ${(!isDesktop && anchoredTop != null) ? '' : (anchor.includes('top') ? 'top-4' : 'bottom-4')}`}
+          className={`fixed z-[50] w-[240px] ${anchor.includes('left') ? 'left-4' : 'right-3'} ${(!isDesktop && anchoredTop != null) ? '' : (anchor.includes('top') ? 'top-4' : 'bottom-16')}`}
           style={{
             // On mobile, anchor above any open bottom sheet
             ...( (!isDesktop && anchoredTop != null) ? { top: anchoredTop, bottom: 'auto' as const } : {}),
