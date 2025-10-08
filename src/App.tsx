@@ -55,6 +55,7 @@ import {
 } from "@/constants";
 import RhizomeLogo from "@/components/RhizomeLogo";
 import AuthOverlay from '@/components/AuthOverlay';
+import FeedbackOverlay from '@/components/FeedbackOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
 
@@ -954,6 +955,7 @@ function App() {
         </div>
       </AppSidebar>
       <AuthOverlay />
+      <FeedbackOverlay />
     </SidebarProvider>
   );
 }

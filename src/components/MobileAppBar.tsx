@@ -117,7 +117,7 @@ function MoreMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="rounded-xl">
-        <DropdownMenuItem onClick={() => toast("Opening feedback dialog...")}> 
+        <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}> 
           <CircleHelp />
           Help
         </DropdownMenuItem>

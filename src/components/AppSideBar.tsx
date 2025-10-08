@@ -72,7 +72,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               <SidebarGroup>
                 <SidebarMenu className="gap-4">
                       <SidebarMenuItem className="">
-                        <SidebarMenuButton asChild size="xl" >
+                        <SidebarMenuButton asChild tooltip="Search ⌘K" size="xl" >
                           <button onClick={() => setSearchOpen(true)}>
                             <SearchIcon size={24}/>
                             <span className="truncate">Search</span>
@@ -85,7 +85,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild size="xl">
+                        <SidebarMenuButton asChild tooltip="Collection" size="xl">
                           <button onClick={() => window.dispatchEvent(new Event('auth:open'))}>
                             <BookOpen />
                             <span className="truncate">Collection</span>
@@ -114,7 +114,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarMenuItem> */}
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={true} size="xl">
+                      <SidebarMenuButton asChild isActive={true} tooltip="Explore" size="xl">
                         <button onClick={resetAppState}>
                           <Telescope />
                           <span>Explore</span>
@@ -144,8 +144,8 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarGroup> */}
                         <SidebarMenu className="gap-4">
-                          <SidebarMenuButton className="" size={"xl"} asChild>
-                            <button onClick={() => toast("Opening feedback dialogue...")} className="">
+                          <SidebarMenuButton className="" size={"xl"} tooltip="Feedback & Requests" asChild>
+                            <button onClick={() => window.dispatchEvent(new Event('feedback:open'))}>
                               <CircleHelp size={20} />
                               {/* <span>Support & Feedback</span> */}
                             </button>
