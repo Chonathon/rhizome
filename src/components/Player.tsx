@@ -291,25 +291,24 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
 
     const compute = () => {
       try {
-        // Base offset from the sidebar gap element (which reflects expanded/collapsed widths)
-        const gapEl = document.querySelector('[data-slot="sidebar-gap"]') as HTMLElement | null;
-        const baseLeft = gapEl ? gapEl.getBoundingClientRect().right : 0;
-
         // If there is an open left-side drawer, position to the right of it
         const nodes = Array.from(
           document.querySelectorAll('[data-slot="drawer-content"][data-vaul-drawer-direction="left"]')
         ) as HTMLElement[];
         const openNodes = nodes.filter((n) => n.getAttribute('data-state') !== 'closed');
-        let drawerRight = 0;
-        for (const el of openNodes) {
-          const rect = el.getBoundingClientRect();
-          if (rect.right > drawerRight) drawerRight = rect.right;
-        }
 
-        const gapSpacing = sidebarGapPx; // configurable distance from sidebar edge
-        const drawerSpacing = drawerGapPx; // configurable distance from drawer edge
-        const left = Math.max(baseLeft + gapSpacing, drawerRight > 0 ? drawerRight + drawerSpacing : 0);
-        setAnchoredLeft(left || null);
+        if (openNodes.length > 0) {
+          // Position to the right of the rightmost open drawer
+          let drawerRight = 0;
+          for (const el of openNodes) {
+            const rect = el.getBoundingClientRect();
+            if (rect.right > drawerRight) drawerRight = rect.right;
+          }
+          setAnchoredLeft(drawerRight + drawerGapPx);
+        } else {
+          // No drawer open - use null to fall back to CSS variable
+          setAnchoredLeft(null);
+        }
       } catch {
         setAnchoredLeft(null);
       }

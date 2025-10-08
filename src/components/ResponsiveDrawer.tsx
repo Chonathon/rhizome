@@ -166,11 +166,10 @@ export function ResponsiveDrawer({
   const [useDesktopOffset, setUseDesktopOffset] = useState(true);
   const desktopSideOffset: React.CSSProperties | undefined = React.useMemo(() => {
     if (!isDesktop || !useDesktopOffset) return undefined;
-    const gapVar = "var(--sidebar-gap)";
     if (directionDesktop === "left") {
-      return { marginLeft: gapVar } as React.CSSProperties;
+      return { left: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
     }
-    return { marginRight: gapVar } as React.CSSProperties;
+    return { right: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
   }, [isDesktop, useDesktopOffset, directionDesktop]);
 
   // Prevent overlay from covering the sidebar region on desktop
