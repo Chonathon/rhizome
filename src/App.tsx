@@ -912,7 +912,7 @@ function App() {
                     height={viewport.height || undefined}
                 />
 
-            <div className='z-20 fixed bottom-[52%] sm:bottom-16 right-3'>
+            <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
               <ZoomButtons
                 onZoomIn={() => {
                   const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
@@ -952,6 +952,19 @@ function App() {
                 genreArtistCountThreshold={genreSizeThreshold}
                 setGenreArtistCountThreshold={setGenreSizeThreshold}
               />
+              {/* Bottom positioned Zoomies */}
+              <div className='pt-6 hidden sm:block'>
+                <ZoomButtons
+                  onZoomIn={() => {
+                    const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+                    ref?.zoomIn();
+                  }}
+                  onZoomOut={() => {
+                    const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+                    ref?.zoomOut();
+                  }}
+                />
+              </div>
           </div>
 
           <AnimatePresence mode="popLayout">
@@ -1045,7 +1058,7 @@ function App() {
             videoIds={playerVideoIds}
             title={playerTitle}
             autoplay
-            anchor="bottom-left"
+            anchor={isMobile ? "bottom-left" : "bottom-right"}
             artworkUrl={playerArtworkUrl}
             loading={playerLoading}
             onLoadingChange={handlePlayerLoadingChange}

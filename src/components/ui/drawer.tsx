@@ -73,7 +73,7 @@ function DrawerContent({
           "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] data-[vaul-drawer-direction=bottom]:rounded-3xl",
           // Side drawers honor top/bottom CSS vars to avoid overflowing the viewport
           "data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=right]:sm:max-w-sm data-[vaul-drawer-direction=right]:top-[var(--drawer-top,0px)] data-[vaul-drawer-direction=right]:bottom-[var(--drawer-bottom,0px)]",
-          "data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-full data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=left]:top-[var(--drawer-top,0px)] data-[vaul-drawer-direction=left]:bottom-[var(--drawer-bottom,0px)]",
+          "data-[vaul-drawer-direction=left]:w-full data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=left]:top-[var(--drawer-top,0px)] data-[vaul-drawer-direction=left]:bottom-[var(--drawer-bottom,0px)]",
           className
         )}
         {...props}
