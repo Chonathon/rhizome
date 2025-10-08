@@ -1,9 +1,17 @@
-import {ArtistNodeLimitType, Genre, GenreClusterMode, GenreNodeLimitType, InitialGenreFilter} from "@/types";
+import {
+    ArtistNodeLimitType,
+    Genre,
+    GenreClusterMode,
+    GenreNodeLimitType,
+    InitialGenreFilter,
+    PlayerType
+} from "@/types";
 
 export const DEFAULT_NODE_COUNT = 2000;
 export const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
 export const DEFAULT_GENRE_LIMIT_TYPE: GenreNodeLimitType = 'artistCount';
 export const DEFAULT_ARTIST_LIMIT_TYPE: ArtistNodeLimitType = 'listeners';
+export const DEFAULT_PLAYER: PlayerType = 'youtube';
 
 export const MAX_NODES = 2000;
 export const NODE_AMOUNT_PRESETS = [2000, 1000, 500, 200, 100, 50];
@@ -53,6 +61,8 @@ export const EMPTY_GENRE_FILTER_OBJECT: InitialGenreFilter = {
     isRoot: true,
     parents: {},
 };
+
+export const MAX_YTID_QUEUE_SIZE = 200;
 
 export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
 export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
