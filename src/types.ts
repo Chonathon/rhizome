@@ -122,3 +122,12 @@ export interface Preferences {
     theme?: Theme;
     player?: PlayerType;
 }
+
+export type Social = 'google' | 'apple';
+
+export interface AuthError {
+    code?: string | undefined;
+    message?: string | undefined;
+    status: number;
+    statusText: string;
+}

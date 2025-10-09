@@ -35,9 +35,11 @@ interface AppSidebarProps {
   graph: GraphType;
   onGraphChange: (g: GraphType) => void;
   resetAppState: () => void;
+  onCollectionClick: () => void;
+  onExploreClick: () => void;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, onExploreClick, onCollectionClick }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { recentSelections } = useRecentSelections()
   const { toggleSidebar } = useSidebar()
@@ -86,7 +88,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       </SidebarMenuItem>
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild tooltip="Collection" size="xl">
-                          <button onClick={() => window.dispatchEvent(new Event('auth:open'))}>
+                          <button onClick={onCollectionClick}>
                             <BookOpen />
                             <span className="truncate">Collection</span>
                           </button>
@@ -115,7 +117,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       </SidebarMenuItem> */}
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={true} tooltip="Explore" size="xl">
-                        <button onClick={resetAppState}>
+                        <button onClick={onExploreClick}>
                           <Telescope />
                           <span>Explore</span>
                         </button>

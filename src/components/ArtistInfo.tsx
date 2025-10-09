@@ -17,7 +17,7 @@ import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
-import { AddButton } from "./ui/AddButton";
+import { AddButton } from "./AddButton";
 
 
 interface ArtistInfoProps {
@@ -37,7 +37,8 @@ interface ArtistInfoProps {
   getGenreNameById?: (id: string) => string | undefined;
   onPlay?: (artist: Artist) => void;
   playLoading?: boolean;
-  onArtistLike: (id: string | undefined) => void;
+  onArtistToggle: (id: string | undefined) => void;
+  isInCollection: boolean;
 }
 
 export function ArtistInfo({
@@ -57,7 +58,8 @@ export function ArtistInfo({
   getGenreNameById,
   onPlay,
   playLoading,
-  onArtistLike,
+  onArtistToggle,
+  isInCollection,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -192,10 +194,8 @@ export function ArtistInfo({
                             </Button>
                             <AddButton
                               isDesktop={isDesktop}
-                              // onToggle={() => toast('Feature coming soon!')}
-                             // isInCollection={isInCollection}
-                             // onToggle={() => console.log('Toggle collection state')}
-                             
+                              onToggle={() => onArtistToggle(selectedArtist?.id)}
+                              isInCollection={isInCollection}
                             />
                            {/* <Button
                               size={isDesktop ? "lg" : "xl"}

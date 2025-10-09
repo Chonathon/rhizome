@@ -147,11 +147,13 @@ function App() {
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
+  const [collectionMode, setCollectionMode] = useState<boolean>(false);
   const {
     userID,
     userName,
     userEmail,
     signIn,
+    signInSocial,
     signUp,
     signOut,
     session,
@@ -818,13 +820,37 @@ function App() {
     return { genre, isRoot, parents };
   }
 
-  const onAddArtistButtonClick = async (artistID?: string) => {
-    if (userID && artistID) {
-      console.log(`${userID} trying to add ${artistID}...`)
-      await likeArtist(artistID);
-      console.log('success!')
+  const onAddArtistButtonToggle = async (artistID?: string) => {
+    if (userID) {
+      if (!artistID) return;
+      if (likedArtists && isInCollection(artistID)) {
+        await unlikeArtist(artistID);
+      } else {
+        await likeArtist(artistID);
+      }
     } else {
       window.dispatchEvent(new Event('auth:open'));
+    }
+  }
+
+  const isInCollection = (artistID?: string) => {
+    return artistID ? likedArtists.includes(artistID) : false;
+  }
+
+  const onCollectionClick = () => {
+    if (userID) {
+      setCollectionMode(true);
+    } else {
+      window.dispatchEvent(new Event('auth:open'));
+    }
+  }
+
+  const onExploreClick = () => {
+    if (userID) {
+      setCollectionMode(false);
+      // do we reset?
+    } else {
+      resetAppState();
     }
   }
 
@@ -838,6 +864,8 @@ function App() {
         graph={graph}
         onGraphChange={onTabChange}
         resetAppState={resetAppState}
+        onCollectionClick={onCollectionClick}
+        onExploreClick={onExploreClick}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -1047,9 +1075,9 @@ function App() {
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
                 onPlay={onPlayArtist}
-                //playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
                 playLoading={isPlayerLoadingArtist()}
-                onArtistLike={onAddArtistButtonClick}
+                onArtistToggle={onAddArtistButtonToggle}
+                isInCollection={isInCollection(selectedArtist?.id)}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
@@ -1102,7 +1130,7 @@ function App() {
           />
         </div>
       </AppSidebar>
-      <AuthOverlay onSignUp={signUp} />
+      <AuthOverlay onSignUp={signUp} onSignInSocial={signInSocial} />
       <FeedbackOverlay />
     </SidebarProvider>
   );

@@ -12,12 +12,14 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import RhizomeLogo from "./RhizomeLogo";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import {Social} from "@/types";
 
 interface AuthOverlayProps {
   onSignUp: (email: string, password: string, name: string) => void;
+  onSignInSocial: (social: Social) => void;
 }
 
-function AuthOverlay({onSignUp}: AuthOverlayProps) {
+function AuthOverlay({onSignUp, onSignInSocial}: AuthOverlayProps) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -68,7 +70,7 @@ function AuthOverlay({onSignUp}: AuthOverlayProps) {
                   {isMobile ? '' : 'Sign up with Apple'}
                 </Button>
                 <Button className="flex-1 sm:p-2 p-4" variant="outline" size={isMobile ? "xl" : "default"} type="button"
-                onClick={() => toast('Google sign-in not yet implemented 🙃')}>
+                onClick={() => onSignInSocial('google')}>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
                       d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"

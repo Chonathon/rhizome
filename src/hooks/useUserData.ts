@@ -2,13 +2,11 @@ import {useEffect, useState} from "react";
 import {Preferences} from "@/types";
 import {serverUrl} from "@/lib/utils";
 import axios, {AxiosError} from "axios";
-import { useSet } from "@uidotdev/usehooks";
 
 const url = serverUrl();
 
 export const useUserData = (userID?: string) => {
     const [likedArtists, setLikedArtists] = useState<string[]>([]);
-    //const likedArtists = useSet<string>([]);
     const [preferences, setPreferences] = useState<Preferences>();
     const [userLoading, setUserLoading] = useState<boolean>(false);
     const [userError, setUserError] = useState<AxiosError>();
@@ -21,8 +19,7 @@ export const useUserData = (userID?: string) => {
                 const response = await axios.get(`${url}/users/${userID}`);
                 setPreferences(response.data.preferences);
                 if (response.data.liked && response.data.liked.length) {
-                    setLikedArtists(response.data.liked.map((l: { id: string, date: string}) => l.id));
-                    //response.data.liked.forEach((l: { id: string, date: string}) => likedArtists.add(l.id));
+                    setLikedArtists(response.data.liked.map((l: { id: string, date: Date }) => l.id));
                 }
             } catch (err) {
                 if (err instanceof AxiosError) {
@@ -39,7 +36,6 @@ export const useUserData = (userID?: string) => {
                 const response = await axios.put(`${url}/users/like/${userID}/${artistID}`);
                 if (response.status === 200) {
                     setLikedArtists([...likedArtists, artistID]);
-                    //likedArtists.add(artistID);
                     return true;
                 }
             } catch (err) {
@@ -57,7 +53,6 @@ export const useUserData = (userID?: string) => {
                 const response = await axios.put(`${url}/users/unlike/${userID}/${artistID}`);
                 if (response.status === 200) {
                     setLikedArtists(likedArtists.filter(a => a !== artistID));
-                    //likedArtists.delete(artistID);
                     return true;
                 }
             } catch (err) {
