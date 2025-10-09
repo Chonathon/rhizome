@@ -7,6 +7,8 @@ import {
     PlayerType
 } from "@/types";
 
+export const SERVER_DEPLOYMENT_URL = 'https://rhizome-server-production.up.railway.app';
+
 export const DEFAULT_NODE_COUNT = 2000;
 export const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
 export const DEFAULT_GENRE_LIMIT_TYPE: GenreNodeLimitType = 'artistCount';

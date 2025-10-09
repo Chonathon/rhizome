@@ -13,10 +13,15 @@ import { toast } from "sonner";
 import RhizomeLogo from "./RhizomeLogo";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
+interface AuthOverlayProps {
+  onSignUp: (email: string, password: string, name: string) => void;
+}
 
-function AuthOverlay() {
+function AuthOverlay({onSignUp}: AuthOverlayProps) {
   const [open, setOpen] = useState(false);
-const isMobile = useMediaQuery("(max-width: 640px)");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   useEffect(() => {
     const handleOpen = () => setOpen(true);
@@ -26,7 +31,10 @@ const isMobile = useMediaQuery("(max-width: 640px)");
     };
   }, []);
 
-const emailRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const onSubmit = () => {
+    onSignUp(email, password, email.split('@')[0]);
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -85,6 +93,8 @@ const emailRef = useRef<HTMLInputElement>(null);
                     type="email"
                     placeholder="m@example.com"
                     ref={emailRef}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
@@ -98,10 +108,16 @@ const emailRef = useRef<HTMLInputElement>(null);
                       Forgot your password?
                     </a>
                   </div>
-                  <Input id="password" type="password" required />
+                  <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                  />
                 </div>
                 <Button type="submit" size="lg" className="w-full mt-2"
-                onClick={() => toast('Oof, not even email sign-up is implemented 😬')}>
+                onClick={onSubmit}>
                   Continue
                 </Button>
               </div>

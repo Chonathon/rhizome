@@ -36,6 +36,7 @@ interface ArtistInfoProps {
   getGenreNameById?: (id: string) => string | undefined;
   onPlay?: (artist: Artist) => void;
   playLoading?: boolean;
+  onArtistLike: (id: string | undefined) => void;
 }
 
 export function ArtistInfo({
@@ -55,6 +56,7 @@ export function ArtistInfo({
   getGenreNameById,
   onPlay,
   playLoading,
+  onArtistLike,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -190,7 +192,7 @@ export function ArtistInfo({
                            <Button
                               size={isDesktop ? "lg" : "xl"}
                               variant="secondary"
-                              onClick={() => window.dispatchEvent(new Event('auth:open'))}
+                              onClick={() => onArtistLike(selectedArtist ? selectedArtist.id : undefined)}
                               className={isDesktop ? 'self-start' : 'flex-1'}
                                                 >
                               <SquarePlus size={24}/>Add

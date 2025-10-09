@@ -64,6 +64,8 @@ import AuthOverlay from '@/components/AuthOverlay';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
+import useAuth from "@/hooks/useAuth";
+import {useUserData} from "@/hooks/useUserData";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -145,6 +147,28 @@ function App() {
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
+  const {
+    userID,
+    userName,
+    userEmail,
+    signIn,
+    signUp,
+    signOut,
+    session,
+    isSessionLoading,
+    sessionError,
+    refetchSession,
+  } = useAuth();
+  const {
+    likedArtists,
+    preferences,
+    userLoading,
+    userError,
+    resetUserError,
+    likeArtist,
+    unlikeArtist,
+    updatePreferences,
+  } = useUserData(userID);
 
   // Track window size and pass to ForceGraph for reliable resizing
   useEffect(() => {
@@ -794,6 +818,16 @@ function App() {
     return { genre, isRoot, parents };
   }
 
+  const onAddArtistButtonClick = async (artistID?: string) => {
+    if (userID && artistID) {
+      console.log(`${userID} trying to add ${artistID}...`)
+      await likeArtist(artistID);
+      console.log('success!')
+    } else {
+      window.dispatchEvent(new Event('auth:open'));
+    }
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -1015,6 +1049,7 @@ function App() {
                 onPlay={onPlayArtist}
                 //playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
                 playLoading={isPlayerLoadingArtist()}
+                onArtistLike={onAddArtistButtonClick}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
@@ -1067,7 +1102,7 @@ function App() {
           />
         </div>
       </AppSidebar>
-      <AuthOverlay />
+      <AuthOverlay onSignUp={signUp} />
       <FeedbackOverlay />
     </SidebarProvider>
   );

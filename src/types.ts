@@ -115,3 +115,10 @@ export interface TopTrackPlayIDs {
 }
 
 export type PlayerType = 'youtube' | 'spotify' | 'apple';
+
+export type Theme = 'light' | 'dark' | 'system';
+
+export interface Preferences {
+    theme?: Theme;
+    player?: PlayerType;
+}

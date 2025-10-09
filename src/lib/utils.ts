@@ -13,7 +13,7 @@ import {
   CHILD_FIELD_MAP,
   CLUSTER_COLORS,
   SINGLETON_PARENT_GENRE,
-  SINGLETON_PARENT_COLOR
+  SINGLETON_PARENT_COLOR, SERVER_DEPLOYMENT_URL
 } from "@/constants";
 
 export function cn(...inputs: ClassValue[]) {
@@ -34,6 +34,13 @@ export const formatNumber = (value: number) =>
 
 export const envBoolean = (value: string) => {
   return value && (value.toLowerCase() === 'true' || parseInt(value) === 1);
+}
+
+export const serverUrl = () => {
+  return envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
+      ? import.meta.env.VITE_LOCALHOST
+      : (import.meta.env.VITE_SERVER_URL
+          || (import.meta.env.DEV ? '/api' : SERVER_DEPLOYMENT_URL));
 }
 
 export const primitiveArraysEqual = (a: Array<string | number>, b: Array<string | number>) => {
