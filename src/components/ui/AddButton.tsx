@@ -39,14 +39,14 @@ export function AddButton({ onToggle, isDesktop, className, loggedIn=false }: Ad
       onClick={handleClick}
       aria-pressed={isInCollection}
     >
-      <span className="relative inline-flex size-4 items-center justify-center">
+      <span className={`relative inline-flex items-center justify-center shrink-0 ${isDesktop ? "size-4" : "size-5"}`}>
         <CheckSquare
           aria-hidden="true"
-          className={`absolute transition-all duration-200 ease-in-out ${isInCollection ? " opacity-100" : " opacity-0"}`}
+          className={`absolute transition-all duration-200 ease-in-out pointer-events-none ${isInCollection ? " opacity-100" : " opacity-0"}`}
         />
         <PlusSquare
           aria-hidden="true"
-          className={`absolute transition-all duration-200 ease-in-out ${isInCollection ? " opacity-0" : " opacity-100"}`}
+          className={`absolute transition-all duration-200 ease-in-out pointer-events-none ${isInCollection ? " opacity-0" : " opacity-100"}`}
         />
       </span>
       <span>{isInCollection ? "Added" : "Add"}</span>

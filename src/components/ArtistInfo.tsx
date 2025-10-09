@@ -195,14 +195,14 @@ export function ArtistInfo({
                              // onToggle={() => console.log('Toggle collection state')}
                              
                             />
-                           {/* <Button
+                           <Button
                               size={isDesktop ? "lg" : "xl"}
                               variant="secondary"
                               onClick={() => window.dispatchEvent(new Event('auth:open'))}
                               className={isDesktop ? 'self-start' : 'flex-1'}
                                                 >
                               <SquarePlus size={24}/>Add
-                            </Button> */}
+                            </Button>
 
                        <DropdownMenu>
                          <DropdownMenuTrigger asChild>
