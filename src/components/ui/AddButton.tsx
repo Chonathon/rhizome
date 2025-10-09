@@ -21,17 +21,28 @@ export function AddButton({ onToggle, isDesktop, className }: AddButtonProps) {
       toast.success("Added to your collection");
       setIsInCollection(true);
     }
+    onToggle();
   };
   
   return (
     <Button
       variant={isInCollection ? "default" : "secondary"}
-      className={className || (isDesktop ? "self-start" : "flex-1")}
+      className={className || (isDesktop ? "px-4 self-start" : "px-4  flex-1")}
       size={isDesktop ? "lg" : "xl"}
       onClick={handleClick}
+      aria-pressed={isInCollection}
     >
-      {isInCollection ? <CheckSquare /> : <PlusSquare />}
-      {isInCollection ? "Added" : "Add"}
+      <span className="relative inline-flex size-4 items-center justify-center">
+        <CheckSquare
+          aria-hidden="true"
+          className={`absolute transition-all duration-300 ease-in-out ${isInCollection ? " opacity-100" : " opacity-0"}`}
+        />
+        <PlusSquare
+          aria-hidden="true"
+          className={`absolute transition-all duration-300 ease-in-out ${isInCollection ? " opacity-0" : " opacity-100"}`}
+        />
+      </span>
+      <span>{isInCollection ? "Added" : "Add"}</span>
     </Button>
   );
 }
