@@ -4,7 +4,7 @@ import { Button } from "./button";
 import { CheckSquare, PlusSquare } from "lucide-react";
 
 interface AddButtonProps {
-  // isInCollection?: boolean;
+  isInCollection?: boolean;
   onToggle: () => void;
   isDesktop?: boolean;
   className?: string;
@@ -12,6 +12,7 @@ interface AddButtonProps {
 
 
 export function AddButton({ onToggle, isDesktop, className }: AddButtonProps) {
+  // Local state. Replace with prop
   const [isInCollection, setIsInCollection] = useState(false);
   const handleClick = () => {
     if (isInCollection) {
@@ -35,11 +36,11 @@ export function AddButton({ onToggle, isDesktop, className }: AddButtonProps) {
       <span className="relative inline-flex size-4 items-center justify-center">
         <CheckSquare
           aria-hidden="true"
-          className={`absolute transition-all duration-300 ease-in-out ${isInCollection ? " opacity-100" : " opacity-0"}`}
+          className={`absolute transition-all duration-200 ease-in-out ${isInCollection ? " opacity-100" : " opacity-0"}`}
         />
         <PlusSquare
           aria-hidden="true"
-          className={`absolute transition-all duration-300 ease-in-out ${isInCollection ? " opacity-0" : " opacity-100"}`}
+          className={`absolute transition-all duration-200 ease-in-out ${isInCollection ? " opacity-0" : " opacity-100"}`}
         />
       </span>
       <span>{isInCollection ? "Added" : "Add"}</span>
