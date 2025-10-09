@@ -17,6 +17,7 @@ import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
+import { AddButton } from "./ui/AddButton";
 
 
 interface ArtistInfoProps {
@@ -187,14 +188,21 @@ export function ArtistInfo({
                               {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
                               Play
                             </Button>
-                           <Button
+                            <AddButton
+                              isDesktop={isDesktop}
+                              // onToggle={() => toast('Feature coming soon!')}
+                             // isInCollection={isInCollection}
+                             // onToggle={() => console.log('Toggle collection state')}
+                             
+                            />
+                           {/* <Button
                               size={isDesktop ? "lg" : "xl"}
                               variant="secondary"
                               onClick={() => window.dispatchEvent(new Event('auth:open'))}
                               className={isDesktop ? 'self-start' : 'flex-1'}
                                                 >
                               <SquarePlus size={24}/>Add
-                            </Button>
+                            </Button> */}
 
                        <DropdownMenu>
                          <DropdownMenuTrigger asChild>
