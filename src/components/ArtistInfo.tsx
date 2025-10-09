@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2 } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -203,7 +203,7 @@ export function ArtistInfo({
                               }}
                               className={isDesktop ? 'self-start' : 'flex-1'}
                             >
-                              <SquarePlus size={24}/>{isInCollection ? 'Added' : 'Add'}
+                              {isInCollection ? <Check size={24} /> : <SquarePlus size={24} />}{isInCollection ? 'Added' : 'Add'}
                             </Button>
 
                        <DropdownMenu>
