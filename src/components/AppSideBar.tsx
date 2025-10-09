@@ -150,6 +150,9 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                               {/* <span>Support & Feedback</span> */}
                             </button>
                           </SidebarMenuButton>
+                          <SidebarMenuButton className="group-data-[collapsible=icon]:opacity-0 " size={"xl"} tooltip="Feedback & Requests" asChild>
+                            <a href='https://ko-fi.com/E1E11MJ7CR' target='_blank'><img  className='' src='https://storage.ko-fi.com/cdn/kofi3.png?v=6' alt='Buy Me a Coffee at ko-fi.com' /></a>
+                          </SidebarMenuButton>
                           <SidebarMenuButton className="" size={"xl"} asChild>
                             <button onClick={() => toggleSidebar()}>
                               <SidebarIcon size={20} />
