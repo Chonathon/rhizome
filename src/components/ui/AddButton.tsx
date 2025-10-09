@@ -5,16 +5,21 @@ import { CheckSquare, PlusSquare } from "lucide-react";
 
 interface AddButtonProps {
   isInCollection?: boolean;
+  loggedIn?: boolean;
   onToggle: () => void;
   isDesktop?: boolean;
   className?: string;
 }
 
 
-export function AddButton({ onToggle, isDesktop, className }: AddButtonProps) {
+export function AddButton({ onToggle, isDesktop, className, loggedIn=false }: AddButtonProps) {
   // Local state. Replace with prop
   const [isInCollection, setIsInCollection] = useState(false);
   const handleClick = () => {
+    if (!loggedIn) {
+      window.dispatchEvent(new Event('auth:open'));
+      return;
+    }
     if (isInCollection) {
       toast.error("Removed from your collection");
       setIsInCollection(false);
@@ -22,6 +27,7 @@ export function AddButton({ onToggle, isDesktop, className }: AddButtonProps) {
       toast.success("Added to your collection");
       setIsInCollection(true);
     }
+
     onToggle();
   };
   
