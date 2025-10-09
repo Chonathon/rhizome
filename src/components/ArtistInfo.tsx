@@ -17,6 +17,7 @@ import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
+import { AddButton } from "./ui/AddButton";
 
 
 interface ArtistInfoProps {
@@ -187,6 +188,7 @@ export function ArtistInfo({
                               {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
                               Play
                             </Button>
+                            <AddButton>Add</AddButton>
                            <Button
                               size={isDesktop ? "lg" : "xl"}
                               variant="secondary"
