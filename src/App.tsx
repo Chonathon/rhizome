@@ -31,7 +31,7 @@ import {
   mixColors,
   primitiveArraysEqual,
   fixWikiImageURL,
-  until,
+  until, assignDegreesToArtists,
 } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -56,7 +56,7 @@ import {
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
-  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER
+  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, MAX_DEGREES
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -148,6 +148,7 @@ function App() {
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
   const [collectionMode, setCollectionMode] = useState<boolean>(false);
+  const [separationDegrees, setSeparationDegrees] = useState<number>(0);
   const {
     userID,
     userName,
@@ -854,6 +855,18 @@ function App() {
     }
   }
 
+  const setDegrees = (value: number) => {
+    if (currentArtists && likedArtists && likedArtists.length) {
+      const degreeArtists = assignDegreesToArtists(currentArtists, likedArtists).filter(da => da.degree === 0 || (da.degree && da.degree <= value));
+      const artistSet = new Set(degreeArtists.map(a => a.id));
+      const newLinks = currentArtistLinks.filter(l => {
+        return artistSet.has(l.source) && artistSet.has(l.target);
+      })
+      setCurrentArtists(degreeArtists);
+      setCurrentArtistLinks(newLinks);
+    }
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -1000,6 +1013,14 @@ function App() {
               initialValue={currentArtists.length}
               onChange={(value) => artistNodeCountSelection(value)}
               show={showArtistNodeLimiter()}
+            />
+            {/*For testing node degrees*/}
+            <NodeLimiter
+                totalNodes={MAX_DEGREES}
+                nodeType={'collection'}
+                initialValue={Infinity}
+                onChange={(value) => setDegrees(value)}
+                show={graph === 'artists' && collectionMode}
             />
           </div>}
           {/* right controls */}

@@ -151,6 +151,10 @@ const useAuth = () => {
     //     signIn('', '');
     // }, []);
 
+    useEffect(() => {
+        signIn('bpricedev@gmail.com', 'deathmetal');
+    }, []);
+
     return {
         userID,
         userName,

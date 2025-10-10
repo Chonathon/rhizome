@@ -39,6 +39,7 @@ export interface Artist extends BasicNode {
     badDataFlag?: boolean;
     topTracks?: TopTrack[];
     noTopTracks?: boolean;
+    degree?: number;
 }
 
 export interface BasicNode {
