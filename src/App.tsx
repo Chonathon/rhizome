@@ -56,7 +56,7 @@ import {
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
-  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, MAX_DEGREES
+  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -826,8 +826,10 @@ function App() {
       if (!artistID) return;
       if (likedArtists && isInCollection(artistID)) {
         await unlikeArtist(artistID);
+        console.log(`Liked ${artistID} as ${userName}`);
       } else {
         await likeArtist(artistID);
+        console.log(`Unliked ${artistID} as ${userName}`);
       }
     } else {
       window.dispatchEvent(new Event('auth:open'));
@@ -1016,7 +1018,7 @@ function App() {
             />
             {/*For testing node degrees*/}
             <NodeLimiter
-                totalNodes={MAX_DEGREES}
+                totalNodes={6}
                 nodeType={'collection'}
                 initialValue={Infinity}
                 onChange={(value) => setDegrees(value)}
@@ -1077,7 +1079,6 @@ function App() {
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
                 onPlayGenre={onPlayGenre}
-                //playLoading={playerLoading && (!!selectedGenres[0] ? playerLoadingKey === `genre:${selectedGenres[0].id}` : false)}
                 playLoading={isPlayerLoadingGenre()}
               />
               <ArtistInfo

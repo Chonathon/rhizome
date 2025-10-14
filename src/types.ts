@@ -124,11 +124,12 @@ export interface Preferences {
     player?: PlayerType;
 }
 
-export type Social = 'google' | 'apple';
+export type Social = 'google' | 'spotify';
 
-export interface AuthError {
-    code?: string | undefined;
-    message?: string | undefined;
-    status: number;
-    statusText: string;
+export interface User {
+    id: string;
+    name: string;
+    email: string;
+    liked: string[];
+    preferences: Preferences;
 }

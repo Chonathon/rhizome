@@ -35,8 +35,6 @@ const useAuth = () => {
         setAuthLoading(true);
         const { data, error } = await authClient.signIn.social({
             provider: social,
-            callbackURL: '/',
-            newUserCallbackURL: ''
         }, {
             onError: (ctx) => {
                 setAuthError(ctx.error.message);
@@ -151,9 +149,9 @@ const useAuth = () => {
     //     signIn('', '');
     // }, []);
 
-    useEffect(() => {
-        signIn('bpricedev@gmail.com', 'deathmetal');
-    }, []);
+    // useEffect(() => {
+    //     signIn('bpricedev@gmail.com', 'deathmetal');
+    // }, []);
 
     return {
         userID,
