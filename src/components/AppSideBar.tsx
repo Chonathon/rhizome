@@ -150,6 +150,12 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                               {/* <span>Support & Feedback</span> */}
                             </button>
                           </SidebarMenuButton>
+                          <SidebarMenuButton className="" size={"xl"} tooltip="Feedback & Requests" asChild>
+                            <button onClick={() => window.dispatchEvent(new Event('settings:open'))}>
+                              <CircleHelp size={20} />
+                              {/* <span>Support & Feedback</span> */}
+                            </button>
+                          </SidebarMenuButton>
                           <SidebarMenuButton className="" size={"xl"} asChild>
                             <button onClick={() => toggleSidebar()}>
                               <SidebarIcon size={20} />

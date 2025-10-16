@@ -1,6 +1,6 @@
 import './App.css'
 import {useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, TextSearch } from 'lucide-react'
+import { ChevronDown, Divide, Settings, TextSearch } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -64,6 +64,7 @@ import AuthOverlay from '@/components/AuthOverlay';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
+import SettingsOverlay from '@/components/SettingsOverlay';
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -1067,6 +1068,7 @@ function App() {
           />
         </div>
       </AppSidebar>
+      <SettingsOverlay />
       <AuthOverlay />
       <FeedbackOverlay />
     </SidebarProvider>
