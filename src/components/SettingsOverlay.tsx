@@ -75,164 +75,168 @@ function SettingsOverlay() {
           Customize your settings here.
         </DialogDescription>
         <SidebarProvider className="items-start">
-          <Sidebar collapsible="none"  className="hidden md:flex w-auto">
-            <SidebarContent>
-                <SidebarHeader className="">
-                  <h2 className="text-md font-semibold">Settings</h2>
-                </SidebarHeader>
-              <SidebarGroup>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {data.nav.map((item) => (
-                      <SidebarMenuItem key={item.name}>
-                        <SidebarMenuButton
-                          asChild
-                          size="lg"
-                        variant="outline"
-                          isActive={item.name === "Profile"}
-                        >
-                          <a href="#">
-                            <item.icon />
-                            <span>{item.name}</span>
-                          </a>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </SidebarContent>
-          </Sidebar>
-          <main className="flex min-h-0 pb-[160px] px-3 no-scrollbar flex-1 flex-col overflow-y-auto">
+          <div className="flex min-h-0 w-full h-160">
+            <Sidebar collapsible="none"  className="hidden md:flex w-auto">
+              <SidebarContent>
+                  <SidebarHeader className="">
+                    <h2 className="text-md font-semibold">Settings</h2>
+                  </SidebarHeader>
+                <SidebarGroup>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {data.nav.map((item) => (
+                        <SidebarMenuItem key={item.name}>
+                          <SidebarMenuButton
+                            asChild
+                            size="lg"
+                          variant="outline"
+                            isActive={item.name === "Profile"}
+                          >
+                            <a href="#">
+                              <item.icon />
+                              <span>{item.name}</span>
+                            </a>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              </SidebarContent>
+            </Sidebar>
+            <main className="flex px-3 no-scrollbar flex-1 flex-col overflow-y-auto">
             {/* <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
             </header> */}
-                <div className="bg-muted/50 mt-11 max-w-3xl rounded-xl p-4">
-                  <form>
-                      <FieldGroup>
-                      <FieldSet>
-                          <FieldLegend>Profile</FieldLegend>
-                          <FieldDescription>
-                          All transactions are secure and encrypted
-                          </FieldDescription>
+                <div className="flex-1 pb-16">
+                    <div className="bg-muted/50 mt-11 max-w-3xl rounded-xl p-4">
+                      <form>
                           <FieldGroup>
-                          <Field>
-                              <FieldLabel htmlFor="Preferred Name">
-                              Preferred Name
-                              </FieldLabel>
-                              <Input
-                              id="Preferred Name"
-                              placeholder="Evil Rabbit"
-                              required
-                              />
-                          </Field>
-                          <Field>
-                              <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
-                              Card Number
-                              </FieldLabel>
-                              <Input
-                              id="checkout-7j9-card-number-uw1"
-                              placeholder="1234 5678 9012 3456"
-                              required
-                              />
+                          <FieldSet>
+                              <FieldLegend>Profile</FieldLegend>
                               <FieldDescription>
-                              Enter your 16-digit card number
+                              All transactions are secure and encrypted
                               </FieldDescription>
-                          </Field>
-                          <div className="grid grid-cols-3 gap-4">
+                              <FieldGroup>
                               <Field>
-                              <FieldLabel htmlFor="checkout-exp-month-ts6">
-                                  Month
-                              </FieldLabel>
-                              <Select defaultValue="">
-                                  <SelectTrigger id="checkout-exp-month-ts6">
-                                  <SelectValue placeholder="MM" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                  <SelectItem value="01">01</SelectItem>
-                                  <SelectItem value="02">02</SelectItem>
-                                  <SelectItem value="03">03</SelectItem>
-                                  <SelectItem value="04">04</SelectItem>
-                                  <SelectItem value="05">05</SelectItem>
-                                  <SelectItem value="06">06</SelectItem>
-                                  <SelectItem value="07">07</SelectItem>
-                                  <SelectItem value="08">08</SelectItem>
-                                  <SelectItem value="09">09</SelectItem>
-                                  <SelectItem value="10">10</SelectItem>
-                                  <SelectItem value="11">11</SelectItem>
-                                  <SelectItem value="12">12</SelectItem>
-                                  </SelectContent>
-                              </Select>
+                                  <FieldLabel htmlFor="Preferred Name">
+                                  Preferred Name
+                                  </FieldLabel>
+                                  <Input
+                                  id="Preferred Name"
+                                  placeholder="Evil Rabbit"
+                                  required
+                                  />
                               </Field>
                               <Field>
-                              <FieldLabel htmlFor="checkout-7j9-exp-year-f59">
-                                  Year
-                              </FieldLabel>
-                              <Select defaultValue="">
-                                  <SelectTrigger id="checkout-7j9-exp-year-f59">
-                                  <SelectValue placeholder="YYYY" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                  <SelectItem value="2024">2024</SelectItem>
-                                  <SelectItem value="2025">2025</SelectItem>
-                                  <SelectItem value="2026">2026</SelectItem>
-                                  <SelectItem value="2027">2027</SelectItem>
-                                  <SelectItem value="2028">2028</SelectItem>
-                                  <SelectItem value="2029">2029</SelectItem>
-                                  </SelectContent>
-                              </Select>
+                                  <FieldLabel htmlFor="checkout-7j9-card-number-uw1">
+                                  Card Number
+                                  </FieldLabel>
+                                  <Input
+                                  id="checkout-7j9-card-number-uw1"
+                                  placeholder="1234 5678 9012 3456"
+                                  required
+                                  />
+                                  <FieldDescription>
+                                  Enter your 16-digit card number
+                                  </FieldDescription>
                               </Field>
+                              <div className="grid grid-cols-3 gap-4">
+                                  <Field>
+                                  <FieldLabel htmlFor="checkout-exp-month-ts6">
+                                      Month
+                                  </FieldLabel>
+                                  <Select defaultValue="">
+                                      <SelectTrigger id="checkout-exp-month-ts6">
+                                      <SelectValue placeholder="MM" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                      <SelectItem value="01">01</SelectItem>
+                                      <SelectItem value="02">02</SelectItem>
+                                      <SelectItem value="03">03</SelectItem>
+                                      <SelectItem value="04">04</SelectItem>
+                                      <SelectItem value="05">05</SelectItem>
+                                      <SelectItem value="06">06</SelectItem>
+                                      <SelectItem value="07">07</SelectItem>
+                                      <SelectItem value="08">08</SelectItem>
+                                      <SelectItem value="09">09</SelectItem>
+                                      <SelectItem value="10">10</SelectItem>
+                                      <SelectItem value="11">11</SelectItem>
+                                      <SelectItem value="12">12</SelectItem>
+                                      </SelectContent>
+                                  </Select>
+                                  </Field>
+                                  <Field>
+                                  <FieldLabel htmlFor="checkout-7j9-exp-year-f59">
+                                      Year
+                                  </FieldLabel>
+                                  <Select defaultValue="">
+                                      <SelectTrigger id="checkout-7j9-exp-year-f59">
+                                      <SelectValue placeholder="YYYY" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                      <SelectItem value="2024">2024</SelectItem>
+                                      <SelectItem value="2025">2025</SelectItem>
+                                      <SelectItem value="2026">2026</SelectItem>
+                                      <SelectItem value="2027">2027</SelectItem>
+                                      <SelectItem value="2028">2028</SelectItem>
+                                      <SelectItem value="2029">2029</SelectItem>
+                                      </SelectContent>
+                                  </Select>
+                                  </Field>
+                                  <Field>
+                                  <FieldLabel htmlFor="checkout-7j9-cvv">CVV</FieldLabel>
+                                  <Input id="checkout-7j9-cvv" placeholder="123" required />
+                                  </Field>
+                              </div>
+                              </FieldGroup>
+                          </FieldSet>
+                          <FieldSeparator />
+                          <FieldSet>
+                              <FieldLegend>Billing Address</FieldLegend>
+                              <FieldDescription>
+                              The billing address associated with your payment method
+                              </FieldDescription>
+                              <FieldGroup>
+                              <Field orientation="horizontal">
+                                  <Checkbox
+                                  id="checkout-7j9-same-as-shipping-wgm"
+                                  defaultChecked
+                                  />
+                                  <FieldLabel
+                                  htmlFor="checkout-7j9-same-as-shipping-wgm"
+                                  className="font-normal"
+                                  >
+                                  Same as shipping address
+                                  </FieldLabel>
+                              </Field>
+                              </FieldGroup>
+                          </FieldSet>
+                          <FieldSet>
+                              <FieldGroup>
                               <Field>
-                              <FieldLabel htmlFor="checkout-7j9-cvv">CVV</FieldLabel>
-                              <Input id="checkout-7j9-cvv" placeholder="123" required />
+                                  <FieldLabel htmlFor="checkout-7j9-optional-comments">
+                                  Comments
+                                  </FieldLabel>
+                                  <Textarea
+                                  id="checkout-7j9-optional-comments"
+                                  placeholder="Add any additional comments"
+                                  className="resize-none"
+                                  />
                               </Field>
-                          </div>
+                              </FieldGroup>
+                          </FieldSet>
                           </FieldGroup>
-                      </FieldSet>
-                      <FieldSeparator />
-                      <FieldSet>
-                          <FieldLegend>Billing Address</FieldLegend>
-                          <FieldDescription>
-                          The billing address associated with your payment method
-                          </FieldDescription>
-                          <FieldGroup>
-                          <Field orientation="horizontal">
-                              <Checkbox
-                              id="checkout-7j9-same-as-shipping-wgm"
-                              defaultChecked
-                              />
-                              <FieldLabel
-                              htmlFor="checkout-7j9-same-as-shipping-wgm"
-                              className="font-normal"
-                              >
-                              Same as shipping address
-                              </FieldLabel>
-                          </Field>
-                          </FieldGroup>
-                      </FieldSet>
-                      <FieldSet>
-                          <FieldGroup>
-                          <Field>
-                              <FieldLabel htmlFor="checkout-7j9-optional-comments">
-                              Comments
-                              </FieldLabel>
-                              <Textarea
-                              id="checkout-7j9-optional-comments"
-                              placeholder="Add any additional comments"
-                              className="resize-none"
-                              />
-                          </Field>
-                          </FieldGroup>
-                      </FieldSet>
-                      </FieldGroup>
-                      <Field orientation="horizontal">
-                          <Button type="submit">Submit</Button>
-                          <Button variant="outline" type="button">
-                          Cancel
-                          </Button>
-                      </Field>
-                  </form>
+                          {/* <Field orientation="horizontal">
+                              <Button type="submit">Submit</Button>
+                              <Button variant="outline" type="button">
+                              Cancel
+                              </Button>
+                          </Field> */}
+                      </form>
+                    </div>
                 </div>
-          </main>
+            </main>
+          </div>
         </SidebarProvider>
       </DialogContent>
     </Dialog>
