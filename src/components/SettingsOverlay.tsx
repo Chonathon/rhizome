@@ -58,12 +58,12 @@ function SettingsOverlay() {
         <Button size="sm">Open Dialog</Button>
       </DialogTrigger>
       <DialogContent className="overflow-hidden bg-card md:max-h-[500px] p-0 md:max-w-[700px] lg:max-w-[800px]">
-        <DialogTitle className="p-6 pb-4">Settings</DialogTitle>
+        <DialogTitle className="p-6 pb-3">Settings</DialogTitle>
         <DialogDescription className="sr-only">
           Customize your settings here.
         </DialogDescription>
         <SidebarProvider className="items-start">
-          <Sidebar collapsible="none" className="pl-3 hidden md:flex w-[9rem]">
+          <Sidebar collapsible="none" className="pl-3 hidden md:flex w-auto">
             <SidebarContent>
               <SidebarGroup>
                 <SidebarGroupContent>
@@ -72,6 +72,8 @@ function SettingsOverlay() {
                       <SidebarMenuItem key={item.name}>
                         <SidebarMenuButton
                           asChild
+                          size="lg"
+                        variant="outline"
                           isActive={item.name === "Profile"}
                         >
                           <a href="#">
