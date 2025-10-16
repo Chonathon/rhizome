@@ -109,9 +109,9 @@ function SettingsOverlay() {
             {/* <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
             </header> */}
             {/* Group */}
-                <div className="flex-1 pb-16">
+                <div className="flex-1 mt-11 pb-16 flex flex-col gap-6">
                     {/* Section */}
-                    <div className="bg-muted/50 mt-11 max-w-3xl rounded-xl p-4">
+                    <div className="bg-muted/50 max-w-3xl rounded-xl p-4">
                       <form>
                           <FieldGroup>
                           <FieldSet>
@@ -163,11 +163,11 @@ function SettingsOverlay() {
                       </form>
                     </div>
                     {/* Section */}
-                    <div className="bg-muted/50 mt-11 max-w-3xl rounded-xl p-4">
+                    <div className="bg-muted/50 max-w-3xl rounded-xl p-4">
                       <form>
                           <FieldGroup>
                           <FieldSet>
-                              <FieldLegend>Profile</FieldLegend>
+                              <FieldLegend>Account</FieldLegend>
                               {/* <FieldDescription>
                               
                               </FieldDescription> */}
@@ -175,34 +175,49 @@ function SettingsOverlay() {
                               <Field
                               orientation="responsive"
                               >
-                                  <FieldLabel htmlFor="Preferred Name">
-                                  Preferred Name
-                                  </FieldLabel>
-                                  <Input
-                                  id="Preferred Name"
-                                  placeholder="Greg"
-                                  required
-                                  />
+                                  <FieldContent>
+                                      <FieldLabel htmlFor="Preferred Name">
+                                      Email
+                                      </FieldLabel>
+                                      <FieldDescription>email@email.com</FieldDescription>
+                                  </FieldContent>
+                                  <Button variant="outline" size="sm" className="mt-2">Change Email</Button>
                               </Field>
-                              <FieldSeparator />
-                            <Field
+                              <Field
                               orientation="responsive"
                               >
-                                  <FieldLabel htmlFor="theme">
-                                      Theme
-                                  </FieldLabel>
-                                  <Select defaultValue="system">
-                                      <SelectTrigger id="theme">
-                                      <SelectValue defaultValue="system" placeholder="" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                      <SelectItem value="system">System</SelectItem>
-                                      <SelectItem value="dark">Dark</SelectItem>
-                                      <SelectItem value="light">Light</SelectItem>
-                                      </SelectContent>
-                                  </Select>
-                                  </Field>
-                              </FieldGroup>
+                                  <FieldContent>
+                                      <FieldLabel htmlFor="Preferred Name">
+                                      Password
+                                      </FieldLabel>
+                                      <FieldDescription>Change your password to log in to your account</FieldDescription>
+                                  </FieldContent>
+                                  <Button variant="outline" size="sm" className="mt-2">Change Password</Button>
+                              </Field>
+                              <FieldSeparator />
+                              <Field
+                              orientation="responsive"
+                              >
+                                  <FieldContent>
+                                      <FieldLabel htmlFor="Preferred Name">
+                                      Logout
+                                      </FieldLabel>
+                                      {/* <FieldDescription>Change your password to log in to your account</FieldDescription> */}
+                                  </FieldContent>
+                                  <Button variant="outline" size="sm" className="mt-2">Logout</Button>
+                              </Field>
+                              <Field
+                              orientation="responsive"
+                              >
+                                  <FieldContent>
+                                      <FieldLabel htmlFor="Preferred Name">
+                                      Delete Account
+                                      </FieldLabel>
+                                      {/* <FieldDescription>Change your password to log in to your account</FieldDescription> */}
+                                  </FieldContent>
+                                  <Button variant="outline" size="sm" className="mt-2">Delete Account</Button>
+                              </Field>
+                                </FieldGroup>
                           </FieldSet>
                           
                           </FieldGroup>
