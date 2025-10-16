@@ -70,14 +70,14 @@ function SettingsOverlay() {
       <DialogTrigger asChild>
         <Button size="sm">Open Dialog</Button>
       </DialogTrigger>
-      <DialogContent className="overflow-hidden bg-card max-h-160 p-0 pl-4 md:max-w-[700px] lg:max-w-[800px]">
+      <DialogContent className="overflow-hidden bg-card max-h-160 pt-0 pl-4 md:max-w-[700px] lg:max-w-[800px]">
         <DialogTitle className="p-6 sr-only pb-3 bg-transparent">Settings</DialogTitle>
         <DialogDescription className="sr-only">
           Customize your settings here.
         </DialogDescription>
         <SidebarProvider className="items-start">
           <div className="flex min-h-0 w-full h-160">
-            <Sidebar collapsible="none"  className="hidden md:flex w-auto">
+            <Sidebar collapsible="none"  className="pt-1.5 hidden md:flex w-auto">
               <SidebarContent>
                   <SidebarHeader className="">
                     <h2 className="text-md font-semibold">Settings</h2>
@@ -111,11 +111,12 @@ function SettingsOverlay() {
             {/* Group */}
                 <div className="flex-1 mt-11 pb-16 flex flex-col gap-6">
                     {/* Section */}
-                    <div className="bg-muted/50 max-w-3xl rounded-xl p-4">
+                    <div className="bg-muted/50 max-w-3xl rounded-xl p-6">
                       <form>
                           <FieldGroup>
                           <FieldSet>
                               <FieldLegend>Profile</FieldLegend>
+                              <FieldSeparator />
                               {/* <FieldDescription>
                               
                               </FieldDescription> */}
@@ -163,11 +164,12 @@ function SettingsOverlay() {
                       </form>
                     </div>
                     {/* Section */}
-                    <div className="bg-muted/50 max-w-3xl rounded-xl p-4">
+                    <div className="bg-muted/50 max-w-3xl rounded-xl p-6">
                       <form>
                           <FieldGroup>
                           <FieldSet>
                               <FieldLegend>Account</FieldLegend>
+                              <FieldSeparator />
                               {/* <FieldDescription>
                               
                               </FieldDescription> */}
@@ -181,7 +183,7 @@ function SettingsOverlay() {
                                       </FieldLabel>
                                       <FieldDescription>email@email.com</FieldDescription>
                                   </FieldContent>
-                                  <Button variant="outline" size="sm" className="mt-2">Change Email</Button>
+                                  <Button variant="outline" size="sm">Change Email</Button>
                               </Field>
                               <Field
                               orientation="responsive"
@@ -192,30 +194,26 @@ function SettingsOverlay() {
                                       </FieldLabel>
                                       <FieldDescription>Change your password to log in to your account</FieldDescription>
                                   </FieldContent>
-                                  <Button variant="outline" size="sm" className="mt-2">Change Password</Button>
+                                  <Button variant="outline" size="sm">Change Password</Button>
                               </Field>
                               <FieldSeparator />
                               <Field
                               orientation="responsive"
                               >
-                                  <FieldContent>
                                       <FieldLabel htmlFor="Preferred Name">
                                       Logout
                                       </FieldLabel>
                                       {/* <FieldDescription>Change your password to log in to your account</FieldDescription> */}
-                                  </FieldContent>
-                                  <Button variant="outline" size="sm" className="mt-2">Logout</Button>
+                                  <Button variant="outline" size="sm">Logout</Button>
                               </Field>
                               <Field
                               orientation="responsive"
                               >
-                                  <FieldContent>
-                                      <FieldLabel htmlFor="Preferred Name">
+                                      <FieldLabel className="text-destructive " htmlFor="Preferred Name">
                                       Delete Account
                                       </FieldLabel>
                                       {/* <FieldDescription>Change your password to log in to your account</FieldDescription> */}
-                                  </FieldContent>
-                                  <Button variant="outline" size="sm" className="mt-2">Delete Account</Button>
+                                  <Button variant="destructive" size="sm">Delete Account</Button>
                               </Field>
                                 </FieldGroup>
                           </FieldSet>
