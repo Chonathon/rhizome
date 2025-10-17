@@ -471,7 +471,9 @@ const ConnectionsSection = () => (
         <FieldLegend>Connections</FieldLegend>
         <FieldSeparator />
         <FieldGroup>
-                <Field orientation="responsive">
+            {/* Last FM */}
+                <Field className="border bg-card rounded-2xl p-3" orientation="responsive">
+                    <img aria-hidden="true" src="src/assets/Last.fm Logo.svg" className="size-8 @md/field-group:mr-2"/>
                     <FieldContent>
                     <FieldLabel htmlFor="email">
                         Last.FM
@@ -486,10 +488,10 @@ const ConnectionsSection = () => (
                     Connect
                     </Button>
                 </Field>
-          <p className=" text-sm text-muted-foreground">More connections coming soon...</p>
         </FieldGroup>
       </FieldSet>
     </FieldGroup>
+          <p className="pt-3 text-sm text-muted-foreground">More connections coming soon...</p>
   </SettingsSection>
 )
 
