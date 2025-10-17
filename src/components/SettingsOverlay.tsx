@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useEffect, useState } from "react"
 import { CircleUserRound, Cable, HandHeart } from "lucide-react"
+import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -349,7 +350,10 @@ const ProfileSection = ({
   onChangePassword: () => void;
   onLogout: () => void;
   onDeleteAccount: () => void;
-}) => (
+}) => {
+  const { theme, setTheme } = useTheme()
+
+  return (
   <>
     <SettingsSection>
       <form>
@@ -372,9 +376,9 @@ const ProfileSection = ({
                 <FieldLabel htmlFor="theme">
                   Theme
                 </FieldLabel>
-                <Select defaultValue="system">
+                <Select value={theme} onValueChange={setTheme}>
                   <SelectTrigger id="theme">
-                    <SelectValue defaultValue="system" placeholder="" />
+                    <SelectValue placeholder="Select theme" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="system">System</SelectItem>
@@ -461,7 +465,8 @@ const ProfileSection = ({
       </form>
     </SettingsSection>
   </>
-)
+  )
+}
 
 // Connections Section Component
 const ConnectionsSection = () => (
