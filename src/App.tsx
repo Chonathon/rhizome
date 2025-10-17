@@ -943,7 +943,7 @@ function App() {
           </div>}
           {/* right controls */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
-              <ModeToggle />
+              {/* <ModeToggle /> */}
               <ClusteringPanel 
                 clusterMode={genreClusterMode[0]}
                 setClusterMode={onGenreClusterModeChange}
