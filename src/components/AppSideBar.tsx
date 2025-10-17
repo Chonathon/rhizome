@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React from "react"
-import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope} from "lucide-react"
+import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare} from "lucide-react"
 import { useState } from "react"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
@@ -167,11 +167,21 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                               </button>
                             </SidebarMenuButton>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent side="right" align="start">
+                          <DropdownMenuContent side="right" align="end">
                             <DropdownMenuLabel>Settings</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('settings:open'))}>
-                              Open Settings
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('settings:open'))}><CircleUserRound />
+                              Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem><Cable />
+                              Connections
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem><img src="src/assets/kofi_symbol.svg" alt="Ko-fi Logo" className="size-4"/>
+                              Support Rhizome
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}><HandHeart />
+                              Feedback & Requests
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
