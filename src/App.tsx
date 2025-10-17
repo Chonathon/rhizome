@@ -135,7 +135,7 @@ function App() {
     artistPlayIDLoadingKey,
   } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
   const [playerTitle, setPlayerTitle] = useState<string | undefined>(undefined);
@@ -730,7 +730,7 @@ function App() {
   const colorFallback = (genreID?: string) => {
     let color;
     if (genreID) color = genreColorMap.get(genreID);
-    if (!color) color = theme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
+    if (!color) color = resolvedTheme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
     return color;
   }
 

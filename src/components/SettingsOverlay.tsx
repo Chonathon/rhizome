@@ -376,7 +376,7 @@ const ProfileSection = ({
                 <FieldLabel htmlFor="theme">
                   Theme
                 </FieldLabel>
-                <Select value={theme} onValueChange={setTheme}>
+                <Select value={theme || "system"} onValueChange={setTheme}>
                   <SelectTrigger id="theme">
                     <SelectValue placeholder="Select theme" />
                   </SelectTrigger>

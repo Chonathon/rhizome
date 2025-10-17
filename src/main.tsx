@@ -10,7 +10,13 @@ if (!container) throw new Error("Root container not found");
 createRoot(container).render(
   <StrictMode>
     <BrowserRouter>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        storageKey="theme"
+        disableTransitionOnChange
+      >
         <App />
       </ThemeProvider>
     </BrowserRouter>
