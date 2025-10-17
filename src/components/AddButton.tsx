@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { CheckSquare, PlusSquare } from "lucide-react";
-import { ToggleButton } from "./ToggleButton";
+import { ToggleButton } from "./ui/ToggleButton";
 
 interface AddButtonProps {
   isInCollection?: boolean;

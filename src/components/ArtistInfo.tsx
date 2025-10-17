@@ -17,7 +17,7 @@ import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
-import { AddButton } from "./ui/AddButton";
+import { AddButton } from "./AddButton";
 
 
 interface ArtistInfoProps {
