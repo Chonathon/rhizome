@@ -78,7 +78,7 @@ function SettingsOverlay() {
         </DialogDescription>
         <SidebarProvider className="items-start">
           <div className="flex min-h-0 w-full h-160">
-            <Sidebar collapsible="none"  className="pt-1.5 hidden md:flex w-auto">
+            <Sidebar collapsible="none"  className="pt-1.5 hidden md:flex w-[9rem]">
               <SidebarContent>
                   <SidebarHeader className="">
                     <h2 className="text-md font-semibold">Settings</h2>
