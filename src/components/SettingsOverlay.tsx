@@ -523,7 +523,7 @@ const SupportSection = () => (
               <FieldLabel htmlFor="password">
                 Support Rhizome
               </FieldLabel>
-              <FieldDescription>Your contributions help keep our servers running!</FieldDescription>
+              <FieldDescription>Your contributions keep our servers running!</FieldDescription>
             </FieldContent>
             <a target="_blank" href="https://ko-fi.com/rhizomefyi">
               <Button size="sm">
