@@ -283,7 +283,10 @@ function SettingsOverlay() {
                                       </FieldLabel>
                                       <FieldDescription>Your contributions help keep our servers running!</FieldDescription>
                                   </FieldContent>
-                                  <Button  size="sm"><img src="src/assets/kofi_symbol.svg" className="h-5 w-5"/><a target="_blank" href="https://ko-fi.com/rhizomefyi">Support Rhizome</a></Button>
+                                  <a target="_blank" href="https://ko-fi.com/rhizomefyi">
+                                    <Button size="sm"><img src="src/assets/kofi_symbol.svg" className="h-5 w-5"/>Support Rhizome
+                                    </Button>
+                                </a>
                               </Field>
                                 </FieldGroup>
                           </FieldSet>
