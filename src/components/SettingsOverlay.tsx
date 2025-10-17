@@ -1,6 +1,3 @@
-"use client"
-
-import * as React from "react"
 import {
     CircleUserRound, Cable, HandHeart
 } from "lucide-react"
@@ -44,7 +41,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 const data = {
   nav: [
@@ -55,6 +52,9 @@ const data = {
 }
 
 
+const [open, setOpen] = useState(true)
+const [activeView, setActiveView] = useState("Profile")
+
 function SettingsOverlay() {
     useEffect(() => {
         const handleOpen = () => setOpen(true);
@@ -63,14 +63,9 @@ function SettingsOverlay() {
         window.removeEventListener("settings:open", handleOpen as EventListener);
         };
     }, []);
-  const [open, setOpen] = React.useState(true)
-  const [activeView, setActiveView] = React.useState("Profile")
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {/* <DialogTrigger asChild>
-        <Button size="sm">Open Dialog</Button>
-      </DialogTrigger> */}
       <DialogContent className="overflow-hidden bg-card max-h-160 pt-0 pl-4 md:max-w-[700px] lg:max-w-[800px]">
         <DialogTitle className="p-6 sr-only pb-3 bg-transparent">Settings</DialogTitle>
         <DialogDescription className="sr-only">
