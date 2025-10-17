@@ -64,12 +64,13 @@ function SettingsOverlay() {
         };
     }, []);
   const [open, setOpen] = React.useState(true)
+  const [activeView, setActiveView] = React.useState("Profile")
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      {/* <DialogTrigger asChild>
         <Button size="sm">Open Dialog</Button>
-      </DialogTrigger>
+      </DialogTrigger> */}
       <DialogContent className="overflow-hidden bg-card max-h-160 pt-0 pl-4 md:max-w-[700px] lg:max-w-[800px]">
         <DialogTitle className="p-6 sr-only pb-3 bg-transparent">Settings</DialogTitle>
         <DialogDescription className="sr-only">
@@ -88,15 +89,14 @@ function SettingsOverlay() {
                       {data.nav.map((item) => (
                         <SidebarMenuItem key={item.name}>
                           <SidebarMenuButton
-                            asChild
                             size="lg"
-                          variant="outline"
-                            isActive={item.name === "Profile"}
+                            variant="outline"
+                            isActive={item.name === activeView}
+                            className={item.name === "Support" ? "text-[#8A80FF] hover:text-[#8A80FF hover:text-brightness-110]" : ""}
+                            onClick={() => setActiveView(item.name)}
                           >
-                            <a href="#">
-                              <item.icon />
-                              <span>{item.name}</span>
-                            </a>
+                            <item.icon />
+                            <span>{item.name}</span>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       ))}
@@ -108,9 +108,11 @@ function SettingsOverlay() {
             <main className="flex px-3 no-scrollbar flex-1 flex-col overflow-y-auto">
             {/* <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
             </header> */}
-            {/* Group */}
+
+            {/* Sections */}
                 <div className="flex-1 mt-11 pb-16 flex flex-col gap-6">
-                    {/* Section */}
+                    {/* Profile */}
+                    {activeView === "Profile" && (
                     <div className="bg-muted/50 max-w-3xl rounded-xl p-6">
                       <form>
                           <FieldGroup>
@@ -163,7 +165,9 @@ function SettingsOverlay() {
                               </Field> */}
                       </form>
                     </div>
-                    {/* Section */}
+                    )}
+                    {/* Account */}
+                    {activeView === "Profile" && (
                     <div className="bg-muted/50 max-w-3xl rounded-xl p-6">
                       <form>
                           <FieldGroup>
@@ -178,7 +182,7 @@ function SettingsOverlay() {
                               orientation="responsive"
                               >
                                   <FieldContent>
-                                      <FieldLabel htmlFor="Preferred Name">
+                                      <FieldLabel htmlFor="email">
                                       Email
                                       </FieldLabel>
                                       <FieldDescription>email@email.com</FieldDescription>
@@ -189,7 +193,7 @@ function SettingsOverlay() {
                               orientation="responsive"
                               >
                                   <FieldContent>
-                                      <FieldLabel htmlFor="Preferred Name">
+                                      <FieldLabel htmlFor="password">
                                       Password
                                       </FieldLabel>
                                       <FieldDescription>Change your password to log in to your account</FieldDescription>
@@ -200,7 +204,7 @@ function SettingsOverlay() {
                               <Field
                               orientation="responsive"
                               >
-                                      <FieldLabel htmlFor="Preferred Name">
+                                      <FieldLabel htmlFor="logout">
                                       Logout
                                       </FieldLabel>
                                       {/* <FieldDescription>Change your password to log in to your account</FieldDescription> */}
@@ -209,7 +213,7 @@ function SettingsOverlay() {
                               <Field
                               orientation="responsive"
                               >
-                                      <FieldLabel className="text-destructive " htmlFor="Preferred Name">
+                                      <FieldLabel className="text-destructive " htmlFor="delete-account">
                                       Delete Account
                                       </FieldLabel>
                                       {/* <FieldDescription>Change your password to log in to your account</FieldDescription> */}
@@ -227,6 +231,21 @@ function SettingsOverlay() {
                           </Field> */}
                       </form>
                     </div>
+                    )}
+                    {/* Connections */}
+                    {activeView === "Connections" && (
+                    <div className="bg-muted/50 max-w-3xl rounded-xl p-6">
+                      <h2 className="text-lg font-semibold mb-4">Connections</h2>
+                      <p className="text-muted-foreground">Connections settings coming soon...</p>
+                    </div>
+                    )}
+                    {/* Support */}
+                    {activeView === "Support" && (
+                    <div className="bg-muted/50 max-w-3xl rounded-xl p-6">
+                      <h2 className="text-lg font-semibold mb-4">Support</h2>
+                      <p className="text-muted-foreground">Support information coming soon...</p>
+                    </div>
+                    )}
                 </div>
             </main>
           </div>
