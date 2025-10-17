@@ -2,9 +2,10 @@
 
 import * as React from "react"
 import { useEffect, useState } from "react"
-import { CircleUserRound, Cable, HandHeart } from "lucide-react"
+import { CircleUserRound, Cable, HandHeart, Check } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
+import { ToggleButton } from "@/components/ui/ToggleButton"
 import {
   Dialog,
   DialogContent,
@@ -469,36 +470,56 @@ const ProfileSection = ({
 }
 
 // Connections Section Component
-const ConnectionsSection = () => (
-  <SettingsSection>
-    <FieldGroup>
-      <FieldSet>
-        <FieldLegend>Connections</FieldLegend>
-        <FieldSeparator />
-        <FieldGroup>
-            {/* Last FM */}
-                <Field className="border bg-card rounded-2xl p-3" orientation="responsive">
-                    <img aria-hidden="true" src="src/assets/Last.fm Logo.svg" className="size-8 @md/field-group:mr-2"/>
-                    <FieldContent>
-                    <FieldLabel htmlFor="email">
-                        Last.FM
-                    </FieldLabel>
-                    <FieldDescription>Two way sync: Import your followed artists and share your collection</FieldDescription>
-                    </FieldContent>
-                    <Button
-                    variant="outline"
-                    onClick={() => toast('Last.FM connection not yet implemented 🙃')}
-                    size="sm"
-                    >
-                    Connect
-                    </Button>
-                </Field>
-        </FieldGroup>
-      </FieldSet>
-    </FieldGroup>
-          <p className="pt-3 text-sm text-muted-foreground">More connections coming soon...</p>
-  </SettingsSection>
-)
+const ConnectionsSection = () => {
+  const [isLastFmConnected, setIsLastFmConnected] = useState(false);
+
+  const handleLastFmToggle = () => {
+    if (isLastFmConnected) {
+      toast.info('Disconnected from Last.FM');
+      setIsLastFmConnected(false);
+    } else {
+      toast.success('Connected to Last.FM');
+      setIsLastFmConnected(true);
+      // TODO: Implement actual Last.FM OAuth flow
+    }
+  };
+
+  return (
+    <SettingsSection>
+      <FieldGroup>
+        <FieldSet>
+          <FieldLegend>Connections</FieldLegend>
+          <FieldSeparator />
+          <FieldGroup>
+              {/* Last FM */}
+                  <Field className="border bg-card rounded-2xl p-3" orientation="responsive">
+                      <img aria-hidden="true" src="src/assets/Last.fm Logo.svg" className="size-8 @md/field-group:mr-2"/>
+                      <FieldContent>
+                      <FieldLabel htmlFor="lastfm-connection-description" id="lastfm-connection-label">
+                          Last.FM
+                      </FieldLabel>
+                      <FieldDescription id="lastfm-connection-description">Two way sync: Import your followed artists and share your collection</FieldDescription>
+                      </FieldContent>
+                      <ToggleButton
+                        isActive={isLastFmConnected}
+                        onToggle={handleLastFmToggle}
+                        activeLabel="Connected"
+                        inactiveLabel="Connect"
+                        activeIcon={<Check />}
+                        inactiveIcon={<Cable />}
+                        variant="outline"
+                        size="sm"
+                        ariaLabel={isLastFmConnected ? "Disconnect from Last.FM" : "Connect to Last.FM"}
+                        ariaDescribedBy="lastfm-connection-description"
+                      />
+                  </Field>
+          </FieldGroup>
+        </FieldSet>
+      </FieldGroup>
+            <p className="pt-3 text-sm text-muted-foreground">More connections coming soon...</p>
+    </SettingsSection>
+  );
+}
 
 // Support Section Component
 const SupportSection = () => (
