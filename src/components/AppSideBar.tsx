@@ -25,6 +25,21 @@ import RhizomeLogo from "@/components/RhizomeLogo"
 import { useSidebar } from "@/components/ui/sidebar"
 import MobileAppBar from "@/components/MobileAppBar"
 import { toast } from "sonner"
+import { DropdownMenu,
+  DropdownMenuPortal,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent, } from "./ui/dropdown-menu"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -143,19 +158,29 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                           </button>
                         </SidebarMenuButton>
                       </SidebarGroup> */}
-                        <SidebarMenu className="gap-4">
-                          <SidebarMenuButton className="" size={"xl"} tooltip="Settings" asChild>
-                            <button onClick={() => window.dispatchEvent(new Event('settings:open'))}>
-                              <Settings size={20} />
-                              {/* <span>Support & Feedback</span> */}
-                            </button>
-                          </SidebarMenuButton>
-                          <SidebarMenuButton className="" size={"xl"} asChild>
-                            <button onClick={() => toggleSidebar()}>
-                              <SidebarIcon size={20} />
-                            </button>
-                          </SidebarMenuButton>
-                        </SidebarMenu>
+                          <SidebarMenu className="gap-4">
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger asChild>
+                            <SidebarMenuButton className="" size={"xl"} tooltip="Settings" asChild>
+                              <button type="button">
+                                <Settings size={20} />
+                              </button>
+                            </SidebarMenuButton>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent side="right" align="start">
+                            <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('settings:open'))}>
+                              Open Settings
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                              <SidebarMenuButton className="" size={"xl"} asChild>
+                                <button onClick={() => toggleSidebar()}>
+                                  <SidebarIcon size={20} />
+                                </button>
+                              </SidebarMenuButton>
+                          </SidebarMenu>
                         {/* <button className="p-2.5 -mr-1 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
                           <Settings size={20}/>
                         </button>
