@@ -539,7 +539,7 @@ const SupportSection = () => (
 )
 
 function SettingsOverlay() {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
   const [activeView, setActiveView] = useState("Profile")
 
   // Dialog states
@@ -549,7 +549,17 @@ function SettingsOverlay() {
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false)
 
   useEffect(() => {
-    const handleOpen = () => setOpen(true)
+    const handleOpen = (event: Event) => {
+      const customEvent = event as CustomEvent
+      // If a specific view is requested, navigate to it
+      if (customEvent?.detail?.view) {
+        setActiveView(customEvent.detail.view)
+      } else {
+        // Default to Profile if no view specified
+        setActiveView("Profile")
+      }
+      setOpen(true)
+    }
     window.addEventListener("settings:open", handleOpen as EventListener)
     return () => {
       window.removeEventListener("settings:open", handleOpen as EventListener)

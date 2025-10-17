@@ -168,16 +168,22 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                             </SidebarMenuButton>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent side="right" align="end">
-                            <DropdownMenuLabel>Settings</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('settings:open'))}><CircleUserRound />
+                            {/* <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                            <DropdownMenuSeparator /> */}
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
                               Profile
                             </DropdownMenuItem>
-                            <DropdownMenuItem><Cable />
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
                               Connections
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
+                              Settings
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem><img src="src/assets/kofi_symbol.svg" alt="Ko-fi Logo" className="size-4"/>
+                            <DropdownMenuItem onSelect={(e) => {
+                              e.preventDefault();
+                              window.open('https://ko-fi.com/rhizomefyi', '_blank');
+                            }}><img src="src/assets/kofi_symbol.svg" alt="Ko-fi Logo" className="size-4"/>
                               Support Rhizome
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}><HandHeart />
