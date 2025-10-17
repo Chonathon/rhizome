@@ -471,23 +471,21 @@ const ConnectionsSection = () => (
         <FieldLegend>Connections</FieldLegend>
         <FieldSeparator />
         <FieldGroup>
-            <Card>
                 <Field orientation="responsive">
-                <FieldContent>
-                  <FieldLabel htmlFor="email">
-                    Last.FM
-                  </FieldLabel>
-                  <FieldDescription>Two way sync: Import your followed artists and share your collection</FieldDescription>
-                </FieldContent>
-                <Button
-                  variant="outline"
-                  onClick={() => toast('Last.FM connection not yet implemented 🙃')}
-                  size="sm"
-                >
-                  Connect
-                </Button>
-                          </Field>
-            </Card>
+                    <FieldContent>
+                    <FieldLabel htmlFor="email">
+                        Last.FM
+                    </FieldLabel>
+                    <FieldDescription>Two way sync: Import your followed artists and share your collection</FieldDescription>
+                    </FieldContent>
+                    <Button
+                    variant="outline"
+                    onClick={() => toast('Last.FM connection not yet implemented 🙃')}
+                    size="sm"
+                    >
+                    Connect
+                    </Button>
+                </Field>
           <p className=" text-sm text-muted-foreground">More connections coming soon...</p>
         </FieldGroup>
       </FieldSet>
