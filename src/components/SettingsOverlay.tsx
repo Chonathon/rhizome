@@ -235,15 +235,60 @@ function SettingsOverlay() {
                     {/* Connections */}
                     {activeView === "Connections" && (
                     <div className="bg-muted/50 max-w-3xl rounded-xl p-6">
-                      <h2 className="text-lg font-semibold mb-4">Connections</h2>
-                      <p className="text-muted-foreground">Connections settings coming soon...</p>
+                        <FieldGroup>
+                          <FieldSet>
+                            <FieldLegend>Connections</FieldLegend>
+                            <FieldSeparator />
+                            {/* <FieldDescription>
+                            
+                            </FieldDescription> */}
+                            <FieldGroup>
+                                <p className="text-muted-foreground">Connections settings coming soon...</p>
+                            </FieldGroup>
+                          </FieldSet>
+                          
+                          </FieldGroup>
                     </div>
                     )}
                     {/* Support */}
                     {activeView === "Support" && (
                     <div className="bg-muted/50 max-w-3xl rounded-xl p-6">
-                      <h2 className="text-lg font-semibold mb-4">Support</h2>
-                      <p className="text-muted-foreground">Support information coming soon...</p>
+                      <FieldGroup>
+                          <FieldSet>
+                              <FieldLegend>Support</FieldLegend>
+                              <FieldSeparator />
+                              {/* <FieldDescription>
+                              
+                              </FieldDescription> */}
+                              <FieldGroup>
+                              <Field
+                              orientation="responsive"
+                              >
+                                  <FieldContent>
+                                      <FieldLabel htmlFor="email">
+                                      Feedback & Requests
+                                      </FieldLabel>
+                                      <FieldDescription>We're just getting started. Let us know how we can improve Rhizome!</FieldDescription>
+                                  </FieldContent>
+                                  <Button variant="outline" 
+                                  onClick={() => window.dispatchEvent(new Event('feedback:open'))}
+                                  size="sm">Give feedback</Button>
+                              </Field>
+                              <Field
+                              orientation="responsive"
+                              >
+                                  <FieldContent>
+                                      <FieldLabel htmlFor="password">
+                                      Support Rhizome
+                                      </FieldLabel>
+                                      <FieldDescription>Your contributions help keep our servers running!</FieldDescription>
+                                  </FieldContent>
+                                  <Button variant="outline" size="sm"><HandHeart /><a target="_blank" href="https://ko-fi.com/rhizomefyi">Support Rhizome</a></Button>
+                              </Field>
+                                </FieldGroup>
+                          </FieldSet>
+                          
+                          </FieldGroup>
                     </div>
                     )}
                 </div>
