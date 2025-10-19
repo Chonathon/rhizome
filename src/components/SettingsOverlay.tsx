@@ -610,7 +610,8 @@ function SettingsOverlay() {
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="overflow-hidden bg-card max-h-160 pt-0 pl-4 md:max-w-[700px] lg:max-w-[800px]">
-          <DialogTitle className="p-6 sr-only pb-3 bg-transparent">Settings</DialogTitle>
+          
+          <DialogTitle className="p-6 pb-0 sm:sr-only sm:pb-3 bg-transparent">Settings</DialogTitle>
           <DialogDescription className="sr-only">
             Customize your settings here.
           </DialogDescription>
@@ -643,8 +644,8 @@ function SettingsOverlay() {
                   </SidebarGroup>
                 </SidebarContent>
               </Sidebar>
-              <main className="flex px-3 no-scrollbar flex-1 flex-col overflow-y-auto">
-                <div className="flex-1 mt-11 pb-16 flex flex-col gap-6">
+              <main className="flex px-3 pb-16 no-scrollbar flex-1 flex-col overflow-y-auto">
+                <div className="flex-1 mt-4 sm:mt-11 pb-16 flex flex-col gap-6">
                   {views[activeView]}
                 </div>
               </main>

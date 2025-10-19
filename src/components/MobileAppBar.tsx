@@ -1,5 +1,5 @@
 import React from "react"
-import { BookOpen, CircleHelp, Mic, MoreHorizontal, Search as SearchIcon, Tag, Telescope } from "lucide-react"
+import { BookOpen, CircleHelp, Mic, MoreHorizontal, Search as SearchIcon, Tag, Telescope, CircleUserRound, Cable, Settings, HandHeart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -116,12 +116,29 @@ function MoreMenu() {
           {/* <span className="text-[10px] leading-tight">More</span> */}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="rounded-xl">
-        <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}> 
-          <CircleHelp />
-          Help
-        </DropdownMenuItem>
-      </DropdownMenuContent>
+      <DropdownMenuContent side="top" align="end">
+                            {/* <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                            <DropdownMenuSeparator /> */}
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
+                              Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
+                              Connections
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
+                              Settings
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={(e) => {
+                              e.preventDefault();
+                              window.open('https://ko-fi.com/rhizomefyi', '_blank');
+                            }}><img src="src/assets/kofi_symbol.svg" alt="Ko-fi Logo" className="size-4"/>
+                              Support Rhizome
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}><HandHeart />
+                              Feedback & Requests
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
     </DropdownMenu>
   )
 }
