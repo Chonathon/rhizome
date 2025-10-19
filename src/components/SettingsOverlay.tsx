@@ -506,8 +506,8 @@ const ConnectionsSection = () => {
                         activeLabel="Connected"
                         inactiveLabel="Connect"
                         activeIcon={<Check />}
-                        inactiveIcon={<Cable />}
-                        variant="outline"
+                        // inactiveIcon={<Cable />}
+                        // variant="outline"
                         size="sm"
                         ariaLabel={isLastFmConnected ? "Disconnect from Last.FM" : "Connect to Last.FM"}
                         ariaDescribedBy="lastfm-connection-description"
