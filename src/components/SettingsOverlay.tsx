@@ -41,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 
 const data = {
@@ -609,7 +610,7 @@ function SettingsOverlay() {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="overflow-hidden bg-card max-h-160 pt-0 pl-4 md:max-w-[700px] lg:max-w-[800px]">
+        <DialogContent className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-4 md:max-w-[700px] lg:max-w-[800px]">
           
           <DialogTitle className="p-6 pb-0 sm:sr-only sm:pb-3 bg-transparent">Settings</DialogTitle>
           <DialogDescription className="sr-only">
@@ -645,6 +646,22 @@ function SettingsOverlay() {
                 </SidebarContent>
               </Sidebar>
               <main className="flex px-3 pb-16 no-scrollbar flex-1 flex-col overflow-y-auto">
+                <div className="md:hidden ">
+                  <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
+                    <TabsList className="w-full justify-between">
+                      {data.nav.map((item) => (
+                        <TabsTrigger
+                          key={item.name}
+                          value={item.name}
+                          className={item.name === "Support" ? "text-[#8A80FF] hover:text-[#8A80FF] hover:brightness-110 data-[state=active]:text-foreground" : undefined}
+                        >
+                          <item.icon className="mr-2 size-4" />
+                          {item.name}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                </div>
                 <div className="flex-1 mt-4 sm:mt-11 pb-16 flex flex-col gap-6">
                   {views[activeView]}
                 </div>
