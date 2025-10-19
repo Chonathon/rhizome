@@ -552,8 +552,8 @@ const SupportSection = () => (
               </FieldLabel>
               <FieldDescription>Your contributions keep our servers running!</FieldDescription>
             </FieldContent>
-            <a target="_blank" href="https://ko-fi.com/rhizomefyi">
-              <Button size="sm">
+            <a className="w-full" target="_blank" href="https://ko-fi.com/rhizomefyi">
+              <Button className="w-full" size="sm">
                 <img src="src/assets/kofi_symbol.svg" className="h-5 w-5"/>
                 Support Rhizome
               </Button>
@@ -612,7 +612,7 @@ function SettingsOverlay() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-4 md:max-w-[700px] lg:max-w-[800px]">
           
-          <DialogTitle className="p-6 pb-0 sm:sr-only sm:pb-3 bg-transparent">Settings</DialogTitle>
+          <DialogTitle className="p-6 pb-0 md:sr-only sm:pb-3 bg-transparent">Settings</DialogTitle>
           <DialogDescription className="sr-only">
             Customize your settings here.
           </DialogDescription>
@@ -662,7 +662,7 @@ function SettingsOverlay() {
                     </TabsList>
                   </Tabs>
                 </div>
-                <div className="flex-1 mt-4 sm:mt-11 pb-16 flex flex-col gap-6">
+                <div className="flex-1 mt-4 md:mt-11 pb-16 flex flex-col gap-6">
                   {views[activeView]}
                 </div>
               </main>
