@@ -505,7 +505,7 @@ const ConnectionsSection = () => {
                         onToggle={handleLastFmToggle}
                         activeLabel="Connected"
                         inactiveLabel="Connect"
-                        activeIcon={<Check />}
+                        // activeIcon={<Check />}
                         // inactiveIcon={<Cable />}
                         // variant="outline"
                         size="sm"

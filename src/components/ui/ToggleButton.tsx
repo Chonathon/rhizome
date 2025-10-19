@@ -33,6 +33,7 @@ interface ToggleButtonProps {
   ariaLabel?: string;
   /** ID of element that describes this button for additional context */
   ariaDescribedBy?: string;
+  hasIcon?: boolean;
 }
 
 export function ToggleButton({
@@ -50,6 +51,7 @@ export function ToggleButton({
   disabled = false,
   ariaLabel,
   ariaDescribedBy,
+  hasIcon = Boolean(activeIcon || inactiveIcon),
 }: ToggleButtonProps) {
   const handleClick = () => {
     if (requiresAuth && !loggedIn) {
@@ -76,10 +78,18 @@ export function ToggleButton({
       aria-describedby={ariaDescribedBy}
       disabled={disabled}
     >
-      {(activeIcon || inactiveIcon) && (
-        <span className={`relative inline-flex items-center justify-center shrink-0 ${
-          size === "sm" ? "size-3.5" : size === "lg" ? "size-4" : size === "xl" ? "size-5" : "size-4"
-        }`}>
+      {hasIcon && (activeIcon || inactiveIcon) && (
+        <span
+          className={`relative inline-flex items-center justify-center shrink-0 ${
+            size === "sm"
+              ? "size-3.5"
+              : size === "lg"
+              ? "size-4"
+              : size === "xl"
+              ? "size-5"
+              : "size-4"
+          }`}
+        >
           {activeIcon && (
             <span
               aria-hidden="true"
