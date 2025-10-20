@@ -9,6 +9,8 @@ export const DEFAULT_LABEL_FADE_START = .1;
 export const DEFAULT_LABEL_FADE_END = .5;
 // Default upward screen-space offset (in px) to lift a focused node on mobile
 export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
+export const DEFAULT_SHOW_NODE_TOOLTIP = false;
+export const HOVERED_LABEL_MIN_ALPHA = 1;
 
 export const DEFAULT_DIM_NODE_ALPHA = 0.4;
 export const DEFAULT_DIM_LABEL_ALPHA = 0.4;
@@ -17,7 +19,7 @@ export const DEFAULT_HIGHLIGHT_LINK_ALPHA = 0.8;
 export const DEFAULT_DIM_LINK_ALPHA = 0.18;
 export const DEFAULT_DIM_FADE_DURATION_MS = 400;
 export const DEFAULT_DIM_HOVER_ENABLED = false;
-export const DEFAULT_TOUCH_TARGET_PADDING_PX = 4;
+export const DEFAULT_TOUCH_TARGET_PADDING_PX = 12;
 
 export const alphaToHex = (alpha: number) => {
   const clamped = Math.max(0, Math.min(1, alpha));
@@ -128,6 +130,15 @@ export function drawLabelBelow(
   ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
   ctx.fillText(label, x, y + r + paddingWorld + yOffsetWorld);
   ctx.restore();
+}
+
+const emptyNodeLabel = () => '';
+const fallbackNameLabel = (node: { name?: string }) => node.name ?? '';
+
+export function createNodeLabelAccessor<T extends { name?: string }>(
+  showTooltip: boolean
+): (node: T) => string {
+  return showTooltip ? (fallbackNameLabel as (node: T) => string) : (emptyNodeLabel as (node: T) => string);
 }
 
 export type DimFactorAnimationParams = {

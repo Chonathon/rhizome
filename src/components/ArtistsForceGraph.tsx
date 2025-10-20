@@ -3,7 +3,7 @@ import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useS
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MAX_PX, LABEL_FONT_MIN_PX, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, alphaToHex, updateDimFactorAnimation } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MAX_PX, LABEL_FONT_MIN_PX, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
 export type GraphHandle = {
@@ -49,6 +49,7 @@ interface ArtistsForceGraphProps {
     minNodeSize?: number;
     // Maximum node radius. Default 20.
     maxNodeSize?: number;
+    showNodeTooltip?: boolean;
 }
 
 const INITIAL_DECAY = 0.75;
@@ -75,6 +76,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     nodeSizeScale = 2,
     minNodeSize = 8,
     maxNodeSize = 30,
+    showNodeTooltip = DEFAULT_SHOW_NODE_TOOLTIP,
 }, ref) => {
     const { theme } = useTheme();
 
@@ -301,6 +303,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         return colorById.get(artist.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
     };
 
+    const nodeLabelAccessor = useMemo(() => createNodeLabelAccessor<Artist>(showNodeTooltip), [showNodeTooltip]);
+
     return !show ? null : loading ? (<div className="flex-1 w-full" style={{ height: height ?? '100%' }}>
         <Loading />
     </div>) : (
@@ -338,6 +342,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
             // We'll custom-draw nodes; keep built-in node invisible to avoid double-draw
             nodeColor={() => 'rgba(0,0,0,0)'}
             nodeCanvasObjectMode={() => 'replace'}
+            nodeLabel={nodeLabelAccessor}
             d3AlphaDecay={0.01}
             d3VelocityDecay={velocityDecay}
             cooldownTime={10000}
@@ -362,6 +367,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 const isActiveSource = activeSourceSet.has(artist.id);
                 const isActiveNeighbor = activeNeighborIds.has(artist.id);
                 const hasHighlight = activeSourceIds.length > 0;
+                const isHovered = hoveredId === artist.id;
                 const r = isSelected ? rBase * 1.4 : rBase;
 
                 const dimFactor = dimFactorRef.current.get(artist.id) ?? 0;
@@ -388,6 +394,9 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 else if (hasHighlight) {
                     const dimmedAlpha = DEFAULT_DIM_LABEL_ALPHA + (1 - DEFAULT_DIM_LABEL_ALPHA) * (1 - dimFactor);
                     alpha = Math.min(alpha, dimmedAlpha);
+                }
+                if (isHovered) {
+                    alpha = Math.max(alpha, HOVERED_LABEL_MIN_ALPHA);
                 }
                 const label = node.name;
                 const yOffset = yOffsetByIdRef.current.get(artist.id) || 0;

@@ -5,7 +5,7 @@ import {Loading} from "./Loading";
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, alphaToHex, updateDimFactorAnimation } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation } from "@/lib/graphStyle";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -31,6 +31,8 @@ interface GenresForceGraphProps {
     labelFadeInEnd?: number;
     minLabelPx?: number;
     maxLabelPx?: number;
+    // Control whether native tooltips (force-graph hover) show node names.
+    showNodeTooltip?: boolean;
     // Allow tuning forces per mode without diving into the component internals.
     forceOverrides?: {
         base?: Partial<ForcePreset>;
@@ -98,6 +100,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
     labelFadeInEnd = DEFAULT_LABEL_FADE_END,
     minLabelPx = LABEL_FONT_MIN_PX,
     maxLabelPx = LABEL_FONT_MAX_PX,
+    showNodeTooltip = DEFAULT_SHOW_NODE_TOOLTIP,
     forceOverrides,
 }, ref) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
@@ -349,6 +352,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
         return () => clearTimeout(t);
     }, [selectedGenreId, show, preparedData]);
 
+    const nodeLabelAccessor = useMemo(() => createNodeLabelAccessor<Genre>(showNodeTooltip), [showNodeTooltip]);
+
     const nodeCanvasObject = (node: NodeObject, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const genreNode = node as Genre;
         const radius = radiusForCount(genreNode.artistCount);
@@ -361,6 +366,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
         const isActiveSource = activeSourceSet.has(genreNode.id);
         const isActiveNeighbor = activeNeighborIds.has(genreNode.id);
         const hasHighlight = activeSourceIds.length > 0;
+        const isHovered = hoveredId === genreNode.id;
         const dimFactor = dimFactorRef.current.get(genreNode.id) ?? 0;
         const fillAlpha = DEFAULT_DIM_NODE_ALPHA + (1 - DEFAULT_DIM_NODE_ALPHA) * (1 - dimFactor);
         const color = accent + alphaToHex(fillAlpha);
@@ -390,6 +396,9 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
         else if (hasHighlight) {
             const dimmedAlpha = DEFAULT_DIM_LABEL_ALPHA + (1 - DEFAULT_DIM_LABEL_ALPHA) * (1 - dimFactor);
             alpha = Math.min(alpha, dimmedAlpha);
+        }
+        if (isHovered) {
+            alpha = Math.max(alpha, HOVERED_LABEL_MIN_ALPHA);
         }
         const yOffset = yOffsetByIdRef.current.get(genreNode.id) || 0;
         drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, theme, alpha, {
@@ -428,6 +437,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
             width={width}
             height={height}
             graphData={preparedData}
+            nodeLabel={nodeLabelAccessor}
             dagMode={dag ? 'radialin' : undefined}
             dagLevelDistance={DAG_LEVEL_DISTANCE}
             linkCurvature={dag ? DAG_LINK_CURVATURE : DEFAULT_LINK_CURVATURE}
