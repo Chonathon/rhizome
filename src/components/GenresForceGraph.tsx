@@ -5,7 +5,7 @@ import {Loading} from "./Loading";
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, alphaToHex, updateDimFactorAnimation } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, alphaToHex, updateDimFactorAnimation } from "@/lib/graphStyle";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -47,7 +47,6 @@ const COOLDOWN_TIME_MS = 20000;
 const DAG_LEVEL_DISTANCE = 200;
 const DEFAULT_LINK_CURVATURE = 0.5;
 const DAG_LINK_CURVATURE = 0;
-const POINTER_PADDING_PX = 24;
 
 type ForcePreset = {
     chargeStrength: number;
@@ -406,12 +405,16 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
     const nodePointerAreaPaint = (node: NodeObject, color: string, ctx: CanvasRenderingContext2D, globalScale: number) => {
         ctx.fillStyle = color;
         const genreNode = node as Genre;
-        const radius = radiusForCount(genreNode.artistCount);
+        const baseRadius = radiusForCount(genreNode.artistCount);
+        const drawRadius = selectedGenreId === genreNode.id ? baseRadius * 1.35 : baseRadius;
+        const scale = Math.max(globalScale || 1, 1e-6);
+        const paddingWorld = DEFAULT_TOUCH_TARGET_PADDING_PX / scale;
+        const pointerRadius = drawRadius + paddingWorld;
         const nodeX = node.x || 0;
         const nodeY = node.y || 0;
 
         ctx.beginPath();
-        ctx.arc(nodeX, nodeY, radius + POINTER_PADDING_PX / (globalScale || 1), 0, 2 * Math.PI, false);
+        ctx.arc(nodeX, nodeY, pointerRadius, 0, 2 * Math.PI, false);
         ctx.fill();
     };
 
