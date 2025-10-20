@@ -5,7 +5,7 @@ import {Loading} from "./Loading";
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, DEFAULT_HOVER_NODE_SCALE, DEFAULT_HOVER_ANIMATION_EASE, DEFAULT_HOVER_OFFSET_EPSILON, DEFAULT_HOVER_SCALE_EPSILON, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation, getNodeLabelHighlightOptions, NodeLabelState } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, DEFAULT_HOVER_NODE_SCALE, DEFAULT_HOVER_ANIMATION_EASE, DEFAULT_HOVER_ANIMATION_REL_EPSILON, DEFAULT_HOVER_ANIMATION_MIN_ABS_EPSILON, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation, getNodeLabelHighlightOptions, NodeLabelState } from "@/lib/graphStyle";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -182,30 +182,54 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
         }
         if (offsetTargets.size === 0 && scaleTargets.size === 0) return;
 
-        const ease = (c: number, t: number) => c + (t - c) * DEFAULT_HOVER_ANIMATION_EASE;
+        const offsetInitialDeltas = new Map<string, number>();
+        offsetTargets.forEach((target, id) => {
+            const start = yOffsetByIdRef.current.get(id) ?? 0;
+            offsetInitialDeltas.set(id, Math.abs(target - start));
+        });
+        const scaleInitialDeltas = new Map<string, number>();
+        scaleTargets.forEach((target, id) => {
+            const start = hoverScaleByIdRef.current.get(id) ?? 1;
+            scaleInitialDeltas.set(id, Math.abs(target - start));
+        });
+
+        const ease = (current: number, target: number) => current + (target - current) * DEFAULT_HOVER_ANIMATION_EASE;
+        const withinTolerance = (value: number, target: number, initialDelta: number | undefined) => {
+            const base = initialDelta ?? 0;
+            const tolerance = Math.max(DEFAULT_HOVER_ANIMATION_MIN_ABS_EPSILON, base * DEFAULT_HOVER_ANIMATION_REL_EPSILON);
+            return Math.abs(value - target) <= tolerance;
+        };
+
         const step = () => {
             let moving = false;
-            const map = yOffsetByIdRef.current;
-            offsetTargets.forEach((t, id) => {
-                const cur = map.get(id) || 0;
-                const nxt = ease(cur, t);
-                map.set(id, nxt);
-                if (Math.abs(nxt - t) > DEFAULT_HOVER_OFFSET_EPSILON) moving = true;
+            const offsetMap = yOffsetByIdRef.current;
+            offsetTargets.forEach((target, id) => {
+                const current = offsetMap.get(id) ?? 0;
+                const nextValue = ease(current, target);
+                const initialDelta = offsetInitialDeltas.get(id);
+                if (withinTolerance(nextValue, target, initialDelta)) {
+                    offsetMap.set(id, target);
+                } else {
+                    offsetMap.set(id, nextValue);
+                    moving = true;
+                }
             });
             const scaleMap = hoverScaleByIdRef.current;
-            scaleTargets.forEach((t, id) => {
-                const cur = scaleMap.get(id) ?? 1;
-                const nxt = ease(cur, t);
-                scaleMap.set(id, nxt);
-                if (Math.abs(nxt - t) > DEFAULT_HOVER_SCALE_EPSILON) moving = true;
+            scaleTargets.forEach((target, id) => {
+                const current = scaleMap.get(id) ?? 1;
+                const nextValue = ease(current, target);
+                const initialDelta = scaleInitialDeltas.get(id);
+                if (withinTolerance(nextValue, target, initialDelta)) {
+                    scaleMap.set(id, target);
+                } else {
+                    scaleMap.set(id, nextValue);
+                    moving = true;
+                }
             });
             fgRef.current?.refresh?.();
             if (moving) animRafRef.current = requestAnimationFrame(step);
             else {
-                offsetTargets.forEach((t, id) => yOffsetByIdRef.current.set(id, t));
-                scaleTargets.forEach((t, id) => hoverScaleByIdRef.current.set(id, t));
                 animRafRef.current = null;
-                fgRef.current?.refresh?.();
             }
         };
 
