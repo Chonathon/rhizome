@@ -165,18 +165,24 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
 
     useEffect(() => {
         if (fgRef.current) {
-            // Tighter, more lively simulation to prevent dullness
-            fgRef.current.d3Force('charge')?.strength(-100);
-            fgRef.current.d3Force('link')?.distance(70);
-            fgRef.current.d3Force('link')?.strength(0.85);
-            fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(0.1));
+            // Mirror Genre force tuning so both graphs feel consistent
+            const chargeStrength = -70;
+            const linkDistance = 70;
+            const linkStrength = 0.8;
+            const centerStrength = 0.1;
+            const collideStrength = 0.7;
+
+            fgRef.current.d3Force('charge')?.strength(chargeStrength);
+            fgRef.current.d3Force('link')?.distance(linkDistance);
+            fgRef.current.d3Force('link')?.strength(linkStrength);
+            fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(centerStrength));
 
             // Collide force with iterations to better resolve overlaps
             fgRef.current.d3Force('collide', d3.forceCollide((node: any) => {
                 const a = node as Artist;
                 return collideRadiusForNode(a.name, radiusFor(a));
             }).iterations(2));
-            fgRef.current.d3Force('collide')?.strength(0.7);
+            fgRef.current.d3Force('collide')?.strength(collideStrength);
 
             // Reheat the simulation when data or visibility changes
             fgRef.current.d3ReheatSimulation?.();
