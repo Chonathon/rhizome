@@ -65,7 +65,6 @@ import FeedbackOverlay from '@/components/FeedbackOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
 import useAuth from "@/hooks/useAuth";
-import {useUserData} from "@/hooks/useUserData";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -153,25 +152,23 @@ function App() {
     userID,
     userName,
     userEmail,
+    preferences,
+    likedArtists,
+    isSocialUser,
     signIn,
     signInSocial,
     signUp,
     signOut,
-    session,
-    isSessionLoading,
-    sessionError,
-    refetchSession,
-  } = useAuth();
-  const {
-    likedArtists,
-    preferences,
-    userLoading,
-    userError,
-    resetUserError,
+    changeEmail,
+    changePassword,
+    deleteUser,
     likeArtist,
     unlikeArtist,
     updatePreferences,
-  } = useUserData(userID);
+    validSession,
+    authError,
+    authLoading,
+  } = useAuth();
 
   // Track window size and pass to ForceGraph for reliable resizing
   useEffect(() => {
@@ -822,14 +819,15 @@ function App() {
   }
 
   const onAddArtistButtonToggle = async (artistID?: string) => {
+    console.log(validSession())
     if (userID) {
       if (!artistID) return;
       if (likedArtists && isInCollection(artistID)) {
         await unlikeArtist(artistID);
-        console.log(`Liked ${artistID} as ${userName}`);
+        console.log(`Unliked ${artistID} as ${userName}`);
       } else {
         await likeArtist(artistID);
-        console.log(`Unliked ${artistID} as ${userName}`);
+        console.log(`Liked ${artistID} as ${userName}`);
       }
     } else {
       window.dispatchEvent(new Event('auth:open'));
@@ -869,6 +867,10 @@ function App() {
     }
   }
 
+  const onAccountClick = () => {
+    window.dispatchEvent(new Event('auth:open'));
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -881,6 +883,7 @@ function App() {
         resetAppState={resetAppState}
         onCollectionClick={onCollectionClick}
         onExploreClick={onExploreClick}
+        onAccountClick={onAccountClick}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -1152,7 +1155,16 @@ function App() {
           />
         </div>
       </AppSidebar>
-      <AuthOverlay onSignUp={signUp} onSignInSocial={signInSocial} />
+      <AuthOverlay
+          onSignUp={signUp}
+          onSignInSocial={signInSocial}
+          onSignIn={signIn}
+          onSignOut={signOut}
+          onChangeEmail={changeEmail}
+          onChangePassword={changePassword}
+          onDeleteAccount={deleteUser}
+          signedIn={!!userID}
+      />
       <FeedbackOverlay />
     </SidebarProvider>
   );

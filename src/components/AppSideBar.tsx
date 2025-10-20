@@ -15,7 +15,21 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React from "react"
-import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope} from "lucide-react"
+import {
+    Icon,
+    Undo2,
+    Plus,
+    BadgeIcon,
+    SidebarIcon,
+    SearchIcon,
+    BookOpen,
+    Tag,
+    MicVocal,
+    Settings,
+    CircleHelp,
+    Telescope,
+    User
+} from "lucide-react"
 import { useState } from "react"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
@@ -37,9 +51,10 @@ interface AppSidebarProps {
   resetAppState: () => void;
   onCollectionClick: () => void;
   onExploreClick: () => void;
+  onAccountClick: () => void;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, onExploreClick, onCollectionClick }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, onExploreClick, onCollectionClick, onAccountClick }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { recentSelections } = useRecentSelections()
   const { toggleSidebar } = useSidebar()
@@ -123,6 +138,14 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </button>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
+                  <SidebarMenuItem>
+                      <SidebarMenuButton asChild tooltip="Account" size="xl">
+                          <button onClick={onAccountClick}>
+                              <User />
+                              <span className="truncate">Account</span>
+                          </button>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroup>
     

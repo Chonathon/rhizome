@@ -13,7 +13,7 @@ import {
   CHILD_FIELD_MAP,
   CLUSTER_COLORS,
   SINGLETON_PARENT_GENRE,
-  SINGLETON_PARENT_COLOR, SERVER_DEPLOYMENT_URL
+  SINGLETON_PARENT_COLOR, SERVER_DEPLOYMENT_URL, CLIENT_DEPLOYMENT_URL
 } from "@/constants";
 import {link} from "framer-motion/m";
 
@@ -42,6 +42,12 @@ export const serverUrl = () => {
       ? import.meta.env.VITE_LOCALHOST
       : (import.meta.env.VITE_SERVER_URL
           || (import.meta.env.DEV ? '/api' : SERVER_DEPLOYMENT_URL));
+}
+
+export const clientUrl = () => {
+  return envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
+    ? import.meta.env.VITE_CLIENT_LOCALHOST
+    : (import.meta.env.VITE_CLIENT_URL || CLIENT_DEPLOYMENT_URL);
 }
 
 export const primitiveArraysEqual = (a: Array<string | number>, b: Array<string | number>) => {

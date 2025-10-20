@@ -9,17 +9,17 @@ export const getUserData = async (userID: string) => {
     return response.data;
 }
 
-export const likeArtist = async (userID: string, artistID: string) => {
+export const likeArtistUser = async (userID: string, artistID: string) => {
     const response = await axios.put(`${url}/users/like/${userID}/${artistID}`);
     return response.status === 200;
 }
 
-export const unlikeArtist = async (userID: string, artistID: string) => {
+export const unlikeArtistUser = async (userID: string, artistID: string) => {
     const response = await axios.put(`${url}/users/unlike/${userID}/${artistID}`);
     return response.status === 200;
 }
 
-export const updatePreferences = async (userID: string, preferences: Preferences) => {
+export const updateUserPreferences = async (userID: string, preferences: Preferences) => {
     const response = await axios.put(`${url}/users/preferences`, {
         data: { id: userID, preferences }
     });

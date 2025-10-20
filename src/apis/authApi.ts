@@ -1,8 +1,9 @@
 import {authClient} from "@/lib/auth-client";
 import {Social} from "@/types";
 import {BetterAuthError} from "better-auth";
+import {clientUrl} from "@/lib/utils";
 
-export const signInUser = async (email: string, password: string) => {
+export const signInUser = async (email: string, password: string, onSuccess?: () => void, onError?: () => void) => {
     const { data, error } = await authClient.signIn.email({
         email,
         password,
@@ -10,17 +11,18 @@ export const signInUser = async (email: string, password: string) => {
     return { data, error };
 }
 
-export const signInSocialUser = async (social: Social) => {
+export const signInSocialUser = async (social: Social, fetchSuccess?: () => void, fetchError?: (errorMessage?: string) => void) => {
     const { data, error } = await authClient.signIn.social({
         provider: social,
+        callbackURL: clientUrl(),
     }, {
         onSuccess: (ctx) => {
-            console.log('ctx', ctx)
-
+            if (fetchSuccess) fetchSuccess();
+        },
+        onError: (ctx) => {
+            if (fetchError) fetchError(ctx.error.message);
         }
-
     });
-    console.log('data' , data);
     return { data, error };
 }
 
@@ -29,6 +31,7 @@ export const signUpUser = async (email: string, password: string, name: string) 
         email,
         password,
         name,
+        callbackURL: clientUrl(),
     });
     return { data, error };
 }
@@ -68,11 +71,15 @@ export const changeUserPassword = async (newPassword: string, currentPassword: s
     return { data, error };
 }
 
-export const deleteUser = async (password: string) => {
+export const deleteUserAccount = async (password?: string) => {
     try {
-        await authClient.deleteUser({
-            password
-        });
+        if (password) {
+            await authClient.deleteUser({
+                password
+            });
+        } else {
+            await authClient.deleteUser();
+        }
         return true;
     } catch (error) {
         if (error instanceof BetterAuthError) {

@@ -126,10 +126,16 @@ export interface Preferences {
 
 export type Social = 'google' | 'spotify';
 
+export interface IDAndDate {
+    id: string;
+    date: Date;
+}
+
 export interface User {
     id: string;
     name: string;
     email: string;
-    liked: string[];
+    liked: IDAndDate[];
     preferences: Preferences;
+    socialUser?: boolean;
 }
