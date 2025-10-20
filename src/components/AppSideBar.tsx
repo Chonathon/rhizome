@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React from "react"
-import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare} from "lucide-react"
+import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon} from "lucide-react"
 import { useState } from "react"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
@@ -179,6 +179,18 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                             <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
                               Settings
                             </DropdownMenuItem>
+                            <DropdownMenuSub> 
+                            <DropdownMenuSubTrigger><span className="aria-hidden">
+                              <SunMoon className="mr-2 text-muted-foreground h-4 w-4" />
+                            </span>  Appearance</DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem>System</DropdownMenuItem>
+                                <DropdownMenuItem>Dark</DropdownMenuItem>
+                                <DropdownMenuItem>Light</DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onSelect={(e) => {
                               e.preventDefault();
