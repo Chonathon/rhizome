@@ -3,7 +3,7 @@ import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useS
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MAX_PX, LABEL_FONT_MIN_PX, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MAX_PX, LABEL_FONT_MIN_PX, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, DEFAULT_HOVER_NODE_SCALE, DEFAULT_HOVER_ANIMATION_EASE, DEFAULT_HOVER_OFFSET_EPSILON, DEFAULT_HOVER_SCALE_EPSILON, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
 export type GraphHandle = {
@@ -106,6 +106,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
+    const hoverScaleByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
     const dimFactorRef = useRef<Map<string, number>>(new Map());
     const dimAnimRafRef = useRef<number | null>(null);
@@ -136,21 +137,35 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         prevHoveredRef.current = hoveredId;
 
         // Targets: hovered -> 4, previous -> 0
-        const targets = new Map<string, number>();
-        if (typeof prev === 'string' && prev !== next) targets.set(prev, 0);
-        if (typeof next === 'string') targets.set(next, 4);
+        const offsetTargets = new Map<string, number>();
+        const scaleTargets = new Map<string, number>();
+        if (typeof prev === 'string' && prev !== next) {
+            offsetTargets.set(prev, 0);
+            scaleTargets.set(prev, 1);
+        }
+        if (typeof next === 'string') {
+            offsetTargets.set(next, 4);
+            scaleTargets.set(next, DEFAULT_HOVER_NODE_SCALE);
+        }
 
-        if (targets.size === 0) return;
+        if (offsetTargets.size === 0 && scaleTargets.size === 0) return;
 
-        const ease = (current: number, target: number) => current + (target - current) * 0.2;
+        const ease = (current: number, target: number) => current + (target - current) * DEFAULT_HOVER_ANIMATION_EASE;
         const step = () => {
             let anyMoving = false;
             const map = yOffsetByIdRef.current;
-            targets.forEach((target, id) => {
+            offsetTargets.forEach((target, id) => {
                 const cur = map.get(id) || 0;
                 const nxt = ease(cur, target);
                 map.set(id, nxt);
-                if (Math.abs(nxt - target) > 0.1) anyMoving = true;
+                if (Math.abs(nxt - target) > DEFAULT_HOVER_OFFSET_EPSILON) anyMoving = true;
+            });
+            const scaleMap = hoverScaleByIdRef.current;
+            scaleTargets.forEach((target, id) => {
+                const cur = scaleMap.get(id) ?? 1;
+                const nxt = ease(cur, target);
+                scaleMap.set(id, nxt);
+                if (Math.abs(nxt - target) > DEFAULT_HOVER_SCALE_EPSILON) anyMoving = true;
             });
             // Request re-draw
             fgRef.current?.refresh?.();
@@ -158,7 +173,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 animRafRef.current = requestAnimationFrame(step);
             } else {
                 // Snap to targets at end
-                targets.forEach((t, id) => yOffsetByIdRef.current.set(id, t));
+                offsetTargets.forEach((t, id) => yOffsetByIdRef.current.set(id, t));
+                scaleTargets.forEach((t, id) => hoverScaleByIdRef.current.set(id, t));
                 animRafRef.current = null;
                 fgRef.current?.refresh?.();
             }
@@ -368,7 +384,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 const isActiveNeighbor = activeNeighborIds.has(artist.id);
                 const hasHighlight = activeSourceIds.length > 0;
                 const isHovered = hoveredId === artist.id;
-                const r = isSelected ? rBase * 1.4 : rBase;
+                const hoverScale = hoverScaleByIdRef.current.get(artist.id) ?? 1;
+                const r = rBase * (isSelected ? 1.4 : 1) * hoverScale;
 
                 const dimFactor = dimFactorRef.current.get(artist.id) ?? 0;
                 const fillAlpha = DEFAULT_DIM_NODE_ALPHA + (1 - DEFAULT_DIM_NODE_ALPHA) * (1 - dimFactor);
@@ -414,7 +431,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 const artist = node as Artist;
                 const baseRadius = radiusFor(artist);
                 const isSelected = !!selectedArtistId && artist.id === selectedArtistId;
-                const drawRadius = isSelected ? baseRadius * 1.4 : baseRadius;
+                const hoverScale = hoverScaleByIdRef.current.get(artist.id) ?? 1;
+                const drawRadius = baseRadius * (isSelected ? 1.4 : 1) * hoverScale;
                 const scale = Math.max(globalScale || 1, 1e-6);
                 const paddingWorld = DEFAULT_TOUCH_TARGET_PADDING_PX / scale;
                 const pointerRadius = drawRadius + paddingWorld;

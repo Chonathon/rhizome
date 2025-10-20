@@ -2,7 +2,7 @@
 
 import type {MutableRefObject} from "react";
 
-export const LABEL_FONT_SIZE = 16;
+export const LABEL_FONT_SIZE = 14;
 export const LABEL_FONT_MIN_PX = LABEL_FONT_SIZE * 0.75;
 export const LABEL_FONT_MAX_PX = LABEL_FONT_SIZE * 2.1;
 export const DEFAULT_LABEL_FADE_START = .1;
@@ -11,6 +11,10 @@ export const DEFAULT_LABEL_FADE_END = .5;
 export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
 export const DEFAULT_SHOW_NODE_TOOLTIP = false;
 export const HOVERED_LABEL_MIN_ALPHA = 1;
+export const DEFAULT_HOVER_NODE_SCALE = 1.15;
+export const DEFAULT_HOVER_ANIMATION_EASE = 0.2;
+export const DEFAULT_HOVER_OFFSET_EPSILON = 0.1;
+export const DEFAULT_HOVER_SCALE_EPSILON = 0.01;
 
 export const DEFAULT_DIM_NODE_ALPHA = 0.4;
 export const DEFAULT_DIM_LABEL_ALPHA = 0.4;

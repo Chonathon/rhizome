@@ -5,7 +5,7 @@ import {Loading} from "./Loading";
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, DEFAULT_HOVER_NODE_SCALE, DEFAULT_HOVER_ANIMATION_EASE, DEFAULT_HOVER_OFFSET_EPSILON, DEFAULT_HOVER_SCALE_EPSILON, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation } from "@/lib/graphStyle";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -110,6 +110,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
+    const hoverScaleByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
     const dimFactorRef = useRef<Map<string, number>>(new Map());
     const dimAnimRafRef = useRef<number | null>(null);
@@ -169,25 +170,40 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
         const next = hoveredId;
         prevHoveredRef.current = hoveredId;
 
-        const targets = new Map<string, number>();
-        if (typeof prev === 'string' && prev !== next) targets.set(prev, 0);
-        if (typeof next === 'string') targets.set(next, 4);
-        if (targets.size === 0) return;
+        const offsetTargets = new Map<string, number>();
+        const scaleTargets = new Map<string, number>();
+        if (typeof prev === 'string' && prev !== next) {
+            offsetTargets.set(prev, 0);
+            scaleTargets.set(prev, 1);
+        }
+        if (typeof next === 'string') {
+            offsetTargets.set(next, 4);
+            scaleTargets.set(next, DEFAULT_HOVER_NODE_SCALE);
+        }
+        if (offsetTargets.size === 0 && scaleTargets.size === 0) return;
 
-        const ease = (c: number, t: number) => c + (t - c) * 0.2;
+        const ease = (c: number, t: number) => c + (t - c) * DEFAULT_HOVER_ANIMATION_EASE;
         const step = () => {
             let moving = false;
             const map = yOffsetByIdRef.current;
-            targets.forEach((t, id) => {
+            offsetTargets.forEach((t, id) => {
                 const cur = map.get(id) || 0;
                 const nxt = ease(cur, t);
                 map.set(id, nxt);
-                if (Math.abs(nxt - t) > 0.1) moving = true;
+                if (Math.abs(nxt - t) > DEFAULT_HOVER_OFFSET_EPSILON) moving = true;
+            });
+            const scaleMap = hoverScaleByIdRef.current;
+            scaleTargets.forEach((t, id) => {
+                const cur = scaleMap.get(id) ?? 1;
+                const nxt = ease(cur, t);
+                scaleMap.set(id, nxt);
+                if (Math.abs(nxt - t) > DEFAULT_HOVER_SCALE_EPSILON) moving = true;
             });
             fgRef.current?.refresh?.();
             if (moving) animRafRef.current = requestAnimationFrame(step);
             else {
-                targets.forEach((t, id) => yOffsetByIdRef.current.set(id, t));
+                offsetTargets.forEach((t, id) => yOffsetByIdRef.current.set(id, t));
+                scaleTargets.forEach((t, id) => hoverScaleByIdRef.current.set(id, t));
                 animRafRef.current = null;
                 fgRef.current?.refresh?.();
             }
@@ -356,7 +372,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
 
     const nodeCanvasObject = (node: NodeObject, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const genreNode = node as Genre;
-        const radius = radiusForCount(genreNode.artistCount);
+        const baseRadius = radiusForCount(genreNode.artistCount);
         const nodeX = node.x || 0;
         const nodeY = node.y || 0;
 
@@ -367,6 +383,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
         const isActiveNeighbor = activeNeighborIds.has(genreNode.id);
         const hasHighlight = activeSourceIds.length > 0;
         const isHovered = hoveredId === genreNode.id;
+        const hoverScale = hoverScaleByIdRef.current.get(genreNode.id) ?? 1;
+        const drawRadius = baseRadius * (isSelected ? 1.35 : 1) * hoverScale;
         const dimFactor = dimFactorRef.current.get(genreNode.id) ?? 0;
         const fillAlpha = DEFAULT_DIM_NODE_ALPHA + (1 - DEFAULT_DIM_NODE_ALPHA) * (1 - dimFactor);
         const color = accent + alphaToHex(fillAlpha);
@@ -375,12 +393,12 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
         ctx.lineWidth = 0.5;
 
         // Draw node
-        drawCircleNode(ctx, nodeX, nodeY, isSelected ? radius * 1.35 : radius, color);
+        drawCircleNode(ctx, nodeX, nodeY, drawRadius, color);
 
         if (isSelected) {
             ctx.save();
             ctx.beginPath();
-            ctx.arc(nodeX, nodeY, radius * 1.35 + 4, 0, 2 * Math.PI);
+            ctx.arc(nodeX, nodeY, drawRadius + 4, 0, 2 * Math.PI);
             ctx.strokeStyle = accent; // ring matches node color
             ctx.lineWidth = 3;
             ctx.stroke();
@@ -401,7 +419,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
             alpha = Math.max(alpha, HOVERED_LABEL_MIN_ALPHA);
         }
         const yOffset = yOffsetByIdRef.current.get(genreNode.id) || 0;
-        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, theme, alpha, {
+        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, drawRadius, theme, alpha, {
             fontPx: LABEL_FONT_SIZE,
             yOffsetPx: yOffset,
             globalScale,
@@ -415,7 +433,9 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
         ctx.fillStyle = color;
         const genreNode = node as Genre;
         const baseRadius = radiusForCount(genreNode.artistCount);
-        const drawRadius = selectedGenreId === genreNode.id ? baseRadius * 1.35 : baseRadius;
+        const isSelected = selectedGenreId === genreNode.id;
+        const hoverScale = hoverScaleByIdRef.current.get(genreNode.id) ?? 1;
+        const drawRadius = baseRadius * (isSelected ? 1.35 : 1) * hoverScale;
         const scale = Math.max(globalScale || 1, 1e-6);
         const paddingWorld = DEFAULT_TOUCH_TARGET_PADDING_PX / scale;
         const pointerRadius = drawRadius + paddingWorld;
