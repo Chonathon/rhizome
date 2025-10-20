@@ -31,9 +31,14 @@ interface GenresForceGraphProps {
 
 // Styling shared via graphStyle utils
 
+const INITIAL_DECAY = 0.75;
+const STABLE_DECAY = 0.92;
+
 const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId, width, height }, ref) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
+    const [velocityDecay, setVelocityDecay] = useState<number>(INITIAL_DECAY);
+    const hasStabilizedRef = useRef<boolean>(false);
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
@@ -177,24 +182,29 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
 
     useEffect(() => {
         if (graphData) {
-            if (fgRef.current) {
-                // fgRef.current.d3Force('center')?.strength(-1, -1);
-                fgRef.current.d3Force('charge')?.strength(dag ? -1230 : -70); // Applies a repelling force between all nodes
-                fgRef.current.d3Force('link')?.distance(dag ? 150 : 70); //how far apart linked nodes want to be and how tightly they pull
-                fgRef.current.d3Force('link')?.strength(dag ? 1 : 0.8); 
-                // fgRef.current.d3Force('x', d3.forceX(0).strength(0.02));
-                // fgRef.current.d3Force('y', d3.forceY(0).strength(0.02));
-                fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(dag ? 0.01 : .1));
-                
-                fgRef.current.d3Force('collide', forceCollide((node => {
-                    const genreNode = node as Genre;
-                    const radius = calculateRadius(genreNode.artistCount);
-                    return collideRadiusForNode(genreNode.name, radius);
-                })));
-                fgRef.current.d3Force('collide')?.strength(dag ? .02: .7); // Increased strength
-                fgRef.current.zoom(dag ? 0.25 : 0.18);
-                // fgRef.current.centerAt(0, 0, 0);
-            }
+            setVelocityDecay(prev => (prev === INITIAL_DECAY ? prev : INITIAL_DECAY));
+            hasStabilizedRef.current = false;
+
+            if (!fgRef.current) return;
+
+            // fgRef.current.d3Force('center')?.strength(-1, -1);
+            fgRef.current.d3Force('charge')?.strength(dag ? -1230 : -70); // Applies a repelling force between all nodes
+            fgRef.current.d3Force('link')?.distance(dag ? 150 : 70); //how far apart linked nodes want to be and how tightly they pull
+            fgRef.current.d3Force('link')?.strength(dag ? 1 : 0.8); 
+            // fgRef.current.d3Force('x', d3.forceX(0).strength(0.02));
+            // fgRef.current.d3Force('y', d3.forceY(0).strength(0.02));
+            fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(dag ? 0.01 : .1));
+            
+            fgRef.current.d3Force('collide', forceCollide((node => {
+                const genreNode = node as Genre;
+                const radius = calculateRadius(genreNode.artistCount);
+                return collideRadiusForNode(genreNode.name, radius);
+            })));
+            fgRef.current.d3Force('collide')?.strength(dag ? .02: .7); // Increased strength
+            fgRef.current.d3ReheatSimulation?.();
+            fgRef.current.d3VelocityDecay?.(INITIAL_DECAY);
+            fgRef.current.zoom(dag ? 0.25 : 0.18);
+            // fgRef.current.centerAt(0, 0, 0);
         }
     }, [graphData, show, clusterModes]);
 
@@ -293,7 +303,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         <ForceGraph
             ref={fgRef}
              d3AlphaDecay={0.01}     // Length forces are active; smaller → slower cooling
-             d3VelocityDecay={.75}    // How springy tugs feel; smaller → more inertia
+             d3VelocityDecay={velocityDecay}    // How springy tugs feel; smaller → more inertia
             cooldownTime={20000} // How long to run the simulation before stopping
             autoPauseRedraw={false}
             width={width}
@@ -323,6 +333,13 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
             nodeCanvasObjectMode={() => 'replace'}
             nodeVal={(node: Genre) => calculateRadius(node.artistCount)}
             nodePointerAreaPaint={nodePointerAreaPaint}
+            onEngineStop={() => {
+                if (!hasStabilizedRef.current) {
+                    hasStabilizedRef.current = true;
+                    fgRef.current?.d3VelocityDecay?.(STABLE_DECAY);
+                    setVelocityDecay(STABLE_DECAY);
+                }
+            }}
         />
     )
 });

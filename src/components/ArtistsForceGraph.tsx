@@ -51,6 +51,9 @@ interface ArtistsForceGraphProps {
     maxNodeSize?: number;
 }
 
+const INITIAL_DECAY = 0.75;
+const STABLE_DECAY = 0.92;
+
 const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     artists,
     artistLinks,
@@ -96,6 +99,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
 
     const fgRef = useRef<ForceGraphMethods<Artist, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
+    const [velocityDecay, setVelocityDecay] = useState<number>(INITIAL_DECAY);
+    const hasStabilizedRef = useRef<boolean>(false);
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
@@ -164,31 +169,35 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     }, [hoveredId]);
 
     useEffect(() => {
-        if (fgRef.current) {
-            // Mirror Genre force tuning so both graphs feel consistent
-            const chargeStrength = -70;
-            const linkDistance = 70;
-            const linkStrength = 0.8;
-            const centerStrength = 0.1;
-            const collideStrength = 0.7;
+        setVelocityDecay(prev => (prev === INITIAL_DECAY ? prev : INITIAL_DECAY));
+        hasStabilizedRef.current = false;
 
-            fgRef.current.d3Force('charge')?.strength(chargeStrength);
-            fgRef.current.d3Force('link')?.distance(linkDistance);
-            fgRef.current.d3Force('link')?.strength(linkStrength);
-            fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(centerStrength));
+        if (!fgRef.current) return;
 
-            // Collide force with iterations to better resolve overlaps
-            fgRef.current.d3Force('collide', d3.forceCollide((node: any) => {
-                const a = node as Artist;
-                return collideRadiusForNode(a.name, radiusFor(a));
-            }).iterations(2));
-            fgRef.current.d3Force('collide')?.strength(collideStrength);
+        // Mirror Genre force tuning so both graphs feel consistent
+        const chargeStrength = -70;
+        const linkDistance = 70;
+        const linkStrength = 0.8;
+        const centerStrength = 0.1;
+        const collideStrength = 0.7;
 
-            // Reheat the simulation when data or visibility changes
-            fgRef.current.d3ReheatSimulation?.();
-            const isMobile = window.matchMedia('(max-width: 640px)').matches
-            fgRef.current.zoom(isMobile ? 0.12 : 0.18)
-        }
+        fgRef.current.d3Force('charge')?.strength(chargeStrength);
+        fgRef.current.d3Force('link')?.distance(linkDistance);
+        fgRef.current.d3Force('link')?.strength(linkStrength);
+        fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(centerStrength));
+
+        // Collide force with iterations to better resolve overlaps
+        fgRef.current.d3Force('collide', d3.forceCollide((node: any) => {
+            const a = node as Artist;
+            return collideRadiusForNode(a.name, radiusFor(a));
+        }).iterations(2));
+        fgRef.current.d3Force('collide')?.strength(collideStrength);
+
+        // Reheat the simulation when data or visibility changes
+        fgRef.current.d3ReheatSimulation?.();
+        fgRef.current.d3VelocityDecay?.(INITIAL_DECAY);
+        const isMobile = window.matchMedia('(max-width: 640px)').matches
+        fgRef.current.zoom(isMobile ? 0.12 : 0.18)
     }, [preparedData, show]);
 
     // Build adjacency map for quick 1-hop neighbor lookup
@@ -291,10 +300,17 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
             nodeColor={() => 'rgba(0,0,0,0)'}
             nodeCanvasObjectMode={() => 'replace'}
             d3AlphaDecay={0.01}
-            d3VelocityDecay={0.75}
-            cooldownTime={20000}
+            d3VelocityDecay={velocityDecay}
+            cooldownTime={10000}
             autoPauseRedraw={false}
             onZoom={({ k }) => { zoomRef.current = k; }}
+            onEngineStop={() => {
+                if (!hasStabilizedRef.current) {
+                    hasStabilizedRef.current = true;
+                    fgRef.current?.d3VelocityDecay?.(STABLE_DECAY);
+                    setVelocityDecay(STABLE_DECAY);
+                }
+            }}
             nodeCanvasObject={(node, ctx, globalScale) => {
                 const x = node.x || 0;
                 const y = node.y || 0;
