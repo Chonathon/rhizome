@@ -6,7 +6,7 @@ import {forceCollide} from 'd3-force';
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX } from "@/lib/graphStyle";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -248,7 +248,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         return 5 + Math.sqrt(artistCount) * .5;
     };
 
-    const nodeCanvasObject = (node: NodeObject, ctx: CanvasRenderingContext2D) => {
+    const nodeCanvasObject = (node: NodeObject, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const genreNode = node as Genre;
         const radius = calculateRadius(genreNode.artistCount);
         const nodeX = node.x || 0;
@@ -284,10 +284,17 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         else if (isNeighbor) alpha = Math.max(alpha, 0.85);
         else if (hasSelection) alpha = Math.min(alpha, 0.2);
         const yOffset = yOffsetByIdRef.current.get(genreNode.id) || 0;
-        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, theme, alpha, LABEL_FONT_SIZE, yOffset);
+        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, theme, alpha, {
+            fontPx: LABEL_FONT_SIZE,
+            yOffsetPx: yOffset,
+            globalScale,
+            minFontPx: LABEL_FONT_MIN_PX,
+            maxFontPx: LABEL_FONT_MAX_PX,
+            scaleWithZoom: true,
+        });
     };
 
-    const nodePointerAreaPaint = (node: NodeObject, color: string, ctx: CanvasRenderingContext2D) => {
+    const nodePointerAreaPaint = (node: NodeObject, color: string, ctx: CanvasRenderingContext2D, globalScale: number) => {
         ctx.fillStyle = color;
         const genreNode = node as Genre;
         const radius = calculateRadius(genreNode.artistCount);
@@ -295,7 +302,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         const nodeY = node.y || 0;
 
         ctx.beginPath();
-        ctx.arc(nodeX, nodeY, radius + 24, 0, 2 * Math.PI, false); // node pointer area
+        ctx.arc(nodeX, nodeY, radius + 24 / (globalScale || 1), 0, 2 * Math.PI, false); // node pointer area
         ctx.fill();
     }
 

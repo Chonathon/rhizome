@@ -1,8 +1,10 @@
 // Shared helpers for graph styling and label behavior
 
-export const LABEL_FONT_SIZE = 12;
+export const LABEL_FONT_SIZE = 16;
+export const LABEL_FONT_MIN_PX = LABEL_FONT_SIZE * 0.75;
+export const LABEL_FONT_MAX_PX = LABEL_FONT_SIZE * 2.1;
 export const DEFAULT_LABEL_FADE_START = .1;
-export const DEFAULT_LABEL_FADE_END = .3;
+export const DEFAULT_LABEL_FADE_END = .5;
 // Default upward screen-space offset (in px) to lift a focused node on mobile
 export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
 
@@ -62,6 +64,16 @@ export function drawCircleNode(
   ctx.stroke();
 }
 
+export type LabelDrawOptions = {
+  fontPx?: number;
+  yOffsetPx?: number;
+  globalScale?: number;
+  minFontPx?: number;
+  maxFontPx?: number;
+  scaleWithZoom?: boolean;
+  paddingPx?: number;
+};
+
 export function drawLabelBelow(
   ctx: CanvasRenderingContext2D,
   label: string,
@@ -70,16 +82,32 @@ export function drawLabelBelow(
   r: number,
   theme: string | undefined,
   alpha = 1,
-  fontPx = LABEL_FONT_SIZE,
-  yOffset = 0
+  options: LabelDrawOptions = {}
 ) {
   if (alpha <= 0) return;
+  const {
+    fontPx = LABEL_FONT_SIZE,
+    yOffsetPx = 0,
+    globalScale = 1,
+    minFontPx = LABEL_FONT_MIN_PX,
+    maxFontPx = LABEL_FONT_MAX_PX,
+    scaleWithZoom = false,
+    paddingPx = 8,
+  } = options;
+
+  const scale = Math.max(globalScale || 1, 1e-6);
+  let screenFontPx = scaleWithZoom ? fontPx * scale : fontPx;
+  screenFontPx = Math.min(maxFontPx, Math.max(minFontPx, screenFontPx));
+  const fontWorldPx = screenFontPx / scale;
+  const paddingWorld = paddingPx / scale;
+  const yOffsetWorld = yOffsetPx / scale;
+
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.font = `${fontPx}px Geist`;
+  ctx.font = `${fontWorldPx}px Geist`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-  ctx.fillText(label, x, y + r + 8 + yOffset);
+  ctx.fillText(label, x, y + r + paddingWorld + yOffsetWorld);
   ctx.restore();
 }

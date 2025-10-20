@@ -3,7 +3,7 @@ import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useS
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MAX_PX, LABEL_FONT_MIN_PX } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
 export type GraphHandle = {
@@ -68,7 +68,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     labelFadeInStart = DEFAULT_LABEL_FADE_START,
     labelFadeInEnd = DEFAULT_LABEL_FADE_END,
     maxLinksToShow = 6000,
-    minLabelPx = 8,
+    minLabelPx = LABEL_FONT_MIN_PX,
     strokeMinPx = 13,
     width,
     height,
@@ -348,7 +348,14 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 else if (hasSelection) alpha = Math.min(alpha, 0.2);
                 const label = node.name;
                 const yOffset = yOffsetByIdRef.current.get(artist.id) || 0;
-                drawLabelBelow(ctx, label, x, y, r, theme, alpha, LABEL_FONT_SIZE, yOffset);
+                drawLabelBelow(ctx, label, x, y, r, theme, alpha, {
+                    fontPx: LABEL_FONT_SIZE,
+                    yOffsetPx: yOffset,
+                    globalScale,
+                    minFontPx: minLabelPx,
+                    maxFontPx: Math.max(LABEL_FONT_MAX_PX, minLabelPx * 2),
+                    scaleWithZoom: true,
+                });
             }}
             nodePointerAreaPaint={(node, color, ctx, globalScale) => {
                 ctx.fillStyle = color;
