@@ -96,6 +96,8 @@ export type LabelDrawOptions = {
   maxFontPx?: number;
   scaleWithZoom?: boolean;
   paddingPx?: number;
+  strokeStyle?: string;
+  strokeWidthPx?: number;
 };
 
 export function drawLabelBelow(
@@ -117,6 +119,8 @@ export function drawLabelBelow(
     maxFontPx = LABEL_FONT_MAX_PX,
     scaleWithZoom = false,
     paddingPx = 8,
+    strokeStyle,
+    strokeWidthPx,
   } = options;
 
   const scale = Math.max(globalScale || 1, 1e-6);
@@ -125,14 +129,29 @@ export function drawLabelBelow(
   const fontWorldPx = screenFontPx / scale;
   const paddingWorld = paddingPx / scale;
   const yOffsetWorld = yOffsetPx / scale;
+  const defaultStroke =
+    theme === 'dark'
+      ? 'rgba(0, 0, 0, 0.55)'
+      : 'rgba(255, 255, 255, 0.6)';
+  const strokeWorldPx =
+    (strokeWidthPx ?? Math.max(0.5, screenFontPx * 0.12)) / scale;
+  const textY = y + r + paddingWorld + yOffsetWorld;
 
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.font = `${fontWorldPx}px Geist`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-  ctx.fillText(label, x, y + r + paddingWorld + yOffsetWorld);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = strokeStyle ?? defaultStroke;
+  ctx.lineWidth = strokeWorldPx;
+  ctx.strokeText(label, x, textY);
+  ctx.fillStyle =
+    theme === 'dark'
+      ? 'rgba(255, 255, 255, 0.85)'
+      : 'rgba(0, 0, 0, 0.85)';
+  ctx.fillText(label, x, textY);
   ctx.restore();
 }
 
