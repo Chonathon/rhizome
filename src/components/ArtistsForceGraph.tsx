@@ -175,11 +175,11 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         if (!fgRef.current) return;
 
         // Mirror Genre force tuning so both graphs feel consistent
-        const chargeStrength = -70;
-        const linkDistance = 70;
-        const linkStrength = 0.8;
-        const centerStrength = 0.1;
-        const collideStrength = 0.7;
+        const chargeStrength = -130;
+        const linkDistance = 200;
+        const linkStrength = 0.6;
+        const centerStrength = .05;
+        const collideStrength = 0.4;
 
         fgRef.current.d3Force('charge')?.strength(chargeStrength);
         fgRef.current.d3Force('link')?.distance(linkDistance);

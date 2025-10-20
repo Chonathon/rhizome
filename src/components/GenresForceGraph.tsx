@@ -2,11 +2,10 @@ import {Genre, GenreClusterMode, GenreGraphData, NodeLink} from "@/types";
 import React, {forwardRef, useEffect, useImperativeHandle, useRef, useMemo, useState} from "react";
 import ForceGraph, {ForceGraphMethods, GraphData, NodeObject} from "react-force-graph-2d";
 import {Loading} from "./Loading";
-import {forceCollide} from 'd3-force';
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END } from "@/lib/graphStyle";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -27,14 +26,81 @@ interface GenresForceGraphProps {
     selectedGenreId?: string;
     width?: number;
     height?: number;
+    // Tweaks for label fade behaviour (optional, matches Artist graph ergonomics)
+    labelFadeInStart?: number;
+    labelFadeInEnd?: number;
+    minLabelPx?: number;
+    maxLabelPx?: number;
+    // Allow tuning forces per mode without diving into the component internals.
+    forceOverrides?: {
+        base?: Partial<ForcePreset>;
+        dag?: Partial<ForcePreset>;
+    };
 }
 
 // Styling shared via graphStyle utils
 
 const INITIAL_DECAY = 0.75;
 const STABLE_DECAY = 0.92;
+const ALPHA_DECAY = 0.01;
+const COOLDOWN_TIME_MS = 20000;
+const DAG_LEVEL_DISTANCE = 200;
+const DEFAULT_LINK_CURVATURE = 0.5;
+const DAG_LINK_CURVATURE = 0;
+const POINTER_PADDING_PX = 24;
 
-const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId, width, height }, ref) => {
+type ForcePreset = {
+    chargeStrength: number;
+    linkDistance: number;
+    linkStrength: number;
+    centerStrength: number;
+    collideStrength: number;
+    collideIterations: number;
+    initialZoom: number;
+};
+
+const FORCE_PRESETS: Record<'base' | 'dag', ForcePreset> = {
+    base: {
+        chargeStrength: -130,
+        linkDistance: 200,
+        linkStrength: 1,
+        centerStrength: .05,
+        collideStrength: 0.4,
+        collideIterations: 1,
+        initialZoom: 0.18,
+    },
+    dag: {
+        chargeStrength: -1230,
+        linkDistance: 150,
+        linkStrength: 1,
+        centerStrength: 0.01,
+        collideStrength: 0.4,
+        collideIterations: 1,
+        initialZoom: 0.25,
+    },
+};
+
+const RADIUS_BASE = 5;
+const RADIUS_SQRT_MULTIPLIER = 0.5;
+const radiusForCount = (artistCount: number) => RADIUS_BASE + Math.sqrt(artistCount) * RADIUS_SQRT_MULTIPLIER;
+
+const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
+    graphData,
+    onNodeClick,
+    loading,
+    show,
+    dag,
+    clusterModes,
+    colorMap: externalColorMap,
+    selectedGenreId,
+    width,
+    height,
+    labelFadeInStart = DEFAULT_LABEL_FADE_START,
+    labelFadeInEnd = DEFAULT_LABEL_FADE_END,
+    minLabelPx = LABEL_FONT_MIN_PX,
+    maxLabelPx = LABEL_FONT_MAX_PX,
+    forceOverrides,
+}, ref) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
     const [velocityDecay, setVelocityDecay] = useState<number>(INITIAL_DECAY);
@@ -44,6 +110,16 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
     const { theme } = useTheme();
+
+    const baseForce = useMemo<ForcePreset>(() => ({
+        ...FORCE_PRESETS.base,
+        ...(forceOverrides?.base ?? {}),
+    }), [forceOverrides?.base]);
+
+    const dagForce = useMemo<ForcePreset>(() => ({
+        ...FORCE_PRESETS.dag,
+        ...(forceOverrides?.dag ?? {}),
+    }), [forceOverrides?.dag]);
 
     // Expose simple zoom API to parent
     useImperativeHandle(ref, () => ({
@@ -181,32 +257,30 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
     }, [externalColorMap, preparedData.nodes, preparedData.links, theme]);
 
     useEffect(() => {
-        if (graphData) {
-            setVelocityDecay(prev => (prev === INITIAL_DECAY ? prev : INITIAL_DECAY));
-            hasStabilizedRef.current = false;
+        if (!graphData || !fgRef.current) return;
 
-            if (!fgRef.current) return;
+        setVelocityDecay(prev => (prev === INITIAL_DECAY ? prev : INITIAL_DECAY));
+        hasStabilizedRef.current = false;
 
-            // fgRef.current.d3Force('center')?.strength(-1, -1);
-            fgRef.current.d3Force('charge')?.strength(dag ? -1230 : -70); // Applies a repelling force between all nodes
-            fgRef.current.d3Force('link')?.distance(dag ? 150 : 70); //how far apart linked nodes want to be and how tightly they pull
-            fgRef.current.d3Force('link')?.strength(dag ? 1 : 0.8); 
-            // fgRef.current.d3Force('x', d3.forceX(0).strength(0.02));
-            // fgRef.current.d3Force('y', d3.forceY(0).strength(0.02));
-            fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(dag ? 0.01 : .1));
-            
-            fgRef.current.d3Force('collide', forceCollide((node => {
-                const genreNode = node as Genre;
-                const radius = calculateRadius(genreNode.artistCount);
-                return collideRadiusForNode(genreNode.name, radius);
-            })));
-            fgRef.current.d3Force('collide')?.strength(dag ? .02: .7); // Increased strength
-            fgRef.current.d3ReheatSimulation?.();
-            fgRef.current.d3VelocityDecay?.(INITIAL_DECAY);
-            fgRef.current.zoom(dag ? 0.25 : 0.18);
-            // fgRef.current.centerAt(0, 0, 0);
-        }
-    }, [graphData, show, clusterModes]);
+        const { chargeStrength, linkDistance, linkStrength, centerStrength, collideStrength, collideIterations, initialZoom } = dag ? dagForce : baseForce;
+
+        fgRef.current.d3Force('charge')?.strength(chargeStrength);
+        const linkForce: any = fgRef.current.d3Force('link');
+        linkForce?.distance(linkDistance);
+        linkForce?.strength(linkStrength);
+        fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(centerStrength));
+
+        fgRef.current.d3Force('collide', d3.forceCollide((node: any) => {
+            const genreNode = node as Genre;
+            const radius = radiusForCount(genreNode.artistCount);
+            return collideRadiusForNode(genreNode.name, radius);
+        }).iterations(collideIterations));
+        fgRef.current.d3Force('collide')?.strength(collideStrength);
+
+        fgRef.current.d3ReheatSimulation?.();
+        fgRef.current.d3VelocityDecay?.(INITIAL_DECAY);
+        fgRef.current.zoom(initialZoom);
+    }, [graphData, show, dag, baseForce, dagForce]);
 
     // Build adjacency for 1st-degree neighbors
     const neighborsById = useMemo(() => {
@@ -244,13 +318,9 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         return () => clearTimeout(t);
     }, [selectedGenreId, show, preparedData]);
 
-    const calculateRadius = (artistCount: number) => {
-        return 5 + Math.sqrt(artistCount) * .5;
-    };
-
     const nodeCanvasObject = (node: NodeObject, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const genreNode = node as Genre;
-        const radius = calculateRadius(genreNode.artistCount);
+        const radius = radiusForCount(genreNode.artistCount);
         const nodeX = node.x || 0;
         const nodeY = node.y || 0;
 
@@ -277,9 +347,10 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
             ctx.restore();
         }
 
+
         // Text styling with zoom-based fade (shared helper)
         const k = zoomRef.current || 1;
-        let alpha = labelAlphaForZoom(k);
+        let alpha = labelAlphaForZoom(k, labelFadeInStart, labelFadeInEnd);
         if (isSelected) alpha = 1;
         else if (isNeighbor) alpha = Math.max(alpha, 0.85);
         else if (hasSelection) alpha = Math.min(alpha, 0.2);
@@ -288,8 +359,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
             fontPx: LABEL_FONT_SIZE,
             yOffsetPx: yOffset,
             globalScale,
-            minFontPx: LABEL_FONT_MIN_PX,
-            maxFontPx: LABEL_FONT_MAX_PX,
+            minFontPx: minLabelPx,
+            maxFontPx: maxLabelPx,
             scaleWithZoom: true,
         });
     };
@@ -297,28 +368,28 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
     const nodePointerAreaPaint = (node: NodeObject, color: string, ctx: CanvasRenderingContext2D, globalScale: number) => {
         ctx.fillStyle = color;
         const genreNode = node as Genre;
-        const radius = calculateRadius(genreNode.artistCount);
+        const radius = radiusForCount(genreNode.artistCount);
         const nodeX = node.x || 0;
         const nodeY = node.y || 0;
 
         ctx.beginPath();
-        ctx.arc(nodeX, nodeY, radius + 24 / (globalScale || 1), 0, 2 * Math.PI, false); // node pointer area
+        ctx.arc(nodeX, nodeY, radius + POINTER_PADDING_PX / (globalScale || 1), 0, 2 * Math.PI, false);
         ctx.fill();
-    }
+    };
 
     return !show ? null : loading ? <Loading /> : (
         <ForceGraph
             ref={fgRef}
-             d3AlphaDecay={0.01}     // Length forces are active; smaller → slower cooling
-             d3VelocityDecay={velocityDecay}    // How springy tugs feel; smaller → more inertia
-            cooldownTime={20000} // How long to run the simulation before stopping
+            d3AlphaDecay={ALPHA_DECAY}
+            d3VelocityDecay={velocityDecay}
+            cooldownTime={COOLDOWN_TIME_MS}
             autoPauseRedraw={false}
             width={width}
             height={height}
             graphData={preparedData}
             dagMode={dag ? 'radialin' : undefined}
-            dagLevelDistance={200}
-            linkCurvature={dag ? 0 : 0.5}
+            dagLevelDistance={DAG_LEVEL_DISTANCE}
+            linkCurvature={dag ? DAG_LINK_CURVATURE : DEFAULT_LINK_CURVATURE}
             linkColor={(l: any) => {
                 const s = typeof l.source === 'string' ? l.source : l.source?.id;
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
@@ -338,7 +409,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
             onNodeHover={(n: any) => setHoveredId(n ? n.id : undefined)}
             nodeCanvasObject={nodeCanvasObject}
             nodeCanvasObjectMode={() => 'replace'}
-            nodeVal={(node: Genre) => calculateRadius(node.artistCount)}
+            nodeVal={(node: Genre) => radiusForCount(node.artistCount)}
             nodePointerAreaPaint={nodePointerAreaPaint}
             onEngineStop={() => {
                 if (!hasStabilizedRef.current) {
