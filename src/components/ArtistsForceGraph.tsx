@@ -3,7 +3,7 @@ import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useS
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MAX_PX, LABEL_FONT_MIN_PX, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, DEFAULT_HOVER_NODE_SCALE, DEFAULT_HOVER_ANIMATION_EASE, DEFAULT_HOVER_OFFSET_EPSILON, DEFAULT_HOVER_SCALE_EPSILON, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MAX_PX, LABEL_FONT_MIN_PX, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, DEFAULT_HOVER_NODE_SCALE, DEFAULT_HOVER_ANIMATION_EASE, DEFAULT_HOVER_OFFSET_EPSILON, DEFAULT_HOVER_SCALE_EPSILON, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation, getNodeLabelHighlightOptions, NodeLabelState } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
 export type GraphHandle = {
@@ -417,6 +417,12 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 }
                 const label = node.name;
                 const yOffset = yOffsetByIdRef.current.get(artist.id) || 0;
+                const labelState: NodeLabelState = isSelected
+                    ? 'selected'
+                    : isHovered
+                        ? 'hovered'
+                        : 'normal';
+                const highlightOptions = getNodeLabelHighlightOptions(labelState, accent, theme);
                 drawLabelBelow(ctx, label, x, y, r, theme, alpha, {
                     fontPx: LABEL_FONT_SIZE,
                     yOffsetPx: yOffset,
@@ -424,6 +430,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                     minFontPx: minLabelPx,
                     maxFontPx: Math.max(LABEL_FONT_MAX_PX, minLabelPx * 2),
                     scaleWithZoom: true,
+                    ...highlightOptions,
                 });
             }}
             nodePointerAreaPaint={(node, color, ctx, globalScale) => {

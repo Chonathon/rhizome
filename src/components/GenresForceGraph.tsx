@@ -5,7 +5,7 @@ import {Loading} from "./Loading";
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, DEFAULT_HOVER_NODE_SCALE, DEFAULT_HOVER_ANIMATION_EASE, DEFAULT_HOVER_OFFSET_EPSILON, DEFAULT_HOVER_SCALE_EPSILON, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, DEFAULT_TOUCH_TARGET_PADDING_PX, DEFAULT_SHOW_NODE_TOOLTIP, DEFAULT_HOVER_NODE_SCALE, DEFAULT_HOVER_ANIMATION_EASE, DEFAULT_HOVER_OFFSET_EPSILON, DEFAULT_HOVER_SCALE_EPSILON, HOVERED_LABEL_MIN_ALPHA, alphaToHex, createNodeLabelAccessor, updateDimFactorAnimation, getNodeLabelHighlightOptions, NodeLabelState } from "@/lib/graphStyle";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -419,6 +419,12 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
             alpha = Math.max(alpha, HOVERED_LABEL_MIN_ALPHA);
         }
         const yOffset = yOffsetByIdRef.current.get(genreNode.id) || 0;
+        const labelState: NodeLabelState = isSelected
+            ? 'selected'
+            : isHovered
+                ? 'hovered'
+                : 'normal';
+        const highlightOptions = getNodeLabelHighlightOptions(labelState, accent, theme);
         drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, drawRadius, theme, alpha, {
             fontPx: LABEL_FONT_SIZE,
             yOffsetPx: yOffset,
@@ -426,6 +432,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
             minFontPx: minLabelPx,
             maxFontPx: maxLabelPx,
             scaleWithZoom: true,
+            ...highlightOptions,
         });
     };
 

@@ -98,6 +98,10 @@ export type LabelDrawOptions = {
   paddingPx?: number;
   strokeStyle?: string;
   strokeWidthPx?: number;
+  fontWeight?: string;
+  fillStyle?: string;
+  shadowBlur?: number;
+  shadowColor?: string;
 };
 
 export function drawLabelBelow(
@@ -121,6 +125,10 @@ export function drawLabelBelow(
     paddingPx = 8,
     strokeStyle,
     strokeWidthPx,
+    fontWeight = '500',
+    fillStyle,
+    shadowBlur,
+    shadowColor,
   } = options;
 
   const scale = Math.max(globalScale || 1, 1e-6);
@@ -139,20 +147,75 @@ export function drawLabelBelow(
 
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.font = `${fontWorldPx}px Geist`;
+  ctx.font = `${fontWeight} ${fontWorldPx}px Geist`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
+  ctx.shadowBlur = shadowBlur ?? 0;
+  ctx.shadowColor = shadowColor ?? 'transparent';
   ctx.strokeStyle = strokeStyle ?? defaultStroke;
   ctx.lineWidth = strokeWorldPx;
   ctx.strokeText(label, x, textY);
   ctx.fillStyle =
-    theme === 'dark'
+    fillStyle ??
+    (theme === 'dark'
       ? 'rgba(255, 255, 255, 0.85)'
-      : 'rgba(0, 0, 0, 0.85)';
+      : 'rgba(0, 0, 0, 0.85)');
   ctx.fillText(label, x, textY);
   ctx.restore();
+}
+
+export type NodeLabelState = 'normal' | 'hovered' | 'selected';
+
+const stripAlpha = (hex: string) => {
+  if (!hex || !hex.startsWith('#')) return hex;
+  if (hex.length === 9) return hex.slice(0, 7);
+  return hex;
+};
+
+export function getNodeLabelHighlightOptions(
+  state: NodeLabelState,
+  accent: string,
+  theme?: string
+): Partial<LabelDrawOptions> {
+  if (state === 'normal') {
+    return {
+      fontWeight: '400',
+      shadowBlur: 0,
+      shadowColor: 'transparent',
+    };
+  }
+
+  const baseAccent = stripAlpha(accent);
+  const strokeAlpha = state === 'selected' ? 0.55 : 0.35;
+  const strokeStyle =
+    baseAccent && baseAccent.startsWith('#')
+      ? `${baseAccent}${alphaToHex(strokeAlpha)}`
+      : undefined;
+  const strokeWidthPx = state === 'selected' ? 1.6 : 1.1;
+  const fillAlpha =
+    theme === 'dark'
+      ? state === 'selected'
+        ? 0.92
+        : 0.88
+      : state === 'selected'
+        ? 0.9
+        : 0.85;
+
+  const fillStyle =
+    theme === 'dark'
+      ? `rgba(255, 255, 255, ${fillAlpha})`
+      : `rgba(0, 0, 0, ${fillAlpha})`;
+
+  return {
+    fontWeight: '400',
+    strokeStyle,
+    strokeWidthPx,
+    fillStyle,
+    shadowBlur: 0,
+    shadowColor: 'transparent',
+  };
 }
 
 const emptyNodeLabel = () => '';
