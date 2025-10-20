@@ -42,9 +42,16 @@ interface ArtistsForceGraphProps {
     // Explicit size for the canvas (viewport)
     width?: number;
     height?: number;
+    // Node size scaling exponent. Higher values = more differential between popular/unpopular artists.
+    // Default 1.2. Try values between 1.0 (linear) and 3.0 (very aggressive).
+    nodeSizeScale?: number;
+    // Minimum node radius. Default 1.5.
+    minNodeSize?: number;
+    // Maximum node radius. Default 20.
+    maxNodeSize?: number;
 }
 
-const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({ 
+const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     artists,
     artistLinks,
     onNodeClick,
@@ -62,6 +69,9 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     strokeMinPx = 13,
     width,
     height,
+    nodeSizeScale = 2,
+    minNodeSize = 8,
+    maxNodeSize = 30,
 }, ref) => {
     const { theme } = useTheme();
 
@@ -214,24 +224,19 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         return () => clearTimeout(t);
     }, [selectedArtistId, show, preparedData]);
 
-    // Precompute listener range (log-scaled) for sizing
-    const listenerScale = useMemo(() => {
-        const vals = preparedData.nodes.map(a => Math.max(1, a.listeners || 1));
-        const min = Math.min(...vals, 1);
-        const max = Math.max(...vals, 1);
-        const minLog = Math.log10(min);
-        const maxLog = Math.log10(max);
-        return { minLog, maxLog };
-    }, [preparedData]);
-
-    // Node radius based on listeners (log-scaled)
+    // Node radius based on listeners (square root scaling like GenresForceGraph)
     const radiusFor = (artist: Artist) => {
-        const { minLog, maxLog } = listenerScale;
-        const v = Math.log10(Math.max(1, artist.listeners || 1));
-        const t = (v - minLog) / Math.max(1e-6, (maxLog - minLog));
-        const rMin = .2;
-        const rMax = 20;
-        return rMin + t * (rMax - rMin);
+        const listeners = Math.max(1, artist.listeners || 1);
+        // Square root provides better differentiation than log
+        // nodeSizeScale acts as a multiplier for the sqrt component
+        // With coefficient 0.01 and default nodeSizeScale=1.2:
+        // - 100k listeners: sqrt(100000) * 0.01 * 1.2 ≈ 3.8
+        // - 500k listeners: sqrt(500000) * 0.01 * 1.2 ≈ 8.5
+        // - 900k listeners: sqrt(900000) * 0.01 * 1.2 ≈ 11.4
+        // - 1.5m listeners: sqrt(1500000) * 0.01 * 1.2 ≈ 14.7
+        const calculatedRadius = Math.sqrt(listeners) * (0.01 * nodeSizeScale);
+        // Clamp between min and max
+        return Math.max(minNodeSize, Math.min(maxNodeSize, calculatedRadius));
     };
 
     // No label width caching needed for simple pointer area (circular)
@@ -333,13 +338,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 ctx.arc(nodeX, nodeY, r, 0, 2 * Math.PI, false);
                 ctx.fill();
             }}
-            // use nodeVal to slightly increase repulsion for popular artists
-            nodeVal={(n: Artist) => {
-                const { minLog, maxLog } = listenerScale;
-                const v = Math.log10(Math.max(1, n.listeners || 1));
-                const t = (v - minLog) / Math.max(1e-6, (maxLog - minLog));
-                return 1 + t * 6; // 1..7
-            }}
+            // use nodeVal to increase repulsion for popular artists based on radius
+            nodeVal={(n: Artist) => radiusFor(n)}
         />)
     )
 });
