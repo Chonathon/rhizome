@@ -109,7 +109,7 @@ function ToolbarButton({
 
 function MoreMenu() {
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="xl" className="w-full rounded-full py-4 text-muted-foreground">
           <MoreHorizontal className="size-6" />

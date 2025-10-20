@@ -610,22 +610,22 @@ function SettingsOverlay() {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-4 md:max-w-[700px] lg:max-w-[800px]">
+        <DialogContent className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-3 md:max-w-[700px] lg:max-w-[800px]">
           
-          <DialogTitle className="p-6 pb-0 md:sr-only sm:pb-3 bg-transparent">Settings</DialogTitle>
+          <DialogTitle className="p-6 pb-0 md:sr-only md:pb-3 bg-transparent">Settings</DialogTitle>
           <DialogDescription className="sr-only">
             Customize your settings here.
           </DialogDescription>
-          <SidebarProvider className="items-start">
-            <div className="flex min-h-0 w-full h-160">
-              <Sidebar collapsible="none" className="pt-1.5 hidden md:flex w-[9rem]">
+          <SidebarProvider className="items-start ">
+            <div className="flex flex-col md:flex-row min-h-0 w-full max-h-160">
+              <Sidebar collapsible="none" className="md:pt-4 px-3 pb-2 md:pb-0 md:px-0 md:flex w-full md:w-[9rem]">
                 <SidebarContent>
-                  <SidebarHeader>
-                    <h2 className="text-md font-semibold">Settings</h2>
+                  <SidebarHeader className="sr-only md:not-sr-only">
+                    <h2 className="text-md px-3 font-semibold">Settings</h2>
                   </SidebarHeader>
                   <SidebarGroup>
                     <SidebarGroupContent>
-                      <SidebarMenu>
+                      <SidebarMenu className="flex flex-row md:flex-col w-full  flex-wrap sm:flex-nowrap">
                         {data.nav.map((item) => (
                           <SidebarMenuItem key={item.name}>
                             <SidebarMenuButton
@@ -645,8 +645,8 @@ function SettingsOverlay() {
                   </SidebarGroup>
                 </SidebarContent>
               </Sidebar>
-              <main className="flex px-3 pb-16 no-scrollbar flex-1 flex-col overflow-y-auto">
-                <div className="md:hidden ">
+              <main className="flex px-3 pb-16 no-scrollbar min-h-0 flex-1 flex-col overflow-y-auto">
+                {/* <div className="md:hidden ">
                   <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
                     <TabsList className="w-full justify-between">
                       {data.nav.map((item) => (
@@ -661,7 +661,7 @@ function SettingsOverlay() {
                       ))}
                     </TabsList>
                   </Tabs>
-                </div>
+                </div> */}
                 <div className="flex-1 mt-4 md:mt-11 pb-16 flex flex-col gap-6">
                   {views[activeView]}
                 </div>
