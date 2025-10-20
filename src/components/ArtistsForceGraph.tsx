@@ -3,7 +3,7 @@ import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useS
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MAX_PX, LABEL_FONT_MIN_PX, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, alphaToHex, updateDimFactorAnimation } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MAX_PX, LABEL_FONT_MIN_PX, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, alphaToHex, updateDimFactorAnimation } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
 export type GraphHandle = {
@@ -220,7 +220,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
 
     const activeSourceIds = useMemo(() => {
         if (selectedArtistId) return [selectedArtistId];
-        if (hoveredId) return [hoveredId];
+        if (DEFAULT_DIM_HOVER_ENABLED && hoveredId) return [hoveredId];
         return [];
     }, [selectedArtistId, hoveredId]);
 
@@ -235,6 +235,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     }, [activeSourceIds, neighborsById]);
 
     useEffect(() => {
+        const enableDimming = Boolean(selectedArtistId) || DEFAULT_DIM_HOVER_ENABLED;
         const cleanup = updateDimFactorAnimation({
             nodeIds: preparedData.nodes.map(n => n.id),
             activeSourceIds,
@@ -242,9 +243,10 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
             dimFactorRef,
             animationRef: dimAnimRafRef,
             refresh: () => fgRef.current?.refresh?.(),
+            enableDimming,
         });
         return cleanup;
-    }, [preparedData.nodes, activeSourceIds, activeNeighborIds]);
+    }, [preparedData.nodes, activeSourceIds, activeNeighborIds, selectedArtistId]);
 
     // When selection changes, center + zoom to the node
     useEffect(() => {

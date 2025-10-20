@@ -10,13 +10,13 @@ export const DEFAULT_LABEL_FADE_END = .5;
 // Default upward screen-space offset (in px) to lift a focused node on mobile
 export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
 
-export const DEFAULT_DIM_NODE_ALPHA = 0.2;
-export const DEFAULT_DIM_LABEL_ALPHA = 0.2;
+export const DEFAULT_DIM_NODE_ALPHA = 0.4;
+export const DEFAULT_DIM_LABEL_ALPHA = 0.4;
 export const DEFAULT_BASE_LINK_ALPHA = 0.5;
 export const DEFAULT_HIGHLIGHT_LINK_ALPHA = 0.8;
 export const DEFAULT_DIM_LINK_ALPHA = 0.18;
 export const DEFAULT_DIM_FADE_DURATION_MS = 400;
-export const DEFAULT_DIM_HOVER_ENABLED = false;
+export const DEFAULT_DIM_HOVER_ENABLED = true;
 
 export const alphaToHex = (alpha: number) => {
   const clamped = Math.max(0, Math.min(1, alpha));

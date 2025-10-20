@@ -5,7 +5,7 @@ import {Loading} from "./Loading";
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, alphaToHex, updateDimFactorAnimation } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, DEFAULT_DIM_HOVER_ENABLED, alphaToHex, updateDimFactorAnimation } from "@/lib/graphStyle";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -302,7 +302,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
 
     const activeSourceIds = useMemo(() => {
         if (selectedGenreId) return [selectedGenreId];
-        if (hoveredId) return [hoveredId];
+        if (DEFAULT_DIM_HOVER_ENABLED && hoveredId) return [hoveredId];
         return [];
     }, [selectedGenreId, hoveredId]);
 
@@ -317,6 +317,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
     }, [activeSourceIds, neighborsById]);
 
     useEffect(() => {
+        const enableDimming = Boolean(selectedGenreId) || DEFAULT_DIM_HOVER_ENABLED;
         const cleanup = updateDimFactorAnimation({
             nodeIds: preparedData.nodes.map(n => n.id),
             activeSourceIds,
@@ -324,9 +325,10 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
             dimFactorRef,
             animationRef: dimAnimRafRef,
             refresh: () => fgRef.current?.refresh?.(),
+            enableDimming,
         });
         return cleanup;
-    }, [preparedData.nodes, activeSourceIds, activeNeighborIds]);
+    }, [preparedData.nodes, activeSourceIds, activeNeighborIds, selectedGenreId]);
 
     // Focus viewport on selected genre
     useEffect(() => {
