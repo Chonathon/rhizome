@@ -3,7 +3,7 @@ import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useS
 import ForceGraph, {GraphData, ForceGraphMethods} from "react-force-graph-2d";
 import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MAX_PX, LABEL_FONT_MIN_PX } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MAX_PX, LABEL_FONT_MIN_PX, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, alphaToHex, updateDimFactorAnimation } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
 
 export type GraphHandle = {
@@ -105,6 +105,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
+    const dimFactorRef = useRef<Map<string, number>>(new Map());
+    const dimAnimRafRef = useRef<number | null>(null);
 
     // Expose simple zoom API to parent
     useImperativeHandle(ref, () => ({
@@ -216,6 +218,34 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         return m;
     }, [preparedData]);
 
+    const activeSourceIds = useMemo(() => {
+        if (selectedArtistId) return [selectedArtistId];
+        if (hoveredId) return [hoveredId];
+        return [];
+    }, [selectedArtistId, hoveredId]);
+
+    const activeSourceSet = useMemo(() => new Set(activeSourceIds), [activeSourceIds]);
+
+    const activeNeighborIds = useMemo(() => {
+        const set = new Set<string>();
+        activeSourceIds.forEach(id => {
+            neighborsById.get(id)?.forEach(neighbor => set.add(neighbor));
+        });
+        return set;
+    }, [activeSourceIds, neighborsById]);
+
+    useEffect(() => {
+        const cleanup = updateDimFactorAnimation({
+            nodeIds: preparedData.nodes.map(n => n.id),
+            activeSourceIds,
+            activeNeighborIds,
+            dimFactorRef,
+            animationRef: dimAnimRafRef,
+            refresh: () => fgRef.current?.refresh?.(),
+        });
+        return cleanup;
+    }, [preparedData.nodes, activeSourceIds, activeNeighborIds]);
+
     // When selection changes, center + zoom to the node
     useEffect(() => {
         if (!show || !selectedArtistId || !fgRef.current) return;
@@ -280,18 +310,25 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
             // Always show links per request
             linkVisibility={() => true}
             linkColor={(l: any) => {
-                const s = typeof l.source === 'string' ? l.source : l.source?.id;
-                const t = typeof l.target === 'string' ? l.target : l.target?.id;
-                const connectedToSelected = !!selectedArtistId && (s === selectedArtistId || t === selectedArtistId);
-                const base = (s && colorById.get(s)) || (theme === 'dark' ? '#ffffff' : '#000000');
-                const alpha = selectedArtistId ? (connectedToSelected ? 'ff' : '30') : '80';
-                return base + alpha;
+                const sourceId = typeof l.source === 'string' ? l.source : l.source?.id;
+                const targetId = typeof l.target === 'string' ? l.target : l.target?.id;
+                const base = (sourceId && colorById.get(sourceId)) || (theme === 'dark' ? '#ffffff' : '#000000');
+                if (activeSourceSet.size === 0) {
+                    return base + alphaToHex(DEFAULT_BASE_LINK_ALPHA);
+                }
+                const dimSource = sourceId ? (dimFactorRef.current.get(sourceId) ?? 0) : 0;
+                const dimTarget = targetId ? (dimFactorRef.current.get(targetId) ?? 0) : 0;
+                const dim = Math.max(dimSource, dimTarget);
+                const connectedToHighlight = activeSourceSet.has(sourceId) || activeSourceSet.has(targetId);
+                const connectionBaseAlpha = connectedToHighlight ? DEFAULT_HIGHLIGHT_LINK_ALPHA : DEFAULT_BASE_LINK_ALPHA;
+                const alpha = DEFAULT_DIM_LINK_ALPHA + (connectionBaseAlpha - DEFAULT_DIM_LINK_ALPHA) * (1 - dim);
+                return base + alphaToHex(alpha);
             }}
             linkWidth={(l: any) => {
-                if (!selectedArtistId) return 1;
+                if (activeSourceSet.size === 0) return 1;
                 const s = typeof l.source === 'string' ? l.source : l.source?.id;
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
-                return (s === selectedArtistId || t === selectedArtistId) ? 2.5 : 0.6;
+                return (activeSourceSet.has(s) || activeSourceSet.has(t)) ? 2.5 : 0.6;
             }}
             linkCurvature={preparedData.links.length <= curvedLinksAbove ? curvedLinkCurvature : 0}
             onNodeClick={onNodeClick}
@@ -320,13 +357,14 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 // draw node circle sized by listeners (match GenresForceGraph style)
                 const rBase = radiusFor(artist);
                 const isSelected = !!selectedArtistId && artist.id === selectedArtistId;
-                const isNeighbor = !!selectedArtistId && neighborsById.get(selectedArtistId)?.has(artist.id);
+                const isActiveSource = activeSourceSet.has(artist.id);
+                const isActiveNeighbor = activeNeighborIds.has(artist.id);
+                const hasHighlight = activeSourceIds.length > 0;
                 const r = isSelected ? rBase * 1.4 : rBase;
 
-                // Dim non-neighbors when a selection exists
-                const hasSelection = !!selectedArtistId;
-                const dimmed = hasSelection && !isSelected && !isNeighbor;
-                const color = accent + (dimmed ? '30' : 'ff');
+                const dimFactor = dimFactorRef.current.get(artist.id) ?? 0;
+                const fillAlpha = DEFAULT_DIM_NODE_ALPHA + (1 - DEFAULT_DIM_NODE_ALPHA) * (1 - dimFactor);
+                const color = accent + alphaToHex(fillAlpha);
                 drawCircleNode(ctx, x, y, r, color);
 
                 // Emphasize selection ring
@@ -343,9 +381,12 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 // fade-in label opacity based on zoom level; centralized utility
                 const k = zoomRef.current || 1;
                 let alpha = labelAlphaForZoom(k, labelFadeInStart, labelFadeInEnd);
-                if (isSelected) alpha = 1;
-                else if (isNeighbor) alpha = Math.max(alpha, 0.85);
-                else if (hasSelection) alpha = Math.min(alpha, 0.2);
+                if (isActiveSource) alpha = 1;
+                else if (isActiveNeighbor) alpha = Math.max(alpha, 0.85);
+                else if (hasHighlight) {
+                    const dimmedAlpha = DEFAULT_DIM_LABEL_ALPHA + (1 - DEFAULT_DIM_LABEL_ALPHA) * (1 - dimFactor);
+                    alpha = Math.min(alpha, dimmedAlpha);
+                }
                 const label = node.name;
                 const yOffset = yOffsetByIdRef.current.get(artist.id) || 0;
                 drawLabelBelow(ctx, label, x, y, r, theme, alpha, {

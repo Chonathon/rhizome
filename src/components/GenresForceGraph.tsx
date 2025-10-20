@@ -5,7 +5,7 @@ import {Loading} from "./Loading";
 import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
-import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END } from "@/lib/graphStyle";
+import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset, LABEL_FONT_MIN_PX, LABEL_FONT_MAX_PX, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, DEFAULT_DIM_NODE_ALPHA, DEFAULT_DIM_LABEL_ALPHA, DEFAULT_BASE_LINK_ALPHA, DEFAULT_HIGHLIGHT_LINK_ALPHA, DEFAULT_DIM_LINK_ALPHA, alphaToHex, updateDimFactorAnimation } from "@/lib/graphStyle";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -109,6 +109,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
+    const dimFactorRef = useRef<Map<string, number>>(new Map());
+    const dimAnimRafRef = useRef<number | null>(null);
     const { theme } = useTheme();
 
     const baseForce = useMemo<ForcePreset>(() => ({
@@ -298,6 +300,34 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
         return m;
     }, [preparedData]);
 
+    const activeSourceIds = useMemo(() => {
+        if (selectedGenreId) return [selectedGenreId];
+        if (hoveredId) return [hoveredId];
+        return [];
+    }, [selectedGenreId, hoveredId]);
+
+    const activeSourceSet = useMemo(() => new Set(activeSourceIds), [activeSourceIds]);
+
+    const activeNeighborIds = useMemo(() => {
+        const set = new Set<string>();
+        activeSourceIds.forEach(id => {
+            neighborsById.get(id)?.forEach(neighbor => set.add(neighbor));
+        });
+        return set;
+    }, [activeSourceIds, neighborsById]);
+
+    useEffect(() => {
+        const cleanup = updateDimFactorAnimation({
+            nodeIds: preparedData.nodes.map(n => n.id),
+            activeSourceIds,
+            activeNeighborIds,
+            dimFactorRef,
+            animationRef: dimAnimRafRef,
+            refresh: () => fgRef.current?.refresh?.(),
+        });
+        return cleanup;
+    }, [preparedData.nodes, activeSourceIds, activeNeighborIds]);
+
     // Focus viewport on selected genre
     useEffect(() => {
         if (!show || !selectedGenreId || !fgRef.current) return;
@@ -327,9 +357,12 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
         // Node styling per parent color
         const accent = nodeColorById.get(genreNode.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
         const isSelected = !!selectedGenreId && genreNode.id === selectedGenreId;
-        const isNeighbor = !!selectedGenreId && neighborsById.get(selectedGenreId)?.has(genreNode.id);
-        const hasSelection = !!selectedGenreId;
-        const color = accent + (hasSelection && !isSelected && !isNeighbor ? '30' : 'ff');
+        const isActiveSource = activeSourceSet.has(genreNode.id);
+        const isActiveNeighbor = activeNeighborIds.has(genreNode.id);
+        const hasHighlight = activeSourceIds.length > 0;
+        const dimFactor = dimFactorRef.current.get(genreNode.id) ?? 0;
+        const fillAlpha = DEFAULT_DIM_NODE_ALPHA + (1 - DEFAULT_DIM_NODE_ALPHA) * (1 - dimFactor);
+        const color = accent + alphaToHex(fillAlpha);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineWidth = 0.5;
@@ -351,9 +384,12 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
         // Text styling with zoom-based fade (shared helper)
         const k = zoomRef.current || 1;
         let alpha = labelAlphaForZoom(k, labelFadeInStart, labelFadeInEnd);
-        if (isSelected) alpha = 1;
-        else if (isNeighbor) alpha = Math.max(alpha, 0.85);
-        else if (hasSelection) alpha = Math.min(alpha, 0.2);
+        if (isActiveSource) alpha = 1;
+        else if (isActiveNeighbor) alpha = Math.max(alpha, 0.85);
+        else if (hasHighlight) {
+            const dimmedAlpha = DEFAULT_DIM_LABEL_ALPHA + (1 - DEFAULT_DIM_LABEL_ALPHA) * (1 - dimFactor);
+            alpha = Math.min(alpha, dimmedAlpha);
+        }
         const yOffset = yOffsetByIdRef.current.get(genreNode.id) || 0;
         drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, theme, alpha, {
             fontPx: LABEL_FONT_SIZE,
@@ -391,18 +427,26 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({
             dagLevelDistance={DAG_LEVEL_DISTANCE}
             linkCurvature={dag ? DAG_LINK_CURVATURE : DEFAULT_LINK_CURVATURE}
             linkColor={(l: any) => {
-                const s = typeof l.source === 'string' ? l.source : l.source?.id;
-                const t = typeof l.target === 'string' ? l.target : l.target?.id;
-                const connectedToSelected = !!selectedGenreId && (s === selectedGenreId || t === selectedGenreId);
-                const base = (s && nodeColorById.get(s)) || (theme === 'dark' ? '#ffffff' : '#000000');
-                const alpha = selectedGenreId ? (connectedToSelected ? 'cc' : '30') : '80';
-                return base + alpha;
+                const sourceId = typeof l.source === 'string' ? l.source : l.source?.id;
+                const targetId = typeof l.target === 'string' ? l.target : l.target?.id;
+                const hasHighlight = activeSourceSet.size > 0;
+                const base = (sourceId && nodeColorById.get(sourceId)) || (theme === 'dark' ? '#ffffff' : '#000000');
+                if (!hasHighlight) {
+                    return base + alphaToHex(DEFAULT_BASE_LINK_ALPHA);
+                }
+                const dimSource = sourceId ? (dimFactorRef.current.get(sourceId) ?? 0) : 0;
+                const dimTarget = targetId ? (dimFactorRef.current.get(targetId) ?? 0) : 0;
+                const dim = Math.max(dimSource, dimTarget);
+                const connectedToHighlight = activeSourceSet.has(sourceId) || activeSourceSet.has(targetId);
+                const connectionBaseAlpha = connectedToHighlight ? DEFAULT_HIGHLIGHT_LINK_ALPHA : DEFAULT_BASE_LINK_ALPHA;
+                const alpha = DEFAULT_DIM_LINK_ALPHA + (connectionBaseAlpha - DEFAULT_DIM_LINK_ALPHA) * (1 - dim);
+                return base + alphaToHex(alpha);
             }}
             linkWidth={(l: any) => {
-                if (!selectedGenreId) return 1;
+                if (activeSourceSet.size === 0) return 1;
                 const s = typeof l.source === 'string' ? l.source : l.source?.id;
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
-                return (s === selectedGenreId || t === selectedGenreId) ? 2.5 : 0.6;
+                return (activeSourceSet.has(s) || activeSourceSet.has(t)) ? 2.5 : 0.6;
             }}
             onNodeClick={node => onNodeClick(node)}
             onZoom={({ k }) => { zoomRef.current = k; }}

@@ -1,5 +1,7 @@
 // Shared helpers for graph styling and label behavior
 
+import type {MutableRefObject} from "react";
+
 export const LABEL_FONT_SIZE = 16;
 export const LABEL_FONT_MIN_PX = LABEL_FONT_SIZE * 0.75;
 export const LABEL_FONT_MAX_PX = LABEL_FONT_SIZE * 2.1;
@@ -7,6 +9,21 @@ export const DEFAULT_LABEL_FADE_START = .1;
 export const DEFAULT_LABEL_FADE_END = .5;
 // Default upward screen-space offset (in px) to lift a focused node on mobile
 export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
+
+export const DEFAULT_DIM_NODE_ALPHA = 0.2;
+export const DEFAULT_DIM_LABEL_ALPHA = 0.2;
+export const DEFAULT_BASE_LINK_ALPHA = 0.5;
+export const DEFAULT_HIGHLIGHT_LINK_ALPHA = 0.8;
+export const DEFAULT_DIM_LINK_ALPHA = 0.18;
+export const DEFAULT_DIM_FADE_DURATION_MS = 400;
+export const DEFAULT_DIM_HOVER_ENABLED = true;
+
+export const alphaToHex = (alpha: number) => {
+  const clamped = Math.max(0, Math.min(1, alpha));
+  return Math.round(clamped * 255).toString(16).padStart(2, '0');
+};
+
+const easeOutQuad = (t: number) => 1 - Math.pow(1 - t, 2);
 
 export const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
@@ -110,4 +127,109 @@ export function drawLabelBelow(
   ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
   ctx.fillText(label, x, y + r + paddingWorld + yOffsetWorld);
   ctx.restore();
+}
+
+export type DimFactorAnimationParams = {
+  nodeIds: string[];
+  activeSourceIds: string[];
+  activeNeighborIds: Set<string>;
+  dimFactorRef: MutableRefObject<Map<string, number>>;
+  animationRef: MutableRefObject<number | null>;
+  refresh: () => void;
+  durationMs?: number;
+  enableDimming?: boolean;
+};
+
+export function updateDimFactorAnimation({
+  nodeIds,
+  activeSourceIds,
+  activeNeighborIds,
+  dimFactorRef,
+  animationRef,
+  refresh,
+  durationMs = DEFAULT_DIM_FADE_DURATION_MS,
+  enableDimming = DEFAULT_DIM_HOVER_ENABLED,
+}: DimFactorAnimationParams): () => void {
+  const cancelPending = () => {
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+  };
+
+  const dimFactors = dimFactorRef.current;
+
+  if (!enableDimming || !nodeIds.length) {
+    if (dimFactors.size) {
+      dimFactors.clear();
+      refresh();
+    }
+    cancelPending();
+    return cancelPending;
+  }
+
+  const activeSourceSet = new Set(activeSourceIds);
+  const hasHighlight = activeSourceSet.size > 0;
+  const targets = new Map<string, number>();
+
+  nodeIds.forEach(id => {
+    const shouldDim = hasHighlight && !activeSourceSet.has(id) && !activeNeighborIds.has(id);
+    targets.set(id, shouldDim ? 1 : 0);
+  });
+
+  Array.from(dimFactors.keys()).forEach(id => {
+    if (!targets.has(id)) dimFactors.delete(id);
+  });
+
+  nodeIds.forEach(id => {
+    if (!dimFactors.has(id)) dimFactors.set(id, 0);
+  });
+
+  let maxDiff = 0;
+  targets.forEach((target, id) => {
+    const current = dimFactors.get(id) ?? 0;
+    const diff = Math.abs(target - current);
+    if (diff > maxDiff) maxDiff = diff;
+  });
+
+  if (maxDiff <= 0.01) {
+    cancelPending();
+    targets.forEach((target, id) => dimFactors.set(id, target));
+    refresh();
+    return cancelPending;
+  }
+
+  cancelPending();
+
+  const initial = new Map<string, number>();
+  targets.forEach((_, id) => {
+    initial.set(id, dimFactors.get(id) ?? 0);
+  });
+
+  const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  const duration = Math.max(0, durationMs);
+
+  const step = (timestamp: number) => {
+    const now = typeof performance !== 'undefined' ? timestamp : Date.now();
+    const elapsed = now - startTime;
+    const progress = duration === 0 ? 1 : Math.max(0, Math.min(1, elapsed / duration));
+    const eased = easeOutQuad(progress);
+
+    targets.forEach((target, id) => {
+      const start = initial.get(id) ?? 0;
+      const value = start + (target - start) * eased;
+      dimFactors.set(id, Math.max(0, Math.min(1, value)));
+    });
+    refresh();
+
+    if (progress < 1) {
+      animationRef.current = requestAnimationFrame(step);
+    } else {
+      animationRef.current = null;
+    }
+  };
+
+  animationRef.current = requestAnimationFrame(step);
+
+  return cancelPending;
 }
