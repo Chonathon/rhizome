@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, type FormEvent } from "react";
+import { AnimatePresence, motion, type Transition } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,7 @@ function AuthOverlay() {
 
   const emailRef = useRef<HTMLInputElement>(null);
   const isSignup = mode === "signup";
+  const layoutTransition: Transition = { type: "spring", bounce: 0.22, duration: 0.2 };
   const appleLabel = isMobile || !isSignup ? "" : isSignup ? "Sign up with Apple" : "Log in with Apple";
   const googleLabel = isMobile || !isSignup ? "" : isSignup ? "Sign up with Google" : "Log in with Google";
   const primaryButtonLabel = isSignup ? "Continue" : "Log in";
@@ -67,26 +69,43 @@ function AuthOverlay() {
           emailRef.current?.focus();
         }}
       >
-        <DialogHeader>
-          <div>
-            <RhizomeLogo className="mx-auto mb-4 h-11 sm:h-14 w-auto" />
-          </div>
-          <DialogTitle className="sm:text-3xl text-2xl text-center">
-            {isSignup ? "Create a free account to start your collection" : "Log in to continue your collection"}
-          </DialogTitle>
-          <DialogDescription className="text-md text-center">
-            {isSignup ? (
-              <>
-                Add artists to your collection from Rhizome, or import your entire library from{" "}
-                <strong>Last.FM</strong>, <strong>Deezer</strong>, <strong>Spotify</strong>, and more... soon!
-              </>
-            ) : (
-              <>Welcome back. We've been keeping all your stuff safe while you were away</>
-            )}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleFormSubmit}>
-          <div className="grid gap-8 py-4">
+        <motion.div layout transition={layoutTransition}>
+          <DialogHeader>
+            <div>
+              <RhizomeLogo className="mx-auto mb-4 h-11 sm:h-14 w-auto" />
+            </div>
+            <DialogTitle className="sm:text-3xl text-2xl text-center">
+              {isSignup ? "Create a free account to start your collection" : "Log in to continue your collection"}
+            </DialogTitle>
+            <DialogDescription className="text-md text-center">
+              <AnimatePresence mode="wait" initial={false}>
+                {isSignup ? (
+                  <motion.span
+                    key="signup"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    Add artists to your collection from Rhizome, or import your entire library from{" "}
+                    <strong>Last.FM</strong>, <strong>Deezer</strong>, <strong>Spotify</strong>, and more... soon!
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="login"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    Welcome back. We've been keeping all your stuff safe while you were away
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </DialogDescription>
+          </DialogHeader>
+          <motion.form layout onSubmit={handleFormSubmit} transition={layoutTransition}>
+            <div className="grid gap-8 py-4">
             {/* OAuth */}
             <div className={`${!isSignup || isMobile ? "flex-row" : ""} flex flex-col gap-4`}>
               <Button
@@ -165,7 +184,8 @@ function AuthOverlay() {
               </button>
             </div>
           </div>
-        </form>
+        </motion.form>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );
