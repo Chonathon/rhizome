@@ -34,8 +34,8 @@ function AuthOverlay() {
 
   const emailRef = useRef<HTMLInputElement>(null);
   const isSignup = mode === "signup";
-  const appleLabel = isMobile ? "" : isSignup ? "Sign up with Apple" : "Log in with Apple";
-  const googleLabel = isMobile ? "" : isSignup ? "Sign up with Google" : "Log in with Google";
+  const appleLabel = isMobile || !isSignup ? "" : isSignup ? "Sign up with Apple" : "Log in with Apple";
+  const googleLabel = isMobile || !isSignup ? "" : isSignup ? "Sign up with Google" : "Log in with Google";
   const primaryButtonLabel = isSignup ? "Continue" : "Log in";
   const primaryToast = isSignup
     ? "Oof, not even email sign-up is implemented 😬"
@@ -81,7 +81,7 @@ function AuthOverlay() {
                 <strong>Last.FM</strong>, <strong>Deezer</strong>, <strong>Spotify</strong>, and more... soon!
               </>
             ) : (
-              <>Welcome back. Pick up where you left off with your collection.</>
+              <>Welcome back. We've been keeping all your stuff safe while you were away</>
             )}
           </DialogDescription>
         </DialogHeader>
