@@ -1,24 +1,18 @@
-import React, { use } from "react"
-import { BookOpen, CircleHelp, Mic, MoreHorizontal, Search as SearchIcon, Tag, Telescope, CircleUserRound, Cable, Settings, HandHeart, SunMoon } from "lucide-react"
+import React, { useState } from "react"
+import { BookOpen, Search as SearchIcon, Telescope, CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown } from "lucide-react"
 import { TwoLines } from "./Icon"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu"
 import { AccountMenuState, GraphType } from "@/types"
-import { toast } from "sonner"
 import { AccountMenuGuestSection } from "@/components/AccountMenuGuestSection"
 import { useTheme } from "next-themes"
+import { cn } from "@/lib/utils"
 
 type MobileAppBarProps = {
   graph: GraphType
@@ -119,7 +113,8 @@ function ToolbarButton({
 
 function MoreMenu({ accountMenuState = "authorized", onSignUpClick, onLoginClick }: { accountMenuState?: AccountMenuState; onSignUpClick?: () => void; onLoginClick?: () => void }) {
   const showAccountControls = accountMenuState === "authorized"
-  const { theme, setTheme } = useTheme()
+  const { setTheme } = useTheme()
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false)
   const handleSignUp = () => {
     if (onSignUpClick) {
       onSignUpClick()
@@ -135,7 +130,14 @@ function MoreMenu({ accountMenuState = "authorized", onSignUpClick, onLoginClick
     window.dispatchEvent(new Event('auth:open'))
   }
   return (
-    <DropdownMenu modal={false}>
+    <DropdownMenu
+      modal={false}
+      onOpenChange={(open) => {
+        if (!open) {
+          setIsAppearanceOpen(false)
+        }
+      }}
+    >
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="xl" className="w-full rounded-full py-4 text-muted-foreground">
           <TwoLines className="size-6" />
@@ -143,47 +145,87 @@ function MoreMenu({ accountMenuState = "authorized", onSignUpClick, onLoginClick
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="end">
-                            {showAccountControls ? (
-                              <>
-                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
-                                  Profile
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
-                                  Connections
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
-                                  Settings
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                              </>
-                            ) : (
-                              <>
-                                <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} className="" />
-                                <DropdownMenuSeparator />
-                              </>
-                            )}
-                            <DropdownMenuSub> 
-                            <DropdownMenuSubTrigger><span className="aria-hidden">
-                              <SunMoon className="mr-2 text-muted-foreground h-4 w-4" />
-                            </span>  Appearance</DropdownMenuSubTrigger>
-                            <DropdownMenuPortal>
-                              <DropdownMenuSubContent>
-                                <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
-                              </DropdownMenuSubContent>
-                            </DropdownMenuPortal>
-                          </DropdownMenuSub>
-                            <DropdownMenuItem onSelect={(e) => {
-                              e.preventDefault();
-                              window.open('https://ko-fi.com/rhizomefyi', '_blank');
-                            }}><img src="src/assets/kofi_symbol.svg" alt="Ko-fi Logo" className="size-4"/>
-                              Support Rhizome
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}><HandHeart />
-                              Feedback & Requests
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
+        {showAccountControls ? (
+          <>
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
+              Connections
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        ) : (
+          <>
+            <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} className="" />
+            <DropdownMenuSeparator />
+          </>
+        )}
+        <DropdownMenuItem
+          onSelect={(event) => {
+            event.preventDefault()
+            setIsAppearanceOpen((prev) => !prev)
+          }}
+          aria-expanded={isAppearanceOpen}
+          className="flex items-center justify-between gap-2 transition-all"
+        >
+          <span className="flex items-center gap-2">
+            <SunMoon className="h-4 w-4 text-muted-foreground" />
+            Appearance
+          </span>
+          <ChevronDown className={`h-4 w-4 transition-transform ${isAppearanceOpen ? "rotate-180" : ""}`} />
+        </DropdownMenuItem>
+        <div
+          role="group"
+          aria-label="Appearance options"
+          className={cn(
+            "grid gap-1 overflow-hidden transition-[grid-template-rows] duration-200 ease-out",
+            isAppearanceOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          )}
+        >
+          <div className="overflow-hidden">
+            <DropdownMenuItem
+              className={cn(
+                "pl-8 transition-opacity duration-200 ease-out",
+                isAppearanceOpen ? "opacity-100" : "pointer-events-none opacity-0"
+              )}
+              onClick={() => setTheme("system")}
+            >
+              System
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className={cn(
+                "pl-8 transition-opacity duration-200 ease-out",
+                isAppearanceOpen ? "opacity-100" : "pointer-events-none opacity-0"
+              )}
+              onClick={() => setTheme("dark")}
+            >
+              Dark
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className={cn(
+                "pl-8 transition-opacity duration-200 ease-out",
+                isAppearanceOpen ? "opacity-100" : "pointer-events-none opacity-0"
+              )}
+              onClick={() => setTheme("light")}
+            >
+              Light
+            </DropdownMenuItem>
+          </div>
+        </div>
+        <DropdownMenuItem onSelect={(e) => {
+          e.preventDefault();
+          window.open('https://ko-fi.com/rhizomefyi', '_blank');
+        }}><img src="src/assets/kofi_symbol.svg" alt="Ko-fi Logo" className="size-4"/>
+          Support Rhizome
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}><HandHeart />
+          Feedback & Requests
+        </DropdownMenuItem>
+      </DropdownMenuContent>
     </DropdownMenu>
   )
 }

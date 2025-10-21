@@ -376,11 +376,11 @@ const ProfileSection = ({
               </Field>
               <Field orientation="responsive">
                 <FieldLabel htmlFor="theme">
-                  Theme
+                  Appearance
                 </FieldLabel>
                 <Select value={theme || "system"} onValueChange={setTheme}>
                   <SelectTrigger id="theme">
-                    <SelectValue placeholder="Select theme" />
+                    <SelectValue placeholder="Choose theme" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="system">System</SelectItem>
