@@ -68,14 +68,14 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
       onSignUpClick()
       return
     }
-    window.dispatchEvent(new Event('auth:open'))
+    window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))
   }, [onSignUpClick])
   const handleLogin = useCallback(() => {
     if (onLoginClick) {
       onLoginClick()
       return
     }
-    window.dispatchEvent(new Event('auth:open'))
+    window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'login' } }))
   }, [onLoginClick])
   //console.log("Recent selections in sidebar:", recentSelections);
   
@@ -122,7 +122,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       </SidebarMenuItem>
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild tooltip="Collection" size="xl">
-                          <button onClick={() => window.dispatchEvent(new Event('auth:open'))}>
+                          <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))}>
                             <BookOpen />
                             <span className="truncate">Collection</span>
                           </button>

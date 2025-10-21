@@ -59,7 +59,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
           /> */}
           <ToolbarButton
             label="Collection"
-            onClick={() => window.dispatchEvent(new Event('auth:open'))}
+            onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))}
             icon={<BookOpen className="size-6" />}
           />
           <ToolbarButton
@@ -120,14 +120,14 @@ function MoreMenu({ accountMenuState = "authorized", onSignUpClick, onLoginClick
       onSignUpClick()
       return
     }
-    window.dispatchEvent(new Event('auth:open'))
+    window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))
   }
   const handleLogin = () => {
     if (onLoginClick) {
       onLoginClick()
       return
     }
-    window.dispatchEvent(new Event('auth:open'))
+    window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'login' } }))
   }
   return (
     <DropdownMenu

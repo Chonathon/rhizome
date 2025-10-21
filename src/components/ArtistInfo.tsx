@@ -198,7 +198,7 @@ export function ArtistInfo({
                            {/* <Button
                               size={isDesktop ? "lg" : "xl"}
                               variant="secondary"
-                              onClick={() => window.dispatchEvent(new Event('auth:open'))}
+                              onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))}
                               className={isDesktop ? 'self-start' : 'flex-1'}
                                                 >
                               <SquarePlus size={24}/>Add

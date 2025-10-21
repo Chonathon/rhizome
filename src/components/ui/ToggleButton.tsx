@@ -55,7 +55,7 @@ export function ToggleButton({
 }: ToggleButtonProps) {
   const handleClick = () => {
     if (requiresAuth && !loggedIn) {
-      window.dispatchEvent(new Event('auth:open'));
+      window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }));
       return;
     }
     onToggle();
