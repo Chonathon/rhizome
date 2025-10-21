@@ -1,5 +1,6 @@
-import React from "react"
-import { BookOpen, CircleHelp, Mic, MoreHorizontal, Search as SearchIcon, Tag, Telescope, CircleUserRound, Cable, Settings, HandHeart } from "lucide-react"
+import React, { use } from "react"
+import { BookOpen, CircleHelp, Mic, MoreHorizontal, Search as SearchIcon, Tag, Telescope, CircleUserRound, Cable, Settings, HandHeart, SunMoon } from "lucide-react"
+import { TwoLines } from "./Icon"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -9,10 +10,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu"
 import { AccountMenuState, GraphType } from "@/types"
 import { toast } from "sonner"
 import { AccountMenuGuestSection } from "@/components/AccountMenuGuestSection"
+import { useTheme } from "next-themes"
 
 type MobileAppBarProps = {
   graph: GraphType
@@ -113,6 +119,7 @@ function ToolbarButton({
 
 function MoreMenu({ accountMenuState = "authorized", onSignUpClick, onLoginClick }: { accountMenuState?: AccountMenuState; onSignUpClick?: () => void; onLoginClick?: () => void }) {
   const showAccountControls = accountMenuState === "authorized"
+  const { theme, setTheme } = useTheme()
   const handleSignUp = () => {
     if (onSignUpClick) {
       onSignUpClick()
@@ -131,7 +138,7 @@ function MoreMenu({ accountMenuState = "authorized", onSignUpClick, onLoginClick
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="xl" className="w-full rounded-full py-4 text-muted-foreground">
-          <MoreHorizontal className="size-6" />
+          <TwoLines className="size-6" />
           {/* <span className="text-[10px] leading-tight">More</span> */}
         </Button>
       </DropdownMenuTrigger>
@@ -151,10 +158,22 @@ function MoreMenu({ accountMenuState = "authorized", onSignUpClick, onLoginClick
                               </>
                             ) : (
                               <>
-                                <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} className="w-full" />
+                                <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} className="" />
                                 <DropdownMenuSeparator />
                               </>
                             )}
+                            <DropdownMenuSub> 
+                            <DropdownMenuSubTrigger><span className="aria-hidden">
+                              <SunMoon className="mr-2 text-muted-foreground h-4 w-4" />
+                            </span>  Appearance</DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
                             <DropdownMenuItem onSelect={(e) => {
                               e.preventDefault();
                               window.open('https://ko-fi.com/rhizomefyi', '_blank');
