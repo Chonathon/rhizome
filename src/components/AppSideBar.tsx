@@ -180,7 +180,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                           <SidebarMenu className="gap-4">
                         <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
-                          <SidebarMenuButton className="" size={"xl"} tooltip="Settings" asChild>
+                          <SidebarMenuButton className="" size={"xl"} tooltip="More" asChild>
                             <button type="button">
                               <TwoLines />
                             </button>
