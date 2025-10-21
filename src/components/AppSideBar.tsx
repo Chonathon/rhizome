@@ -14,17 +14,17 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
-import React from "react"
-import { Icon, Undo2, Plus, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon} from "lucide-react"
-import { useState } from "react"
+import React, { useCallback, useState } from "react"
+import { Icon, Undo2, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon} from "lucide-react"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
-import { Genre, GraphType } from "@/types"
+import { AccountMenuState, Genre, GraphType } from "@/types"
 import { Badge } from "./ui/badge"
 import RhizomeLogo from "@/components/RhizomeLogo"
 import { useSidebar } from "@/components/ui/sidebar"
 import MobileAppBar from "@/components/MobileAppBar"
 import { toast } from "sonner"
+import { AccountMenuGuestSection } from "@/components/AccountMenuGuestSection"
 import { DropdownMenu,
   DropdownMenuPortal,
   DropdownMenuTrigger,
@@ -50,12 +50,30 @@ interface AppSidebarProps {
   graph: GraphType;
   onGraphChange: (g: GraphType) => void;
   resetAppState: () => void;
+  accountMenuState?: AccountMenuState;
+  onSignUpClick?: () => void;
+  onLoginClick?: () => void;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, accountMenuState = "authorized", onSignUpClick, onLoginClick }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { recentSelections } = useRecentSelections()
   const { toggleSidebar } = useSidebar()
+  const showAccountControls = accountMenuState === "authorized"
+  const handleSignUp = useCallback(() => {
+    if (onSignUpClick) {
+      onSignUpClick()
+      return
+    }
+    window.dispatchEvent(new Event('auth:open'))
+  }, [onSignUpClick])
+  const handleLogin = useCallback(() => {
+    if (onLoginClick) {
+      onLoginClick()
+      return
+    }
+    window.dispatchEvent(new Event('auth:open'))
+  }, [onLoginClick])
   //console.log("Recent selections in sidebar:", recentSelections);
 
   return (
@@ -160,25 +178,34 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       </SidebarGroup> */}
                           <SidebarMenu className="gap-4">
                         <DropdownMenu modal={false}>
-                          <DropdownMenuTrigger asChild>
-                            <SidebarMenuButton className="" size={"xl"} tooltip="Settings" asChild>
-                              <button type="button">
-                                <Settings size={20} />
-                              </button>
-                            </SidebarMenuButton>
+                        <DropdownMenuTrigger asChild>
+                          <SidebarMenuButton className="" size={"xl"} tooltip="Settings" asChild>
+                            <button type="button">
+                              <Settings size={20} />
+                            </button>
+                          </SidebarMenuButton>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent side="right" align="end">
                             {/* <DropdownMenuLabel>Settings</DropdownMenuLabel>
                             <DropdownMenuSeparator /> */}
-                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
-                              Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
-                              Connections
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
-                              Settings
-                            </DropdownMenuItem>
+                            {showAccountControls ? (
+                              <>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
+                                  Profile
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
+                                  Connections
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
+                                  Settings
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <>
+                                <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} />
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
                             <DropdownMenuSub> 
                             <DropdownMenuSubTrigger><span className="aria-hidden">
                               <SunMoon className="mr-2 text-muted-foreground h-4 w-4" />
@@ -225,6 +252,9 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
         onGraphChange={onGraphChange}
         onOpenSearch={() => setSearchOpen(true)}
         resetAppState={resetAppState}
+        accountMenuState={accountMenuState}
+        onSignUpClick={handleSignUp}
+        onLoginClick={handleLogin}
       />
     </>
   )

@@ -7,7 +7,7 @@ import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
-  Artist, ArtistNodeLimitType, BadDataReport,
+  AccountMenuState, Artist, ArtistNodeLimitType, BadDataReport,
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
@@ -109,6 +109,7 @@ function App() {
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
+  const accountMenuState: AccountMenuState = "guest"; // Placeholder for auth state
   const { addRecentSelection } = useRecentSelections();
   const {
     genres,
@@ -805,6 +806,7 @@ function App() {
         graph={graph}
         onGraphChange={onTabChange}
         resetAppState={resetAppState}
+        accountMenuState={accountMenuState}
       >
         <SidebarLogoTrigger />
         <Toaster />

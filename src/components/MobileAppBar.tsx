@@ -10,14 +10,18 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { GraphType } from "@/types"
+import { AccountMenuState, GraphType } from "@/types"
 import { toast } from "sonner"
+import { AccountMenuGuestSection } from "@/components/AccountMenuGuestSection"
 
 type MobileAppBarProps = {
   graph: GraphType
   onGraphChange: (g: GraphType) => void
   onOpenSearch: () => void
   resetAppState: () => void;
+  accountMenuState?: AccountMenuState;
+  onSignUpClick?: () => void;
+  onLoginClick?: () => void;
 }
 
 /**
@@ -25,7 +29,7 @@ type MobileAppBarProps = {
  * Provides quick access to Search, Collection, Genres, Artists, and a More menu.
  * Styled to match the existing glassy/rounded aesthetic.
  */
-export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState }: MobileAppBarProps) {
+export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, accountMenuState = "authorized", onSignUpClick, onLoginClick }: MobileAppBarProps) {
   return (
     <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-3 z-50 md:hidden"
     style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
@@ -76,7 +80,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState 
             onClick={() => onGraphChange("artists")}
             icon={<Mic className="size-6" />}
           /> */}
-          <MoreMenu />
+          <MoreMenu accountMenuState={accountMenuState} onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />
         </div>
       </div>
     </div>
@@ -107,7 +111,22 @@ function ToolbarButton({
   )
 }
 
-function MoreMenu() {
+function MoreMenu({ accountMenuState = "authorized", onSignUpClick, onLoginClick }: { accountMenuState?: AccountMenuState; onSignUpClick?: () => void; onLoginClick?: () => void }) {
+  const showAccountControls = accountMenuState === "authorized"
+  const handleSignUp = () => {
+    if (onSignUpClick) {
+      onSignUpClick()
+      return
+    }
+    window.dispatchEvent(new Event('auth:open'))
+  }
+  const handleLogin = () => {
+    if (onLoginClick) {
+      onLoginClick()
+      return
+    }
+    window.dispatchEvent(new Event('auth:open'))
+  }
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
@@ -117,18 +136,25 @@ function MoreMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="end">
-                            {/* <DropdownMenuLabel>Settings</DropdownMenuLabel>
-                            <DropdownMenuSeparator /> */}
-                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
-                              Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
-                              Connections
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
-                              Settings
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            {showAccountControls ? (
+                              <>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
+                                  Profile
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
+                                  Connections
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
+                                  Settings
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            ) : (
+                              <>
+                                <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} className="w-full" />
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
                             <DropdownMenuItem onSelect={(e) => {
                               e.preventDefault();
                               window.open('https://ko-fi.com/rhizomefyi', '_blank');
@@ -144,4 +170,3 @@ function MoreMenu() {
 }
 
 export default MobileAppBar
-
