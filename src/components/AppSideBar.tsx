@@ -41,6 +41,7 @@ import { DropdownMenu,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent, } from "./ui/dropdown-menu"
+import { useTheme } from "next-themes"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -58,6 +59,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, accountMenuState = "authorized", onSignUpClick, onLoginClick }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const { theme, setTheme } = useTheme()
   const { recentSelections } = useRecentSelections()
   const { toggleSidebar } = useSidebar()
   const showAccountControls = accountMenuState === "authorized"
@@ -76,7 +78,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
     window.dispatchEvent(new Event('auth:open'))
   }, [onLoginClick])
   //console.log("Recent selections in sidebar:", recentSelections);
-
+  
   return (
     <>
       <Sidebar className="" variant="sidebar" collapsible="icon">
@@ -213,9 +215,9 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                             </span>  Appearance</DropdownMenuSubTrigger>
                             <DropdownMenuPortal>
                               <DropdownMenuSubContent>
-                                <DropdownMenuItem>System</DropdownMenuItem>
-                                <DropdownMenuItem>Dark</DropdownMenuItem>
-                                <DropdownMenuItem>Light</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
                               </DropdownMenuSubContent>
                             </DropdownMenuPortal>
                           </DropdownMenuSub>
