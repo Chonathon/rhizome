@@ -92,7 +92,7 @@ function AuthOverlay() {
               <Button
                 className="flex-1 sm:p-2 p-4"
                 variant="outline"
-                size={isMobile ? "xl" : "default"}
+                size={isMobile || !isSignup ? "xl" : "default"}
                 type="button"
                 onClick={() => toast(appleToast)}
               >
@@ -107,7 +107,7 @@ function AuthOverlay() {
               <Button
                 className="flex-1 sm:p-2 p-4"
                 variant="outline"
-                size={isMobile ? "xl" : "default"}
+                size={isMobile || !isSignup ? "xl" : "default"}
                 type="button"
                 onClick={() => toast(googleToast)}
               >

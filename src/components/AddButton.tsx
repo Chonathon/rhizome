@@ -11,11 +11,16 @@ interface AddButtonProps {
   className?: string;
 }
 
-export function AddButton({ onToggle, isDesktop, className, loggedIn=true }: AddButtonProps) {
+export function AddButton({ onToggle, isDesktop, className, loggedIn = true }: AddButtonProps) {
   // Local state. Replace with prop
   const [isInCollection, setIsInCollection] = useState(false);
 
   const handleToggle = () => {
+    if (!loggedIn) {
+      window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }));
+      return;
+    }
+
     if (isInCollection) {
       toast.info("Removed from your collection");
       setIsInCollection(false);
@@ -23,6 +28,8 @@ export function AddButton({ onToggle, isDesktop, className, loggedIn=true }: Add
       toast.success("Added to your collection");
       setIsInCollection(true);
     }
+
+    onToggle?.();
   };
 
   return (
@@ -33,8 +40,6 @@ export function AddButton({ onToggle, isDesktop, className, loggedIn=true }: Add
       inactiveLabel="Add"
       activeIcon={<CheckSquare />}
       inactiveIcon={<PlusSquare />}
-      requiresAuth={true}
-      loggedIn={loggedIn}
       className={className || (isDesktop ? "px-4 self-start" : "px-4 flex-1")}
       size={isDesktop ? "lg" : "xl"}
     />

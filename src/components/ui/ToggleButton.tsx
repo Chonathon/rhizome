@@ -23,8 +23,6 @@ interface ToggleButtonProps {
   inactiveLabel: string;
   activeIcon?: ReactNode;
   inactiveIcon?: ReactNode;
-  requiresAuth?: boolean;
-  loggedIn?: boolean;
   variant?: "default" | "secondary" | "outline" | "ghost" | "link" | "destructive";
   size?: "default" | "sm" | "lg" | "xl" | "icon";
   className?: string;
@@ -43,8 +41,6 @@ export function ToggleButton({
   inactiveLabel,
   activeIcon,
   inactiveIcon,
-  requiresAuth = false,
-  loggedIn = true,
   variant,
   size = "lg",
   className,
@@ -54,10 +50,6 @@ export function ToggleButton({
   hasIcon = Boolean(activeIcon || inactiveIcon),
 }: ToggleButtonProps) {
   const handleClick = () => {
-    if (requiresAuth && !loggedIn) {
-      window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }));
-      return;
-    }
     onToggle();
   };
 
