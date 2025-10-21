@@ -88,9 +88,9 @@ function AuthOverlay() {
         <form onSubmit={handleFormSubmit}>
           <div className="grid gap-8 py-4">
             {/* OAuth */}
-            <div className="flex flex-row sm:flex-col gap-4">
+            <div className={`${!isSignup || isMobile ? "flex-row" : ""} flex flex-col gap-4`}>
               <Button
-                className="flex-1 sm:p-2 p-4"
+                className={`${!isSignup || isMobile ? "w-full p-4" : ""} flex-1`}
                 variant="outline"
                 size={isMobile || !isSignup ? "xl" : "default"}
                 type="button"
@@ -105,7 +105,7 @@ function AuthOverlay() {
                 {appleLabel}
               </Button>
               <Button
-                className="flex-1 sm:p-2 p-4"
+                className={`${!isSignup || isMobile ? "w-full p-4" : ""} flex-1`}
                 variant="outline"
                 size={isMobile || !isSignup ? "xl" : "default"}
                 type="button"
