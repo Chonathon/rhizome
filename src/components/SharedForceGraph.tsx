@@ -81,6 +81,9 @@ const SharedForceGraph = forwardRef(function SharedForceGraphInner<
   const zoomRef = useRef<number>(1);
   const { theme } = useTheme();
   const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
+  const lastInitializedSignatureRef = useRef<string>();
+  const shouldResetZoomRef = useRef(true);
+  const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
 
   useImperativeHandle(
     ref,
@@ -110,6 +113,24 @@ const SharedForceGraph = forwardRef(function SharedForceGraphInner<
     return { nodes: clonedNodes, links: clonedLinks };
   }, [nodes, links]);
 
+  // Stable fingerprint lets us detect meaningful topology changes without diffing objects deeply.
+  const dataSignature = useMemo(() => {
+    if (!preparedData.nodes.length && !preparedData.links.length) return "empty";
+    const normalize = (value: unknown) => {
+      if (typeof value === "string" || typeof value === "number") return String(value);
+      if (value && typeof value === "object" && "id" in value) {
+        return String((value as NodeObject)?.id ?? "");
+      }
+      return "";
+    };
+    const nodeSignature = [...preparedData.nodes.map((node) => node.id)].sort().join("|");
+    const linkSignature = preparedData.links
+      .map((link) => `${normalize(link.source)}->${normalize(link.target)}`)
+      .sort()
+      .join("|");
+    return `${nodeSignature}::${linkSignature}`;
+  }, [preparedData.links, preparedData.nodes]);
+
   const colorById = useMemo(() => {
     const defaultColor = theme === "dark" ? "#8a80ff" : "#4a4a4a";
     return new Map(preparedData.nodes.map((node) => [node.id, node.color ?? defaultColor]));
@@ -131,7 +152,26 @@ const SharedForceGraph = forwardRef(function SharedForceGraphInner<
   }, [preparedData]);
 
   useEffect(() => {
+    if (preparedDataRef.current !== preparedData) {
+      // Snapshot new data so rerenders caused by props toggling do not retrigger reheats.
+      preparedDataRef.current = preparedData;
+      lastInitializedSignatureRef.current = undefined;
+      shouldResetZoomRef.current = true;
+    }
+  }, [preparedData]);
+
+  useEffect(() => {
+    // Pause instead of unmounting so the physics state survives hidden periods.
+    if (!fgRef.current) return;
+    if (show) fgRef.current.resumeAnimation();
+    else fgRef.current.pauseAnimation();
+  }, [show]);
+
+  useEffect(() => {
     if (!show || !fgRef.current) return;
+    if (!preparedData.nodes.length && !preparedData.links.length) return;
+    const signature = dataSignature;
+    if (signature && lastInitializedSignatureRef.current === signature) return;
     const fg = fgRef.current;
     fg.d3Force("charge")?.strength(-130);
     const linkForce = fg.d3Force("link") as d3.ForceLink<PreparedNode<T>, L> | undefined;
@@ -150,9 +190,15 @@ const SharedForceGraph = forwardRef(function SharedForceGraphInner<
         .strength(0.7),
     );
     fg.d3ReheatSimulation?.();
-    fg.zoom(0.18);
-    zoomRef.current = 0.18;
-  }, [preparedData, show]);
+    if (shouldResetZoomRef.current) {
+      fg.zoom(0.18);
+      zoomRef.current = 0.18;
+      shouldResetZoomRef.current = false;
+    }
+    if (signature) {
+      lastInitializedSignatureRef.current = signature;
+    }
+  }, [dataSignature, preparedData, show]);
 
   useEffect(() => {
     if (!show || !selectedId || !fgRef.current) return;
@@ -178,37 +224,44 @@ const SharedForceGraph = forwardRef(function SharedForceGraphInner<
     return () => window.clearTimeout(timeout);
   }, [preparedData.nodes, selectedId, show]);
 
-  if (!show) return null;
-  if (loading) {
-    return (
-      <div className="flex-1 w-full" style={{ height: height ?? "100%" }}>
-        <Loading />
-      </div>
-    );
-  }
-
   return (
-    <ForceGraph<PreparedNode<T>, L>
-      ref={fgRef as any}
-      width={width}
-      height={height}
-      graphData={preparedData}
-      d3AlphaDecay={0.02}
-      d3VelocityDecay={0.75}
-      cooldownTime={12000}
-      autoPauseRedraw={false}
-      nodeColor={() => "rgba(0,0,0,0)"}
-      nodeCanvasObjectMode={() => "replace"}
-      linkColor={(link) => {
-        const source =
-          typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
-        const target =
-          typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
-        const base = source ? colorById.get(source) : undefined;
-        const fallback = theme === "dark" ? "#ffffff" : "#000000";
-        const selected = !!selectedId && (source === selectedId || target === selectedId);
-        return `${base ?? fallback}${selected ? "cc" : "40"}`;
+    <div
+      className="flex-1 w-full relative"
+      style={{
+        height: height ?? "100%",
+        display: show ? "block" : "none", // Keep the canvas mounted while simply hiding it.
+        pointerEvents: show ? "auto" : "none",
       }}
+    >
+      {loading && (
+        <div
+          className="absolute inset-0 flex items-center justify-center z-10"
+          style={{ pointerEvents: "none" }}
+        >
+          <Loading />
+        </div>
+      )}
+      <ForceGraph<PreparedNode<T>, L>
+        ref={fgRef as any}
+        width={width}
+        height={height}
+        graphData={preparedData}
+        d3AlphaDecay={0.02}
+        d3VelocityDecay={0.75}
+        cooldownTime={12000}
+        autoPauseRedraw={false}
+        nodeColor={() => "rgba(0,0,0,0)"}
+        nodeCanvasObjectMode={() => "replace"}
+        linkColor={(link) => {
+          const source =
+            typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
+          const target =
+            typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
+          const base = source ? colorById.get(source) : undefined;
+          const fallback = theme === "dark" ? "#ffffff" : "#000000";
+          const selected = !!selectedId && (source === selectedId || target === selectedId);
+          return `${base ?? fallback}${selected ? "cc" : "40"}`;
+        }}
       linkWidth={(link) => {
         if (!selectedId) return 1;
         const source =
@@ -275,7 +328,8 @@ const SharedForceGraph = forwardRef(function SharedForceGraphInner<
         ctx.fill();
       }}
       nodeVal={(node) => node.radius}
-    />
+      />
+    </div>
   );
 });
 
