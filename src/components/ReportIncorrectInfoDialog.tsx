@@ -2,15 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogDrawer } from "@/components/ui/dialog-drawer";
+import { DialogClose } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -60,54 +53,14 @@ export function ReportIncorrectInfoDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-sidebar backdrop-blur-sm">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-
-        <form
-          className="grid gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSubmit();
-          }}
-        >
-          <div className="grid gap-2">
-            <Label htmlFor="reason" className="text-sm sr-only font-medium">
-              Reason
-            </Label>
-            <Select value={reason ?? undefined} onValueChange={setReason}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a reason" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel className="sr-only">Reasons</SelectLabel>
-                  {reasons.map((r) => (
-                    <SelectItem key={r.value} value={r.value} disabled={r.disabled}>
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="details" className="text-sm sr-only font-medium">
-              Details (optional)
-            </Label>
-            <Textarea
-              id="details"
-              placeholder="Additional details..."
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-            />
-          </div>
-        </form>
-
-        <DialogFooter>
+    <DialogDrawer
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      contentClassName="bg-sidebar backdrop-blur-sm"
+      footer={
+        <>
           <DialogClose asChild>
             <Button variant="outline">{cancelLabel}</Button>
           </DialogClose>
@@ -116,9 +69,49 @@ export function ReportIncorrectInfoDialog({
               {submitLabel}
             </Button>
           </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <form
+        className="grid gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+      >
+        <div className="grid gap-2">
+          <Label htmlFor="reason" className="text-sm sr-only font-medium">
+            Reason
+          </Label>
+          <Select value={reason ?? undefined} onValueChange={setReason}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a reason" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel className="sr-only">Reasons</SelectLabel>
+                {reasons.map((r) => (
+                  <SelectItem key={r.value} value={r.value} disabled={r.disabled}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="details" className="text-sm sr-only font-medium">
+            Details (optional)
+          </Label>
+          <Textarea
+            id="details"
+            placeholder="Additional details..."
+            value={details}
+            onChange={(e) => setDetails(e.target.value)}
+          />
+        </div>
+      </form>
+    </DialogDrawer>
   );
 }
 
