@@ -1,6 +1,6 @@
 import './App.css'
 import {useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, Settings, TextSearch } from 'lucide-react'
+import { ChevronDown, Divide, Settings } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -23,6 +23,9 @@ import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
 import Player from "@/components/Player";
 import { Search } from './components/Search';
+import FindFilter, { FindOption } from "@/components/FindFilter";
+
+const DEFAULT_FIND_LABEL = "Find";
 import {
   buildGenreColorMap,
   generateSimilarLinks,
@@ -225,6 +228,46 @@ function App() {
     setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
   }, [artists]);
+
+  const findOptions = useMemo<FindOption[]>(() => {
+    if (graph === 'genres' && currentGenres) {
+      return currentGenres.nodes.map((genre) => ({
+        id: genre.id,
+        name: genre.name,
+        entityType: 'genre' as const,
+        subtitle: genre.artistCount ? `${genre.artistCount.toLocaleString()} artists` : undefined,
+      }));
+    }
+
+    if ((graph === 'artists' || graph === 'similarArtists') && currentArtists.length) {
+      return currentArtists.map((artist) => ({
+        id: artist.id,
+        name: artist.name,
+        entityType: 'artist' as const,
+        subtitle: Array.isArray(artist.genres) && artist.genres.length
+          ? artist.genres.slice(0, 3).join(", ")
+          : undefined,
+      }));
+    }
+
+    return [];
+  }, [graph, currentArtists, currentGenres]);
+
+  const findLabel = useMemo(() => {
+    if (graph === 'genres' && selectedGenres.length) {
+      return selectedGenres[0].name;
+    }
+    if ((graph === 'artists' || graph === 'similarArtists') && selectedArtist) {
+      return selectedArtist.name;
+    }
+    return DEFAULT_FIND_LABEL;
+  }, [graph, selectedGenres, selectedArtist]);
+
+  const hasFindSelection =
+    (graph === 'genres' && selectedGenres.length > 0) ||
+    ((graph === 'artists' || graph === 'similarArtists') && !!selectedArtist);
+
+  const findPanelDisabled = !hasFindSelection && findOptions.length === 0;
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
@@ -506,6 +549,41 @@ function App() {
       createSimilarArtistGraph(artist);
     }
   }
+
+  const handleFindSelect = (option: FindOption) => {
+    if (option.entityType === 'artist') {
+      const artist = currentArtists.find((a) => a.id === option.id);
+      if (!artist) return;
+      setSelectedArtist(artist);
+      setShowArtistCard(true);
+      addRecentSelection(artist);
+      if (graph === 'similarArtists') {
+        setSelectedArtistNoGenre(artist);
+      } else if (graph !== 'artists') {
+        setGraph('artists');
+      }
+      return;
+    }
+
+    if (option.entityType === 'genre' && currentGenres) {
+      const genre = currentGenres.nodes.find((g) => g.id === option.id);
+      if (!genre) return;
+      onGenreNodeClick(genre);
+      if (graph !== 'genres') {
+        setGraph('genres');
+      }
+    }
+  };
+
+  const handleFindClear = () => {
+    if (graph === 'genres' && selectedGenres.length) {
+      deselectGenre();
+      return;
+    }
+    if ((graph === 'artists' || graph === 'similarArtists') && selectedArtist) {
+      deselectArtist();
+    }
+  };
 
   const resetAppState = () => {
     setGraph('genres');
@@ -882,10 +960,16 @@ function App() {
                   </Button>
                 </div>
                 }
-                <Button size='lg' className='self-start' variant='outline'
-                  onClick={() => toast('Filters the current view based on your text input...')} >
-                    <TextSearch />Find
-                  </Button>
+                <FindFilter
+                  items={findOptions}
+                  onSelect={handleFindSelect}
+                  onClear={hasFindSelection ? handleFindClear : undefined}
+                  disabled={findPanelDisabled}
+                  placeholder={graph === 'genres' ? 'Find genres in view...' : 'Find artists in view...'}
+                  emptyText={graph === 'genres' ? 'No genres match this view.' : 'No artists match this view.'}
+                  triggerClassName="self-start"
+                  label={findLabel}
+                />
           </motion.div>
                 <GenresForceGraph
                   ref={genresGraphRef as any}
