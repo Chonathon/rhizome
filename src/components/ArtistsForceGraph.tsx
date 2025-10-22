@@ -63,7 +63,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     width,
     height,
 }, ref) => {
-    const { theme } = useTheme();
+    const { resolvedTheme } = useTheme();
 
     const preparedData: GraphData<Artist, NodeLink> = useMemo(() => {
         if (!artists || !artistLinks) return { nodes: [], links: [] };
@@ -243,10 +243,10 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
             m.set(a.id, computeArtistColor(a));
         });
         return m;
-    }, [preparedData.nodes, theme]);
+    }, [preparedData.nodes, resolvedTheme]);
 
     const getArtistColor = (artist: Artist): string => {
-        return colorById.get(artist.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
+        return colorById.get(artist.id) || (resolvedTheme === 'dark' ? '#8a80ff' : '#4a4a4a');
     };
 
     return !show ? null : loading ? (<div className="flex-1 w-full" style={{ height: height ?? '100%' }}>
@@ -263,7 +263,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 const s = typeof l.source === 'string' ? l.source : l.source?.id;
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
                 const connectedToSelected = !!selectedArtistId && (s === selectedArtistId || t === selectedArtistId);
-                const base = (s && colorById.get(s)) || (theme === 'dark' ? '#ffffff' : '#000000');
+                const base = (s && colorById.get(s)) || (resolvedTheme === 'dark' ? '#ffffff' : '#000000');
                 const alpha = selectedArtistId ? (connectedToSelected ? 'ff' : '30') : '80';
                 return base + alpha;
             }}
@@ -321,7 +321,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 else if (hasSelection) alpha = Math.min(alpha, 0.2);
                 const label = node.name;
                 const yOffset = yOffsetByIdRef.current.get(artist.id) || 0;
-                drawLabelBelow(ctx, label, x, y, r, theme, alpha, LABEL_FONT_SIZE, yOffset);
+                drawLabelBelow(ctx, label, x, y, r, resolvedTheme, alpha, LABEL_FONT_SIZE, yOffset);
             }}
             nodePointerAreaPaint={(node, color, ctx, globalScale) => {
                 ctx.fillStyle = color;

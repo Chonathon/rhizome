@@ -14,31 +14,34 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
-import React from "react"
-import {
-    Icon,
-    Undo2,
-    Plus,
-    BadgeIcon,
-    SidebarIcon,
-    SearchIcon,
-    BookOpen,
-    Tag,
-    MicVocal,
-    Settings,
-    CircleHelp,
-    Telescope,
-    User
-} from "lucide-react"
-import { useState } from "react"
+import React, { useCallback, useState } from "react"
+import { Icon, Undo2, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon, CircleEllipsis} from "lucide-react"
+import { TwoLines } from "./Icon"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
-import { Genre, GraphType } from "@/types"
+import { AccountMenuState, Genre, GraphType } from "@/types"
 import { Badge } from "./ui/badge"
 import RhizomeLogo from "@/components/RhizomeLogo"
 import { useSidebar } from "@/components/ui/sidebar"
 import MobileAppBar from "@/components/MobileAppBar"
 import { toast } from "sonner"
+import { AccountMenuGuestSection } from "@/components/AccountMenuGuestSection"
+import { DropdownMenu,
+  DropdownMenuPortal,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent, } from "./ui/dropdown-menu"
+import { useTheme } from "next-themes"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -51,13 +54,31 @@ interface AppSidebarProps {
   resetAppState: () => void;
   onCollectionClick: () => void;
   onExploreClick: () => void;
-  onAccountClick: () => void;
+  accountMenuState?: AccountMenuState;
+  onSignUpClick?: () => void;
+  onLoginClick?: () => void;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, onExploreClick, onCollectionClick, onAccountClick }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, accountMenuState = "authorized", onSignUpClick, onLoginClick, onCollectionClick, onExploreClick }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const { theme, setTheme } = useTheme()
   const { recentSelections } = useRecentSelections()
   const { toggleSidebar } = useSidebar()
+  const showAccountControls = accountMenuState === "authorized"
+  const handleSignUp = useCallback(() => {
+    if (onSignUpClick) {
+      onSignUpClick()
+      return
+    }
+    window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))
+  }, [onSignUpClick])
+  const handleLogin = useCallback(() => {
+    if (onLoginClick) {
+      onLoginClick()
+      return
+    }
+    window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'login' } }))
+  }, [onLoginClick])
   //console.log("Recent selections in sidebar:", recentSelections);
 
   return (
@@ -138,14 +159,6 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </button>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                  <SidebarMenuItem>
-                      <SidebarMenuButton asChild tooltip="Account" size="xl">
-                          <button onClick={onAccountClick}>
-                              <User />
-                              <span className="truncate">Account</span>
-                          </button>
-                      </SidebarMenuButton>
-                  </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroup>
     
@@ -168,19 +181,66 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                           </button>
                         </SidebarMenuButton>
                       </SidebarGroup> */}
-                        <SidebarMenu className="gap-4">
-                          <SidebarMenuButton className="" size={"xl"} tooltip="Feedback & Requests" asChild>
-                            <button onClick={() => window.dispatchEvent(new Event('feedback:open'))}>
-                              <CircleHelp size={20} />
-                              {/* <span>Support & Feedback</span> */}
+                          <SidebarMenu className="gap-4">
+                        <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <SidebarMenuButton className="" size={"xl"} tooltip="More" asChild>
+                            <button type="button">
+                              <TwoLines />
                             </button>
                           </SidebarMenuButton>
-                          <SidebarMenuButton className="" size={"xl"} asChild>
-                            <button onClick={() => toggleSidebar()}>
-                              <SidebarIcon size={20} />
-                            </button>
-                          </SidebarMenuButton>
-                        </SidebarMenu>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent side="right" align="end">
+                            {/* <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                            <DropdownMenuSeparator /> */}
+                            {showAccountControls ? (
+                              <>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
+                                  Profile
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
+                                  Connections
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
+                                  Settings
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <>
+                                <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} />
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
+                            <DropdownMenuSub>
+                            <DropdownMenuSubTrigger><span className="aria-hidden">
+                              <SunMoon className="mr-2 text-muted-foreground h-4 w-4" />
+                            </span>  Appearance</DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={(e) => {
+                              e.preventDefault();
+                              window.open('https://ko-fi.com/rhizomefyi', '_blank');
+                            }}><img src="src/assets/kofi_symbol.svg" alt="Ko-fi Logo" className="size-4"/>
+                              Support Rhizome
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}><HandHeart />
+                              Feedback & Requests
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                              <SidebarMenuButton className="" size={"xl"} asChild>
+                                <button onClick={() => toggleSidebar()}>
+                                  <SidebarIcon size={20} />
+                                </button>
+                              </SidebarMenuButton>
+                          </SidebarMenu>
                         {/* <button className="p-2.5 -mr-1 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
                           <Settings size={20}/>
                         </button>
@@ -197,6 +257,9 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
         onGraphChange={onGraphChange}
         onOpenSearch={() => setSearchOpen(true)}
         resetAppState={resetAppState}
+        accountMenuState={accountMenuState}
+        onSignUpClick={handleSignUp}
+        onLoginClick={handleLogin}
       />
     </>
   )

@@ -486,7 +486,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button relative flex w-full items-center gap-2 overflow-hidden rounded-md p-3 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:text-foreground focus-visible:ring-2 active:text-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open] group-has-data-[sidebar=menu-badge]/menu-item:pr-8 group-data-[collapsible=icon]:mx-auto [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:transition-transform g",
+  "peer/menu-button relative flex w-full items-center gap-2 overflow-hidden rounded-md p-3 text-left text-md outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:text-foreground focus-visible:ring-2 active:text-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open] group-has-data-[sidebar=menu-badge]/menu-item:pr-8 group-data-[collapsible=icon]:mx-auto [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:transition-transform g text-muted-foreground",
   {
     variants: {
       variant: {
@@ -495,9 +495,9 @@ const sidebarMenuButtonVariants = cva(
           "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
       size: {
-        default: "h-8 text-sm",
+        default: "h-8 text-base",
         sm: "h-7 text-xs",
-        lg: "h-12 text-sm group-data-[collapsible=icon]:p-0!",
+        lg: "h-9 text-base group-data-[collapsible=icon]:p-0!",
         xl: "h-10 text-xl group-data-[collapsible=icon]:p-3! data-[active=true]:font-semibold font-semibold text-muted-foreground [&>svg]:size-6 backdropblur-sm bg-transparent",
       },
     },

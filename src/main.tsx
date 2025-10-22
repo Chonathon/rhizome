@@ -12,7 +12,13 @@ createRoot(container).render(
   <StrictMode>
     <BrowserRouter>
         <AuthProvider>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                storageKey="theme"
+                disableTransitionOnChange
+            >
                 <App />
             </ThemeProvider>
         </AuthProvider>

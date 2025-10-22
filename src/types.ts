@@ -139,3 +139,6 @@ export interface User {
     preferences: Preferences;
     socialUser?: boolean;
 }
+
+
+export type AccountMenuState = "authorized" | "guest" | "nonOffice";

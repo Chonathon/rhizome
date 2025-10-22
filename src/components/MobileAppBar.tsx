@@ -1,23 +1,27 @@
-import React from "react"
-import { BookOpen, CircleHelp, Mic, MoreHorizontal, Search as SearchIcon, Tag, Telescope } from "lucide-react"
+import React, { useState } from "react"
+import { BookOpen, Search as SearchIcon, Telescope, CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown } from "lucide-react"
+import { TwoLines } from "./Icon"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { GraphType } from "@/types"
-import { toast } from "sonner"
+import { AccountMenuState, GraphType } from "@/types"
+import { AccountMenuGuestSection } from "@/components/AccountMenuGuestSection"
+import { useTheme } from "next-themes"
+import { cn } from "@/lib/utils"
 
 type MobileAppBarProps = {
   graph: GraphType
   onGraphChange: (g: GraphType) => void
   onOpenSearch: () => void
   resetAppState: () => void;
+  accountMenuState?: AccountMenuState;
+  onSignUpClick?: () => void;
+  onLoginClick?: () => void;
 }
 
 /**
@@ -25,7 +29,7 @@ type MobileAppBarProps = {
  * Provides quick access to Search, Collection, Genres, Artists, and a More menu.
  * Styled to match the existing glassy/rounded aesthetic.
  */
-export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState }: MobileAppBarProps) {
+export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, accountMenuState = "authorized", onSignUpClick, onLoginClick }: MobileAppBarProps) {
   return (
     <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-3 z-50 md:hidden"
     style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
@@ -55,7 +59,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState 
           /> */}
           <ToolbarButton
             label="Collection"
-            onClick={() => window.dispatchEvent(new Event('auth:open'))}
+            onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))}
             icon={<BookOpen className="size-6" />}
           />
           <ToolbarButton
@@ -76,7 +80,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState 
             onClick={() => onGraphChange("artists")}
             icon={<Mic className="size-6" />}
           /> */}
-          <MoreMenu />
+          <MoreMenu accountMenuState={accountMenuState} onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />
         </div>
       </div>
     </div>
@@ -107,19 +111,119 @@ function ToolbarButton({
   )
 }
 
-function MoreMenu() {
+function MoreMenu({ accountMenuState = "authorized", onSignUpClick, onLoginClick }: { accountMenuState?: AccountMenuState; onSignUpClick?: () => void; onLoginClick?: () => void }) {
+  const showAccountControls = accountMenuState === "authorized"
+  const { setTheme } = useTheme()
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false)
+  const handleSignUp = () => {
+    if (onSignUpClick) {
+      onSignUpClick()
+      return
+    }
+    window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))
+  }
+  const handleLogin = () => {
+    if (onLoginClick) {
+      onLoginClick()
+      return
+    }
+    window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'login' } }))
+  }
   return (
-    <DropdownMenu>
+    <DropdownMenu
+      modal={false}
+      onOpenChange={(open) => {
+        if (!open) {
+          setIsAppearanceOpen(false)
+        }
+      }}
+    >
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="xl" className="w-full rounded-full py-4 text-muted-foreground">
-          <MoreHorizontal className="size-6" />
+          <TwoLines className="size-6" />
           {/* <span className="text-[10px] leading-tight">More</span> */}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="rounded-xl">
-        <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}> 
-          <CircleHelp />
-          Help
+      <DropdownMenuContent side="top" align="end">
+        {showAccountControls ? (
+          <>
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
+              Connections
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        ) : (
+          <>
+            <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} className="" />
+            <DropdownMenuSeparator />
+          </>
+        )}
+        <DropdownMenuItem
+          onSelect={(event) => {
+            event.preventDefault()
+            setIsAppearanceOpen((prev) => !prev)
+          }}
+          aria-expanded={isAppearanceOpen}
+          className="flex items-center justify-between gap-2 transition-all"
+        >
+          <span className="flex items-center gap-2">
+            <SunMoon className="h-4 w-4 text-muted-foreground" />
+            Appearance
+          </span>
+          <ChevronDown className={`h-4 w-4 transition-transform ${isAppearanceOpen ? "rotate-180" : ""}`} />
+        </DropdownMenuItem>
+        <div
+          role="group"
+          aria-label="Appearance options"
+          className={cn(
+            "grid gap-1 overflow-hidden transition-[grid-template-rows] duration-200 ease-out",
+            isAppearanceOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          )}
+        >
+          <div className="overflow-hidden">
+            <DropdownMenuItem
+              className={cn(
+                "pl-8 transition-opacity duration-200 ease-out",
+                isAppearanceOpen ? "opacity-100" : "pointer-events-none opacity-0"
+              )}
+              onClick={() => setTheme("system")}
+            >
+              System
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className={cn(
+                "pl-8 transition-opacity duration-200 ease-out",
+                isAppearanceOpen ? "opacity-100" : "pointer-events-none opacity-0"
+              )}
+              onClick={() => setTheme("dark")}
+            >
+              Dark
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className={cn(
+                "pl-8 transition-opacity duration-200 ease-out",
+                isAppearanceOpen ? "opacity-100" : "pointer-events-none opacity-0"
+              )}
+              onClick={() => setTheme("light")}
+            >
+              Light
+            </DropdownMenuItem>
+          </div>
+        </div>
+        <DropdownMenuItem onSelect={(e) => {
+          e.preventDefault();
+          window.open('https://ko-fi.com/rhizomefyi', '_blank');
+        }}><img src="src/assets/kofi_symbol.svg" alt="Ko-fi Logo" className="size-4"/>
+          Support Rhizome
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}><HandHeart />
+          Feedback & Requests
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -127,4 +231,3 @@ function MoreMenu() {
 }
 
 export default MobileAppBar
-

@@ -1,13 +1,13 @@
 import './App.css'
 import {useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, TextSearch } from 'lucide-react'
+import { ChevronDown, Divide, Settings, TextSearch } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
-  Artist, ArtistNodeLimitType, BadDataReport,
+  AccountMenuState, Artist, ArtistNodeLimitType, BadDataReport,
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
@@ -65,6 +65,7 @@ import FeedbackOverlay from '@/components/FeedbackOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
 import useAuth from "@/hooks/useAuth";
+import SettingsOverlay from '@/components/SettingsOverlay';
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -109,6 +110,7 @@ function App() {
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
+  const accountMenuState: AccountMenuState = "guest"; // Placeholder for auth state
   const { addRecentSelection } = useRecentSelections();
   const {
     genres,
@@ -135,7 +137,7 @@ function App() {
     artistPlayIDLoadingKey,
   } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
   const [playerTitle, setPlayerTitle] = useState<string | undefined>(undefined);
@@ -755,7 +757,7 @@ function App() {
   const colorFallback = (genreID?: string) => {
     let color;
     if (genreID) color = genreColorMap.get(genreID);
-    if (!color) color = theme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
+    if (!color) color = resolvedTheme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
     return color;
   }
 
@@ -886,6 +888,7 @@ function App() {
         onCollectionClick={onCollectionClick}
         onExploreClick={onExploreClick}
         onAccountClick={onAccountClick}
+        accountMenuState={accountMenuState}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -1032,7 +1035,7 @@ function App() {
           </div>}
           {/* right controls */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
-              <ModeToggle />
+              {/* <ModeToggle /> */}
               <ClusteringPanel 
                 clusterMode={genreClusterMode[0]}
                 setClusterMode={onGenreClusterModeChange}
@@ -1157,6 +1160,7 @@ function App() {
           />
         </div>
       </AppSidebar>
+      <SettingsOverlay />
       <AuthOverlay
           onSignUp={signUp}
           onSignInSocial={signInSocial}

@@ -200,7 +200,7 @@ export function ArtistInfo({
                            {/* <Button
                               size={isDesktop ? "lg" : "xl"}
                               variant="secondary"
-                              onClick={() => onArtistLike(selectedArtist ? selectedArtist.id : undefined)}
+                              onClick={() => window.dispatchEvent(new Event('auth:open'))}
                               className={isDesktop ? 'self-start' : 'flex-1'}
                                                 >
                               <SquarePlus size={24}/>Add
