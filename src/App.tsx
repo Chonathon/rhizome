@@ -618,13 +618,13 @@ function App() {
     }
   }
 
-  const getGenreRootsFromID = (genreID: string) => {
+  const getGenreRootsFromID = useCallback((genreID: string) => {
     const genre = genres.find((g) => g.id === genreID);
     if (genre) {
       return genre.rootGenres;
     }
     return [];
-  }
+  }, [genres]);
 
   const onBadDataGenreSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
     //TODO: use actual user ID when accounts are implemented
@@ -676,7 +676,36 @@ function App() {
     return success;
   }
 
-  const getRootGenreFromTags = (tags: Tag[]) => {
+  const colorFallback = useCallback((genreID?: string) => {
+    let color;
+    if (genreID) color = genreColorMap.get(genreID);
+    if (!color) color = theme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
+    return color;
+  }, [genreColorMap, theme]);
+
+  const getGenreColorFromRoots = useCallback((roots: string[]) => {
+    let color;
+    if (roots.length === 1) {
+      color = genreColorMap.get(roots[0]);
+    } else if (roots.length > 1) {
+      const colors: string[] = [];
+      roots.forEach(root => {
+        const rootColor = genreColorMap.get(root);
+        if (rootColor) colors.push(rootColor);
+      });
+      color = mixColors(colors);
+    }
+    return color;
+  }, [genreColorMap]);
+
+  const getGenreColorFromID = useCallback((genreID: string) => {
+    const roots = getGenreRootsFromID(genreID);
+    let color = getGenreColorFromRoots(roots);
+    if (!color) color = colorFallback(genreID);
+    return color;
+  }, [colorFallback, getGenreColorFromRoots, getGenreRootsFromID]);
+
+  const getRootGenreFromTags = useCallback((tags: Tag[]) => {
     if (tags && tags.length) {
       const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
       if (genreTags.length > 0) {
@@ -686,9 +715,9 @@ function App() {
       }
     }
     return [];
-  }
+  }, [genres]);
 
-  const getArtistColor = (artist: Artist) => {
+  const getArtistColor = useCallback((artist: Artist) => {
     let color;
     // First try strongest tag that is a genre
     const rootIDs = getRootGenreFromTags(artist.tags);
@@ -704,36 +733,7 @@ function App() {
     // If no roots are found
     if (!color) color = colorFallback();
     return color;
-  }
-
-  const getGenreColorFromID = (genreID: string) => {
-    const roots = getGenreRootsFromID(genreID);
-    let color = getGenreColorFromRoots(roots);
-    if (!color) color = colorFallback(genreID);
-    return color;
-  }
-
-  const getGenreColorFromRoots = (roots: string[]) => {
-    let color;
-    if (roots.length === 1) {
-      color = genreColorMap.get(roots[0]);
-    } else if (roots.length > 1) {
-      const colors: string[] = [];
-      roots.forEach(root => {
-        const rootColor = genreColorMap.get(root);
-        if (rootColor) colors.push(rootColor);
-      });
-      color = mixColors(colors);
-    }
-    return color;
-  }
-
-  const colorFallback = (genreID?: string) => {
-    let color;
-    if (genreID) color = genreColorMap.get(genreID);
-    if (!color) color = resolvedTheme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
-    return color;
-  }
+  }, [colorFallback, getGenreColorFromID, getGenreColorFromRoots, getRootGenreFromTags]);
 
   const onGenreFilterSelectionChange = async (selectedIDs: string[]) => {
     if (graph === 'genres') {
