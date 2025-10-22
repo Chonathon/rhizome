@@ -74,47 +74,46 @@ function AuthOverlay() {
         }
       }}
     >
-      <div>
-        <DialogHeader>
-          <div>
-            <RhizomeLogo className="mx-auto mb-4 h-11 sm:h-14 w-auto" />
-          </div>
-          <DialogTitle className="sm:text-3xl text-2xl text-center">
-            {isSignup ? "Create a free account to start your collection" : "Log in to continue your collection"}
-          </DialogTitle>
-          <DialogDescription className="relative text-md text-center">
-            <span aria-hidden="true" className="block select-none opacity-0 pointer-events-none">
-              {nextDescription}
-            </span>
-            <AnimatePresence mode="wait" initial={false}>
-              {isSignup ? (
-                <motion.span
-                  key="signup"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute inset-0 block"
-                >
-                  {signupDescription}
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="login"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute inset-0 block"
-                >
-                  {loginDescription}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleFormSubmit}>
-          <div className="grid gap-8 py-4">
+      <DialogHeader>
+        <div>
+          <RhizomeLogo className="mx-auto mb-4 h-11 sm:h-14 w-auto" />
+        </div>
+        <DialogTitle className="sm:text-3xl text-2xl text-center">
+          {isSignup ? "Create a free account to start your collection" : "Log in to continue your collection"}
+        </DialogTitle>
+        <DialogDescription className="relative text-md text-center">
+          <span aria-hidden="true" className="block select-none opacity-0 pointer-events-none">
+            {nextDescription}
+          </span>
+          <AnimatePresence mode="wait" initial={false}>
+            {isSignup ? (
+              <motion.span
+                key="signup"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="absolute inset-0 block"
+              >
+                {signupDescription}
+              </motion.span>
+            ) : (
+              <motion.span
+                key="login"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="absolute inset-0 block"
+              >
+                {loginDescription}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </DialogDescription>
+      </DialogHeader>
+      <form onSubmit={handleFormSubmit} className="px-4">
+        <div className="grid gap-8 py-4">
             {/* OAuth */}
             <div className={`${!isSignup || isMobile ? "flex-row" : ""} flex flex-col gap-4`}>
               <Button
@@ -194,7 +193,6 @@ function AuthOverlay() {
             </div>
           </div>
         </form>
-      </div>
     </DialogDrawer>
   );
 }

@@ -73,7 +73,7 @@ export function ReportIncorrectInfoDialog({
       }
     >
       <form
-        className="grid gap-4"
+        className="grid gap-4 px-4"
         onSubmit={(e) => {
           e.preventDefault();
           handleSubmit();

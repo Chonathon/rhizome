@@ -65,16 +65,16 @@ export function DialogDrawer({
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} modal={false}>
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className={contentClassName}>
         {(title || description) && (
-          <DrawerHeader>
+          <DrawerHeader className="text-left">
             {title && <DrawerTitle>{title}</DrawerTitle>}
             {description && <DrawerDescription>{description}</DrawerDescription>}
           </DrawerHeader>
         )}
-        <div className="px-4 overflow-y-auto flex-1">{children}</div>
-        {footer && <DrawerFooter>{footer}</DrawerFooter>}
+        {children}
+        {footer && <DrawerFooter className="pt-2">{footer}</DrawerFooter>}
       </DrawerContent>
     </Drawer>
   )

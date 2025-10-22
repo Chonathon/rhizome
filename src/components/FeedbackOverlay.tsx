@@ -58,7 +58,7 @@ function FeedbackOverlay() {
             </>
           }
         >
-          <FieldSet>
+          <FieldSet className="px-4">
             <Field>
               <FieldLabel className="sr-only" htmlFor="feedback-comments">
                 Comments
