@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, 
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose,
   DrawerHandle
- } from "@/components/ui/drawer";
+ } from "@/components/ui/drawer-custom";
 import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
