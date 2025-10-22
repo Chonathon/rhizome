@@ -1,6 +1,6 @@
 import './App.css'
-import {useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, Settings, TextSearch } from 'lucide-react'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import { ChevronDown, Divide, TextSearch } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
