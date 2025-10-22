@@ -54,17 +54,16 @@ interface AppSidebarProps {
   resetAppState: () => void;
   onCollectionClick: () => void;
   onExploreClick: () => void;
-  accountMenuState?: AccountMenuState;
+  signedInUser: boolean;
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, accountMenuState = "authorized", onSignUpClick, onLoginClick, onCollectionClick, onExploreClick }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, onExploreClick }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { theme, setTheme } = useTheme()
   const { recentSelections } = useRecentSelections()
   const { toggleSidebar } = useSidebar()
-  const showAccountControls = accountMenuState === "authorized"
   const handleSignUp = useCallback(() => {
     if (onSignUpClick) {
       onSignUpClick()
@@ -193,7 +192,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                           <DropdownMenuContent side="right" align="end">
                             {/* <DropdownMenuLabel>Settings</DropdownMenuLabel>
                             <DropdownMenuSeparator /> */}
-                            {showAccountControls ? (
+                            {signedInUser ? (
                               <>
                                 <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
                                   Profile
@@ -257,7 +256,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
         onGraphChange={onGraphChange}
         onOpenSearch={() => setSearchOpen(true)}
         resetAppState={resetAppState}
-        accountMenuState={accountMenuState}
+        signedInUser={signedInUser}
         onSignUpClick={handleSignUp}
         onLoginClick={handleLogin}
       />

@@ -56,7 +56,7 @@ import {
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
-  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER
+  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, DEFAULT_PREFERENCES
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -164,6 +164,7 @@ function App() {
     changeEmail,
     changePassword,
     deleteUser,
+    updateUser,
     likeArtist,
     unlikeArtist,
     updatePreferences,
@@ -871,10 +872,6 @@ function App() {
     }
   }
 
-  const onAccountClick = () => {
-    window.dispatchEvent(new Event('auth:open'));
-  }
-
   return (
     <SidebarProvider>
       <AppSidebar
@@ -887,8 +884,7 @@ function App() {
         resetAppState={resetAppState}
         onCollectionClick={onCollectionClick}
         onExploreClick={onExploreClick}
-        onAccountClick={onAccountClick}
-        accountMenuState={accountMenuState}
+        signedInUser={!!userID}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -1160,16 +1156,22 @@ function App() {
           />
         </div>
       </AppSidebar>
-      <SettingsOverlay />
+      <SettingsOverlay
+        name={userName || ''}
+        email={userEmail || ''}
+        preferences={preferences || DEFAULT_PREFERENCES}
+        socialUser={isSocialUser || false}
+        onLogout={signOut}
+        onChangeEmail={changeEmail}
+        onChangePassword={changePassword}
+        onDeleteAccount={deleteUser}
+        onChangeName={updateUser}
+        onChangePreferences={updatePreferences}
+      />
       <AuthOverlay
           onSignUp={signUp}
           onSignInSocial={signInSocial}
           onSignIn={signIn}
-          onSignOut={signOut}
-          onChangeEmail={changeEmail}
-          onChangePassword={changePassword}
-          onDeleteAccount={deleteUser}
-          signedIn={!!userID}
       />
       <FeedbackOverlay />
     </SidebarProvider>

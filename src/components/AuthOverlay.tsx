@@ -14,20 +14,16 @@ import { toast } from "sonner";
 import RhizomeLogo from "./RhizomeLogo";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import {Social} from "@/types";
+import * as React from "react";
 
 type AuthMode = "signup" | "login";
 interface AuthOverlayProps {
-  onSignUp: (email: string, password: string, name: string) => void;
-  onSignInSocial: (social: Social) => void;
-  onSignIn: (email: string, password: string) => void;
-  signedIn: boolean;
-  onChangeEmail: (newEmail: string) => void;
-  onSignOut: () => void;
-  onDeleteAccount: (password?: string) => void;
-  onChangePassword: (newPassword: string, oldPassword: string) => void;
+  onSignUp: (email: string, password: string, name: string) => Promise<boolean>;
+  onSignInSocial: (social: Social) => Promise<boolean>;
+  onSignIn: (email: string, password: string) => Promise<boolean>;
 }
 
-function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onSignOut, signedIn, onDeleteAccount, onChangePassword, onChangeEmail}: AuthOverlayProps) {
+function AuthOverlay({onSignUp, onSignInSocial, onSignIn}: AuthOverlayProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("signup");
   const isMobile = useMediaQuery("(max-width: 640px)");
@@ -47,19 +43,13 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onSignOut, signedIn, o
   }, []);
 
   const emailRef = useRef<HTMLInputElement>(null);
-  const onSubmit = () => {
-    onSignUp(email, password, email.split('@')[0]);
-  }
 
   const isSignup = mode === "signup";
   const appleLabel = isMobile || !isSignup ? "" : isSignup ? "Sign up with Apple" : "Log in with Apple";
   const googleLabel = isMobile || !isSignup ? "" : isSignup ? "Sign up with Google" : "Log in with Google";
+  const spotifyLabel = isMobile || !isSignup ? "" : isSignup ? "Sign up with Spotify" : "Log in with Spotify";
   const primaryButtonLabel = isSignup ? "Continue" : "Log in";
-  const primaryToast = isSignup
-    ? "Oof, not even email sign-up is implemented 😬"
-    : "Yikes, we haven't built log in yet either 😬";
   const appleToast = isSignup ? "Apple sign-up not yet implemented 🙃" : "Apple log in not yet implemented 🙃";
-  const googleToast = isSignup ? "Google sign-up not yet implemented 🙃" : "Google log in not yet implemented 🙃";
   const footerPrompt = isSignup ? "Already have an account?" : "Need an account?";
   const footerAction = isSignup ? "Log in" : "Sign up";
   const footerMode: AuthMode = isSignup ? "login" : "signup";
@@ -79,9 +69,25 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onSignOut, signedIn, o
     }
   };
 
-  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    toast(primaryToast);
+    let success = false;
+    if (isSignup) {
+      success = await onSignUp(email, password, email.split('@')[0]);
+      if (success) {
+        toast.success("Successfully signed up!");
+      } else {
+        toast.error("Error creating account!");
+      }
+    } else {
+      success = await onSignIn(email, password);
+      if (success) {
+        toast.success("Successfully logged in!");
+      } else {
+        toast.error("Incorrect email or password!");
+      }
+    }
+    if (success) setOpen(false);
   };
 
   return (
@@ -136,27 +142,27 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onSignOut, signedIn, o
             <div className="grid gap-8 py-4">
               {/* OAuth */}
               <div className={`${!isSignup || isMobile ? "flex-row" : ""} flex flex-col gap-4`}>
+                {/*<Button*/}
+                {/*  className={`${!isSignup || isMobile ? "w-full p-4" : ""} flex-1`}*/}
+                {/*  variant="outline"*/}
+                {/*  size={isMobile || !isSignup ? "xl" : "default"}*/}
+                {/*  type="button"*/}
+                {/*  onClick={() => toast(appleToast)}*/}
+                {/*>*/}
+                {/*  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">*/}
+                {/*    <path*/}
+                {/*      d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"*/}
+                {/*      fill="currentColor"*/}
+                {/*    />*/}
+                {/*  </svg>*/}
+                {/*  {appleLabel}*/}
+                {/*</Button>*/}
                 <Button
                   className={`${!isSignup || isMobile ? "w-full p-4" : ""} flex-1`}
                   variant="outline"
                   size={isMobile || !isSignup ? "xl" : "default"}
                   type="button"
-                  onClick={() => toast(appleToast)}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path
-                      d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  {appleLabel}
-                </Button>
-                <Button
-                  className={`${!isSignup || isMobile ? "w-full p-4" : ""} flex-1`}
-                  variant="outline"
-                  size={isMobile || !isSignup ? "xl" : "default"}
-                  type="button"
-                  onClick={() => toast(googleToast)}
+                  onClick={() => onSignInSocial('google')}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
@@ -165,6 +171,16 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onSignOut, signedIn, o
                     />
                   </svg>
                   {googleLabel}
+                </Button>
+                <Button
+                    className={`${!isSignup || isMobile ? "w-full p-4" : ""} flex-1`}
+                    variant="outline"
+                    size={isMobile || !isSignup ? "xl" : "default"}
+                    type="button"
+                    onClick={() => onSignInSocial('spotify')}
+                >
+                  <img src="src/assets/Spotify_Symbol_0.svg" className="h-5 w-5"/>
+                  {spotifyLabel}
                 </Button>
               </div>
               {/* Divider */}
@@ -182,6 +198,8 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onSignOut, signedIn, o
                     type="email"
                     placeholder="m@example.com"
                     ref={isMobile ? undefined : emailRef}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
@@ -195,7 +213,13 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onSignOut, signedIn, o
                       Forgot your password?
                     </a>
                   </div>
-                  <Input id="password" type="password" required />
+                  <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                  />
                 </div>
                 <Button type="submit" size="lg" className="w-full mt-2">
                   {primaryButtonLabel}

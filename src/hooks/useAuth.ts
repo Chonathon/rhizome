@@ -25,6 +25,7 @@ const useAuth = () => {
         changeEmail,
         changePassword,
         deleteUser,
+        updateUser,
         validSession,
     } = useContext(AuthContext);
 
@@ -54,18 +55,14 @@ const useAuth = () => {
     const updatePreferences = async (newPreferences: Preferences) => {
         if (userID) {
             const success = await updateUserPreferences(userID, newPreferences);
-            if (success) setPreferences(newPreferences);
+            if (success) {
+                setPreferences(newPreferences);
+                return true;
+            } else {
+                console.error("Couldn't update preferences.");
+            }
         }
-    }
-
-    const onSignOut = async () => {
-        await signOut();
-        clearUserData();
-    }
-
-    const onDeleteUser = async (password: string) => {
-        await deleteUser(password);
-        clearUserData();
+        return false;
     }
 
     const clearUserData = () => {
@@ -90,6 +87,7 @@ const useAuth = () => {
         changeEmail,
         changePassword,
         deleteUser,
+        updateUser,
         likeArtist,
         unlikeArtist,
         updatePreferences,

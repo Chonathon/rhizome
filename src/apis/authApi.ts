@@ -85,3 +85,18 @@ export const deleteUserAccount = async (password?: string) => {
     }
     return false;
 }
+
+export const updateUserAccount = async (name?: string, image?: string) => {
+    try {
+        await authClient.updateUser({
+            name,
+            image,
+        });
+        return true;
+    } catch (error) {
+        if (error instanceof BetterAuthError) {
+            return error;
+        }
+    }
+    return false;
+}

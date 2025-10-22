@@ -6,7 +6,7 @@ import {
     signInSocialUser,
     signInUser,
     signOutUser,
-    signUpUser
+    signUpUser, updateUserAccount
 } from "@/apis/authApi";
 import {BetterAuthError, InferSessionFromClient, InferUserFromClient} from "better-auth";
 import {getUserData} from "@/apis/usersApi";
@@ -17,13 +17,14 @@ interface AuthContextType {
     user: User | undefined,
     loading: boolean,
     error: string | undefined,
-    signIn: (email: string, password: string) => Promise<void>,
-    signInSocial: (social: Social) => Promise<void>,
-    signUp: (email: string, password: string, name: string) => Promise<void>,
-    signOut: () => Promise<void>,
-    changeEmail: (newEmail: string) => Promise<void>,
-    changePassword: (newPassword: string, oldPassword: string) => Promise<void>,
-    deleteUser: (password: string) => Promise<void>,
+    signIn: (email: string, password: string) => Promise<boolean>,
+    signInSocial: (social: Social) => Promise<boolean>,
+    signUp: (email: string, password: string, name: string) => Promise<boolean>,
+    signOut: () => Promise<boolean>,
+    changeEmail: (newEmail: string) => Promise<boolean>,
+    changePassword: (newPassword: string, oldPassword: string) => Promise<boolean>,
+    deleteUser: (password?: string) => Promise<boolean>,
+    updateUser: (name?: string, image?: string) => Promise<boolean>,
     validSession: (userID?: string) => boolean,
 }
 
@@ -32,13 +33,14 @@ const noUserContext = {
     user: undefined,
     loading: false,
     error: undefined,
-    signIn: (email: string, password: string) => new Promise<void>((resolve, reject) => {}),
-    signInSocial: (social: Social) => new Promise<void>((resolve, reject) => {}),
-    signUp: (email: string, password: string, name: string) => new Promise<void>((resolve, reject) => {}),
-    signOut: () => new Promise<void>((resolve, reject) => {}),
-    changeEmail: (newEmail: string) => new Promise<void>((resolve, reject) => {}),
-    changePassword: (newPassword: string, oldPassword: string) => new Promise<void>((resolve, reject) => {}),
-    deleteUser: (password: string) => new Promise<void>((resolve, reject) => {}),
+    signIn: (email: string, password: string) => new Promise<boolean>((resolve, reject) => {}),
+    signInSocial: (social: Social) => new Promise<boolean>((resolve, reject) => {}),
+    signUp: (email: string, password: string, name: string) => new Promise<boolean>((resolve, reject) => {}),
+    signOut: () => new Promise<boolean>((resolve, reject) => {}),
+    changeEmail: (newEmail: string) => new Promise<boolean>((resolve, reject) => {}),
+    changePassword: (newPassword: string, oldPassword: string) => new Promise<boolean>((resolve, reject) => {}),
+    deleteUser: (password?: string) => new Promise<boolean>((resolve, reject) => {}),
+    updateUser: (name?: string, image?: string) => new Promise<boolean>((resolve, reject) => {}),
     validSession: (userID?: string) => false,
 }
 
@@ -50,8 +52,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     const [error, setError] = useState<string | undefined>();
 
     const signIn = async (email: string, password: string) => {
-        await apiCall(async () => {
-            const { data, error } = await signInUser(email, password);
+        return await apiCall(async () => {
+            const { data, error: resError } = await signInUser(email, password);
+            if (resError) throw resError;
             if (data) {
                 const userData = await getUserData(data.user.id);
                 if (userData) {
@@ -72,8 +75,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
 
     const signInSocial = async (social: Social) => {
-        await apiCall(async () => {
-            const { data, error } = await signInSocialUser(social);
+        return await apiCall(async () => {
+            const { data, error: resError } = await signInSocialUser(social);
+            if (resError) throw resError;
             if (data) {
                 console.log(data)
             } else {
@@ -83,8 +87,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
 
     const signUp = async (email: string, password: string, name: string) => {
-        await apiCall(async () => {
-            const { data, error } = await signUpUser(email, password, name);
+        const success = await apiCall(async () => {
+            const { data, error: resError } = await signUpUser(email, password, name);
+            if (resError) throw resError;
             if (data) {
                 setUser({
                     id: data.user.id,
@@ -98,65 +103,99 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
             }
         });
         refetchSession();
+        return success;
     }
 
     const signOut = async () => {
+        let success = false;
         if (user) {
-            await apiCall(async () => {
-                const success = await signOutUser();
-                if (success) {
+            success = await apiCall(async () => {
+                const result = await signOutUser();
+                if (result === true) {
                     setUser(undefined);
                 } else {
-                    setError(`Error: could not sign out user ${user?.email}: ${success}`)
+                    setError(`Error: could not sign out user ${user?.email}: ${result}`);
+                    throw result;
                 }
             });
         }
+        return success;
     }
 
     const changeEmail = async (newEmail: string) => {
+        let success = false;
         if (user) {
-            await apiCall(async () => {
-                const success = await changeUserEmail(newEmail);
-                if (success) {
+            success = await apiCall(async () => {
+                const result = await changeUserEmail(newEmail);
+                if (result === true) {
                     setUser({...user, email: newEmail});
                 } else {
-                    setError(`Error: could not change user email.`)
+                    setError(`Error: could not change user email.`);
+                    throw result;
                 }
             });
         }
+        return success;
     }
 
     const changePassword = async (newPassword: string, currentPassword: string) => {
+        let success = false;
         if (user) {
-            await apiCall(async () => {
-                const { data, error } = await changeUserPassword(newPassword, currentPassword);
+            success = await apiCall(async () => {
+                const { data, error: resError } = await changeUserPassword(newPassword, currentPassword);
+                if (resError) throw resError;
             });
         }
+        return success;
     }
 
     const deleteUser = async (password?: string) => {
+        let success = false;
         if (user) {
-            await apiCall(async () => {
-                await deleteUserAccount(password);
+            success = await apiCall(async () => {
+                const result = await deleteUserAccount(password);
+                if (result !== true) {
+                    setError('Error: could not delete user account.');
+                    throw result;
+                }
                 //setUser(undefined);
             });
         }
+        return success;
+    }
+
+    const updateUser = async (name?: string, image?: string) => {
+        let success = false;
+        if (user) {
+            success = await apiCall(async () => {
+                const result = await updateUserAccount(name, image);
+                if (result !== true) {
+                    setError('Error: could not update user account.');
+                    throw result;
+                }
+            });
+        }
+        return success;
     }
 
     const resetError = () => setError(undefined);
 
     // Encloses an api call with loading and error handling
     const apiCall = async (call: () => Promise<void>) => {
+        let success = false;
         resetError();
         setLoading(true);
         try {
             await call();
+            success = true;
         } catch (err) {
+            success = false;
             if (err instanceof BetterAuthError) {
                 setError(err.message);
             }
         }
         setLoading(false);
+        return success;
     }
 
     const {
@@ -222,6 +261,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
             changePassword,
             deleteUser,
             validSession,
+            updateUser,
         }}>
             {children}
         </AuthContext.Provider>

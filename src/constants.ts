@@ -4,7 +4,7 @@ import {
     GenreClusterMode,
     GenreNodeLimitType,
     InitialGenreFilter,
-    PlayerType, Theme
+    PlayerType, Preferences, Theme
 } from "@/types";
 
 export const SERVER_DEPLOYMENT_URL = 'https://rhizome-server-production.up.railway.app';
@@ -68,6 +68,7 @@ export const EMPTY_GENRE_FILTER_OBJECT: InitialGenreFilter = {
 export const MAX_YTID_QUEUE_SIZE = 200;
 
 export const DEFAULT_THEME: Theme = 'system';
+export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER};
 export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
 export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
 // Tailwind default color palette (lighter/less saturated variants)
