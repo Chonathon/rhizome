@@ -17,7 +17,7 @@ import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
-import { AddButton } from "./ui/AddButton";
+import { AddButton } from "./AddButton";
 
 
 interface ArtistInfoProps {
@@ -198,7 +198,7 @@ export function ArtistInfo({
                            {/* <Button
                               size={isDesktop ? "lg" : "xl"}
                               variant="secondary"
-                              onClick={() => window.dispatchEvent(new Event('auth:open'))}
+                              onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))}
                               className={isDesktop ? 'self-start' : 'flex-1'}
                                                 >
                               <SquarePlus size={24}/>Add

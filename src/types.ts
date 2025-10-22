@@ -115,3 +115,5 @@ export interface TopTrackPlayIDs {
 }
 
 export type PlayerType = 'youtube' | 'spotify' | 'apple';
+
+export type AccountMenuState = "authorized" | "guest" | "nonOffice";

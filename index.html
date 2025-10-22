@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="light" style="color-scheme: light;">
   <head>
     <meta charset="UTF-8" />
     <!-- Theme-aware favicons -->
@@ -13,6 +13,35 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Rhizome">
     <title>Rhizome</title>
+    <script>
+      // Prevent flash of unstyled content (FOUC) for theme
+      (function() {
+        const storageKey = 'theme';
+        const theme = localStorage.getItem(storageKey) || 'system';
+        const root = document.documentElement;
+
+        function applyTheme(theme) {
+          if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            root.classList.add('dark');
+            root.classList.remove('light');
+            root.style.colorScheme = 'dark';
+          } else {
+            root.classList.add('light');
+            root.classList.remove('dark');
+            root.style.colorScheme = 'light';
+          }
+        }
+
+        applyTheme(theme);
+
+        // Listen for system theme changes
+        if (theme === 'system') {
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            applyTheme('system');
+          });
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

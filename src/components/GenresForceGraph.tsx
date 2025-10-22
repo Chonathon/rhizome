@@ -38,7 +38,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
-    const { theme } = useTheme();
+    const { theme, resolvedTheme } = useTheme();
+    const activeTheme = resolvedTheme ?? theme;
 
     // Expose simple zoom API to parent
     useImperativeHandle(ref, () => ({
@@ -167,13 +168,13 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         nodeIds.forEach(id => {
             if (!map.has(id)) {
                 const c = getRootColor(id);
-                if (!c) map.set(id, theme === 'dark' ? '#8a80ff' : '#4a4a4a');
+                if (!c) map.set(id, activeTheme === 'dark' ? '#8a80ff' : '#4a4a4a');
             }
         });
 
         return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [externalColorMap, preparedData.nodes, preparedData.links, theme]);
+    }, [externalColorMap, preparedData.nodes, preparedData.links, activeTheme]);
 
     useEffect(() => {
         if (graphData) {
@@ -245,7 +246,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         const nodeY = node.y || 0;
 
         // Node styling per parent color
-        const accent = nodeColorById.get(genreNode.id) || (theme === 'dark' ? '#8a80ff' : '#4a4a4a');
+        const accent = nodeColorById.get(genreNode.id) || (activeTheme === 'dark' ? '#8a80ff' : '#4a4a4a');
         const isSelected = !!selectedGenreId && genreNode.id === selectedGenreId;
         const isNeighbor = !!selectedGenreId && neighborsById.get(selectedGenreId)?.has(genreNode.id);
         const hasSelection = !!selectedGenreId;
@@ -274,7 +275,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         else if (isNeighbor) alpha = Math.max(alpha, 0.85);
         else if (hasSelection) alpha = Math.min(alpha, 0.2);
         const yOffset = yOffsetByIdRef.current.get(genreNode.id) || 0;
-        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, theme, alpha, LABEL_FONT_SIZE, yOffset);
+        drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, activeTheme, alpha, LABEL_FONT_SIZE, yOffset);
     };
 
     const nodePointerAreaPaint = (node: NodeObject, color: string, ctx: CanvasRenderingContext2D) => {
@@ -306,7 +307,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
                 const s = typeof l.source === 'string' ? l.source : l.source?.id;
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
                 const connectedToSelected = !!selectedGenreId && (s === selectedGenreId || t === selectedGenreId);
-                const base = (s && nodeColorById.get(s)) || (theme === 'dark' ? '#ffffff' : '#000000');
+                const base = (s && nodeColorById.get(s)) || (activeTheme === 'dark' ? '#ffffff' : '#000000');
                 const alpha = selectedGenreId ? (connectedToSelected ? 'cc' : '30') : '80';
                 return base + alpha;
             }}
