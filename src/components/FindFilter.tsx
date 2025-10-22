@@ -21,6 +21,8 @@ interface FindFilterProps {
   emptyText?: string;
   triggerClassName?: string;
   label?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const PANEL_CLASSNAME = "w-72 sm:w-80 p-0 overflow-hidden";
@@ -34,6 +36,8 @@ export default function FindFilter({
   emptyText = "No matches in the current view.",
   triggerClassName,
   label = "Find",
+  open,
+  onOpenChange,
 }: FindFilterProps) {
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => a.name.localeCompare(b.name));
@@ -87,6 +91,8 @@ export default function FindFilter({
       trigger={trigger}
       className={PANEL_CLASSNAME}
       side="bottom"
+      open={open}
+      onOpenChange={onOpenChange}
     >
       <Command>
         <CommandInput placeholder={placeholder} />

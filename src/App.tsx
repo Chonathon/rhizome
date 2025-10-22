@@ -106,6 +106,7 @@ function App() {
   const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isFindFilterOpen, setIsFindFilterOpen] = useState(false);
   const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>(DEFAULT_GENRE_LIMIT_TYPE);
   const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>(DEFAULT_ARTIST_LIMIT_TYPE);
   const [genreNodeCount, setGenreNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
@@ -182,54 +183,6 @@ function App() {
     localStorage.setItem('dagMode', JSON.stringify(dagMode));
   }, [dagMode]);
 
-  // Zoom hotkeys (+ / -)
-  useHotkeys({
-    onZoomIn: () => {
-      const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-      ref?.zoomIn?.();
-    },
-    onZoomOut: () => {
-      const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-      ref?.zoomOut?.();
-    },
-  }, [graph]);
-
-  // Restore standalone Escape handling (deselect)
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if (graph === 'genres' && selectedGenres.length){
-          deselectGenre();
-          return;
-        }
-        if (selectedArtist) {
-          deselectArtist();
-          return;
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [graph, selectedArtist, selectedGenres]);
-
-  // Restore Cmd/Ctrl+K handling (search)
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setSearchOpen((prev) => !prev);
-      }
-    };
-    document.addEventListener('keydown', down);
-    return () => document.removeEventListener('keydown', down);
-  }, []);
-
-  // Sets current artists/links shown in the graph when artists are fetched from the DB
-  useEffect(() => {
-    setCurrentArtists(artists);
-    setCurrentArtistLinks(artistLinks);
-  }, [artists]);
-
   const findOptions = useMemo<FindOption[]>(() => {
     if (graph === 'genres' && currentGenres) {
       return currentGenres.nodes.map((genre) => {
@@ -280,6 +233,70 @@ function App() {
     return [];
   }, [graph, currentArtists, currentGenres]);
 
+  const hasFindSelection =
+    (graph === 'genres' && selectedGenres.length > 0) ||
+    ((graph === 'artists' || graph === 'similarArtists') && !!selectedArtist);
+
+  const findPanelDisabled = !hasFindSelection && findOptions.length === 0;
+
+  useEffect(() => {
+    if (findPanelDisabled && isFindFilterOpen) {
+      setIsFindFilterOpen(false);
+    }
+  }, [findPanelDisabled, isFindFilterOpen]);
+
+  // Global hotkeys (+, -, /)
+  useHotkeys({
+    onZoomIn: () => {
+      const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+      ref?.zoomIn?.();
+    },
+    onZoomOut: () => {
+      const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+      ref?.zoomOut?.();
+    },
+    onOpenFind: () => {
+      if (findPanelDisabled) return;
+      setIsFindFilterOpen(true);
+    },
+  }, [graph, findPanelDisabled]);
+
+  // Restore standalone Escape handling (deselect)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (graph === 'genres' && selectedGenres.length){
+          deselectGenre();
+          return;
+        }
+        if (selectedArtist) {
+          deselectArtist();
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [graph, selectedArtist, selectedGenres]);
+
+  // Restore Cmd/Ctrl+K handling (search)
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
+
+  // Sets current artists/links shown in the graph when artists are fetched from the DB
+  useEffect(() => {
+    setCurrentArtists(artists);
+    setCurrentArtistLinks(artistLinks);
+  }, [artists]);
+
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
       return selectedGenres[0].name;
@@ -289,12 +306,6 @@ function App() {
     }
     return DEFAULT_FIND_LABEL;
   }, [graph, selectedGenres, selectedArtist]);
-
-  const hasFindSelection =
-    (graph === 'genres' && selectedGenres.length > 0) ||
-    ((graph === 'artists' || graph === 'similarArtists') && !!selectedArtist);
-
-  const findPanelDisabled = !hasFindSelection && findOptions.length === 0;
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
@@ -996,6 +1007,11 @@ function App() {
                   emptyText={graph === 'genres' ? 'No genres match this view.' : 'No artists match this view.'}
                   triggerClassName="self-start"
                   label={findLabel}
+                  open={isFindFilterOpen}
+                  onOpenChange={(open) => {
+                    if (findPanelDisabled && open) return;
+                    setIsFindFilterOpen(open);
+                  }}
                 />
           </motion.div>
                 <GenresForceGraph
