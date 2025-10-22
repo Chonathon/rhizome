@@ -34,6 +34,12 @@ const useGenres = () => {
         fetchGenres();
     }, []);
 
+    useEffect(() => {
+        if (genresError) {
+            console.error(genresError);
+        }
+    }, [genresError]);
+
     const flagBadGenreData = async (report: BadDataReport) => {
         setGenresDataFlagLoading(true);
         let success = false;

@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                     setError(`Error: no user data found for ${email}.`);
                 }
             } else {
-                setError(`Error: no user data found for ${email}.`);
+                setError(`Error: no auth user data found for ${email}.`);
             }
         });
     }
@@ -97,6 +97,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                 setError(`Error: unsuccessful account setup.`);
             }
         });
+        refetchSession();
     }
 
     const signOut = async () => {
@@ -199,7 +200,6 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                         socialUser: userData.socialUser,
                     });
                 } else {
-                    console.log('no data for user')
                     setError(`Error: no user data found.`);
                 }
             });

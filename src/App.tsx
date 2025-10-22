@@ -181,9 +181,9 @@ function App() {
   const singletonParentGenre = useMemo(() => {
     return {
       ...SINGLETON_PARENT_GENRE,
-      subgenres: genres.filter(g => isSingletonGenre(g, GENRE_FILTER_CLUSTER_MODE)).map(s => {
+      subgenres: genres ? genres.filter(g => isSingletonGenre(g, GENRE_FILTER_CLUSTER_MODE)).map(s => {
         return {id: s.id, name: s.name}
-      })
+      }) : []
     }
   }, [genres]);
 
@@ -250,9 +250,11 @@ function App() {
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
-    const nodeCount = genres.length;
-    onGenreNodeCountChange(nodeCount);
-    setGenreColorMap(buildGenreColorMap(genres, genreRoots));
+    if (genres) {
+      const nodeCount = genres.length;
+      onGenreNodeCountChange(nodeCount);
+      setGenreColorMap(buildGenreColorMap(genres, genreRoots));
+    }
   }, [genres, genreLinks]);
 
   // Fetches top tracks of selected genre player ids in the background
@@ -641,7 +643,7 @@ function App() {
   }
 
   const getGenreRootsFromID = (genreID: string) => {
-    const genre = genres.find((g) => g.id === genreID);
+    const genre = genres ? genres.find((g) => g.id === genreID) : undefined;
     if (genre) {
       return genre.rootGenres;
     }
@@ -699,7 +701,7 @@ function App() {
   }
 
   const getRootGenreFromTags = (tags: Tag[]) => {
-    if (tags && tags.length) {
+    if (tags && tags.length && genres) {
       const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
       if (genreTags.length > 0) {
         const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
@@ -1006,7 +1008,7 @@ function App() {
             </div>
           {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
             <NodeLimiter
-                totalNodes={genres.length}
+                totalNodes={genres ? genres.length : 0}
                 nodeType={'genres'}
                 initialValue={genreNodeCount}
                 onChange={onGenreNodeCountChange}

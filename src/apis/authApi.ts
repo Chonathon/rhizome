@@ -73,13 +73,10 @@ export const changeUserPassword = async (newPassword: string, currentPassword: s
 
 export const deleteUserAccount = async (password?: string) => {
     try {
-        if (password) {
-            await authClient.deleteUser({
-                password
-            });
-        } else {
-            await authClient.deleteUser();
-        }
+        await authClient.deleteUser({
+            password,
+            callbackURL: clientUrl(),
+        });
         return true;
     } catch (error) {
         if (error instanceof BetterAuthError) {
