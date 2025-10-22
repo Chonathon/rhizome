@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
+import { CommandDialogDrawer, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
 import { BadgeIndicator } from "@/components/BadgeIndicator"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
@@ -157,7 +157,7 @@ export function Search({
           </div>
         </Button>
       </motion.div>
-      <CommandDialog
+      <CommandDialogDrawer
           key={filteredSearchableItems.length
             ? filteredSearchableItems[filteredSearchableItems.length - 1].id
             : filteredSearchableItems.length}
@@ -255,7 +255,7 @@ export function Search({
               </CommandGroup>
           )}
         </CommandList>
-      </CommandDialog>
+      </CommandDialogDrawer>
     </>
   )
 }

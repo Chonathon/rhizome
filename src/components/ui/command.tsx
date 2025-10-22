@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { DialogDrawer } from "@/components/ui/dialog-drawer"
 
 function Command({
   className,
@@ -56,6 +57,41 @@ function CommandDialog({
         </Command>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function CommandDialogDrawer({
+  title = "Command Palette",
+  description = "Search for a command to run...",
+  children,
+  className,
+  showCloseButton = true,
+  open,
+  onOpenChange,
+}: {
+  title?: string
+  description?: string
+  className?: string
+  showCloseButton?: boolean
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  children: React.ReactNode
+}) {
+  return (
+    <DialogDrawer
+      open={open}
+      onOpenChange={onOpenChange}
+      showCloseButton={showCloseButton}
+      contentClassName={cn("overflow-hidden p-0", className)}
+    >
+      <DialogHeader className="sr-only">
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+      </DialogHeader>
+      <Command className="[&_[cmdk-group-heading]]:text-muted-foreground **:data-[slot=command-input-wrapper]:h-13 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+        {children}
+      </Command>
+    </DialogDrawer>
   )
 }
 
@@ -174,6 +210,7 @@ function CommandShortcut({
 export {
   Command,
   CommandDialog,
+  CommandDialogDrawer,
   CommandInput,
   CommandList,
   CommandEmpty,
