@@ -39,9 +39,7 @@ export default function FindFilter({
     return [...items].sort((a, b) => a.name.localeCompare(b.name));
   }, [items]);
 
-  const groupHeading = sortedItems.length
-    ? (sortedItems[0].entityType === 'artist' ? "Artists in view" : "Genres in view")
-    : undefined;
+  const groupHeading = `${sortedItems.length} ${sortedItems.length > 0 && sortedItems[0].entityType}s`
 
   const canClear = typeof onClear === "function";
 
