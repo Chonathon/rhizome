@@ -34,6 +34,7 @@ import {
   mixColors,
   primitiveArraysEqual,
   fixWikiImageURL,
+  formatNumber,
   until,
 } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -231,23 +232,49 @@ function App() {
 
   const findOptions = useMemo<FindOption[]>(() => {
     if (graph === 'genres' && currentGenres) {
-      return currentGenres.nodes.map((genre) => ({
-        id: genre.id,
-        name: genre.name,
-        entityType: 'genre' as const,
-        subtitle: genre.artistCount ? `${genre.artistCount.toLocaleString()} artists` : undefined,
-      }));
+      return currentGenres.nodes.map((genre) => {
+        const subtitleParts: string[] = [];
+
+        if (typeof genre.artistCount === "number" && genre.artistCount > 0) {
+          subtitleParts.push(`${formatNumber(genre.artistCount)} artists`);
+        }
+
+        if (typeof genre.totalListeners === "number" && genre.totalListeners > 0) {
+          subtitleParts.push(`${formatNumber(genre.totalListeners)} listeners`);
+        }
+
+        if (typeof genre.totalPlays === "number" && genre.totalPlays > 0) {
+          subtitleParts.push(`${formatNumber(genre.totalPlays)} plays`);
+        }
+
+        return {
+          id: genre.id,
+          name: genre.name,
+          entityType: 'genre' as const,
+          subtitle: subtitleParts.length ? subtitleParts.join(" • ") : undefined,
+        };
+      });
     }
 
     if ((graph === 'artists' || graph === 'similarArtists') && currentArtists.length) {
-      return currentArtists.map((artist) => ({
-        id: artist.id,
-        name: artist.name,
-        entityType: 'artist' as const,
-        subtitle: Array.isArray(artist.genres) && artist.genres.length
-          ? artist.genres.slice(0, 3).join(", ")
-          : undefined,
-      }));
+      return currentArtists.map((artist) => {
+        const subtitleParts: string[] = [];
+
+        if (typeof artist.listeners === "number" && artist.listeners > 0) {
+          subtitleParts.push(`${formatNumber(artist.listeners)} listeners`);
+        }
+
+        if (typeof artist.playcount === "number" && artist.playcount > 0) {
+          subtitleParts.push(`${formatNumber(artist.playcount)} plays`);
+        }
+
+        return {
+          id: artist.id,
+          name: artist.name,
+          entityType: 'artist' as const,
+          subtitle: subtitleParts.length ? subtitleParts.join(" • ") : undefined,
+        };
+      });
     }
 
     return [];
