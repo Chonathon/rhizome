@@ -69,8 +69,8 @@ function DrawerContent({
           // Remove default focus outline/ring from the drawer container
           "outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0",
           "data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-lg",
-          // Bottom drawer positioning and height - using svh for better mobile keyboard handling
-          "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[96svh] data-[vaul-drawer-direction=bottom]:rounded-3xl",
+          // Bottom drawer - fixed positioning at viewport bottom, modal prevents page scroll
+          "data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[90dvh] data-[vaul-drawer-direction=bottom]:rounded-3xl",
           // Side drawers honor top/bottom CSS vars to avoid overflowing the viewport
           "data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=right]:sm:max-w-sm data-[vaul-drawer-direction=right]:top-[var(--drawer-top,0px)] data-[vaul-drawer-direction=right]:bottom-[var(--drawer-bottom,0px)]",
           "data-[vaul-drawer-direction=left]:w-full data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=left]:top-[var(--drawer-top,0px)] data-[vaul-drawer-direction=left]:bottom-[var(--drawer-bottom,0px)]",

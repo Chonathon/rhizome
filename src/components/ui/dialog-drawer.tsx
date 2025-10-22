@@ -65,7 +65,7 @@ export function DialogDrawer({
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} modal={false}>
+    <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false} modal={true}>
       <DrawerContent className={contentClassName}>
         {(title || description) && (
           <DrawerHeader className="text-left">
