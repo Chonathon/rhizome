@@ -25,14 +25,28 @@ interface FindFilterProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-const PANEL_CLASSNAME = "w-72 sm:w-80 p-0 overflow-hidden";
+type KeyedFindOption = {
+  item: FindOption;
+  uniqueKey: string;
+  commandValue: string;
+};
+
 const INITIAL_ITEMS = 50; // Load first 50 items immediately
 const LOAD_MORE_THRESHOLD = 100; // Load 100 more when scrolling near bottom
 
 // Memoized item component to prevent unnecessary re-renders
-const FindItem = memo(({ item, onSelect }: { item: FindOption; onSelect: (option: FindOption) => void }) => (
+const FindItem = memo((
+  {
+    item,
+    onSelect,
+    commandValue,
+  }: {
+    item: FindOption;
+    onSelect: (option: FindOption) => void;
+    commandValue: string;
+  }) => (
   <CommandItem
-    value={`${item.name} ${item.subtitle ?? ""}`}
+    value={commandValue}
     onSelect={() => onSelect(item)}
     className="flex flex-col items-start gap-0.5"
   >
@@ -62,6 +76,21 @@ export default function FindFilter({
   const [visibleCount, setVisibleCount] = useState(INITIAL_ITEMS);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const keyedItems = useMemo<KeyedFindOption[]>(() => {
+    return items.map((item, index) => {
+      const uniqueKey = `${item.entityType}:${item.id}:${index}`;
+      const searchParts = [item.name, item.subtitle ?? ""].filter(
+        (part) => part.length > 0
+      );
+      const commandValue = `${searchParts.join(" ")} ${uniqueKey}`.trim();
+      return {
+        item,
+        uniqueKey,
+        commandValue,
+      };
+    });
+  }, [items]);
+
   // Reset visible count when panel opens or items change
   useEffect(() => {
     if (open) {
@@ -71,25 +100,25 @@ export default function FindFilter({
   }, [open, items]);
 
   // Filter items based on search query
-  const filteredItems = useMemo(() => {
-    if (!searchQuery) return items;
+  const filteredItems = useMemo<KeyedFindOption[]>(() => {
+    if (!searchQuery) return keyedItems;
     const query = searchQuery.toLowerCase();
-    return items.filter(
-      (item) =>
+    return keyedItems.filter(
+      ({ item }) =>
         item.name.toLowerCase().includes(query) ||
         item.subtitle?.toLowerCase().includes(query)
     );
-  }, [items, searchQuery]);
+  }, [keyedItems, searchQuery]);
 
   // For large lists, only show subset initially. When searching, show all matches.
-  const displayItems = useMemo(() => {
+  const displayItems = useMemo<KeyedFindOption[]>(() => {
     // If user is searching, show all filtered results (search results are typically smaller)
     if (searchQuery) {
       return filteredItems;
     }
     // Otherwise, show limited set for performance
-    return items.slice(0, visibleCount);
-  }, [items, filteredItems, visibleCount, searchQuery]);
+    return keyedItems.slice(0, visibleCount);
+  }, [keyedItems, filteredItems, visibleCount, searchQuery]);
 
   const hasMore = !searchQuery && visibleCount < items.length;
 
@@ -105,9 +134,12 @@ export default function FindFilter({
     }
   };
 
+  const entityLabel =
+    items.length > 0 ? `${items[0].entityType}s` : "results";
+
   const groupHeading = searchQuery
-    ? `${filteredItems.length} of ${items.length} ${items.length > 0 && items[0].entityType}s`
-    : `${items.length} ${items.length > 0 && items[0].entityType}s`;
+    ? `${filteredItems.length} of ${items.length} ${entityLabel}`
+    : `${items.length} ${entityLabel}`;
 
   const canClear = typeof onClear === "function";
 
@@ -130,7 +162,7 @@ export default function FindFilter({
   return (
     <ResponsivePanel
       trigger={trigger}
-      className={PANEL_CLASSNAME}
+      className="w-72 sm:w-80 p-0 overflow-hidden"
       side="bottom"
       open={open}
       onOpenChange={onOpenChange}
@@ -146,8 +178,13 @@ export default function FindFilter({
             <CommandEmpty>{emptyText}</CommandEmpty>
             {displayItems.length > 0 && (
               <CommandGroup heading={groupHeading}>
-                {displayItems.map((item) => (
-                  <FindItem key={item.id} item={item} onSelect={onSelect} />
+                {displayItems.map(({ item, uniqueKey, commandValue }) => (
+                  <FindItem
+                    key={uniqueKey}
+                    item={item}
+                    onSelect={onSelect}
+                    commandValue={commandValue}
+                  />
                 ))}
                 {hasMore && (
                   <div className="py-2 text-center text-xs text-muted-foreground">
