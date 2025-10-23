@@ -21,9 +21,10 @@ interface AuthOverlayProps {
   onSignUp: (email: string, password: string, name: string) => Promise<boolean>;
   onSignInSocial: (social: Social) => Promise<boolean>;
   onSignIn: (email: string, password: string) => Promise<boolean>;
+  onForgotPassword: (email: string) => Promise<boolean>;
 }
 
-function AuthOverlay({onSignUp, onSignInSocial, onSignIn}: AuthOverlayProps) {
+function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onForgotPassword}: AuthOverlayProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("signup");
   const isMobile = useMediaQuery("(max-width: 640px)");
@@ -90,6 +91,15 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn}: AuthOverlayProps) {
     if (success) setOpen(false);
   };
 
+  const forgotPassword = async () => {
+    const success = await onForgotPassword(email);
+    if (success) {
+      toast.success("An email has been sent to reset your password.");
+    } else {
+      toast.error("Email not found.");
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
@@ -142,6 +152,7 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn}: AuthOverlayProps) {
             <div className="grid gap-8 py-4">
               {/* OAuth */}
               <div className={`${!isSignup || isMobile ? "flex-row" : ""} flex flex-col gap-4`}>
+                {/*Apple (we need paid dev account for this)*/}
                 {/*<Button*/}
                 {/*  className={`${!isSignup || isMobile ? "w-full p-4" : ""} flex-1`}*/}
                 {/*  variant="outline"*/}
@@ -157,6 +168,7 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn}: AuthOverlayProps) {
                 {/*  </svg>*/}
                 {/*  {appleLabel}*/}
                 {/*</Button>*/}
+                {/*Google*/}
                 <Button
                   className={`${!isSignup || isMobile ? "w-full p-4" : ""} flex-1`}
                   variant="outline"
@@ -172,6 +184,7 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn}: AuthOverlayProps) {
                   </svg>
                   {googleLabel}
                 </Button>
+                {/*Spotify*/}
                 <Button
                     className={`${!isSignup || isMobile ? "w-full p-4" : ""} flex-1`}
                     variant="outline"
@@ -207,8 +220,9 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn}: AuthOverlayProps) {
                   <div className="flex items-center">
                     <Label htmlFor="password">Password</Label>
                     <a
-                      href="#"
                       className="ml-auto text-sm underline-offset-4 hover:underline"
+                      hidden={isSignup}
+                      onClick={() => forgotPassword()}
                     >
                       Forgot your password?
                     </a>

@@ -55,6 +55,7 @@ export const SINGLETON_PARENT_GENRE: Genre = {
 export const TOP_ARTISTS_TO_FETCH = 8;
 
 export const BAD_DATA_DESC_LIMIT = 150;
+export const FEEDBACK_TEXT_LIMIT = 500;
 
 export const SEARCH_DEBOUNCE_MS = 500;
 
@@ -64,6 +65,8 @@ export const EMPTY_GENRE_FILTER_OBJECT: InitialGenreFilter = {
     isRoot: true,
     parents: {},
 };
+
+export const UNREGISTERED_USER_ID = 'unregistered';
 
 export const MAX_YTID_QUEUE_SIZE = 200;
 

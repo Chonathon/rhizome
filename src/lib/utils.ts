@@ -414,7 +414,7 @@ export const assignDegreesToArtists = (currentArtists: Artist[], likedArtists: s
   // Map names to IDs because the Last.fm similar artists are only the artist's name.
   // This could run into issues with artists of the same name in current artists
   const artistNameIDMap = new Map<string, string>(currentArtists.map(a => [a.name, a.id]));
-  console.log(artistSet.size)
+  //console.log(artistSet.size)
   // Undirected adjacency graph of artists/links (i.e. ensures edges are both ways)
   const artistAdj = new Map<string, string[]>();
   for (const artist of currentArtists) {
@@ -431,7 +431,7 @@ export const assignDegreesToArtists = (currentArtists: Artist[], likedArtists: s
     artistAdj.set(artist.id, linksList);
   }
 
-  console.log(artistAdj.values().filter(v => v.length))
+  //console.log(artistAdj.values().filter(v => v.length))
 
   // Map of artist IDs to degrees
   const artistDegrees = new Map<string, number>();
@@ -459,7 +459,7 @@ export const assignDegreesToArtists = (currentArtists: Artist[], likedArtists: s
     }
   }
 
-  console.log(artistDegrees)
+  //console.log(artistDegrees)
 
   return currentArtists.map(a => {
     return {...a, degree: artistDegrees.get(a.id)}

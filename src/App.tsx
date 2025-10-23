@@ -7,7 +7,7 @@ import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
-  AccountMenuState, Artist, ArtistNodeLimitType, BadDataReport,
+  Artist, ArtistNodeLimitType, BadDataReport,
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
@@ -66,6 +66,7 @@ import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
 import useAuth from "@/hooks/useAuth";
 import SettingsOverlay from '@/components/SettingsOverlay';
+import {submitFeedback} from "@/apis/feedbackApi";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -110,7 +111,6 @@ function App() {
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
-  const accountMenuState: AccountMenuState = "guest"; // Placeholder for auth state
   const { addRecentSelection } = useRecentSelections();
   const {
     genres,
@@ -132,6 +132,7 @@ function App() {
     artistsDataFlagError,
     totalArtistsInDB,
     topArtists,
+    fetchLikedArtists,
     fetchArtistTopTracks,
     artistsPlayIDsLoading,
     artistPlayIDLoadingKey,
@@ -543,6 +544,7 @@ function App() {
     deselectArtist();
     setCanCreateSimilarArtistGraph(false);
     setGenreClusterMode(DEFAULT_CLUSTER_MODE);
+    setCollectionMode(false);
   }
 
   const deselectGenre = () => {
@@ -654,10 +656,9 @@ function App() {
   }
 
   const onBadDataGenreSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
-    //TODO: use actual user ID when accounts are implemented
-    const userID = 'dev';
+    const user = userID ? userID : 'unregistered';
     const report: BadDataReport = {
-      userID,
+      userID: user,
       itemID,
       reason,
       type,
@@ -678,10 +679,9 @@ function App() {
   }
 
   const onBadDataArtistSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
-    //TODO: use actual user ID when accounts are implemented
-    const userID = 'dev';
+    const user = userID ? userID : 'unregistered';
     const report: BadDataReport = {
-      userID,
+      userID: user,
       itemID,
       reason,
       type,
@@ -824,15 +824,14 @@ function App() {
   }
 
   const onAddArtistButtonToggle = async (artistID?: string) => {
-    console.log(validSession())
     if (userID) {
       if (!artistID) return;
       if (likedArtists && isInCollection(artistID)) {
         await unlikeArtist(artistID);
-        console.log(`Unliked ${artistID} as ${userName}`);
+        //console.log(`Unliked ${artistID} as ${userName}`);
       } else {
         await likeArtist(artistID);
-        console.log(`Liked ${artistID} as ${userName}`);
+        //console.log(`Liked ${artistID} as ${userName}`);
       }
     } else {
       window.dispatchEvent(new Event('auth:open'));
@@ -843,21 +842,22 @@ function App() {
     return artistID ? likedArtists.includes(artistID) : false;
   }
 
-  const onCollectionClick = () => {
+  const onCollectionClick = async () => {
     if (userID) {
       setCollectionMode(true);
+      if (likedArtists.length) {
+        await fetchLikedArtists(likedArtists);
+        setGraph('artists');
+      } else {
+        toast.info("You haven't added any artists yet!");
+      }
     } else {
       window.dispatchEvent(new Event('auth:open'));
     }
   }
 
   const onExploreClick = () => {
-    if (userID) {
-      setCollectionMode(false);
-      // do we reset?
-    } else {
-      resetAppState();
-    }
+    resetAppState();
   }
 
   const setDegrees = (value: number) => {
@@ -885,6 +885,7 @@ function App() {
         onCollectionClick={onCollectionClick}
         onExploreClick={onExploreClick}
         signedInUser={!!userID}
+        isCollectionMode={collectionMode}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -1021,13 +1022,13 @@ function App() {
               show={showArtistNodeLimiter()}
             />
             {/*For testing node degrees*/}
-            <NodeLimiter
-                totalNodes={6}
-                nodeType={'collection'}
-                initialValue={Infinity}
-                onChange={(value) => setDegrees(value)}
-                show={graph === 'artists' && collectionMode}
-            />
+            {/*<NodeLimiter*/}
+            {/*    totalNodes={6}*/}
+            {/*    nodeType={'collection'}*/}
+            {/*    initialValue={Infinity}*/}
+            {/*    onChange={(value) => setDegrees(value)}*/}
+            {/*    show={graph === 'artists' && collectionMode}*/}
+            {/*/>*/}
           </div>}
           {/* right controls */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
@@ -1173,7 +1174,11 @@ function App() {
           onSignInSocial={signInSocial}
           onSignIn={signIn}
       />
-      <FeedbackOverlay />
+      <FeedbackOverlay
+        onSubmit={submitFeedback}
+        userID={userID}
+        userEmail={userEmail}
+      />
     </SidebarProvider>
   );
 }

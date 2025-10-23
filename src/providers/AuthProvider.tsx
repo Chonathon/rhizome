@@ -12,6 +12,7 @@ import {BetterAuthError, InferSessionFromClient, InferUserFromClient} from "bett
 import {getUserData} from "@/apis/usersApi";
 import {DEFAULT_PLAYER, DEFAULT_THEME} from "@/constants";
 import {authClient} from "@/lib/auth-client";
+import {until} from "@/lib/utils";
 
 interface AuthContextType {
     user: User | undefined,
@@ -55,21 +56,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         return await apiCall(async () => {
             const { data, error: resError } = await signInUser(email, password);
             if (resError) throw resError;
-            if (data) {
-                const userData = await getUserData(data.user.id);
-                if (userData) {
-                    setUser({
-                        id: data.user.id,
-                        name: data.user.name,
-                        email: data.user.email,
-                        liked: userData.liked ? userData.liked : [],
-                        preferences: userData.preferences,
-                    });
-                } else {
-                    setError(`Error: no user data found for ${email}.`);
-                }
-            } else {
-                setError(`Error: no auth user data found for ${email}.`);
+            refetchSession();
+            if (!data) {
+                setError(`Error: no user data found for ${email}.`);
             }
         });
     }
@@ -78,9 +67,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         return await apiCall(async () => {
             const { data, error: resError } = await signInSocialUser(social);
             if (resError) throw resError;
-            if (data) {
-                console.log(data)
-            } else {
+            if (!data) {
                 setError(`Error: couldn't sign in user from ${social}.`);
             }
         });
@@ -158,7 +145,6 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                     setError('Error: could not delete user account.');
                     throw result;
                 }
-                //setUser(undefined);
             });
         }
         return success;
@@ -222,14 +208,14 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
     useEffect(() => {
         if (error) console.error(error);
-    }, [error]);
+        if (sessionError) console.error(sessionError);
+    }, [error, sessionError]);
 
     const initializeFromSession = () => {
         console.log(session)
         if (session) {
             getUserData(session.user.id).then(userData => {
                 if (userData) {
-                    console.log(userData)
                     setUser({
                         id: session.user.id,
                         name: session.user.name,
@@ -239,11 +225,11 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                         socialUser: userData.socialUser,
                     });
                 } else {
-                    setError(`Error: no user data found.`);
+                    setError(`Error: no user data found in db.`);
                 }
             });
         } else {
-            setError(`Error: no user data found.`);
+            setError(`Error: no session found for user.`);
             refetchSession();
         }
     }

@@ -57,9 +57,10 @@ interface AppSidebarProps {
   signedInUser: boolean;
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
+  isCollectionMode: boolean;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, onExploreClick }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, onExploreClick, isCollectionMode }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { theme, setTheme } = useTheme()
   const { recentSelections } = useRecentSelections()
@@ -122,7 +123,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild tooltip="Collection" size="xl">
+                        <SidebarMenuButton asChild tooltip="Collection" size="xl" isActive={isCollectionMode}>
                           <button onClick={onCollectionClick}>
                             <BookOpen />
                             <span className="truncate">Collection</span>
@@ -151,7 +152,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarMenuItem> */}
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={true} tooltip="Explore" size="xl">
+                      <SidebarMenuButton asChild isActive={!isCollectionMode} tooltip="Explore" size="xl">
                         <button onClick={onExploreClick}>
                           <Telescope />
                           <span>Explore</span>

@@ -140,5 +140,9 @@ export interface User {
     socialUser?: boolean;
 }
 
-
-export type AccountMenuState = "authorized" | "guest" | "nonOffice";
+export interface Feedback {
+    text: string;
+    userID: string;
+    email?: string;
+    resolved: boolean;
+}

@@ -5,5 +5,4 @@ const url = serverUrl();
 
 export const authClient = createAuthClient({
     baseURL: url,
-
 });
