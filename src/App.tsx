@@ -599,6 +599,7 @@ function App() {
       } else if (graph !== 'artists') {
         setGraph('artists');
       }
+      setIsFindFilterOpen(false);
       return;
     }
 
@@ -609,6 +610,7 @@ function App() {
       if (graph !== 'genres') {
         setGraph('genres');
       }
+      setIsFindFilterOpen(false);
     }
   };
 
