@@ -25,7 +25,6 @@ import Player from "@/components/Player";
 import { Search } from './components/Search';
 import FindFilter, { FindOption } from "@/components/FindFilter";
 
-const DEFAULT_FIND_LABEL = "Find";
 import {
   buildGenreColorMap,
   generateSimilarLinks,
@@ -304,7 +303,7 @@ function App() {
     if ((graph === 'artists' || graph === 'similarArtists') && selectedArtist) {
       return selectedArtist.name;
     }
-    return DEFAULT_FIND_LABEL;
+    return null;
   }, [graph, selectedGenres, selectedArtist]);
 
   // Initializes the genre graph data after fetching genres from DB
@@ -1006,7 +1005,6 @@ function App() {
                   placeholder={graph === 'genres' ? 'Find genres in view...' : 'Find artists in view...'}
                   emptyText={graph === 'genres' ? 'No genres match this view.' : 'No artists match this view.'}
                   triggerClassName="self-start"
-                  label={findLabel}
                   open={isFindFilterOpen}
                   onOpenChange={(open) => {
                     if (findPanelDisabled && open) return;

@@ -35,7 +35,7 @@ export default function FindFilter({
   placeholder = "Find in view...",
   emptyText = "No matches in the current view.",
   triggerClassName,
-  label = "Find",
+  label = "Find in view",
   open,
   onOpenChange,
 }: FindFilterProps) {
