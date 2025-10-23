@@ -338,9 +338,11 @@ const DeleteAccountDialog = ({
                 </DialogDescription>
                 <FieldGroup>
                   {isSocial ? (
-                      <FieldDescription>
-                        You will receive an email to verify your account deletion.
-                      </FieldDescription>
+                      <div className="mt-2">
+                        <FieldDescription>
+                          You will receive an email to verify your account deletion.
+                        </FieldDescription>
+                      </div>
                   ) : (
                       <Field>
                         <FieldLabel htmlFor="delete-password">Current Password</FieldLabel>
@@ -790,7 +792,12 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
           }
       }
       />
-      <DeleteAccountDialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen} onSubmit={onDeleteAccount} isSocial={socialUser} />
+      <DeleteAccountDialog
+          open={deleteAccountOpen}
+          onOpenChange={setDeleteAccountOpen}
+          onSubmit={onDeleteAccount}
+          isSocial={true} // if password-only deletion is possible simultaneously with email verification, set this to socialUser
+      />
     </>
   )
 }

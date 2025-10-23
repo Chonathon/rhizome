@@ -2,7 +2,7 @@ import {createContext, PropsWithChildren, useEffect, useState} from "react";
 import {Social, User} from "@/types";
 import {
     changeUserEmail, changeUserPassword,
-    deleteUserAccount,
+    deleteUserAccount, forgotUserPassword,
     signInSocialUser,
     signInUser,
     signOutUser,
@@ -27,6 +27,7 @@ interface AuthContextType {
     deleteUser: (password?: string) => Promise<boolean>,
     updateUser: (name?: string, image?: string) => Promise<boolean>,
     validSession: (userID?: string) => boolean,
+    forgotPassword: (email: string) => Promise<boolean>,
 }
 
 // Dummy context to avoid TS errors
@@ -43,6 +44,7 @@ const noUserContext = {
     deleteUser: (password?: string) => new Promise<boolean>((resolve, reject) => {}),
     updateUser: (name?: string, image?: string) => new Promise<boolean>((resolve, reject) => {}),
     validSession: (userID?: string) => false,
+    forgotPassword: (email: string) => new Promise<boolean>((resolve, reject) => {}),
 }
 
 export const AuthContext = createContext<AuthContextType>(noUserContext);
@@ -164,6 +166,13 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         return success;
     }
 
+    const forgotPassword = async (email: string) => {
+        return await apiCall(async () => {
+            const { data, error: resError } = await forgotUserPassword(email);
+            if (resError) throw resError;
+        });
+    }
+
     const resetError = () => setError(undefined);
 
     // Encloses an api call with loading and error handling
@@ -212,7 +221,6 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }, [error, sessionError]);
 
     const initializeFromSession = () => {
-        console.log(session)
         if (session) {
             getUserData(session.user.id).then(userData => {
                 if (userData) {
@@ -248,6 +256,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
             deleteUser,
             validSession,
             updateUser,
+            forgotPassword,
         }}>
             {children}
         </AuthContext.Provider>

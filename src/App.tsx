@@ -170,6 +170,7 @@ function App() {
     unlikeArtist,
     updatePreferences,
     validSession,
+    forgotPassword,
     authError,
     authLoading,
   } = useAuth();
@@ -828,10 +829,8 @@ function App() {
       if (!artistID) return;
       if (likedArtists && isInCollection(artistID)) {
         await unlikeArtist(artistID);
-        //console.log(`Unliked ${artistID} as ${userName}`);
       } else {
         await likeArtist(artistID);
-        //console.log(`Liked ${artistID} as ${userName}`);
       }
     } else {
       window.dispatchEvent(new Event('auth:open'));
@@ -842,6 +841,7 @@ function App() {
     return artistID ? likedArtists.includes(artistID) : false;
   }
 
+  // temporary functionality to just show liked artists if logged in
   const onCollectionClick = async () => {
     if (userID) {
       setCollectionMode(true);
@@ -1173,6 +1173,7 @@ function App() {
           onSignUp={signUp}
           onSignInSocial={signInSocial}
           onSignIn={signIn}
+          onForgotPassword={forgotPassword}
       />
       <FeedbackOverlay
         onSubmit={submitFeedback}
