@@ -1,6 +1,6 @@
 import './App.css'
 import {useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, Settings, TextSearch } from 'lucide-react'
+import { ChevronDown, Divide, Settings } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -23,6 +23,8 @@ import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
 import Player from "@/components/Player";
 import { Search } from './components/Search';
+import FindFilter, { FindOption } from "@/components/FindFilter";
+
 import {
   buildGenreColorMap,
   generateSimilarLinks,
@@ -31,7 +33,9 @@ import {
   mixColors,
   primitiveArraysEqual,
   fixWikiImageURL,
-  until, assignDegreesToArtists,
+  assignDegreesToArtists,
+  formatNumber,
+  until,
 } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -104,6 +108,7 @@ function App() {
   const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isFindFilterOpen, setIsFindFilterOpen] = useState(false);
   const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>(DEFAULT_GENRE_LIMIT_TYPE);
   const [artistNodeLimitType, setArtistNodeLimitType] = useState<ArtistNodeLimitType>(DEFAULT_ARTIST_LIMIT_TYPE);
   const [genreNodeCount, setGenreNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
@@ -205,7 +210,69 @@ function App() {
     localStorage.setItem('dagMode', JSON.stringify(dagMode));
   }, [dagMode]);
 
-  // Zoom hotkeys (+ / -)
+  const findOptions = useMemo<FindOption[]>(() => {
+    if (graph === 'genres' && currentGenres) {
+      return currentGenres.nodes.map((genre) => {
+        const subtitleParts: string[] = [];
+
+        if (typeof genre.artistCount === "number" && genre.artistCount > 0) {
+          subtitleParts.push(`${formatNumber(genre.artistCount)} artists`);
+        }
+
+        if (typeof genre.totalListeners === "number" && genre.totalListeners > 0) {
+          subtitleParts.push(`${formatNumber(genre.totalListeners)} listeners`);
+        }
+
+        if (typeof genre.totalPlays === "number" && genre.totalPlays > 0) {
+          subtitleParts.push(`${formatNumber(genre.totalPlays)} plays`);
+        }
+
+        return {
+          id: genre.id,
+          name: genre.name,
+          entityType: 'genre' as const,
+          subtitle: subtitleParts.length ? subtitleParts.join(" • ") : undefined,
+        };
+      });
+    }
+
+    if ((graph === 'artists' || graph === 'similarArtists') && currentArtists.length) {
+      return currentArtists.map((artist) => {
+        const subtitleParts: string[] = [];
+
+        if (typeof artist.listeners === "number" && artist.listeners > 0) {
+          subtitleParts.push(`${formatNumber(artist.listeners)} listeners`);
+        }
+
+        if (typeof artist.playcount === "number" && artist.playcount > 0) {
+          subtitleParts.push(`${formatNumber(artist.playcount)} plays`);
+        }
+
+        return {
+          id: artist.id,
+          name: artist.name,
+          entityType: 'artist' as const,
+          subtitle: subtitleParts.length ? subtitleParts.join(" • ") : undefined,
+        };
+      });
+    }
+
+    return [];
+  }, [graph, currentArtists, currentGenres]);
+
+  const hasFindSelection =
+    (graph === 'genres' && selectedGenres.length > 0) ||
+    ((graph === 'artists' || graph === 'similarArtists') && !!selectedArtist);
+
+  const findPanelDisabled = !hasFindSelection && findOptions.length === 0;
+
+  useEffect(() => {
+    if (findPanelDisabled && isFindFilterOpen) {
+      setIsFindFilterOpen(false);
+    }
+  }, [findPanelDisabled, isFindFilterOpen]);
+
+  // Global hotkeys (+, -, /)
   useHotkeys({
     onZoomIn: () => {
       const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
@@ -215,7 +282,11 @@ function App() {
       const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
       ref?.zoomOut?.();
     },
-  }, [graph]);
+    onOpenFind: () => {
+      if (findPanelDisabled) return;
+      setIsFindFilterOpen(true);
+    },
+  }, [graph, findPanelDisabled]);
 
   // Restore standalone Escape handling (deselect)
   useEffect(() => {
@@ -252,6 +323,16 @@ function App() {
     setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
   }, [artists]);
+
+  const findLabel = useMemo(() => {
+    if (graph === 'genres' && selectedGenres.length) {
+      return selectedGenres[0].name;
+    }
+    if ((graph === 'artists' || graph === 'similarArtists') && selectedArtist) {
+      return selectedArtist.name;
+    }
+    return null;
+  }, [graph, selectedGenres, selectedArtist]);
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
@@ -535,6 +616,43 @@ function App() {
       createSimilarArtistGraph(artist);
     }
   }
+
+  const handleFindSelect = (option: FindOption) => {
+    if (option.entityType === 'artist') {
+      const artist = currentArtists.find((a) => a.id === option.id);
+      if (!artist) return;
+      setSelectedArtist(artist);
+      setShowArtistCard(true);
+      addRecentSelection(artist);
+      if (graph === 'similarArtists') {
+        setSelectedArtistNoGenre(artist);
+      } else if (graph !== 'artists') {
+        setGraph('artists');
+      }
+      setIsFindFilterOpen(false);
+      return;
+    }
+
+    if (option.entityType === 'genre' && currentGenres) {
+      const genre = currentGenres.nodes.find((g) => g.id === option.id);
+      if (!genre) return;
+      onGenreNodeClick(genre);
+      if (graph !== 'genres') {
+        setGraph('genres');
+      }
+      setIsFindFilterOpen(false);
+    }
+  };
+
+  const handleFindClear = () => {
+    if (graph === 'genres' && selectedGenres.length) {
+      deselectGenre();
+      return;
+    }
+    if ((graph === 'artists' || graph === 'similarArtists') && selectedArtist) {
+      deselectArtist();
+    }
+  };
 
   const resetAppState = () => {
     setGraph('genres');
@@ -961,10 +1079,20 @@ function App() {
                   </Button>
                 </div>
                 }
-                <Button size='lg' className='self-start' variant='outline'
-                  onClick={() => toast('Filters the current view based on your text input...')} >
-                    <TextSearch />Find
-                  </Button>
+                <FindFilter
+                  items={findOptions}
+                  onSelect={handleFindSelect}
+                  onClear={hasFindSelection ? handleFindClear : undefined}
+                  disabled={findPanelDisabled}
+                  placeholder={graph === 'genres' ? 'Find genres in view...' : 'Find artists in view...'}
+                  emptyText={graph === 'genres' ? 'No genres match this view.' : 'No artists match this view.'}
+                  triggerClassName="self-start"
+                  open={isFindFilterOpen}
+                  onOpenChange={(open) => {
+                    if (findPanelDisabled && open) return;
+                    setIsFindFilterOpen(open);
+                  }}
+                />
           </motion.div>
                 <GenresForceGraph
                   ref={genresGraphRef as any}

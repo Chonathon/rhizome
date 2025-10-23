@@ -12,6 +12,8 @@ interface ResponsivePanelProps {
   className?: string
   side: "left" | "right" | "top" | "bottom"
   headerTitle?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export function ResponsivePanel({ 
@@ -19,13 +21,16 @@ export function ResponsivePanel({
   children, 
   className, 
   side, 
-  headerTitle }: ResponsivePanelProps) 
+  headerTitle,
+  open,
+  onOpenChange,
+}: ResponsivePanelProps) 
 {
   const isDesktop = useMediaQuery("(min-width: 640px)")
 
   if (isDesktop) {
     return (
-      <Popover>
+      <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>{trigger}</PopoverTrigger>
         <PopoverContent side={side} align="start" className={className}>
           {children}
@@ -35,7 +40,7 @@ export function ResponsivePanel({
   }
 
   return (
-    <Drawer>
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       
       <DrawerContent className={cn("px-3 bg-popover backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm")}>
