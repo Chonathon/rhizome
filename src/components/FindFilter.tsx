@@ -58,7 +58,7 @@ export default function FindFilter({
       <span className="truncate max-w-[160px]">
         {label}
       </span>
-      {canClear ? (
+      {/* {canClear ? (
         <Button
           asChild
           size="icon"
@@ -80,7 +80,7 @@ export default function FindFilter({
         </Button>
       ) : (
         <ChevronDown className="size-4 opacity-70" />
-      )}
+      )} */}
     </Button>
   );
 
