@@ -7,8 +7,9 @@ import {
     PlayerType, Preferences, Theme
 } from "@/types";
 
-export const SERVER_DEPLOYMENT_URL = 'https://rhizome-server-production.up.railway.app';
-export const CLIENT_DEPLOYMENT_URL = 'https://rizhome.vercel.app';
+export const SERVER_PRODUCTION_URL = 'https://rhizome-server-production.up.railway.app';
+export const SERVER_DEVELOPMENT_URL = 'https://rhizome-server-development.up.railway.app';
+export const CLIENT_DEPLOYMENT_URL = 'https://www.rhizome.fyi';
 
 export const DEFAULT_NODE_COUNT = 2000;
 export const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];

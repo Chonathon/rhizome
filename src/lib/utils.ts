@@ -13,7 +13,7 @@ import {
   CHILD_FIELD_MAP,
   CLUSTER_COLORS,
   SINGLETON_PARENT_GENRE,
-  SINGLETON_PARENT_COLOR, SERVER_DEPLOYMENT_URL, CLIENT_DEPLOYMENT_URL
+  SINGLETON_PARENT_COLOR, SERVER_PRODUCTION_URL, CLIENT_DEPLOYMENT_URL, SERVER_DEVELOPMENT_URL
 } from "@/constants";
 import {link} from "framer-motion/m";
 
@@ -38,10 +38,13 @@ export const envBoolean = (value: string) => {
 }
 
 export const serverUrl = () => {
-  return envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)
-      ? envBoolean(import.meta.env.VITE_FORWARD_FROM_NGROK) ? import.meta.env.VITE_LOCALHOST_NGROK : import.meta.env.VITE_LOCALHOST
-      : (import.meta.env.VITE_SERVER_URL
-          || (import.meta.env.DEV ? '/api' : SERVER_DEPLOYMENT_URL));
+  if (envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)) {
+    return envBoolean(import.meta.env.VITE_FORWARD_FROM_NGROK) ? import.meta.env.VITE_LOCALHOST_NGROK : import.meta.env.VITE_LOCALHOST;
+  }
+  if (envBoolean(import.meta.env.VITE_USE_LOCAL_CLIENT)) {
+    return import.meta.env.VITE_SERVER_DEV_URL || (import.meta.env.DEV ? '/api' : SERVER_DEVELOPMENT_URL);
+  }
+  return import.meta.env.VITE_SERVER_PROD_URL || (import.meta.env.DEV ? '/api' : SERVER_PRODUCTION_URL);
 }
 
 export const clientUrl = () => {
