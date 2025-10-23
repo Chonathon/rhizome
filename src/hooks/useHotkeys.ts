@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 export type UseZoomHotkeysOptions = {
   onZoomIn: () => void;
   onZoomOut: () => void;
+  onOpenFind?: () => void;
   enabled?: boolean;
 };
 
@@ -14,7 +15,7 @@ function isEditableTarget(el: EventTarget | null) {
 }
 
 export default function useHotkeys(opts: UseZoomHotkeysOptions, deps: any[] = []) {
-  const { onZoomIn, onZoomOut, enabled = true } = opts;
+  const { onZoomIn, onZoomOut, onOpenFind, enabled = true } = opts;
   useEffect(() => {
     if (!enabled) return;
     const handler = (e: KeyboardEvent) => {
@@ -26,6 +27,11 @@ export default function useHotkeys(opts: UseZoomHotkeysOptions, deps: any[] = []
       const k = e.key;
       const code = e.code;
 
+      if ((k === '/' || k === '?') && onOpenFind) {
+        e.preventDefault();
+        onOpenFind();
+        return;
+      }
       if (k === '=' || k === '+' || code === 'NumpadAdd') {
         e.preventDefault();
         onZoomIn();
