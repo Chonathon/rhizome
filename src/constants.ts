@@ -20,6 +20,10 @@ export const DEFAULT_PLAYER: PlayerType = 'youtube';
 export const MAX_NODES = 2000;
 export const NODE_AMOUNT_PRESETS = [2000, 1000, 500, 200, 100, 50];
 
+export const SERVER_PRODUCTION_URL = 'https://rhizome-server-production.up.railway.app';
+export const SERVER_DEVELOPMENT_URL = 'https://rhizome-server-development.up.railway.app';
+export const CLIENT_DEPLOYMENT_URL = 'https://www.rhizome.fyi';
+
 export const PARENT_FIELD_MAP: {
     subgenre: "subgenres";
     influence: "influenced_genres";

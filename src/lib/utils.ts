@@ -49,8 +49,8 @@ export const serverUrl = () => {
 
 export const clientUrl = () => {
   return envBoolean(import.meta.env.VITE_USE_LOCAL_CLIENT)
-    ? import.meta.env.VITE_CLIENT_LOCALHOST
-    : (import.meta.env.VITE_CLIENT_URL || CLIENT_DEPLOYMENT_URL);
+      ? import.meta.env.VITE_CLIENT_LOCALHOST
+      : (import.meta.env.VITE_CLIENT_URL || CLIENT_DEPLOYMENT_URL);
 }
 
 export const primitiveArraysEqual = (a: Array<string | number>, b: Array<string | number>) => {

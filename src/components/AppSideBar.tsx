@@ -42,6 +42,7 @@ import { DropdownMenu,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent, } from "./ui/dropdown-menu"
 import { useTheme } from "next-themes"
+import KofiLogo from "@/assets/kofi_symbol.svg"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -227,7 +228,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                             <DropdownMenuItem onSelect={(e) => {
                               e.preventDefault();
                               window.open('https://ko-fi.com/rhizomefyi', '_blank');
-                            }}><img src="src/assets/kofi_symbol.svg" alt="Ko-fi Logo" className="size-4"/>
+                            }}><img src={KofiLogo} alt="Ko-fi Logo" className="size-4"/>
                               Support Rhizome
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}><HandHeart />

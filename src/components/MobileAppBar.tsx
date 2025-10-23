@@ -13,6 +13,7 @@ import { GraphType } from "@/types"
 import { AccountMenuGuestSection } from "@/components/AccountMenuGuestSection"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
+import KofiLogo from "@/assets/kofi_symbol.svg"
 
 type MobileAppBarProps = {
   graph: GraphType
@@ -218,7 +219,7 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
         <DropdownMenuItem onSelect={(e) => {
           e.preventDefault();
           window.open('https://ko-fi.com/rhizomefyi', '_blank');
-        }}><img src="src/assets/kofi_symbol.svg" alt="Ko-fi Logo" className="size-4"/>
+        }}><img src={KofiLogo} alt="Ko-fi Logo" className="size-4"/>
           Support Rhizome
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}><HandHeart />

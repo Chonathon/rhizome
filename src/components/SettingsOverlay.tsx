@@ -44,6 +44,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import {Preferences, Theme} from "@/types";
+import KofiLogo from "@/assets/kofi_symbol.svg"
+import LastFMLogo from "@/assets/Last.fm Logo.svg"
 
 const data = {
   nav: [
@@ -570,7 +572,7 @@ const ConnectionsSection = () => {
           <FieldGroup>
               {/* Last FM */}
                   <Field className="border bg-card rounded-2xl p-3" orientation="responsive">
-                      <img aria-hidden="true" src="src/assets/Last.fm Logo.svg" className="size-8 @md/field-group:mr-2"/>
+                      <img aria-hidden="true" src={LastFMLogo} className="size-8 @md/field-group:mr-2"/>
                       <FieldContent>
                       <FieldLabel htmlFor="lastfm-connection-description" id="lastfm-connection-label">
                           Last.FM
@@ -630,7 +632,7 @@ const SupportSection = () => (
             </FieldContent>
             <a className="w-full" target="_blank" href="https://ko-fi.com/rhizomefyi">
               <Button className="w-full" size="sm">
-                <img src="src/assets/kofi_symbol.svg" className="h-5 w-5"/>
+                <img src={KofiLogo} className="h-5 w-5"/>
                 Support Rhizome
               </Button>
             </a>
