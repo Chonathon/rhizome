@@ -13,7 +13,7 @@ import {
   CHILD_FIELD_MAP,
   CLUSTER_COLORS,
   SINGLETON_PARENT_GENRE,
-  SINGLETON_PARENT_COLOR
+  SINGLETON_PARENT_COLOR, SERVER_DEVELOPMENT_URL, SERVER_PRODUCTION_URL, CLIENT_DEPLOYMENT_URL
 } from "@/constants";
 
 export function cn(...inputs: ClassValue[]) {
@@ -34,6 +34,22 @@ export const formatNumber = (value: number) =>
 
 export const envBoolean = (value: string) => {
   return value && (value.toLowerCase() === 'true' || parseInt(value) === 1);
+}
+
+export const serverUrl = () => {
+  if (envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)) {
+    return envBoolean(import.meta.env.VITE_FORWARD_FROM_NGROK) ? import.meta.env.VITE_LOCALHOST_NGROK : import.meta.env.VITE_LOCALHOST;
+  }
+  if (envBoolean(import.meta.env.VITE_USE_LOCAL_CLIENT)) {
+    return import.meta.env.VITE_SERVER_DEV_URL || (import.meta.env.DEV ? '/api' : SERVER_DEVELOPMENT_URL);
+  }
+  return import.meta.env.VITE_SERVER_PROD_URL || (import.meta.env.DEV ? '/api' : SERVER_PRODUCTION_URL);
+}
+
+export const clientUrl = () => {
+  return envBoolean(import.meta.env.VITE_USE_LOCAL_CLIENT)
+      ? import.meta.env.VITE_CLIENT_LOCALHOST
+      : (import.meta.env.VITE_CLIENT_URL || CLIENT_DEPLOYMENT_URL);
 }
 
 export const primitiveArraysEqual = (a: Array<string | number>, b: Array<string | number>) => {
