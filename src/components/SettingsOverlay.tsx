@@ -140,14 +140,20 @@ const ChangeEmailDialog = ({
 }
 
 // Change Password Dialog Component
-const ChangePasswordDialog = ({
+export const ChangePasswordDialog = ({
   open,
   onOpenChange,
-  onSubmit,
+  onSubmitChange,
+  onSubmitReset,
+  navigateOnReset,
+  forgot,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (newPassword: string, currentPassword: string) => Promise<boolean>;
+  onSubmitChange: (newPassword: string, currentPassword: string) => Promise<boolean>;
+  onSubmitReset?: (newPassword: string, token: string) => Promise<boolean>;
+  navigateOnReset?: () => void;
+  forgot: boolean;
 }) => {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -156,17 +162,27 @@ const ChangePasswordDialog = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (newPassword !== confirmPassword) {
-      // TODO: Show error toast
-      console.error("Passwords do not match")
+      toast.error('Passwords do not match!');
       return
     }
-    const success = await onSubmit(newPassword, currentPassword);
+    let success;
+    if (forgot) {
+      const token = new URLSearchParams(window.location.search).get("token");
+      if (!token || !onSubmitReset) {
+        success = false;
+      } else {
+        success = await onSubmitReset(newPassword, token);
+      }
+    } else {
+      success = await onSubmitChange(newPassword, currentPassword);
+    }
     if (success) {
       toast.success('Successfully changed password.');
-      onOpenChange(false)
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
+      onOpenChange(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      if (navigateOnReset) navigateOnReset();
     } else {
       toast.error('Error: could not change password');
     }
@@ -177,18 +193,18 @@ const ChangePasswordDialog = ({
       <DialogContent className="bg-card sm:max-w-md">
         <DialogTitle>Change Password</DialogTitle>
         <DialogDescription>
-          Enter your current password and choose a new password.
+          {forgot ? 'Enter a new password for your account.' : 'Enter your current password and choose a new password.'}
         </DialogDescription>
         <form onSubmit={handleSubmit}>
           <FieldGroup>
-            <Field>
+            <Field hidden={forgot}>
               <FieldLabel htmlFor="current-password">Current Password</FieldLabel>
               <Input
                 id="current-password"
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                required
+                required={!forgot}
               />
             </Field>
             <Field>
@@ -796,7 +812,12 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
 
       {/* Account Action Dialogs */}
       <ChangeEmailDialog open={changeEmailOpen} onOpenChange={setChangeEmailOpen} onSubmit={onChangeEmail} />
-      <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} onSubmit={onChangePassword} />
+      <ChangePasswordDialog
+          open={changePasswordOpen}
+          onOpenChange={setChangePasswordOpen}
+          onSubmitChange={onChangePassword}
+          forgot={false}
+      />
       <LogoutDialog
           open={logoutOpen}
           onOpenChange={setLogoutOpen}

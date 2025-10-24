@@ -2,7 +2,7 @@ import {createContext, PropsWithChildren, useEffect, useState} from "react";
 import {Social, User} from "@/types";
 import {
     changeUserEmail, changeUserPassword,
-    deleteUserAccount, forgotUserPassword,
+    deleteUserAccount, forgotUserPassword, resetUserPassword,
     signInSocialUser,
     signInUser,
     signOutUser,
@@ -28,6 +28,7 @@ interface AuthContextType {
     updateUser: (name?: string, image?: string) => Promise<boolean>,
     validSession: (userID?: string) => boolean,
     forgotPassword: (email: string) => Promise<boolean>,
+    resetPassword: (newPassword: string, token: string) => Promise<boolean>,
 }
 
 // Dummy context to avoid TS errors
@@ -45,6 +46,7 @@ const noUserContext = {
     updateUser: (name?: string, image?: string) => new Promise<boolean>((resolve, reject) => {}),
     validSession: (userID?: string) => false,
     forgotPassword: (email: string) => new Promise<boolean>((resolve, reject) => {}),
+    resetPassword: (newPassword: string, token: string) => new Promise<boolean>((resolve, reject) => {}),
 }
 
 export const AuthContext = createContext<AuthContextType>(noUserContext);
@@ -174,6 +176,13 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         });
     }
 
+    const resetPassword = async (newPassword: string, token: string) => {
+        return await apiCall(async () => {
+            const { data, error: resError } = await resetUserPassword(newPassword, token);
+            if (resError) throw resError;
+        });
+    }
+
     const resetError = () => setError(undefined);
 
     // Encloses an api call with loading and error handling
@@ -260,6 +269,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
             validSession,
             updateUser,
             forgotPassword,
+            resetPassword,
         }}>
             {children}
         </AuthContext.Provider>

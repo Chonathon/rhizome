@@ -104,7 +104,15 @@ export const updateUserAccount = async (name?: string, image?: string) => {
 export const forgotUserPassword = async (email: string) => {
     const { data, error } = await authClient.requestPasswordReset({
         email,
-        redirectTo: clientUrl(), //TODO: redirect to password reset page
+        redirectTo: `${clientUrl()}/reset-password`
+    });
+    return { data, error };
+}
+
+export const resetUserPassword = async (newPassword: string, token: string) => {
+    const { data, error } = await authClient.resetPassword({
+        newPassword,
+        token,
     });
     return { data, error };
 }

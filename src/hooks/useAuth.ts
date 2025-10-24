@@ -29,6 +29,7 @@ const useAuth = () => {
         updateUser,
         validSession,
         forgotPassword,
+        resetPassword,
     } = useContext(AuthContext);
 
     useEffect(() => {
@@ -97,6 +98,7 @@ const useAuth = () => {
         updatePreferences,
         validSession,
         forgotPassword,
+        resetPassword,
         authLoading: loading,
         authError: error,
     }

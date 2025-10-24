@@ -15,7 +15,6 @@ import {
   SINGLETON_PARENT_GENRE,
   SINGLETON_PARENT_COLOR, SERVER_PRODUCTION_URL, CLIENT_DEPLOYMENT_URL, SERVER_DEVELOPMENT_URL
 } from "@/constants";
-import {link} from "framer-motion/m";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -51,6 +50,10 @@ export const clientUrl = () => {
   return envBoolean(import.meta.env.VITE_USE_LOCAL_CLIENT)
       ? import.meta.env.VITE_CLIENT_LOCALHOST
       : (import.meta.env.VITE_CLIENT_URL || CLIENT_DEPLOYMENT_URL);
+}
+
+export const isOnPage = (pathname: string) => {
+  return window.location.pathname.toLowerCase().includes(pathname.toLowerCase());
 }
 
 export const primitiveArraysEqual = (a: Array<string | number>, b: Array<string | number>) => {

@@ -35,7 +35,7 @@ import {
   fixWikiImageURL,
   assignDegreesToArtists,
   formatNumber,
-  until,
+  until, isOnPage
 } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -69,8 +69,9 @@ import FeedbackOverlay from '@/components/FeedbackOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
 import useAuth from "@/hooks/useAuth";
-import SettingsOverlay from '@/components/SettingsOverlay';
+import SettingsOverlay, {ChangePasswordDialog} from '@/components/SettingsOverlay';
 import {submitFeedback} from "@/apis/feedbackApi";
+import {useNavigate} from "react-router";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -156,6 +157,7 @@ function App() {
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
   const [collectionMode, setCollectionMode] = useState<boolean>(false);
   const [separationDegrees, setSeparationDegrees] = useState<number>(0);
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState<boolean>(isOnPage('reset-password'));
   const {
     userID,
     userName,
@@ -177,9 +179,11 @@ function App() {
     updatePreferences,
     validSession,
     forgotPassword,
+    resetPassword,
     authError,
     authLoading,
   } = useAuth();
+  const navigate = useNavigate();
 
   // Track window size and pass to ForceGraph for reliable resizing
   useEffect(() => {
@@ -991,6 +995,13 @@ function App() {
     }
   }
 
+  // Uses useNavigate to navigate to a path, accepts optional functions to run before and after navigation
+  const navigateAnd = (pathname: string, beforeFn?: () => void, afterFn?: () => void) => {
+    if (beforeFn) beforeFn();
+    navigate(pathname);
+    if (afterFn) afterFn();
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -1308,6 +1319,16 @@ function App() {
         onSubmit={submitFeedback}
         userID={userID}
         userEmail={userEmail}
+      />
+      <ChangePasswordDialog
+          open={isResetPasswordOpen}
+          onOpenChange={setIsResetPasswordOpen}
+          onSubmitChange={changePassword}
+          onSubmitReset={resetPassword}
+          navigateOnReset={() => navigateAnd('/', undefined, () => window.dispatchEvent(
+              new CustomEvent("auth:open", {detail: { mode: "login" }}
+            )))}
+          forgot={true}
       />
     </SidebarProvider>
   );
