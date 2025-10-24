@@ -84,6 +84,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                     id: data.user.id,
                     name: data.user.name,
                     email: data.user.email,
+                    image: data.user.image || undefined,
                     liked: [],
                     preferences: { theme: DEFAULT_THEME, player: DEFAULT_PLAYER },
                 });
