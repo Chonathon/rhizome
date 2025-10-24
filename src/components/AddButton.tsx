@@ -4,38 +4,21 @@ import { CheckSquare, PlusSquare } from "lucide-react";
 import { ToggleButton } from "./ui/ToggleButton";
 
 interface AddButtonProps {
-  isInCollection?: boolean;
+  isInCollection: boolean;
   loggedIn?: boolean;
-  onToggle?: () => void;
+  onToggle: () => void;
   isDesktop?: boolean;
   className?: string;
 }
 
-export function AddButton({ onToggle, isDesktop, className, loggedIn = true }: AddButtonProps) {
+
+export function AddButton({ isInCollection, onToggle, isDesktop, className, loggedIn=true }: AddButtonProps) {
   // Local state. Replace with prop
-  const [isInCollection, setIsInCollection] = useState(false);
-
-  const handleToggle = () => {
-    if (!loggedIn) {
-      window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }));
-      return;
-    }
-
-    if (isInCollection) {
-      toast.info("Removed from your collection");
-      setIsInCollection(false);
-    } else {
-      toast.success("Added to your collection");
-      setIsInCollection(true);
-    }
-
-    onToggle?.();
-  };
-
+  
   return (
     <ToggleButton
       isActive={isInCollection}
-      onToggle={handleToggle}
+      onToggle={onToggle}
       activeLabel="Added"
       inactiveLabel="Add"
       activeIcon={<CheckSquare />}

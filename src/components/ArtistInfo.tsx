@@ -37,6 +37,8 @@ interface ArtistInfoProps {
   getGenreNameById?: (id: string) => string | undefined;
   onPlay?: (artist: Artist) => void;
   playLoading?: boolean;
+  onArtistToggle: (id: string | undefined) => void;
+  isInCollection: boolean;
 }
 
 export function ArtistInfo({
@@ -56,6 +58,8 @@ export function ArtistInfo({
   getGenreNameById,
   onPlay,
   playLoading,
+  onArtistToggle,
+  isInCollection,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -190,15 +194,13 @@ export function ArtistInfo({
                             </Button>
                             <AddButton
                               isDesktop={isDesktop}
-                              // onToggle={() => toast('Feature coming soon!')}
-                             // isInCollection={isInCollection}
-                             // onToggle={() => console.log('Toggle collection state')}
-                             
+                              onToggle={() => onArtistToggle(selectedArtist?.id)}
+                              isInCollection={isInCollection}
                             />
                            {/* <Button
                               size={isDesktop ? "lg" : "xl"}
                               variant="secondary"
-                              onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))}
+                              onClick={() => window.dispatchEvent(new Event('auth:open'))}
                               className={isDesktop ? 'self-start' : 'flex-1'}
                                                 >
                               <SquarePlus size={24}/>Add

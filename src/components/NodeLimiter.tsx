@@ -27,7 +27,8 @@ export default function NodeLimiter({ initialValue, onChange, totalNodes, nodeTy
 
     useEffect(() => {
         if (totalNodes) {
-            setPresets(NODE_AMOUNT_PRESETS.filter(p => p < totalNodes));
+            if (nodeType === "collection") setPresets(Array.from({length: 20}, (x, i) => i));
+            else setPresets(NODE_AMOUNT_PRESETS.filter(p => p < totalNodes));
         }
     }, [totalNodes]);
 
