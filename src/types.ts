@@ -138,6 +138,7 @@ export interface User {
     liked: IDAndDate[];
     preferences: Preferences;
     socialUser?: boolean;
+    image?: string;
 }
 
 export interface Feedback {

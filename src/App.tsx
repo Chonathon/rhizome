@@ -160,6 +160,7 @@ function App() {
     userID,
     userName,
     userEmail,
+    userImage,
     preferences,
     likedArtists,
     isSocialUser,

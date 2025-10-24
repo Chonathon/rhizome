@@ -10,6 +10,7 @@ const useAuth = () => {
     const [userID, setUserID] = useState<string>();
     const [userName, setUserName] = useState<string>();
     const [userEmail, setUserEmail] = useState<string>();
+    const [userImage, setUserImage] = useState<string>();
     const [preferences, setPreferences] = useState<Preferences>();
     const [likedArtists, setLikedArtists] = useState<string[]>([]);
     const [isSocialUser, setIsSocialUser] = useState<boolean | undefined>();
@@ -34,9 +35,10 @@ const useAuth = () => {
         setUserID(user ? user.id : undefined);
         setUserName(user ? user.name : undefined);
         setUserEmail(user ? user.email : undefined);
+        setUserImage(user ? user.image : undefined);
         setPreferences(user ? user.preferences : undefined);
         setLikedArtists(user && user.liked ? user.liked.map(l => l.id) : []);
-        setIsSocialUser(user ? user.socialUser : false)
+        setIsSocialUser(user ? user.socialUser : false);
     }, [user]);
 
     const likeArtist = async (artistID: string) => {
@@ -78,6 +80,7 @@ const useAuth = () => {
         userID,
         userName,
         userEmail,
+        userImage,
         preferences,
         likedArtists,
         isSocialUser,

@@ -221,6 +221,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }, [error, sessionError]);
 
     const initializeFromSession = () => {
+        //console.log(session)
         if (session) {
             getUserData(session.user.id).then(userData => {
                 if (userData) {
@@ -231,6 +232,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                         liked: userData.liked ? userData.liked : [],
                         preferences: userData.preferences,
                         socialUser: userData.socialUser,
+                        image: userData.image,
                     });
                 } else {
                     setError(`Error: no user data found in db.`);
