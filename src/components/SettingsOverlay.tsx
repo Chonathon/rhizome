@@ -416,7 +416,7 @@ const ProfileSection = ({
   onDeleteAccount: () => void;
   name: string;
   email: string;
-  onNameChange: (newName: string) => void;
+  onNameChange: (newName: string) => Promise<boolean>;
   preferences: Preferences;
   onPreferencesChange: (newPreferences: Preferences) => void;
   isSocial: boolean;
@@ -426,6 +426,14 @@ const ProfileSection = ({
   const onThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
     onPreferencesChange({...preferences, theme: newTheme});
+  }
+  const changeName = async () => {
+    const success = await onNameChange(newName);
+    if (success) {
+      toast.success('Successfully changed name.');
+    } else {
+      toast.error('Error: could not change name.');
+    }
   }
   return (
   <>
@@ -447,6 +455,14 @@ const ProfileSection = ({
                   onChange={(e) => setNewName(e.target.value)}
                   required
                 />
+                <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={changeName}
+                >
+                  Change Name
+                </Button>
               </Field>
               <Field orientation="responsive">
                 <FieldLabel htmlFor="theme">
