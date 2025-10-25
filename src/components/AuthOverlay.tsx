@@ -209,7 +209,7 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onForgotPassword}: Aut
                   <Input
                     id="email"
                     type="email"
-                    placeholder="m@example.com"
+                    placeholder="email@example.com"
                     ref={isMobile ? undefined : emailRef}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
