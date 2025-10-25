@@ -456,7 +456,7 @@ const ProfileSection = ({
   return (
   <>
     <SettingsSection>
-      <form>
+      <form onSubmit={(e) => e.preventDefault()}>
         <FieldGroup>
           <FieldSet>
             <FieldLegend>Profile</FieldLegend>
@@ -474,6 +474,12 @@ const ProfileSection = ({
                         placeholder="Greg"
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && isDirty) {
+                            e.preventDefault();
+                            changeName();
+                          }
+                        }}
                         required
                       />
                     <AnimatePresence>
