@@ -426,6 +426,8 @@ const ProfileSection = ({
   preferences,
   onPreferencesChange,
   isSocial,
+  newName,
+  setNewName,
 }: {
   onChangeEmail: () => void;
   onChangePassword: () => void;
@@ -437,8 +439,9 @@ const ProfileSection = ({
   preferences: Preferences;
   onPreferencesChange: (newPreferences: Preferences) => void;
   isSocial: boolean;
+  newName: string;
+  setNewName: React.Dispatch<React.SetStateAction<string>>;
 }) => {
-  const [newName, setNewName] = useState<string>(name);
   const isDirty = newName !== name;
   const { theme, setTheme } = useTheme()
   const onThemeChange = (newTheme: Theme) => {
@@ -478,6 +481,10 @@ const ProfileSection = ({
                           if (e.key === 'Enter' && isDirty) {
                             e.preventDefault();
                             changeName();
+                          } else if (e.key === 'Escape' && isDirty) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setNewName(name);
                           }
                         }}
                         required
@@ -730,6 +737,8 @@ interface SettingsOverlayProps {
 function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChangeEmail, onChangePassword, onDeleteAccount, onChangePreferences, onChangeName}: SettingsOverlayProps) {
   const [open, setOpen] = useState(false)
   const [activeView, setActiveView] = useState("Profile")
+  const [newName, setNewName] = useState<string>(name)
+  const isDirty = newName !== name
 
   // Dialog states
   const [changeEmailOpen, setChangeEmailOpen] = useState(false)
@@ -755,6 +764,20 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
     }
   }, [])
 
+  // Sync newName when name prop changes
+  useEffect(() => {
+    setNewName(name)
+  }, [name])
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && isDirty) {
+      // Prevent closing and reset name if there are unsaved changes
+      setNewName(name)
+      return
+    }
+    setOpen(newOpen)
+  }
+
   // View mapping
   const views: Record<string, React.ReactNode> = {
     Profile: (
@@ -769,6 +792,8 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
         onNameChange={onChangeName}
         onPreferencesChange={onChangePreferences}
         isSocial={socialUser}
+        newName={newName}
+        setNewName={setNewName}
       />
     ),
     Connections: <ConnectionsSection />,
@@ -787,7 +812,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
 
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-3 md:max-w-[700px] lg:max-w-[800px]">
           
           <DialogTitle className="p-6 pb-0 md:sr-only md:pb-3 bg-transparent">Settings</DialogTitle>
