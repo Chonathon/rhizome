@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CircleUserRound, Cable, HandHeart, Check } from "lucide-react"
+import { CircleUserRound, Cable, HandHeart, Check, X } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
@@ -438,6 +439,7 @@ const ProfileSection = ({
   isSocial: boolean;
 }) => {
   const [newName, setNewName] = useState<string>(name);
+  const isDirty = newName !== name;
   const { theme, setTheme } = useTheme()
   const onThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
@@ -464,21 +466,52 @@ const ProfileSection = ({
                 <FieldLabel htmlFor="Preferred Name">
                   Preferred Name
                 </FieldLabel>
-                <Input
-                  id="Preferred Name"
-                  placeholder="Greg"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  required
-                />
-                <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    onClick={changeName}
-                >
-                  Change Name
-                </Button>
+                
+                  <motion.div layout className="flex  gap-2 items-center"
+                    transition={{duration: .2}}>
+                      <Input
+                        id="Preferred Name"
+                        placeholder="Greg"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        required
+                      />
+                    <AnimatePresence>
+                      {isDirty && (
+                        <motion.div
+                          key="name-change-buttons"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1}}
+                          exit={{ opacity: 0}}
+                          transition={{delay: .2, duration: .2}}
+                          className="flex gap-2"
+                        >
+                          <Button
+                            className="size-9"
+                            variant="secondary"
+                            size="icon"
+                            type="button"
+                            onClick={() => {
+                              setNewName(name)
+                            }}
+                            title="Cancel name change"
+                          >
+                            <X />
+                          </Button>
+                          <Button
+                            className="size-9"
+                            size="icon"
+                            type="button"
+                            onClick={changeName}
+                            title="Change name"
+                          >
+                            <Check />
+                          </Button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                
               </Field>
               <Field orientation="responsive">
                 <FieldLabel htmlFor="theme">
