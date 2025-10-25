@@ -468,7 +468,7 @@ const ProfileSection = ({
                 </FieldLabel>
                 
                   <motion.div layout className="flex  gap-2 items-center"
-                    transition={{duration: .2}}>
+                    transition={{layout: {delay: isDirty ? 0 : 0.4, duration: .2}}}>
                       <Input
                         id="Preferred Name"
                         placeholder="Greg"
@@ -483,7 +483,7 @@ const ProfileSection = ({
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1}}
                           exit={{ opacity: 0}}
-                          transition={{delay: .2, duration: .2}}
+                          transition={{duration: .2}}
                           className="flex gap-2"
                         >
                           <Button
