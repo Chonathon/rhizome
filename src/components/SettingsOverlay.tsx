@@ -771,9 +771,8 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen && isDirty) {
-      // Prevent closing and reset name if there are unsaved changes
+      // Reset name if there are unsaved changes when closing
       setNewName(name)
-      return
     }
     setOpen(newOpen)
   }
