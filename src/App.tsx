@@ -163,6 +163,7 @@ function App() {
   }, []);
 
   // Show alpha feedback notification on mount
+  // TODO: update condition to trigger after 5 minute session or 3 added artsts
   useEffect(() => {
     showNotiToast('alpha-feedback', {
       // feedbackFormUrl: 'https://your-feedback-form-url.com' // Replace with actual form URL

@@ -1,6 +1,3 @@
-'use client';
-
-import React from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
@@ -20,6 +17,7 @@ interface NotiToastConfig {
   };
 }
 
+// add more noti types as needed
 const notificationConfigs: Record<NotificationType, NotiToastConfig> = {
   'alpha-feedback': {
     title: 'Enjoying Rhizome?',
