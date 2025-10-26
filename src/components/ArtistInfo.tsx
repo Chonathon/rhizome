@@ -37,6 +37,7 @@ interface ArtistInfoProps {
   getGenreNameById?: (id: string) => string | undefined;
   onPlay?: (artist: Artist) => void;
   onViewArtistGraph?: (artist: Artist) => void;
+  onViewSimilarArtistGraph?: (artist: Artist) => void;
   playLoading?: boolean;
 }
 
@@ -57,6 +58,7 @@ export function ArtistInfo({
   getGenreNameById,
   onPlay,
   onViewArtistGraph,
+  onViewSimilarArtistGraph,
   playLoading,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
@@ -316,6 +318,16 @@ export function ArtistInfo({
                         );
                       })}
                     </div>
+                    {onViewSimilarArtistGraph && selectedArtist && (
+                      <Button
+                        size={isDesktop ? "lg" : "xl"}
+                        variant="secondary"
+                        className={isDesktop ? "w-fit mt-2" : "w-full mt-3"}
+                        onClick={() => onViewSimilarArtistGraph(selectedArtist)}
+                      >
+                        View Similar Artist Graph
+                      </Button>
+                    )}
                   </div>
                 )}
 
