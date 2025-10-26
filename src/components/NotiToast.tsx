@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { toast as sonnerToast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 // Notification type configurations
 type NotificationType = 'alpha-feedback';
@@ -69,24 +70,24 @@ function NotiToast({
   };
 
   return (
-    <div className="flex rounded-lg bg-white shadow-lg ring-1 ring-black/5 w-full max-w-xl items-center justify-between p-4">
-      <div className="flex-1 mr-4">
-        <p className="text-sm font-medium text-gray-900">{config.title}</p>
-        <p className="mt-1 text-sm text-gray-500">{config.description}</p>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <button
-          className="rounded bg-indigo-50 px-3 py-1.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-100 transition-colors"
-          onClick={handlePrimaryAction}
-        >
-          {config.primaryButton.label}
-        </button>
-        <button
-          className="rounded px-3 py-1.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
-          onClick={() => sonnerToast.dismiss(id)}
-        >
-          Dismiss
-        </button>
+    <div
+      className="space-y-1 rounded-2xl bg-card border border-border text-foreground p-3 shadow-lg"
+      style={{
+        width: '100%',
+        maxWidth: '400px',
+      }}
+    >
+      <h2 className="text-xl font-semibold">{config.title}</h2>
+      <p className="text-base text-muted-foreground">{config.description}</p>
+
+      <div className="flex gap-2 mt-6">
+          <Button onClick={handlePrimaryAction}>Give Feedback</Button>
+          <Button
+            variant="outline"
+            onClick={() => sonnerToast.dismiss(id)}
+          >
+            No thanks :C
+          </Button>
       </div>
     </div>
   );
