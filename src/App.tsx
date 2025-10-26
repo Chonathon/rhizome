@@ -292,9 +292,28 @@ function App() {
 
   // Sets current artists/links shown in the graph when artists are fetched from the DB
   useEffect(() => {
-    setCurrentArtists(artists);
+    // Ensure the selected artist is always included in the results
+    if (selectedArtist && graph === 'artists' && artists.length > 0) {
+      const artistExists = artists.some(a => a.id === selectedArtist.id);
+      console.log('[useEffect artists]', {
+        selectedArtistId: selectedArtist.id,
+        selectedArtistName: selectedArtist.name,
+        artistExists,
+        totalArtists: artists.length,
+        selectedGenreIDs
+      });
+      if (!artistExists) {
+        console.log('[useEffect artists] Adding missing artist to results');
+        // Add the selected artist to the results if it's not already there
+        setCurrentArtists([...artists, selectedArtist]);
+      } else {
+        setCurrentArtists(artists);
+      }
+    } else {
+      setCurrentArtists(artists);
+    }
     setCurrentArtistLinks(artistLinks);
-  }, [artists]);
+  }, [artists, selectedArtist, graph]);
 
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
@@ -962,6 +981,13 @@ function App() {
   const focusArtistRelatedGenres = (artist: Artist) => {
     const genreIds = Array.from(new Set((artist.genres ?? []).filter(Boolean)));
 
+    console.log('[focusArtistRelatedGenres]', {
+      artistName: artist.name,
+      artistId: artist.id,
+      genreIds: genreIds,
+      genreCount: genreIds.length
+    });
+
     if (genreIds.length === 0) {
       toast.error(`We don't have genre data for ${artist.name} yet.`);
       return;
@@ -976,6 +1002,8 @@ function App() {
         seen.add(found.id);
       }
     });
+
+    console.log('[focusArtistRelatedGenres] matched genres:', matched.map(g => ({ id: g.id, name: g.name })));
 
     if (!matched.length) {
       toast.error(`Couldn't find genres for ${artist.name} in the current dataset.`);

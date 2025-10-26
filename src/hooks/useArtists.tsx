@@ -37,8 +37,14 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
                     setTopArtists(topRes.data);
                 }
                 if (selectedSize > 0) {
+                    console.log('[useArtists] Fetching artists with genres:', genreIDs);
                     const response = await axios.post(`${url}/artists/${filter}/${amount}`, {genres: genreIDs});
                     const artistCount = response.data.artists.length;
+                    console.log('[useArtists] Received artists:', {
+                        count: artistCount,
+                        artistIds: response.data.artists.map((a: Artist) => a.id),
+                        artistNames: response.data.artists.map((a: Artist) => a.name)
+                    });
                     setArtists(response.data.artists);
                     setArtistLinks(response.data.links);
                     setTotalArtistsInDB(
