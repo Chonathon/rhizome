@@ -21,9 +21,9 @@ interface NotiToastConfig {
 const notificationConfigs: Record<NotificationType, NotiToastConfig> = {
   'alpha-feedback': {
     title: 'Enjoying Rhizome?',
-    description: 'Help us make it better with quick feedback (2 min) 🌱',
+    description: 'Help us make it better with some quick feedback. It\'ll take 2 minutes 🌱',
     primaryButton: {
-      label: 'Give Feedback',
+      label: 'Share Feedback',
       href: 'https://tally.so/r/3EjzA2',
     },
     dismissButton: {
@@ -51,7 +51,7 @@ export function showNotiToast(
   return sonnerToast.custom(
     (id) => <NotiToast id={id} config={finalConfig} />,
     {
-      duration: Infinity, // Only dismiss when user clicks dismiss button
+      duration: Infinity,
     }
   );
 }
@@ -89,7 +89,7 @@ function NotiToast({
         maxWidth: '400px',
       }}
     >
-      <h2 className="text-xl font-semibold">{config.title}</h2>
+      <h2 className="text-lg font-semibold">{config.title}</h2>
       <p className="text-base text-muted-foreground">{config.description}</p>
 
       <div className="flex gap-2 mt-6">
