@@ -15,6 +15,9 @@ interface NotiToastConfig {
     href?: string;
     onClick?: () => void;
   };
+  dismissButton: {
+    label: string;
+  };
 }
 
 const notificationConfigs: Record<NotificationType, NotiToastConfig> = {
@@ -22,8 +25,11 @@ const notificationConfigs: Record<NotificationType, NotiToastConfig> = {
     title: 'Help us improve!',
     description: 'Share your feedback to help shape the future of this product.',
     primaryButton: {
-      label: 'Complete feedback form',
-      href: '', // Will be provided when calling showNotiToast
+      label: 'Give Feedback',
+      href: 'https://tally.so/r/3EjzA2',
+    },
+    dismissButton: {
+      label: 'No thanks :(',
     },
   },
 };
@@ -81,7 +87,7 @@ function NotiToast({
       <p className="text-base text-muted-foreground">{config.description}</p>
 
       <div className="flex gap-2 mt-6">
-          <Button onClick={handlePrimaryAction}>Give Feedback</Button>
+          <Button onClick={handlePrimaryAction}>{config.primaryButton.label}</Button>
           <Button
             variant="outline"
             onClick={() => sonnerToast.dismiss(id)}
