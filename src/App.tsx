@@ -984,11 +984,7 @@ function App() {
 
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
     setGraph('artists');
-
-    if (!selectedArtist || selectedArtist.id !== artist.id) {
-      setSelectedArtist(artist);
-    }
-
+    setSelectedArtist(artist);
     setShowArtistCard(true);
     setSelectedGenres(matched);
     setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
