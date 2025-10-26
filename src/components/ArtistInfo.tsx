@@ -206,7 +206,7 @@ export function ArtistInfo({
                               <SquarePlus size={24}/>Add
                             </Button> */}
 
-                       <DropdownMenu>
+                       {/* <DropdownMenu>
                          <DropdownMenuTrigger asChild>
                            <Button
                               size={isDesktop ? "lg" : "xl"}
@@ -223,11 +223,10 @@ export function ArtistInfo({
                                 onViewArtistGraph
                               }}
                             >
-                              <Flag />
-                              View Artist Graph
+                              View Genres
                             </DropdownMenuItem>
                          </DropdownMenuContent>
-                       </DropdownMenu>
+                       </DropdownMenu> */}
                      </div>
                 {/* Description */}
                 {isDesktop && (
@@ -351,7 +350,7 @@ export function ArtistInfo({
                         className={isDesktop ? "w-fit mt-2" : "w-full mt-3"}
                         onClick={() => onViewArtistGraph(selectedArtist)}
                       >
-                        View Artist Graph
+                        View Related Artists
                       </Button>
                     )}
                   </div>
@@ -390,8 +389,8 @@ export function ArtistInfo({
                     <AlertDescription>Hmm… something about this artist's info doesn't sound quite right. We're checking it out</AlertDescription>
                   </Alert>
               )}
-              <div className='w-full pt-3 flex items-end'>
-                <Button className='self-start' variant={'outline'} size={'lg'} onClick={() => setReportDialogOpen(true)}>
+              <div className='w-full pt-8 flex items-end'>
+                <Button className='self-start' variant={'link'} size={'lg'} onClick={() => setReportDialogOpen(true)}>
                   <Flag />Report Incorrect Information
                 </Button>
               </div>
