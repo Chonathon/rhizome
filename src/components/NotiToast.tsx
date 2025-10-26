@@ -82,6 +82,7 @@ function NotiToast({
       document.body.appendChild(a);
       a.click();
       a.remove();
+      sonnerToast.dismiss(id);
     }
 
     if (config.primaryButton.onClick) {
