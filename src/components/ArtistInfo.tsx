@@ -359,7 +359,7 @@ export function ArtistInfo({
                         className={isDesktop ? "w-fit mt-2" : "w-full mt-3"}
                         onClick={() => onViewArtistGraph(selectedArtist)}
                       >
-                        View Related Artists
+                        View Graph
                       </Button>
                     )}
                   </div>
