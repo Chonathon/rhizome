@@ -165,7 +165,7 @@ function App() {
   // Show alpha feedback notification on mount
   useEffect(() => {
     showNotiToast('alpha-feedback', {
-      feedbackFormUrl: 'https://your-feedback-form-url.com' // Replace with actual form URL
+      // feedbackFormUrl: 'https://your-feedback-form-url.com' // Replace with actual form URL
     });
   }, []);
 

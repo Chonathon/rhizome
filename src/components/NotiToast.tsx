@@ -22,8 +22,8 @@ interface NotiToastConfig {
 
 const notificationConfigs: Record<NotificationType, NotiToastConfig> = {
   'alpha-feedback': {
-    title: 'Help us improve!',
-    description: 'Share your feedback to help shape the future of this product.',
+    title: 'Enjoying Rhizome?',
+    description: 'Help us make it better with quick feedback (2 min) 🌱',
     primaryButton: {
       label: 'Give Feedback',
       href: 'https://tally.so/r/3EjzA2',
@@ -67,13 +67,21 @@ function NotiToast({
   config: NotiToastConfig;
 }) {
   const handlePrimaryAction = () => {
-    if (config.primaryButton.href) {
-      window.open(config.primaryButton.href, '_blank', 'noopener,noreferrer');
-    }
-    if (config.primaryButton.onClick) {
-      config.primaryButton.onClick();
-    }
-  };
+  if (config.primaryButton.href) {
+    const a = document.createElement('a');
+    a.href = config.primaryButton.href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    // required so Firefox will honor it without adding it to the DOM
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  if (config.primaryButton.onClick) {
+    config.primaryButton.onClick();
+  }
+};
 
   return (
     <div
@@ -92,7 +100,7 @@ function NotiToast({
             variant="outline"
             onClick={() => sonnerToast.dismiss(id)}
           >
-            No thanks :C
+            {config.dismissButton.label}
           </Button>
       </div>
     </div>
