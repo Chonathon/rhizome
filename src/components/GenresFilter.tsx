@@ -32,12 +32,14 @@ export default function GenresFilter({
   graphType,
   onGenreSelectionChange,
   initialSelection,
+  selectedGenreIds = [],
 }: {
   genres?: Genre[];
   genreClusterModes: GenreClusterMode[];
   graphType: GraphType;
   onGenreSelectionChange: (selectedIDs: string[]) => void;
   initialSelection: InitialGenreFilter;
+  selectedGenreIds?: string[];
 }) {
   // Compute the set of top-level genres based on the current cluster modes.
   const topLevelGenres = useMemo(() => {
@@ -92,6 +94,11 @@ export default function GenresFilter({
   const listRef = useRef<HTMLDivElement | null>(null);
   const selectedGroupRef = useRef<HTMLDivElement | null>(null);
   const prevSelectedHeightRef = useRef<number>(0);
+  const lastAppliedState = useRef<{ ids: string[]; parentSignature: string }>({
+    ids: [],
+    parentSignature: "",
+  });
+  const isSyncingFromExternal = useRef(false);
 
   // Computed: Any selection active? This doesn't count children genres
   const hasAnySelection = topLevelGenres.some((g) => parentSelected[g.id] ?? false);
@@ -135,6 +142,66 @@ export default function GenresFilter({
     });
   }, [query]);
 
+  useEffect(() => {
+    const normalized = Array.from(new Set((selectedGenreIds ?? []).filter(Boolean)));
+    const parentSignature = topLevelGenres.map((g) => g.id).join("|");
+    const prev = lastAppliedState.current;
+    const prevSet = new Set(prev.ids);
+    const sameSelection =
+      normalized.length === prev.ids.length &&
+      normalized.every((id) => prevSet.has(id));
+    const sameParents = prev.parentSignature === parentSignature;
+
+    if (sameSelection && sameParents) return;
+
+    lastAppliedState.current = {
+      ids: normalized,
+      parentSignature,
+    };
+
+    // Mark that we're syncing from external props to prevent callback loop
+    isSyncingFromExternal.current = true;
+
+    const selectionSet = new Set(normalized);
+    const nextParentSelected: Record<string, boolean> = {};
+    const nextSelectedChildren: Record<string, Set<string>> = {};
+
+    topLevelGenres.forEach((parent) => {
+      const parentId = parent.id;
+      nextParentSelected[parentId] = selectionSet.has(parentId);
+      const children = parentChildMap.get(parentId) || [];
+      const childSet = new Set<string>();
+      children.forEach((child) => {
+        if (selectionSet.has(child.id)) {
+          childSet.add(child.id);
+        }
+      });
+      nextSelectedChildren[parentId] = childSet;
+    });
+
+    setParentSelected(nextParentSelected);
+    setSelectedChildren(nextSelectedChildren);
+
+    setOpenMap(() => {
+      if (!selectionSet.size) {
+        return { ...defaultOpenMap };
+      }
+      const next: Record<string, boolean> = {};
+      topLevelGenres.forEach((parent) => {
+        const parentId = parent.id;
+        const childSet = nextSelectedChildren[parentId];
+        next[parentId] =
+          selectionSet.has(parentId) || (childSet && childSet.size > 0);
+      });
+      return next;
+    });
+
+    // Reset the flag after state updates
+    setTimeout(() => {
+      isSyncingFromExternal.current = false;
+    }, 0);
+  }, [selectedGenreIds, topLevelGenres, parentChildMap, defaultOpenMap]);
+
   // Determine the parent's tri-state based on its own selection and child selections.
   // Read-only helper to check if a given child is selected under a parent.
   const isChildSelected = (parent: Genre, childId: string) => {
@@ -172,6 +239,9 @@ export default function GenresFilter({
 
   // Triggers loading artists on selection of genres
   useEffect(() => {
+    // Don't call back if we're syncing from external props (prevents infinite loop)
+    if (isSyncingFromExternal.current) return;
+
     const ids = [...selectedParents.map(p => p.id), ...selectedChildrenFlat.map(c => c.child.id)];
     onGenreSelectionChange(ids);
   }, [selectedParents, selectedChildrenFlat]);

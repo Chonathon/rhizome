@@ -36,6 +36,7 @@ interface ArtistInfoProps {
   getArtistColor: (artist: Artist) => string;
   getGenreNameById?: (id: string) => string | undefined;
   onPlay?: (artist: Artist) => void;
+  onViewArtistGraph?: (artist: Artist) => void;
   playLoading?: boolean;
 }
 
@@ -55,6 +56,7 @@ export function ArtistInfo({
   getArtistColor,
   getGenreNameById,
   onPlay,
+  onViewArtistGraph,
   playLoading,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
@@ -350,6 +352,16 @@ export function ArtistInfo({
                         );
                       })}
                     </div>
+                    {onViewArtistGraph && selectedArtist && (
+                      <Button
+                        size={isDesktop ? "lg" : "xl"}
+                        variant="outline"
+                        className={isDesktop ? "w-fit mt-2" : "w-full mt-3"}
+                        onClick={() => onViewArtistGraph(selectedArtist)}
+                      >
+                        View Related Artists
+                      </Button>
+                    )}
                   </div>
                 )}
 

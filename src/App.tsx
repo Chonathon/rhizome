@@ -913,6 +913,87 @@ function App() {
     return { genre, isRoot, parents };
   }
 
+  const buildInitialGenreFilterFromGenres = (genreList: Genre[]): InitialGenreFilter => {
+    if (!genreList.length) {
+      return EMPTY_GENRE_FILTER_OBJECT;
+    }
+
+    const parents: Record<string, Set<string>> = {};
+    const ensureParentSet = (parentId: string) => {
+      if (!parents[parentId]) {
+        parents[parentId] = new Set<string>();
+      }
+      return parents[parentId];
+    };
+
+    genreList.forEach((genre) => {
+      if (isSingletonGenre(genre, GENRE_FILTER_CLUSTER_MODE)) {
+        ensureParentSet(SINGLETON_PARENT_GENRE.id).add(genre.id);
+        return;
+      }
+
+      if (isRootGenre(genre, GENRE_FILTER_CLUSTER_MODE)) {
+        ensureParentSet(genre.id);
+        return;
+      }
+
+      const rootParents = genre.specificRootGenres
+        .filter((root) => root.type === GENRE_FILTER_CLUSTER_MODE[0])
+        .map((root) => root.id);
+
+      if (!rootParents.length) {
+        ensureParentSet(genre.id);
+        return;
+      }
+
+      rootParents.forEach((rootId) => {
+        ensureParentSet(rootId).add(genre.id);
+      });
+    });
+
+    const firstGenre = genreList[0];
+    return {
+      genre: firstGenre,
+      isRoot: isRootGenre(firstGenre, GENRE_FILTER_CLUSTER_MODE),
+      parents,
+    };
+  };
+
+  const focusArtistRelatedGenres = (artist: Artist) => {
+    const genreIds = Array.from(new Set((artist.genres ?? []).filter(Boolean)));
+
+    if (genreIds.length === 0) {
+      toast.error(`We don't have genre data for ${artist.name} yet.`);
+      return;
+    }
+
+    const seen = new Set<string>();
+    const matched: Genre[] = [];
+    genreIds.forEach((id) => {
+      const found = genres.find((g) => g.id === id);
+      if (found && !seen.has(found.id)) {
+        matched.push(found);
+        seen.add(found.id);
+      }
+    });
+
+    if (!matched.length) {
+      toast.error(`Couldn't find genres for ${artist.name} in the current dataset.`);
+      return;
+    }
+
+    if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+    setGraph('artists');
+
+    if (!selectedArtist || selectedArtist.id !== artist.id) {
+      setSelectedArtist(artist);
+    }
+
+    setShowArtistCard(true);
+    setSelectedGenres(matched);
+    setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -954,6 +1035,7 @@ function App() {
                     graphType={graph}
                     onGenreSelectionChange={onGenreFilterSelectionChange}
                     initialSelection={initialGenreFilter}
+                    selectedGenreIds={selectedGenreIDs}
                    />
 
                   <Button size='default' variant='outline'>Mood & Activity
@@ -985,6 +1067,7 @@ function App() {
                     graphType={graph}
                     onGenreSelectionChange={onGenreFilterSelectionChange}
                     initialSelection={initialGenreFilter}
+                    selectedGenreIds={selectedGenreIDs}
                    />
 
                   <Button size='lg' variant='outline'
@@ -1143,6 +1226,7 @@ function App() {
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
                 onPlay={onPlayArtist}
+                onViewArtistGraph={focusArtistRelatedGenres}
                 //playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
                 playLoading={isPlayerLoadingArtist()}
               />
@@ -1157,7 +1241,7 @@ function App() {
                       // setSelectedArtist(undefined)
                     }
                     }
-                    show={graph === 'artists' && selectedGenres.length === 1}
+                    show={graph === 'artists' && selectedGenres.length > 0}
                   />
                 <motion.div
                   layout
