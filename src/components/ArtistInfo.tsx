@@ -220,22 +220,14 @@ export function ArtistInfo({
                          <DropdownMenuContent>
                             <DropdownMenuItem
                               onSelect={() => {
-                                setReportDialogOpen(true);
+                                onViewArtistGraph
                               }}
                             >
                               <Flag />
-                              Report Incorrect Information
+                              View Artist Graph
                             </DropdownMenuItem>
                          </DropdownMenuContent>
                        </DropdownMenu>
-
-                        <ReportIncorrectInfoDialog
-                          open={reportDialogOpen}
-                          onOpenChange={setReportDialogOpen}
-                          reasons={artistReasons}
-                          description="Please let us know what information about this artist seems incorrect. Select a reason and provide any extra details if you’d like."
-                          onSubmit={(reason, details) => onSubmitBadData(reason, details)}
-                        />
                      </div>
                 {/* Description */}
                 {isDesktop && (
@@ -355,11 +347,11 @@ export function ArtistInfo({
                     {onViewArtistGraph && selectedArtist && (
                       <Button
                         size={isDesktop ? "lg" : "xl"}
-                        variant="outline"
+                        variant="secondary"
                         className={isDesktop ? "w-fit mt-2" : "w-full mt-3"}
                         onClick={() => onViewArtistGraph(selectedArtist)}
                       >
-                        View Graph
+                        View Artist Graph
                       </Button>
                     )}
                   </div>
@@ -395,9 +387,23 @@ export function ArtistInfo({
               {selectedArtist && selectedArtist.badDataFlag && (
                   <Alert>
                     <Info />
-                    <AlertDescription>Hmm… something about this artist’s info doesn’t sound quite right. We’re checking it out</AlertDescription>
+                    <AlertDescription>Hmm… something about this artist's info doesn't sound quite right. We're checking it out</AlertDescription>
                   </Alert>
               )}
+              <div className='w-full pt-3 flex items-end'>
+                <Button className='self-start' variant={'outline'} size={'lg'} onClick={() => setReportDialogOpen(true)}>
+                  <Flag />Report Incorrect Information
+                </Button>
+              </div>
+
+              {/* Report Incorrect Info Dialog */}
+              <ReportIncorrectInfoDialog
+                open={reportDialogOpen}
+                onOpenChange={setReportDialogOpen}
+                reasons={artistReasons}
+                description="Please let us know what information about this artist seems incorrect. Select a reason and provide any extra details if you'd like."
+                onSubmit={(reason, details) => onSubmitBadData(reason, details)}
+              />
               </div>
             </div>
           </>
