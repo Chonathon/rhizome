@@ -81,7 +81,7 @@ const Graph = forwardRef(function GraphInner<
 ) {
   const fgRef = useRef<ForceGraphMethods<PreparedNode<T>, L> | undefined>(undefined);
   const zoomRef = useRef<number>(1);
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
   const lastInitializedSignatureRef = useRef<string | undefined>(undefined);
   const shouldResetZoomRef = useRef(true);
@@ -134,9 +134,9 @@ const Graph = forwardRef(function GraphInner<
   }, [preparedData.links, preparedData.nodes]);
 
   const colorById = useMemo(() => {
-    const defaultColor = theme === "dark" ? "#8a80ff" : "#4a4a4a";
+    const defaultColor = resolvedTheme === "dark" ? "#8a80ff" : "#4a4a4a";
     return new Map(preparedData.nodes.map((node) => [node.id, node.color ?? defaultColor]));
-  }, [preparedData.nodes, theme]);
+  }, [preparedData.nodes, resolvedTheme]);
 
   const neighborsById = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -267,7 +267,7 @@ const Graph = forwardRef(function GraphInner<
           const target =
             typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
           const base = source ? colorById.get(String(source)) : undefined;
-          const fallback = theme === "dark" ? "#ffffff" : "#000000";
+          const fallback = resolvedTheme === "dark" ? "#ffffff" : "#000000";
           const selected = !!selectedId && (source === selectedId || target === selectedId);
           return `${base ?? fallback}${selectedId ? (selected ? 'cc' : '30') : '80'}`;
         }}
@@ -295,7 +295,7 @@ const Graph = forwardRef(function GraphInner<
           const x = node.x ?? 0;
           const y = node.y ?? 0;
           const radius = node.radius;
-          const accent = colorById.get(node.id) ?? (theme === "dark" ? "#8a80ff" : "#4a4a4a");
+          const accent = colorById.get(node.id) ?? (resolvedTheme === "dark" ? "#8a80ff" : "#4a4a4a");
           const hasSelection = !!selectedId;
           const isSelected = selectedId === node.id;
           const isNeighbor = hasSelection ? neighborsById.get(selectedId!)?.has(node.id) : false;
@@ -327,7 +327,7 @@ const Graph = forwardRef(function GraphInner<
           let labelAlpha = labelAlphaForZoom(k, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END);
           if (isSelected || isHovered) labelAlpha = 1;
           else if (hasSelection && !isNeighbor) labelAlpha = Math.min(labelAlpha, 0.25);
-          drawLabelBelow(ctx, node.label, x, y, radius, theme, labelAlpha, LABEL_FONT_SIZE);
+          drawLabelBelow(ctx, node.label, x, y, radius, resolvedTheme, labelAlpha, LABEL_FONT_SIZE);
         }}
         nodePointerAreaPaint={(node, color, ctx) => {
           ctx.fillStyle = color;
