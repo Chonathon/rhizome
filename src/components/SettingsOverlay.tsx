@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CircleUserRound, Cable, HandHeart, Check } from "lucide-react"
+import { CircleUserRound, Cable, HandHeart, Check, X } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
@@ -425,6 +426,8 @@ const ProfileSection = ({
   preferences,
   onPreferencesChange,
   isSocial,
+  newName,
+  setNewName,
 }: {
   onChangeEmail: () => void;
   onChangePassword: () => void;
@@ -436,8 +439,10 @@ const ProfileSection = ({
   preferences: Preferences;
   onPreferencesChange: (newPreferences: Preferences) => void;
   isSocial: boolean;
+  newName: string;
+  setNewName: React.Dispatch<React.SetStateAction<string>>;
 }) => {
-  const [newName, setNewName] = useState<string>(name);
+  const isDirty = newName !== name;
   const { theme, setTheme } = useTheme()
   const onThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
@@ -454,7 +459,7 @@ const ProfileSection = ({
   return (
   <>
     <SettingsSection>
-      <form>
+      <form onSubmit={(e) => e.preventDefault()}>
         <FieldGroup>
           <FieldSet>
             <FieldLegend>Profile</FieldLegend>
@@ -464,21 +469,58 @@ const ProfileSection = ({
                 <FieldLabel htmlFor="Preferred Name">
                   Preferred Name
                 </FieldLabel>
-                <Input
-                  id="Preferred Name"
-                  placeholder="Greg"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  required
-                />
-                <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    onClick={changeName}
-                >
-                  Change Name
-                </Button>
+                
+                  <motion.div layout className="flex  gap-2 items-center"
+                    transition={{layout: {delay: isDirty ? 0 : 0.4, duration: .2}}}>
+                      <Input
+                        id="Preferred Name"
+                        placeholder="Greg"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && isDirty) {
+                            e.preventDefault();
+                            changeName();
+                          }
+                        }}
+                        required
+                      />
+                    <AnimatePresence>
+                      {isDirty && (
+                        <motion.div
+                          key="name-change-buttons"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1}}
+                          exit={{ opacity: 0}}
+                          transition={{duration: .2}}
+                          className="flex gap-2"
+                        >
+                          <Button
+                            className="size-9"
+                            variant="secondary"
+                            size="icon"
+                            type="button"
+                            onClick={() => {
+                              setNewName(name)
+                            }}
+                            title="Cancel name change"
+                          >
+                            <X />
+                          </Button>
+                          <Button
+                            className="size-9"
+                            size="icon"
+                            type="button"
+                            onClick={changeName}
+                            title="Change name"
+                          >
+                            <Check />
+                          </Button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                
               </Field>
               <Field orientation="responsive">
                 <FieldLabel htmlFor="theme">
@@ -691,6 +733,8 @@ interface SettingsOverlayProps {
 function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChangeEmail, onChangePassword, onDeleteAccount, onChangePreferences, onChangeName}: SettingsOverlayProps) {
   const [open, setOpen] = useState(false)
   const [activeView, setActiveView] = useState("Profile")
+  const [newName, setNewName] = useState<string>(name)
+  const isDirty = newName !== name
 
   // Dialog states
   const [changeEmailOpen, setChangeEmailOpen] = useState(false)
@@ -716,6 +760,28 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
     }
   }, [])
 
+  // Sync newName when name prop changes
+  useEffect(() => {
+    setNewName(name)
+  }, [name])
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && isDirty) {
+      // Reset name if there are unsaved changes when closing
+      setNewName(name)
+    }
+    setOpen(newOpen)
+  }
+
+  const handleEscapeKeyDown = (e: KeyboardEvent) => {
+    if (isDirty) {
+      // If there are unsaved changes, cancel the edit instead of closing
+      e.preventDefault()
+      setNewName(name)
+    }
+    // If not dirty, allow default behavior (close dialog)
+  }
+
   // View mapping
   const views: Record<string, React.ReactNode> = {
     Profile: (
@@ -730,6 +796,8 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
         onNameChange={onChangeName}
         onPreferencesChange={onChangePreferences}
         isSocial={socialUser}
+        newName={newName}
+        setNewName={setNewName}
       />
     ),
     Connections: <ConnectionsSection />,
@@ -748,8 +816,11 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
 
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-3 md:max-w-[700px] lg:max-w-[800px]">
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent
+          className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-3 md:max-w-[700px] lg:max-w-[800px]"
+          onEscapeKeyDown={handleEscapeKeyDown}
+        >
           
           <DialogTitle className="p-6 pb-0 md:sr-only md:pb-3 bg-transparent">Settings</DialogTitle>
           <DialogDescription className="sr-only">
