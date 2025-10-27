@@ -4,9 +4,8 @@ import { ChevronDown, Divide, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
-import { Graph } from "@/components/Graph";
-import { createGenresGraphConfig, createArtistsGraphConfig } from "@/components/Graph/configs";
-import { GraphHandle } from "@/types/graph";
+import ArtistsForceGraph, { type GraphHandle } from "@/components/ArtistsForceGraph";
+import GenresForceGraph from "@/components/GenresForceGraph";
 import {
   AccountMenuState, Artist, ArtistNodeLimitType, BadDataReport,
   Genre,
@@ -1203,37 +1202,31 @@ function App() {
                   }}
                 />
           </motion.div>
-                {graph === "genres" && !genresError && currentGenres && (
-                  <Graph
-                    ref={genresGraphRef}
-                    config={createGenresGraphConfig({
-                      genres: currentGenres.nodes,
-                      links: currentGenres.links,
-                      colorMap: genreColorMap,
-                      onGenreClick: onGenreNodeClick,
-                      selectedGenreId: selectedGenres[0]?.id,
-                      dag: dagMode,
-                      width: viewport.width || undefined,
-                      height: viewport.height || undefined,
-                    })}
-                    loading={genresLoading}
-                  />
-                )}
-                {(graph === "artists" || graph === "similarArtists") && !artistsError && (
-                  <Graph
-                    ref={artistsGraphRef}
-                    config={createArtistsGraphConfig({
-                      artists: currentArtists,
-                      links: currentArtistLinks,
-                      computeArtistColor: getArtistColor,
-                      onArtistClick: onArtistNodeClick,
-                      selectedArtistId: selectedArtist?.id,
-                      width: viewport.width || undefined,
-                      height: viewport.height || undefined,
-                    })}
-                    loading={artistsLoading}
-                  />
-                )}
+                <GenresForceGraph
+                  ref={genresGraphRef}
+                  graphData={currentGenres}
+                  onNodeClick={onGenreNodeClick}
+                  selectedGenreId={selectedGenres[0]?.id}
+                  colorMap={genreColorMap}
+                  dag={dagMode}
+                  clusterModes={genreClusterMode}
+                  show={graph === "genres" && !genresError}
+                  loading={genresLoading}
+                  width={viewport.width || undefined}
+                  height={viewport.height || undefined}
+                />
+                <ArtistsForceGraph
+                  ref={artistsGraphRef}
+                  artists={currentArtists}
+                  artistLinks={currentArtistLinks}
+                  onNodeClick={onArtistNodeClick}
+                  selectedArtistId={selectedArtist?.id}
+                  computeArtistColor={getArtistColor}
+                  show={(graph === "artists" || graph === "similarArtists") && !artistsError}
+                  loading={artistsLoading}
+                  width={viewport.width || undefined}
+                  height={viewport.height || undefined}
+                />
 
             <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
               <ZoomButtons
