@@ -4,11 +4,9 @@ import { ChevronDown, Divide, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
-import ArtistsForceGraph from "@/components/ArtistsForceGraph";
-import GenresForceGraph from "@/components/GenresForceGraph";
 import { Graph } from "@/components/Graph";
 import { createGenresGraphConfig, createArtistsGraphConfig } from "@/components/Graph/configs";
-import { GraphHandle as NewGraphHandle } from "@/types/graph";
+import { GraphHandle } from "@/types/graph";
 import {
   AccountMenuState, Artist, ArtistNodeLimitType, BadDataReport,
   Genre,
@@ -84,9 +82,8 @@ function SidebarLogoTrigger() {
 }
 
 function App() {
-  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number }
-  const genresGraphRef = useRef<NewGraphHandle | null>(null);
-  const artistsGraphRef = useRef<NewGraphHandle | null>(null);
+  const genresGraphRef = useRef<GraphHandle | null>(null);
+  const artistsGraphRef = useRef<GraphHandle | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
   const selectedGenreIDs = useMemo(() => {
