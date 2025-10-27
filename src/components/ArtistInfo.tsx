@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2 } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -133,7 +133,21 @@ export function ArtistInfo({
       onDismiss={onDismiss}
       bodyClassName=""
       // snapPoints={[0.28, 0.9]}
-      headerTitle={selectedArtist?.name}
+      headerTitle={
+        selectedArtist && onViewSimilarArtistGraph ? (
+          <button
+            onClick={() => onViewSimilarArtistGraph(selectedArtist)}
+            className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
+            title="Go to artist"
+          >
+            <span>{selectedArtist.name}</span>
+              <ChevronRight className="shrink-0 size-6"/>
+            
+          </button>
+        ) : (
+          selectedArtist?.name
+        )
+      }
       headerSubtitle={
         typeof selectedArtist?.listeners === "number"
           ? `${formatNumber(selectedArtist.listeners)} Listeners`

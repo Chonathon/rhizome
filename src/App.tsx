@@ -1,8 +1,7 @@
 import './App.css'
 import {useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, Settings } from 'lucide-react'
+import { ChevronDown, Divide, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
@@ -95,6 +94,7 @@ function App() {
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
+  const [pendingSimilarArtistGraph, setPendingSimilarArtistGraph] = useState<Artist | undefined>(undefined);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [dagMode, setDagMode] = useState<boolean>(() => {
     const storedDagMode = localStorage.getItem('dagMode');
@@ -340,8 +340,32 @@ function App() {
     updateArtistPlayerIDs();
   }, [selectedArtist]);
 
-  // Note: createSimilarArtistGraph now builds the graph immediately
-  // No longer need to wait for API response via useEffect
+  // Build similar artist graph after genres are loaded
+  useEffect(() => {
+    if (pendingSimilarArtistGraph && artists.length > 0 && !artistsLoading) {
+      const artistResult = pendingSimilarArtistGraph;
+
+      // Look up similar artists from ALL loaded artists
+      const similarArtistsFound: Artist[] = (artistResult.similar || [])
+        .map(name => artists.find(a => a.name === name))
+        .filter((a): a is Artist => a !== undefined);
+
+      if (similarArtistsFound.length > 0) {
+        // Build the graph with selected artist + similar artists found
+        const graphArtists = [artistResult, ...similarArtistsFound];
+        const links = generateSimilarLinks(graphArtists);
+
+        setCurrentArtists(graphArtists);
+        setCurrentArtistLinks(links);
+        setGraph('similarArtists');
+        setPendingSimilarArtistGraph(undefined);
+      } else {
+        // Still no similar artists found even after loading genres
+        toast.error(`No similar artists found for ${artistResult.name} in the loaded data.`);
+        setPendingSimilarArtistGraph(undefined);
+      }
+    }
+  }, [pendingSimilarArtistGraph, artists, artistsLoading]);
 
   // Add genre play IDs to the playerIDQueue on genre click
   const updateGenrePlayerIDs = async () => {
@@ -665,32 +689,59 @@ function App() {
   }
 
   const createSimilarArtistGraph = (artistResult: Artist) => {
-    // Build graph using artist.similar names and looking them up in all loaded artists
     if (!artistResult.similar || artistResult.similar.length === 0) {
       toast.error(`No similar artist data available for ${artistResult.name}`);
       return;
     }
 
-    // Look up similar artists from ALL loaded artists (not just current graph)
+    // Check if similar artists are already loaded
     const similarArtistsFound: Artist[] = artistResult.similar
       .map(name => artists.find(a => a.name === name))
       .filter((a): a is Artist => a !== undefined);
 
-    if (similarArtistsFound.length === 0) {
-      toast.error(`Similar artists for ${artistResult.name} are not currently loaded. Try viewing artists from their genres first.`);
-      return;
+    if (similarArtistsFound.length > 0) {
+      // Build graph immediately with loaded artists
+      const graphArtists = [artistResult, ...similarArtistsFound];
+      const links = generateSimilarLinks(graphArtists);
+
+      setSelectedArtist(artistResult);
+      setSelectedArtistNoGenre(artistResult);
+      setCurrentArtists(graphArtists);
+      setCurrentArtistLinks(links);
+      setGraph('similarArtists');
+      setShowArtistCard(true);
+    } else {
+      // Auto-load artist's genres first
+      const genreIds = Array.from(new Set((artistResult.genres ?? []).filter(Boolean)));
+
+      if (genreIds.length === 0) {
+        toast.error(`We don't have genre data for ${artistResult.name} to load similar artists.`);
+        return;
+      }
+
+      const matched: Genre[] = [];
+      genreIds.forEach((id) => {
+        const found = genres.find((g) => g.id === id);
+        if (found) {
+          matched.push(found);
+        }
+      });
+
+      if (!matched.length) {
+        toast.error(`Couldn't find genres for ${artistResult.name} in the current dataset.`);
+        return;
+      }
+
+      // Load artists from this artist's genres
+      if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+      setSelectedArtist(artistResult);
+      setSelectedArtistNoGenre(artistResult);
+      setShowArtistCard(true);
+      setSelectedGenres(matched);
+      setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
+      setPendingSimilarArtistGraph(artistResult); // Will trigger graph build when artists load
+      toast.info(`Loading ${artistResult.name}'s genres to find similar artists...`);
     }
-
-    // Build the graph with selected artist + similar artists found
-    const graphArtists = [artistResult, ...similarArtistsFound];
-    const links = generateSimilarLinks(graphArtists);
-
-    setSelectedArtist(artistResult);
-    setSelectedArtistNoGenre(artistResult); // Keep for bad data reporting
-    setCurrentArtists(graphArtists);
-    setCurrentArtistLinks(links);
-    setGraph('similarArtists');
-    setShowArtistCard(true);
   }
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
     setGenreClusterMode([...newMode]);
@@ -1102,17 +1153,15 @@ function App() {
                 </Tabs>
 
                 {graph === 'similarArtists' && selectedArtist && (
-                  <Badge variant="secondary" className="flex items-center gap-2">
-                    <span className="text-xs">Similar artists for {selectedArtist.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-transparent"
-                      onClick={() => onTabChange('artists')}
-                    >
-                      ×
-                    </Button>
-                  </Badge>
+                  <Button
+                    size='lg'
+                    variant='outline'
+                    onClick={() => onTabChange('artists')}
+                    className="gap-2"
+                  >
+                    Similar artists: {selectedArtist.name}
+                    <X className="h-4 w-4" />
+                  </Button>
                 )}
 
                 { graph === 'artists' &&
