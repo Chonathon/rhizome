@@ -481,10 +481,6 @@ const ProfileSection = ({
                           if (e.key === 'Enter' && isDirty) {
                             e.preventDefault();
                             changeName();
-                          } else if (e.key === 'Escape' && isDirty) {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            setNewName(name);
                           }
                         }}
                         required
@@ -777,6 +773,15 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
     setOpen(newOpen)
   }
 
+  const handleEscapeKeyDown = (e: KeyboardEvent) => {
+    if (isDirty) {
+      // If there are unsaved changes, cancel the edit instead of closing
+      e.preventDefault()
+      setNewName(name)
+    }
+    // If not dirty, allow default behavior (close dialog)
+  }
+
   // View mapping
   const views: Record<string, React.ReactNode> = {
     Profile: (
@@ -812,7 +817,10 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-3 md:max-w-[700px] lg:max-w-[800px]">
+        <DialogContent
+          className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-3 md:max-w-[700px] lg:max-w-[800px]"
+          onEscapeKeyDown={handleEscapeKeyDown}
+        >
           
           <DialogTitle className="p-6 pb-0 md:sr-only md:pb-3 bg-transparent">Settings</DialogTitle>
           <DialogDescription className="sr-only">
