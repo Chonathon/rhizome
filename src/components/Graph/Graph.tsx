@@ -25,13 +25,9 @@ import {
   applyMobileDrawerYOffset,
   DEFAULT_MOBILE_CENTER_OFFSET_PX,
 } from "@/lib/graphStyle";
+import type { GraphHandle } from "@/types";
 
-export type GraphHandle = {
-  zoomIn: () => void;
-  zoomOut: () => void;
-  zoomTo: (k: number, ms?: number) => void;
-  getZoom: () => number;
-};
+export type { GraphHandle };
 
 export interface SharedGraphNode<T = unknown> {
   id: string;
@@ -305,7 +301,7 @@ const Graph = forwardRef(function GraphInner<
           if (hasSelection) {
             alpha = isSelected ? 1 : isNeighbor ? 0.8 : 0.15;
           } else if (isHovered) {
-            alpha = 0.9;
+            alpha = 0.8;
           }
 
           ctx.save();

@@ -117,3 +117,10 @@ export interface TopTrackPlayIDs {
 export type PlayerType = 'youtube' | 'spotify' | 'apple';
 
 export type AccountMenuState = "authorized" | "guest" | "nonOffice";
+
+export interface GraphHandle {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  zoomTo: (k: number, ms?: number) => void;
+  getZoom: () => number;
+}
