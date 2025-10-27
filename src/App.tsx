@@ -7,7 +7,7 @@ import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import { Graph } from "@/components/Graph";
-import { createGenresGraphConfig } from "@/components/Graph/configs";
+import { createGenresGraphConfig, createArtistsGraphConfig } from "@/components/Graph/configs";
 import { GraphHandle as NewGraphHandle } from "@/types/graph";
 import {
   AccountMenuState, Artist, ArtistNodeLimitType, BadDataReport,
@@ -86,7 +86,7 @@ function SidebarLogoTrigger() {
 function App() {
   type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number }
   const genresGraphRef = useRef<NewGraphHandle | null>(null);
-  const artistsGraphRef = useRef<GraphHandle | null>(null);
+  const artistsGraphRef = useRef<NewGraphHandle | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
   const selectedGenreIDs = useMemo(() => {
@@ -1222,20 +1222,21 @@ function App() {
                     loading={genresLoading}
                   />
                 )}
-                <ArtistsForceGraph
-                    ref={artistsGraphRef as any}
-                    artists={currentArtists}
-                    artistLinks={currentArtistLinks}
+                {(graph === "artists" || graph === "similarArtists") && !artistsError && (
+                  <Graph
+                    ref={artistsGraphRef}
+                    config={createArtistsGraphConfig({
+                      artists: currentArtists,
+                      links: currentArtistLinks,
+                      computeArtistColor: getArtistColor,
+                      onArtistClick: onArtistNodeClick,
+                      selectedArtistId: selectedArtist?.id,
+                      width: viewport.width || undefined,
+                      height: viewport.height || undefined,
+                    })}
                     loading={artistsLoading}
-                    onNodeClick={onArtistNodeClick}
-                    selectedArtistId={selectedArtist?.id}
-                    show={
-                        (graph === "artists" || graph === "similarArtists") && !artistsError
-                    }
-                    computeArtistColor={getArtistColor}
-                    width={viewport.width || undefined}
-                    height={viewport.height || undefined}
-                />
+                  />
+                )}
 
             <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
               <ZoomButtons
