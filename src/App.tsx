@@ -6,6 +6,9 @@ import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
+import { Graph } from "@/components/Graph";
+import { createGenresGraphConfig } from "@/components/Graph/configs";
+import { GraphHandle as NewGraphHandle } from "@/types/graph";
 import {
   AccountMenuState, Artist, ArtistNodeLimitType, BadDataReport,
   Genre,
@@ -82,7 +85,7 @@ function SidebarLogoTrigger() {
 
 function App() {
   type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number }
-  const genresGraphRef = useRef<GraphHandle | null>(null);
+  const genresGraphRef = useRef<NewGraphHandle | null>(null);
   const artistsGraphRef = useRef<GraphHandle | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
@@ -1203,19 +1206,22 @@ function App() {
                   }}
                 />
           </motion.div>
-                <GenresForceGraph
-                  ref={genresGraphRef as any}
-                  graphData={currentGenres}
-                  onNodeClick={onGenreNodeClick}
-                  loading={genresLoading}
-                  show={graph === "genres" && !genresError}
-                  dag={dagMode}
-                  clusterModes={genreClusterMode}
-                  colorMap={genreColorMap}
-                  selectedGenreId={selectedGenres[0]?.id}
-                  width={viewport.width || undefined}
-                  height={viewport.height || undefined}
-                />
+                {graph === "genres" && !genresError && currentGenres && (
+                  <Graph
+                    ref={genresGraphRef}
+                    config={createGenresGraphConfig({
+                      genres: currentGenres.nodes,
+                      links: currentGenres.links,
+                      colorMap: genreColorMap,
+                      onGenreClick: onGenreNodeClick,
+                      selectedGenreId: selectedGenres[0]?.id,
+                      dag: dagMode,
+                      width: viewport.width || undefined,
+                      height: viewport.height || undefined,
+                    })}
+                    loading={genresLoading}
+                  />
+                )}
                 <ArtistsForceGraph
                     ref={artistsGraphRef as any}
                     artists={currentArtists}
