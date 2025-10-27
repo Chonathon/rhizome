@@ -94,6 +94,7 @@ function App() {
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [pendingSimilarArtistGraph, setPendingSimilarArtistGraph] = useState<Artist | undefined>(undefined);
+  const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [dagMode, setDagMode] = useState<boolean>(() => {
     const storedDagMode = localStorage.getItem('dagMode');
@@ -289,8 +290,19 @@ function App() {
 
   // Sets current artists/links shown in the graph when artists are fetched from the DB
   useEffect(() => {
+    // Don't override if we're waiting for similar artist graph or artist genre graph to be built
+    if (pendingSimilarArtistGraph || pendingArtistGenreGraph) {
+      return;
+    }
+
+    // Only manage currentArtists when graph is in 'artists' mode
+    // similarArtists mode manages its own filtered list
+    if (graph !== 'artists') {
+      return;
+    }
+
     // Ensure the selected artist is always included in the results
-    if (selectedArtist && graph === 'artists' && artists.length > 0) {
+    if (selectedArtist && artists.length > 0) {
       const artistExists = artists.some(a => a.id === selectedArtist.id);
       console.log('[useEffect artists]', {
         selectedArtistId: selectedArtist.id,
@@ -310,7 +322,7 @@ function App() {
       setCurrentArtists(artists);
     }
     setCurrentArtistLinks(artistLinks);
-  }, [artists, selectedArtist, graph]);
+  }, [artists, selectedArtist, graph, pendingSimilarArtistGraph, pendingArtistGenreGraph]);
 
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
@@ -365,6 +377,15 @@ function App() {
       }
     }
   }, [pendingSimilarArtistGraph, artists, artistsLoading]);
+
+  // Switch to artist graph after genres' artists are loaded
+  useEffect(() => {
+    if (pendingArtistGenreGraph && artists.length > 0 && !artistsLoading) {
+      console.log('[useEffect pendingArtistGenreGraph] Artists loaded, switching to artists graph');
+      setGraph('artists');
+      setPendingArtistGenreGraph(undefined);
+    }
+  }, [pendingArtistGenreGraph, artists, artistsLoading]);
 
   // Add genre play IDs to the playerIDQueue on genre click
   const updateGenrePlayerIDs = async () => {
@@ -1080,11 +1101,12 @@ function App() {
     }
 
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-    setGraph('artists');
     setSelectedArtist(artist);
     setShowArtistCard(true);
     setSelectedGenres(matched);
     setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
+    setPendingArtistGenreGraph(artist); // Will trigger graph switch when artists load
+    toast.info(`Loading artists from ${artist.name}'s genres...`);
   };
 
   return (
