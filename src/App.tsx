@@ -833,14 +833,17 @@ function App() {
 
   const onTabChange = async (graphType: GraphType) => {
     if (graphType === 'genres') {
-      setIsBeforeArtistLoad(true);
+      // If leaving similarArtists mode, restore the full artist list
+      if (graph === 'similarArtists') {
+        setCurrentArtists(artists);
+        setCurrentArtistLinks(artistLinks);
+        setSimilarArtistAnchor(undefined);
+      }
       setGraph('genres');
-      setCurrentArtists([]);
-      setCurrentArtistLinks([]);
-      setSelectedGenres([]);
+      // Don't clear currentArtists/currentArtistLinks - preserve them like genre graph does
+      // Just hide the artist graph with the show prop
       setShowArtistCard(false);
-      setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
-      setSimilarArtistAnchor(undefined);
+      // Don't clear selected genres or genre filter - they're needed for artist data
     } else {
       // Switching to artists view - restore full artist list if coming from similarArtists
       if (graph === 'similarArtists') {
