@@ -679,9 +679,9 @@ function App() {
   const colorFallback = useCallback((genreID?: string) => {
     let color;
     if (genreID) color = genreColorMap.get(genreID);
-    if (!color) color = theme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
+    if (!color) color = resolvedTheme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
     return color;
-  }, [genreColorMap, theme]);
+  }, [genreColorMap, resolvedTheme]);
 
   const getGenreColorFromRoots = useCallback((roots: string[]) => {
     let color;
