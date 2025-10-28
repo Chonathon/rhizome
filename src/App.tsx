@@ -91,6 +91,7 @@ function App() {
     return selectedGenres.map(genre => genre.id);
   }, [selectedGenres]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
+  const [selectedArtistFromSearch, setSelectedArtistFromSearch] = useState<boolean>(false);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [genreInfoToShow, setGenreInfoToShow] = useState<Genre | undefined>(undefined);
   const [showGenreCard, setShowGenreCard] = useState(false);
@@ -306,7 +307,7 @@ function App() {
       return;
     }
 
-    // Ensure the selected artist is always included in the results
+    // Ensure the selected artist is always included in the results unless they were opened via search
     if (selectedArtist && artists.length > 0) {
       const artistExists = artists.some(a => a.id === selectedArtist.id);
       console.log('[useEffect artists]', {
@@ -317,9 +318,14 @@ function App() {
         selectedGenreIDs
       });
       if (!artistExists) {
-        console.log('[useEffect artists] Adding missing artist to results');
-        // Add the selected artist to the results if it's not already there
-        setCurrentArtists([...artists, selectedArtist]);
+        if (selectedArtistFromSearch) {
+          console.log('[useEffect artists] Selected artist filtered out by current view; keeping graph results unchanged');
+          setCurrentArtists(artists);
+        } else {
+          console.log('[useEffect artists] Adding missing artist to results');
+          // Add the selected artist to the results if it's not already there
+          setCurrentArtists([...artists, selectedArtist]);
+        }
       } else {
         setCurrentArtists(artists);
       }
@@ -327,7 +333,7 @@ function App() {
       setCurrentArtists(artists);
     }
     setCurrentArtistLinks(artistLinks);
-  }, [artists, selectedArtist, graph, pendingArtistGenreGraph]);
+  }, [artists, selectedArtist, selectedArtistFromSearch, graph, pendingArtistGenreGraph]);
 
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
@@ -619,6 +625,7 @@ function App() {
   // Switch to artists graph and select the clicked artist
   const onTopArtistClick = (artist: Artist) => {
     setGraph('artists');
+    setSelectedArtistFromSearch(false);
     setSelectedArtist(artist);
     setShowArtistCard(true);
     setAutoFocusGraph(true); // Enable auto-focus for top artist clicks
@@ -626,6 +633,7 @@ function App() {
   }
 
   const onArtistNodeClick = (artist: Artist) => {
+    setSelectedArtistFromSearch(false);
     if (graph === 'artists') {
       setSelectedArtist(artist);
       setShowArtistCard(true);
@@ -649,6 +657,7 @@ function App() {
     setShowGenreCard(true);
     setShowArtistCard(false); // ensure only one card
     setSelectedArtist(undefined);
+    setSelectedArtistFromSearch(false);
 
     // In genre view: also select and highlight the node (but don't auto-focus)
     if (graph === 'genres') {
@@ -663,6 +672,7 @@ function App() {
 
   const onSearchArtistSelect = (artist: Artist) => {
     setAutoFocusGraph(false); // Disable auto-focus for search selections
+    setSelectedArtistFromSearch(true);
     setSelectedArtist(artist);
     setShowArtistCard(true);
     addRecentSelection(artist);
@@ -672,6 +682,7 @@ function App() {
     if (option.entityType === 'artist') {
       const artist = currentArtists.find((a) => a.id === option.id);
       if (!artist) return;
+      setSelectedArtistFromSearch(false);
       setSelectedArtist(artist);
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for find filter selections
@@ -728,6 +739,7 @@ function App() {
   }
 
   const deselectArtist = () => {
+    setSelectedArtistFromSearch(false);
     setSelectedArtist(undefined);
     setShowArtistCard(false);
     setSelectedArtistNoGenre(undefined);
@@ -797,6 +809,7 @@ function App() {
       const graphArtists = [artistResult, ...similarArtistsData];
       const links = generateSimilarLinks(graphArtists);
 
+      setSelectedArtistFromSearch(false);
       setSelectedArtist(artistResult);
       setSelectedArtistNoGenre(artistResult);
       setSimilarArtistAnchor(artistResult);
@@ -811,7 +824,7 @@ function App() {
         toast.success(`Loaded ${foundCount} of ${totalCount} similar artists`);
         console.warn(`[createSimilarArtistGraph] Missing ${totalCount - foundCount} similar artists from database`);
       } else {
-        toast.success(`Loaded all ${foundCount} similar artists`);
+      toast.success(`Loaded all ${foundCount} similar artists`);
       }
     } catch (err) {
       console.error('[createSimilarArtistGraph] Error fetching similar artists:', err);
@@ -1166,6 +1179,7 @@ function App() {
     }
 
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+    setSelectedArtistFromSearch(false);
     setSelectedArtist(artist);
     setShowArtistCard(true);
     setSelectedGenres(matched);
