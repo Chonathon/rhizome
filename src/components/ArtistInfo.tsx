@@ -39,6 +39,7 @@ interface ArtistInfoProps {
   onViewArtistGraph?: (artist: Artist) => void;
   onViewSimilarArtistGraph?: (artist: Artist) => void;
   playLoading?: boolean;
+  viewRelatedArtistsLoading?: boolean;
 }
 
 export function ArtistInfo({
@@ -60,6 +61,7 @@ export function ArtistInfo({
   onViewArtistGraph,
   onViewSimilarArtistGraph,
   playLoading,
+  viewRelatedArtistsLoading,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -375,8 +377,16 @@ export function ArtistInfo({
                         variant="secondary"
                         className={isDesktop ? "w-fit mt-2" : "w-full mt-3"}
                         onClick={() => onViewArtistGraph(selectedArtist)}
+                        disabled={viewRelatedArtistsLoading}
                       >
-                        View Related Artists
+                        {viewRelatedArtistsLoading ? (
+                          <>
+                            <Loader2 className="animate-spin size-4" aria-hidden />
+                            Loading Artists...
+                          </>
+                        ) : (
+                          "View Related Artists"
+                        )}
                       </Button>
                     )}
                   </div>

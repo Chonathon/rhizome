@@ -1106,7 +1106,6 @@ function App() {
     setSelectedGenres(matched);
     setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
     setPendingArtistGenreGraph(artist); // Will trigger graph switch when artists load
-    toast.info(`Loading artists from ${artist.name}'s genres...`);
   };
 
   return (
@@ -1355,6 +1354,7 @@ function App() {
                 onViewSimilarArtistGraph={createSimilarArtistGraph}
                 //playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
                 playLoading={isPlayerLoadingArtist()}
+                viewRelatedArtistsLoading={!!pendingArtistGenreGraph}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
