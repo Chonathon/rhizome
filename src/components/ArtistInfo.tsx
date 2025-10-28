@@ -143,7 +143,7 @@ export function ArtistInfo({
             title="Go to artist"
           >
             <span>{selectedArtist.name}</span>
-              <ChevronRight className="shrink-0 size-6"/>
+              <ChevronRight className="shrink-0 text-muted-foreground size-6"/>
             
           </button>
         ) : (
@@ -316,7 +316,15 @@ export function ArtistInfo({
                 {/* Similar Artists */}
                 {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <span className="text-md font-semibold">Similar Artists</span>
+                    {onViewSimilarArtistGraph && selectedArtist ? (
+                    <button 
+                    className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
+                    onClick={() => onViewSimilarArtistGraph(selectedArtist)}
+                    title={`Explore artists similar to ${selectedArtist.name}`}>
+                      <span className="text-md font-semibold">Similar Artists</span><ChevronRight className="shrink-0 text-muted-foreground size-5"/></button>
+                    ) : (
+                      <span className="text-md font-semibold">Similar Artists</span>
+                    )}
                     <div className="flex flex-wrap items-center gap-1.5">
                       {similarFilter(selectedArtist.similar).map((name) => {
                         const img = getArtistImageByName?.(name);
@@ -334,23 +342,36 @@ export function ArtistInfo({
                         );
                       })}
                     </div>
-                    {onViewSimilarArtistGraph && selectedArtist && (
+                    {/* {onViewSimilarArtistGraph && selectedArtist && (
                       <Button
                         size={isDesktop ? "lg" : "xl"}
                         variant="secondary"
                         className={isDesktop ? "w-fit mt-2" : "w-full mt-3"}
                         onClick={() => onViewSimilarArtistGraph(selectedArtist)}
                       >
-                        View Similar Artist Graph
+                        View Similar Artists
                       </Button>
-                    )}
+                    )} */}
                   </div>
                 )}
 
                 {/* Genres */}
                 {selectedArtist?.genres && selectedArtist.genres.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <span className="text-md font-semibold">Genres</span>
+                    {onViewArtistGraph && selectedArtist ? (
+                      <button
+                        className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
+                        onClick={() => onViewArtistGraph(selectedArtist)}
+                        type="button"
+                        disabled={viewRelatedArtistsLoading}
+                        title={`Explore Related Genres for ${selectedArtist.name}`}
+                      >
+                        <span className="text-md font-semibold">Explore Related Genres</span>
+                        <ChevronRight className="shrink-0 text-muted-foreground size-5" />
+                      </button>
+                    ) : (
+                      <span className="text-md font-semibold">Genres</span>
+                    )}
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                       {selectedArtist.genres.map((genreId) => {
                         const name = getGenreNameById?.(genreId) ?? genreId;
@@ -371,24 +392,6 @@ export function ArtistInfo({
                         );
                       })}
                     </div>
-                    {onViewArtistGraph && selectedArtist && (
-                      <Button
-                        size={isDesktop ? "lg" : "xl"}
-                        variant="secondary"
-                        className={isDesktop ? "w-fit mt-2" : "w-full mt-3"}
-                        onClick={() => onViewArtistGraph(selectedArtist)}
-                        disabled={viewRelatedArtistsLoading}
-                      >
-                        {viewRelatedArtistsLoading ? (
-                          <>
-                            <Loader2 className="animate-spin size-4" aria-hidden />
-                            Loading Artists...
-                          </>
-                        ) : (
-                          "View Related Artists"
-                        )}
-                      </Button>
-                    )}
                   </div>
                 )}
 
