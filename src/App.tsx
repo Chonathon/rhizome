@@ -92,6 +92,8 @@ function App() {
   }, [selectedGenres]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
+  const [genreInfoToShow, setGenreInfoToShow] = useState<Genre | undefined>(undefined);
+  const [showGenreCard, setShowGenreCard] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
@@ -151,6 +153,7 @@ function App() {
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
+  const [autoFocusGraph, setAutoFocusGraph] = useState<boolean>(true);
 
   // Track window size and pass to ForceGraph for reliable resizing
   useEffect(() => {
@@ -585,8 +588,11 @@ function App() {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
     setInitialGenreFilter(createInitialGenreFilterObject(genre));
     setSelectedGenres([genre]);
+    setGenreInfoToShow(genre);
+    setShowGenreCard(true);
     setShowArtistCard(false); // ensure only one card
     setSelectedArtist(undefined);
+    setAutoFocusGraph(true); // Enable auto-focus for node clicks
     addRecentSelection(genre);
   }
 
@@ -594,10 +600,20 @@ function App() {
   const onShowAllArtists = (genre: Genre) => {
     // Ensure the artists hook actually fetches data when switching via this path
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-    if (!selectedGenres.length) setSelectedGenres([genre]); // safety in case no genre selected
+
+    // Close the genre info card first
+    setGenreInfoToShow(undefined);
+    setShowGenreCard(false);
+
+    // Set the genre filter and selection
+    const filterObj = createInitialGenreFilterObject(genre);
+    setInitialGenreFilter(filterObj);
+    setSelectedGenres([genre]);
+
+    // Switch to artists view (or stay there)
     setGraph('artists');
+    setAutoFocusGraph(true); // Enable auto-focus for this navigation
     addRecentSelection(genre);
-    console.log("Show all artists for genre:", genre);
   }
 
   // Switch to artists graph and select the clicked artist
@@ -605,6 +621,7 @@ function App() {
     setGraph('artists');
     setSelectedArtist(artist);
     setShowArtistCard(true);
+    setAutoFocusGraph(true); // Enable auto-focus for top artist clicks
     addRecentSelection(artist);
   }
 
@@ -612,6 +629,7 @@ function App() {
     if (graph === 'artists') {
       setSelectedArtist(artist);
       setShowArtistCard(true);
+      setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
     }
     if (graph === 'similarArtists') {
@@ -619,8 +637,35 @@ function App() {
       // Users can use "View Similar Artist Graph" in ArtistInfo to see similar artists
       setSelectedArtist(artist);
       setShowArtistCard(true);
+      setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
     }
+  }
+
+  // Search selection handlers - open info cards without changing graph view or auto-focusing
+  const onSearchGenreSelect = (genre: Genre) => {
+    setAutoFocusGraph(false); // Disable auto-focus for search selections
+    setGenreInfoToShow(genre);
+    setShowGenreCard(true);
+    setShowArtistCard(false); // ensure only one card
+    setSelectedArtist(undefined);
+
+    // In genre view: also select and highlight the node (but don't auto-focus)
+    if (graph === 'genres') {
+      if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+      setInitialGenreFilter(createInitialGenreFilterObject(genre));
+      setSelectedGenres([genre]);
+    }
+    // In artist/similarArtists view: just show the info card, don't change any filters
+
+    addRecentSelection(genre);
+  }
+
+  const onSearchArtistSelect = (artist: Artist) => {
+    setAutoFocusGraph(false); // Disable auto-focus for search selections
+    setSelectedArtist(artist);
+    setShowArtistCard(true);
+    addRecentSelection(artist);
   }
 
   const handleFindSelect = (option: FindOption) => {
@@ -629,6 +674,7 @@ function App() {
       if (!artist) return;
       setSelectedArtist(artist);
       setShowArtistCard(true);
+      setAutoFocusGraph(true); // Enable auto-focus for find filter selections
       addRecentSelection(artist);
       if (graph === 'similarArtists') {
         setSelectedArtistNoGenre(artist);
@@ -673,6 +719,8 @@ function App() {
 
   const deselectGenre = () => {
     setSelectedGenres([]);
+    setGenreInfoToShow(undefined);
+    setShowGenreCard(false);
     setGraph('genres');
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
@@ -977,7 +1025,7 @@ function App() {
     return color;
   }, [getRootGenreFromTags, getGenreColorFromRoots, getGenreColorFromID, colorFallback]);
 
-  const onGenreFilterSelectionChange = async (selectedIDs: string[]) => {
+  const onGenreFilterSelectionChange = useCallback(async (selectedIDs: string[]) => {
     if (graph === 'genres') {
       // filters genres in genre mode; buggy
       // setCurrentGenres({ nodes: genres.filter((g) => selectedIDs.includes(g.id)), links: genreLinks.filter(l => {
@@ -987,9 +1035,10 @@ function App() {
       // });
     } else {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-      // console.log('gf selection change: ' + selectedIDs.length)
       if (selectedIDs.length === 0) {
-        if (selectedGenres.length !== 0) setSelectedGenres([]);
+        if (selectedGenres.length !== 0) {
+          setSelectedGenres([]);
+        }
       } else {
         if (!primitiveArraysEqual(selectedIDs, selectedGenres.map(genre => genre.id))) {
           setSelectedGenres(selectedIDs.map(s => {
@@ -998,7 +1047,7 @@ function App() {
         }
       }
     }
-  }
+  }, [graph, isBeforeArtistLoad, selectedGenres]);
 
   const artistNodeCountSelection = (value: number) => {
     if (value <= artistNodeCount) {
@@ -1159,7 +1208,6 @@ function App() {
               graph === 'artists' &&
                 <div className='flex mr-[var(--sidebar-gap)] flex-col w-full justify-center sm:flex-row gap-3'>
                    <GenresFilter
-                    key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
                     genres={[...genres, singletonParentGenre]}
                     genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
                     graphType={graph}
@@ -1203,7 +1251,6 @@ function App() {
                 { graph === 'artists' &&
                 <div className='flex flex-col items-start sm:flex-row gap-3'>
                    <GenresFilter
-                    key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
                     genres={[...genres, singletonParentGenre]}
                     genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
                     graphType={graph}
@@ -1247,6 +1294,7 @@ function App() {
                   colorMap={genreColorMap}
                   dag={dagMode}
                   clusterModes={genreClusterMode}
+                  autoFocus={autoFocusGraph}
                   show={graph === "genres" && !genresError}
                   loading={genresLoading}
                   width={viewport.width || undefined}
@@ -1259,6 +1307,7 @@ function App() {
                   onNodeClick={onArtistNodeClick}
                   selectedArtistId={selectedArtist?.id}
                   computeArtistColor={getArtistColor}
+                  autoFocus={autoFocusGraph}
                   show={(graph === "artists" || graph === "similarArtists") && !artistsError}
                   loading={artistsLoading}
                   width={viewport.width || undefined}
@@ -1332,13 +1381,16 @@ function App() {
                   }
                 `}
             >
-              <GenreInfo 
-                selectedGenre={selectedGenres[0]}
+              <GenreInfo
+                selectedGenre={genreInfoToShow}
                 onLinkedGenreClick={onLinkedGenreClick}
-                show={graph === 'genres' && selectedGenres.length === 1 && !showArtistCard}
+                show={showGenreCard && !showArtistCard}
                 genreArtistsLoading={artistsLoading}
                 onTopArtistClick={onTopArtistClick}
-                deselectGenre={deselectGenre}
+                deselectGenre={() => {
+                  setGenreInfoToShow(undefined);
+                  setShowGenreCard(false);
+                }}
                 onSelectGenre={onLinkedGenreClick}
                 allArtists={onShowAllArtists}
                 onBadDataSubmit={onBadDataGenreSubmit}
@@ -1347,7 +1399,7 @@ function App() {
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
                 onPlayGenre={onPlayGenre}
-                //playLoading={playerLoading && (!!selectedGenres[0] ? playerLoadingKey === `genre:${selectedGenres[0].id}` : false)}
+                //playLoading={playerLoading && (!!genreInfoToShow ? playerLoadingKey === `genre:${genreInfoToShow.id}` : false)}
                 playLoading={isPlayerLoadingGenre()}
               />
               <ArtistInfo
@@ -1391,8 +1443,8 @@ function App() {
                   className='hidden'
                 >
                   <Search
-                    onGenreSelect={onGenreNodeClick}
-                    onArtistSelect={createSimilarArtistGraph}
+                    onGenreSelect={onSearchGenreSelect}
+                    onArtistSelect={onSearchArtistSelect}
                     currentArtists={currentArtists}
                     genres={currentGenres?.nodes}
                     graphState={graph}

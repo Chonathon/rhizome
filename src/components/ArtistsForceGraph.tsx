@@ -12,6 +12,7 @@ interface ArtistsForceGraphProps {
   loading: boolean;
   show: boolean;
   selectedArtistId?: string;
+  autoFocus?: boolean;
   computeArtistColor: (artist: Artist) => string;
   width?: number;
   height?: number;
@@ -29,6 +30,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       loading,
       show,
       selectedArtistId,
+      autoFocus,
       computeArtistColor,
       width,
       height,
@@ -86,6 +88,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         width={width}
         height={height}
         selectedId={selectedArtistId}
+        autoFocus={autoFocus}
         onNodeClick={onNodeClick}
       />
     );

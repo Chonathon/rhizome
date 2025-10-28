@@ -244,7 +244,7 @@ export default function GenresFilter({
 
     const ids = [...selectedParents.map(p => p.id), ...selectedChildrenFlat.map(c => c.child.id)];
     onGenreSelectionChange(ids);
-  }, [selectedParents, selectedChildrenFlat]);
+  }, [selectedParents, selectedChildrenFlat, onGenreSelectionChange]);
 
   // Preserve scroll position when the Selected group grows/shrinks above the list.
   useLayoutEffect(() => {

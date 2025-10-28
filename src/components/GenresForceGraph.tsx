@@ -14,6 +14,7 @@ interface GenresForceGraphProps {
   clusterModes: GenreClusterMode[];
   colorMap?: Map<string, string>;
   selectedGenreId?: string;
+  autoFocus?: boolean;
   width?: number;
   height?: number;
 }
@@ -33,6 +34,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       clusterModes: _clusterModes,
       colorMap,
       selectedGenreId,
+      autoFocus,
       width,
       height,
     },
@@ -93,6 +95,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         height={height}
         selectedId={selectedGenreId}
         dagMode={dag}
+        autoFocus={autoFocus}
         onNodeClick={onNodeClick}
       />
     );

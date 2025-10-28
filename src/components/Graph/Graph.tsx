@@ -52,6 +52,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   height?: number;
   selectedId?: string;
   dagMode?: boolean;
+  autoFocus?: boolean;
   onNodeClick?: (node: T) => void;
   onNodeHover?: (node: T | undefined) => void;
 }
@@ -71,6 +72,7 @@ const Graph = forwardRef(function GraphInner<
     height,
     selectedId,
     dagMode = false,
+    autoFocus = true,
     onNodeClick,
     onNodeHover,
   }: GraphProps<T, L>,
@@ -233,7 +235,7 @@ const Graph = forwardRef(function GraphInner<
   }, [dataSignature, dagMode, preparedData, selectedId, show]);
 
   useEffect(() => {
-    if (!show || !selectedId || !fgRef.current) return;
+    if (!autoFocus || !show || !selectedId || !fgRef.current) return;
     const node = preparedData.nodes.find((n) => n.id === selectedId);
     if (!node) return;
     const centerToNode = () => {
@@ -254,7 +256,7 @@ const Graph = forwardRef(function GraphInner<
     centerToNode();
     const timeout = window.setTimeout(centerToNode, 300);
     return () => window.clearTimeout(timeout);
-  }, [preparedData.nodes, selectedId, show]);
+  }, [autoFocus, preparedData.nodes, selectedId, show]);
 
   return (
     <div
