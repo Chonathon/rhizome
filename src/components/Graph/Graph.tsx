@@ -24,6 +24,7 @@ import {
   drawLabelBelow,
   applyMobileDrawerYOffset,
   DEFAULT_MOBILE_CENTER_OFFSET_PX,
+  estimateLabelWidth,
 } from "@/lib/graphStyle";
 import type { GraphHandle } from "@/types";
 
@@ -180,18 +181,24 @@ const Graph = forwardRef(function GraphInner<
     const fg = fgRef.current;
 
     // Standardized force configuration
-    fg.d3Force("charge")?.strength(dagMode ? -1230 : -130);
+    fg.d3Force("charge")?.strength(dagMode ? -1230 : -250);
     const linkForce = fg.d3Force("link") as d3.ForceLink<PreparedNode<T>, L> | undefined;
-    linkForce?.distance(dagMode ? 150 : 80);
-    linkForce?.strength(dagMode ? 1 : 0.8);
+    linkForce?.distance(dagMode ? 150 : 90);
+    linkForce?.strength(dagMode ? 1 : 1);
     linkForce?.id((node: any) => node.id);
-    fg.d3Force("center", d3.forceCenter(0, 0).strength(dagMode ? 0.01 : 0.1));
+    fg.d3Force("center", d3.forceCenter(0, 0).strength(dagMode ? 0.01 : 0.05));
     fg.d3Force(
       "collide",
       d3
         .forceCollide((node: any) => {
           const n = node as PreparedNode<T>;
-          return n.radius + 10;
+          // Include label dimensions in collision radius to prevent label overlap
+          const labelWidth = estimateLabelWidth(n.label, LABEL_FONT_SIZE);
+          const labelHeight = LABEL_FONT_SIZE;
+          const labelDiagonal = Math.sqrt(labelWidth * labelWidth + labelHeight * labelHeight) / 2;
+          const padding = 10;
+          // Use the larger of node radius or label dimensions
+          return Math.max(n.radius + padding, labelDiagonal + padding);
         })
         .iterations(2)
         .strength(dagMode ? 0.02 : 0.7),
