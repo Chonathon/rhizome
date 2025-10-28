@@ -721,6 +721,76 @@ function App() {
     addRecentSelection(artist);
   }
 
+  const focusGenreInCurrentView = (genre: Genre, opts?: { forceRefocus?: boolean }) => {
+    const fullGenre = genres.find((g) => g.id === genre.id) ?? genre;
+
+    let workingNodes = currentGenres?.nodes ?? [];
+    let workingLinks = currentGenres?.links ?? [];
+    let shouldTriggerRefocus = opts?.forceRefocus === true || !currentGenres;
+    let nodesChanged = false;
+    let linksChanged = false;
+
+    if (workingNodes.length === 0 && genres.length > 0) {
+      workingNodes = genres;
+      workingLinks = filterLinksByClusterMode(genreClusterMode);
+      shouldTriggerRefocus = true;
+      nodesChanged = true;
+      linksChanged = true;
+    }
+
+    const nodeMap = new Map(workingNodes.map((node) => [node.id, node]));
+    if (!nodeMap.has(fullGenre.id)) {
+      nodeMap.set(fullGenre.id, fullGenre);
+      shouldTriggerRefocus = true;
+      nodesChanged = true;
+    }
+
+    const nextNodes = Array.from(nodeMap.values());
+
+    const existingLinkKeys = new Set(workingLinks.map((l) => `${l.source}|${l.target}|${l.linkType}`));
+    const allowedIds = new Set(nextNodes.map((n) => n.id));
+    const newLinks: NodeLink[] = [];
+
+    genreLinks.forEach((link) => {
+      if (!allowedIds.has(link.source) || !allowedIds.has(link.target)) return;
+      const key = `${link.source}|${link.target}|${link.linkType}`;
+      if (!existingLinkKeys.has(key)) {
+        existingLinkKeys.add(key);
+        newLinks.push(link);
+      }
+    });
+
+    if (newLinks.length) {
+      workingLinks = [...workingLinks, ...newLinks];
+      shouldTriggerRefocus = true;
+      linksChanged = true;
+    }
+
+    if (!currentGenres || nodesChanged || linksChanged) {
+      setCurrentGenres({ nodes: nextNodes, links: workingLinks });
+    }
+
+    if (graph !== 'genres') {
+      setGraph('genres');
+      shouldTriggerRefocus = true;
+    }
+
+    setGenreInfoToShow(fullGenre);
+    setShowGenreCard(true);
+    setShowArtistCard(false);
+    setSelectedArtist(undefined);
+    setSelectedGenres([fullGenre]);
+    setInitialGenreFilter(createInitialGenreFilterObject(fullGenre));
+    addRecentSelection(fullGenre);
+
+    if (shouldTriggerRefocus) {
+      setAutoFocusGraph(false);
+      setTimeout(() => setAutoFocusGraph(true), 16);
+    } else {
+      setAutoFocusGraph(true);
+    }
+  }
+
   // Search selection handlers - open info cards without changing graph view or auto-focusing
   const onSearchGenreSelect = (genre: Genre) => {
     setAutoFocusGraph(false); // Disable auto-focus for search selections
@@ -1484,6 +1554,7 @@ function App() {
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
                 onPlayGenre={onPlayGenre}
+                onFocusInGenresView={focusGenreInCurrentView}
                 //playLoading={playerLoading && (!!genreInfoToShow ? playerLoadingKey === `genre:${genreInfoToShow.id}` : false)}
                 playLoading={isPlayerLoadingGenre()}
               />

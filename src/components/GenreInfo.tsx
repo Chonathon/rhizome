@@ -33,6 +33,7 @@ interface GenreInfoProps {
   getArtistColor: (artist: Artist) => string;
   onPlayGenre?: (genre: Genre) => void;
   playLoading?: boolean;
+  onFocusInGenresView?: (genre: Genre, options?: { forceRefocus?: boolean }) => void;
 }
 
 export function GenreInfo({
@@ -53,6 +54,7 @@ export function GenreInfo({
     genreColorMap,
     onPlayGenre,
     playLoading,
+    onFocusInGenresView,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(true)
@@ -200,7 +202,20 @@ export function GenreInfo({
       onDismiss={onDismiss}
       bodyClassName=""
       // snapPoints={[0.28, 0.9]}
-      headerTitle={selectedGenre?.name}
+      headerTitle={
+        selectedGenre && onFocusInGenresView ? (
+          <button
+            onClick={() => onFocusInGenresView(selectedGenre, { forceRefocus: true })}
+            className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
+            title={selectedGenre ? `Go to ${selectedGenre.name}` : "Go to genre"}
+          >
+            <span>{selectedGenre.name}</span>
+            <ChevronRight className="shrink-0 text-muted-foreground size-6" />
+          </button>
+        ) : (
+          selectedGenre?.name
+        )
+      }
       headerSubtitle={
         typeof selectedGenre?.totalListeners === 'number'
           ? `${formatNumber(selectedGenre.totalListeners)} Listeners`
