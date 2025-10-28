@@ -853,6 +853,10 @@ function App() {
       }
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
+      // Restore artist card if there's a selected artist
+      if (selectedArtist) {
+        setShowArtistCard(true);
+      }
     }
   }
 
