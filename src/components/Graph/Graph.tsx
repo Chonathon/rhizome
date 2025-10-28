@@ -181,9 +181,9 @@ const Graph = forwardRef(function GraphInner<
     const fg = fgRef.current;
 
     // Standardized force configuration
-    fg.d3Force("charge")?.strength(dagMode ? -1230 : -250);
+    fg.d3Force("charge")?.strength(dagMode ? -1230 : -100);
     const linkForce = fg.d3Force("link") as d3.ForceLink<PreparedNode<T>, L> | undefined;
-    linkForce?.distance(dagMode ? 150 : 90);
+    linkForce?.distance(dagMode ? 150 : 130);
     linkForce?.strength(dagMode ? 1 : 1);
     linkForce?.id((node: any) => node.id);
     fg.d3Force("center", d3.forceCenter(0, 0).strength(dagMode ? 0.01 : 0.05));
