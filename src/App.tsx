@@ -35,7 +35,9 @@ import {
   fixWikiImageURL,
   formatNumber,
   until,
+  serverUrl,
 } from "@/lib/utils";
+import axios from "axios";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
@@ -93,7 +95,6 @@ function App() {
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
-  const [pendingSimilarArtistGraph, setPendingSimilarArtistGraph] = useState<Artist | undefined>(undefined);
   const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [dagMode, setDagMode] = useState<boolean>(() => {
@@ -291,13 +292,13 @@ function App() {
 
   // Sets current artists/links shown in the graph when artists are fetched from the DB
   useEffect(() => {
-    // Don't override if we're waiting for similar artist graph or artist genre graph to be built
-    if (pendingSimilarArtistGraph || pendingArtistGenreGraph) {
+    // Don't override if we're waiting for artist genre graph to be built
+    if (pendingArtistGenreGraph) {
       return;
     }
 
     // Only manage currentArtists when graph is in 'artists' mode
-    // similarArtists mode manages its own filtered list
+    // similarArtists mode manages its own filtered list and fetches directly from API
     if (graph !== 'artists') {
       return;
     }
@@ -323,7 +324,7 @@ function App() {
       setCurrentArtists(artists);
     }
     setCurrentArtistLinks(artistLinks);
-  }, [artists, selectedArtist, graph, pendingSimilarArtistGraph, pendingArtistGenreGraph]);
+  }, [artists, selectedArtist, graph, pendingArtistGenreGraph]);
 
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
@@ -352,32 +353,8 @@ function App() {
     updateArtistPlayerIDs();
   }, [selectedArtist]);
 
-  // Build similar artist graph after genres are loaded
-  useEffect(() => {
-    if (pendingSimilarArtistGraph && artists.length > 0 && !artistsLoading) {
-      const artistResult = pendingSimilarArtistGraph;
-
-      // Look up similar artists from ALL loaded artists
-      const similarArtistsFound: Artist[] = (artistResult.similar || [])
-        .map(name => artists.find(a => a.name === name))
-        .filter((a): a is Artist => a !== undefined);
-
-      if (similarArtistsFound.length > 0) {
-        // Build the graph with selected artist + similar artists found
-        const graphArtists = [artistResult, ...similarArtistsFound];
-        const links = generateSimilarLinks(graphArtists);
-
-        setCurrentArtists(graphArtists);
-        setCurrentArtistLinks(links);
-        setGraph('similarArtists');
-        setPendingSimilarArtistGraph(undefined);
-      } else {
-        // Still no similar artists found even after loading genres
-        toast.error(`No similar artists found for ${artistResult.name} in the loaded data.`);
-        setPendingSimilarArtistGraph(undefined);
-      }
-    }
-  }, [pendingSimilarArtistGraph, artists, artistsLoading]);
+  // Note: Similar artist graph is now built directly in createSimilarArtistGraph()
+  // by fetching all similar artists from the API, not limited by current genre selection
 
   // Switch to artist graph after genres' artists are loaded
   useEffect(() => {
@@ -713,20 +690,63 @@ function App() {
     return similarArtists;
   }
 
-  const createSimilarArtistGraph = (artistResult: Artist) => {
+  const createSimilarArtistGraph = async (artistResult: Artist) => {
     if (!artistResult.similar || artistResult.similar.length === 0) {
       toast.error(`No similar artist data available for ${artistResult.name}`);
       return;
     }
 
-    // Check if similar artists are already loaded
-    const similarArtistsFound: Artist[] = artistResult.similar
-      .map(name => artists.find(a => a.name === name))
-      .filter((a): a is Artist => a !== undefined);
+    // Fetch all similar artists using the search endpoint (genre-agnostic, forgiving matching)
+    try {
+      const similarArtistNames = artistResult.similar;
+      console.log(`[createSimilarArtistGraph] ${artistResult.name} has ${similarArtistNames.length} similar artists in metadata:`, similarArtistNames);
 
-    if (similarArtistsFound.length > 0) {
-      // Build graph immediately with loaded artists
-      const graphArtists = [artistResult, ...similarArtistsFound];
+      toast.info(`Loading similar artists for ${artistResult.name}...`);
+
+      const url = serverUrl();
+
+      // Search for each similar artist using the search endpoint (same as Search component)
+      // This uses full-text search which handles name variations better than exact matching
+      const searchPromises = similarArtistNames.map(name =>
+        axios.get(`${url}/search/${encodeURIComponent(name)}`)
+          .then(response => ({ name, results: response.data }))
+          .catch(err => {
+            console.warn(`[createSimilarArtistGraph] Failed to search for "${name}":`, err);
+            return { name, results: [] };
+          })
+      );
+
+      const searchResults = await Promise.all(searchPromises);
+      console.log('[createSimilarArtistGraph] Search results:', searchResults);
+
+      // Extract artists from search results (filter out genres)
+      const foundArtistsMap = new Map<string, Artist>();
+
+      searchResults.forEach(({ name, results }) => {
+        // Find the first artist result (search returns both artists and genres)
+        const artistResult = results.find((item: Artist | Genre) =>
+          'tags' in item || 'similar' in item // Artists have these properties, genres don't
+        ) as Artist | undefined;
+
+        if (artistResult) {
+          console.log(`[createSimilarArtistGraph] Found "${name}" as "${artistResult.name}"`);
+          foundArtistsMap.set(artistResult.id, artistResult);
+        } else {
+          console.warn(`[createSimilarArtistGraph] Could not find artist for "${name}"`);
+        }
+      });
+
+      const similarArtistsData = Array.from(foundArtistsMap.values());
+      console.log(`[createSimilarArtistGraph] Found ${similarArtistsData.length} similar artists with full data in database`);
+
+      if (similarArtistsData.length === 0) {
+        console.warn(`[createSimilarArtistGraph] No similar artists found in database for ${artistResult.name}, but metadata lists: ${similarArtistNames.join(', ')}`);
+        toast.error(`No similar artists found in database for ${artistResult.name}. The artist has ${similarArtistNames.length} similar artists listed, but they're not in the database yet.`);
+        return;
+      }
+
+      // Build graph with the selected artist + all fetched similar artists
+      const graphArtists = [artistResult, ...similarArtistsData];
       const links = generateSimilarLinks(graphArtists);
 
       setSelectedArtist(artistResult);
@@ -736,38 +756,18 @@ function App() {
       setCurrentArtistLinks(links);
       setGraph('similarArtists');
       setShowArtistCard(true);
-    } else {
-      // Auto-load artist's genres first
-      const genreIds = Array.from(new Set((artistResult.genres ?? []).filter(Boolean)));
 
-      if (genreIds.length === 0) {
-        toast.error(`We don't have genre data for ${artistResult.name} to load similar artists.`);
-        return;
+      const foundCount = similarArtistsData.length;
+      const totalCount = similarArtistNames.length;
+      if (foundCount < totalCount) {
+        toast.success(`Loaded ${foundCount} of ${totalCount} similar artists`);
+        console.warn(`[createSimilarArtistGraph] Missing ${totalCount - foundCount} similar artists from database`);
+      } else {
+        toast.success(`Loaded all ${foundCount} similar artists`);
       }
-
-      const matched: Genre[] = [];
-      genreIds.forEach((id) => {
-        const found = genres.find((g) => g.id === id);
-        if (found) {
-          matched.push(found);
-        }
-      });
-
-      if (!matched.length) {
-        toast.error(`Couldn't find genres for ${artistResult.name} in the current dataset.`);
-        return;
-      }
-
-      // Load artists from this artist's genres
-      if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-      setSelectedArtist(artistResult);
-      setSelectedArtistNoGenre(artistResult);
-      setSimilarArtistAnchor(artistResult);
-      setShowArtistCard(true);
-      setSelectedGenres(matched);
-      setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
-      setPendingSimilarArtistGraph(artistResult); // Will trigger graph build when artists load
-      toast.info(`Loading ${artistResult.name}'s genres to find similar artists...`);
+    } catch (err) {
+      console.error('[createSimilarArtistGraph] Error fetching similar artists:', err);
+      toast.error(`Failed to load similar artists for ${artistResult.name}`);
     }
   }
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
