@@ -102,6 +102,7 @@ function App() {
   });
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
+  const [similarArtistAnchor, setSimilarArtistAnchor] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [isFindFilterOpen, setIsFindFilterOpen] = useState(false);
@@ -637,7 +638,11 @@ function App() {
       addRecentSelection(artist);
     }
     if (graph === 'similarArtists') {
-      createSimilarArtistGraph(artist);
+      // Just select the artist without changing the similar filter
+      // Users can use "View Similar Artist Graph" in ArtistInfo to see similar artists
+      setSelectedArtist(artist);
+      setShowArtistCard(true);
+      addRecentSelection(artist);
     }
   }
 
@@ -685,7 +690,7 @@ function App() {
       })});
     deselectGenre();
     deselectArtist();
-    setCanCreateSimilarArtistGraph(false);
+    setSimilarArtistAnchor(undefined);
     setGenreClusterMode(DEFAULT_CLUSTER_MODE);
   }
 
@@ -726,6 +731,7 @@ function App() {
 
       setSelectedArtist(artistResult);
       setSelectedArtistNoGenre(artistResult);
+      setSimilarArtistAnchor(artistResult);
       setCurrentArtists(graphArtists);
       setCurrentArtistLinks(links);
       setGraph('similarArtists');
@@ -756,6 +762,7 @@ function App() {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setSelectedArtist(artistResult);
       setSelectedArtistNoGenre(artistResult);
+      setSimilarArtistAnchor(artistResult);
       setShowArtistCard(true);
       setSelectedGenres(matched);
       setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
@@ -833,11 +840,13 @@ function App() {
       setSelectedGenres([]);
       setShowArtistCard(false);
       setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
+      setSimilarArtistAnchor(undefined);
     } else {
       // Switching to artists view - restore full artist list if coming from similarArtists
       if (graph === 'similarArtists') {
         setCurrentArtists(artists);
         setCurrentArtistLinks(artistLinks);
+        setSimilarArtistAnchor(undefined);
       }
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
@@ -1172,14 +1181,14 @@ function App() {
                   </TabsList>
                 </Tabs>
 
-                {graph === 'similarArtists' && selectedArtist && (
+                {graph === 'similarArtists' && similarArtistAnchor && (
                   <Button
                     size='lg'
                     variant='outline'
                     onClick={() => onTabChange('artists')}
                     className="gap-2"
                   >
-                    Similar artists: {selectedArtist.name}
+                    Similar artists: {similarArtistAnchor.name}
                     <X className="h-4 w-4" />
                   </Button>
                 )}
