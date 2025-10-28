@@ -172,7 +172,7 @@ const Graph = forwardRef(function GraphInner<
     if (show) fgRef.current.resumeAnimation();
     else fgRef.current.pauseAnimation();
   }, [show]);
-
+// oi
   useEffect(() => {
     if (!show || !fgRef.current) return;
     if (!preparedData.nodes.length && !preparedData.links.length) return;
