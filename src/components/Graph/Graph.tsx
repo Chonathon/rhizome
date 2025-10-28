@@ -203,6 +203,21 @@ const Graph = forwardRef(function GraphInner<
         .iterations(2)
         .strength(dagMode ? 0.02 : 0.7),
     );
+    if (selectedId) {
+      // Pull only the selected node toward the origin to keep it in view
+      fg.d3Force(
+        "selected-position-x",
+        d3.forceX<PreparedNode<T>>(0).strength((node) => (node.id === selectedId ? 0.15 : 0)),
+      );
+      fg.d3Force(
+        "selected-position-y",
+        d3.forceY<PreparedNode<T>>(0).strength((node) => (node.id === selectedId ? 0.15 : 0)),
+      );
+    } else {
+      fg.d3Force("selected-position-x", null);
+      fg.d3Force("selected-position-y", null);
+    }
+
     fg.d3ReheatSimulation?.();
     if (shouldResetZoomRef.current) {
       const isMobile = window.matchMedia('(max-width: 640px)').matches;
@@ -215,7 +230,7 @@ const Graph = forwardRef(function GraphInner<
     if (signature) {
       lastInitializedSignatureRef.current = signature;
     }
-  }, [dataSignature, dagMode, preparedData, show]);
+  }, [dataSignature, dagMode, preparedData, selectedId, show]);
 
   useEffect(() => {
     if (!show || !selectedId || !fgRef.current) return;
