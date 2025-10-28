@@ -151,6 +151,11 @@ const Graph = forwardRef(function GraphInner<
     return map;
   }, [preparedData]);
 
+  // Pre-calculate values that are constant across all nodes during a render
+  const defaultColor = resolvedTheme === "dark" ? "#8a80ff" : "#4a4a4a";
+  const hasSelection = !!selectedId;
+  const selectedNeighbors = hasSelection && selectedId ? neighborsById.get(selectedId) : undefined;
+
   useEffect(() => {
     if (preparedDataRef.current !== preparedData) {
       // Snapshot new data so rerenders caused by props toggling do not retrigger reheats.
@@ -254,7 +259,7 @@ const Graph = forwardRef(function GraphInner<
         d3AlphaDecay={0.02}
         d3VelocityDecay={0.75}
         cooldownTime={12000}
-        autoPauseRedraw={false}
+        autoPauseRedraw={true}
         nodeColor={() => "rgba(0,0,0,0)"}
         nodeCanvasObjectMode={() => "replace"}
         linkColor={(link) => {
@@ -291,12 +296,12 @@ const Graph = forwardRef(function GraphInner<
           const x = node.x ?? 0;
           const y = node.y ?? 0;
           const radius = node.radius;
-          const accent = colorById.get(node.id) ?? (resolvedTheme === "dark" ? "#8a80ff" : "#4a4a4a");
-          const hasSelection = !!selectedId;
+          const accent = colorById.get(node.id) ?? defaultColor;
           const isSelected = selectedId === node.id;
-          const isNeighbor = hasSelection ? neighborsById.get(selectedId!)?.has(node.id) : false;
+          const isNeighbor = hasSelection ? selectedNeighbors?.has(node.id) ?? false : false;
           const isHovered = hoveredId === node.id;
 
+          // Calculate node alpha
           let alpha = 1;
           if (hasSelection) {
             alpha = isSelected ? 1 : isNeighbor ? 0.8 : 0.15;
@@ -304,11 +309,13 @@ const Graph = forwardRef(function GraphInner<
             alpha = 0.8;
           }
 
+          // Draw node circle
           ctx.save();
           ctx.globalAlpha = alpha;
           drawCircleNode(ctx, x, y, radius, accent);
           ctx.restore();
 
+          // Draw selection ring
           if (isSelected) {
             ctx.save();
             ctx.beginPath();
@@ -319,6 +326,7 @@ const Graph = forwardRef(function GraphInner<
             ctx.restore();
           }
 
+          // Calculate and draw label
           const k = zoomRef.current || 1;
           let labelAlpha = labelAlphaForZoom(k, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END);
           if (isSelected || isHovered) labelAlpha = 1;

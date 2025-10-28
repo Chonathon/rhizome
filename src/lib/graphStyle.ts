@@ -39,11 +39,26 @@ export function estimateLabelWidth(name: string, fontPx = LABEL_FONT_SIZE): numb
   return (name?.length || 0) * (fontPx * 0.6);
 }
 
-export function collideRadiusForNode(label: string, nodeRadius: number, padding = 8, fontPx = LABEL_FONT_SIZE): number {
-  const w = estimateLabelWidth(label, fontPx);
-  const h = fontPx;
-  const halfDiag = Math.sqrt(w * w + h * h) / 2;
-  return Math.max(nodeRadius + padding, halfDiag + padding);
+/**
+ * Calculate collision radius for physics simulation.
+ *
+ * Previously included label dimensions which caused physics jitter.
+ * Now uses only visual node radius for smooth, stable simulation.
+ * Label overlap will be handled via visual-only collision detection during rendering.
+ *
+ * @param _label - Node label (unused, kept for API compatibility)
+ * @param nodeRadius - Visual radius of the node circle
+ * @param padding - Extra spacing around node (default 8)
+ * @param _fontPx - Font size (unused, kept for API compatibility)
+ * @returns Collision radius for d3.forceCollide
+ */
+export function collideRadiusForNode(
+  _label: string,
+  nodeRadius: number,
+  padding = 8,
+  _fontPx = LABEL_FONT_SIZE
+): number {
+  return nodeRadius + padding;
 }
 
 export function drawCircleNode(
