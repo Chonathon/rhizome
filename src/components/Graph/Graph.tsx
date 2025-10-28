@@ -206,7 +206,9 @@ const Graph = forwardRef(function GraphInner<
     fg.d3ReheatSimulation?.();
     if (shouldResetZoomRef.current) {
       const isMobile = window.matchMedia('(max-width: 640px)').matches;
-      fg.zoom(dagMode ? 0.25 : (isMobile ? 0.12 : 0.14));
+      // Reset both zoom level and center position
+      fg.centerAt(0, 0, 0);
+      fg.zoom(dagMode ? 0.25 : (isMobile ? 0.12 : 0.14), 0);
       zoomRef.current = dagMode ? 0.25 : (isMobile ? 0.12 : 0.18);
       shouldResetZoomRef.current = false;
     }
