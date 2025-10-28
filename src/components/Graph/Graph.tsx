@@ -181,10 +181,10 @@ const Graph = forwardRef(function GraphInner<
     const fg = fgRef.current;
 
     // Standardized force configuration
-    fg.d3Force("charge")?.strength(dagMode ? -1230 : -100);
+    fg.d3Force("charge")?.strength(dagMode ? -1230 : -200);
     const linkForce = fg.d3Force("link") as d3.ForceLink<PreparedNode<T>, L> | undefined;
-    linkForce?.distance(dagMode ? 150 : 130);
-    linkForce?.strength(dagMode ? 1 : 1);
+    linkForce?.distance(dagMode ? 150 : 90);
+    linkForce?.strength(dagMode ? 1 : 1.6);
     linkForce?.id((node: any) => node.id);
     fg.d3Force("center", d3.forceCenter(0, 0).strength(dagMode ? 0.01 : 0.05));
     fg.d3Force(
@@ -206,7 +206,7 @@ const Graph = forwardRef(function GraphInner<
     fg.d3ReheatSimulation?.();
     if (shouldResetZoomRef.current) {
       const isMobile = window.matchMedia('(max-width: 640px)').matches;
-      fg.zoom(dagMode ? 0.25 : (isMobile ? 0.12 : 0.18));
+      fg.zoom(dagMode ? 0.25 : (isMobile ? 0.12 : 0.14), 400);
       zoomRef.current = dagMode ? 0.25 : (isMobile ? 0.12 : 0.18);
       shouldResetZoomRef.current = false;
     }

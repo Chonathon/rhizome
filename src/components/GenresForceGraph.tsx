@@ -19,7 +19,7 @@ interface GenresForceGraphProps {
 }
 
 const MIN_RADIUS = 6;
-const MAX_RADIUS = 22;
+const MAX_RADIUS = 32;
 
 const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
   (
