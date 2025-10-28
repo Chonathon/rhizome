@@ -1,6 +1,6 @@
 // Shared helpers for graph styling and label behavior
 
-export const LABEL_FONT_SIZE = 12;
+export const LABEL_FONT_SIZE = 14;
 export const DEFAULT_LABEL_FADE_START = .1;
 export const DEFAULT_LABEL_FADE_END = .3;
 // Default upward screen-space offset (in px) to lift a focused node on mobile
