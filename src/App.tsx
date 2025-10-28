@@ -7,7 +7,7 @@ import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
-  Artist, ArtistNodeLimitType, BadDataReport,
+  Artist, ArtistNodeLimitType, BadDataReport, ContextAction,
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
@@ -192,6 +192,13 @@ function App() {
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
+
+  // Do any actions requested before login
+  useEffect(() => {
+    if (userID) {
+      doContextAction();
+    }
+  }, [userID]);
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -956,6 +963,8 @@ function App() {
         await likeArtist(artistID);
       }
     } else {
+      const action: ContextAction = {type: 'addArtist', artistID};
+      localStorage.setItem('unregisteredAction', JSON.stringify(action));
       window.dispatchEvent(new Event('auth:open'));
     }
   }
@@ -975,6 +984,8 @@ function App() {
         toast.info("You haven't added any artists yet!");
       }
     } else {
+      const action: ContextAction = {type: 'viewCollection'};
+      localStorage.setItem('unregisteredAction', JSON.stringify(action));
       window.dispatchEvent(new Event('auth:open'));
     }
   }
@@ -1000,6 +1011,26 @@ function App() {
     if (beforeFn) beforeFn();
     navigate(pathname);
     if (afterFn) afterFn();
+  }
+
+  // Does the previous action requested before logging in
+  const doContextAction = async () => {
+    const actionString = localStorage.getItem('unregisteredAction');
+    if (actionString && actionString.length) {
+      const action = JSON.parse(actionString) as ContextAction;
+      switch (action.type) {
+        case 'addArtist':
+          if (action.artistID) {
+            await onAddArtistButtonToggle(action.artistID);
+          }
+          break;
+        case 'viewCollection':
+          await onCollectionClick();
+          break;
+        default:
+      }
+    }
+    localStorage.removeItem('unregisteredAction');
   }
 
   return (
