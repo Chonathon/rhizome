@@ -36,6 +36,7 @@ interface ArtistInfoProps {
   getArtistColor: (artist: Artist) => string;
   getGenreNameById?: (id: string) => string | undefined;
   onPlay?: (artist: Artist) => void;
+  onFocusInArtistsView?: (artist: Artist, options?: { forceRefocus?: boolean }) => void;
   onViewArtistGraph?: (artist: Artist) => void;
   onViewSimilarArtistGraph?: (artist: Artist) => void;
   playLoading?: boolean;
@@ -58,6 +59,7 @@ export function ArtistInfo({
   getArtistColor,
   getGenreNameById,
   onPlay,
+  onFocusInArtistsView,
   onViewArtistGraph,
   onViewSimilarArtistGraph,
   playLoading,
@@ -136,11 +138,11 @@ export function ArtistInfo({
       bodyClassName=""
       // snapPoints={[0.28, 0.9]}
       headerTitle={
-        selectedArtist && onViewSimilarArtistGraph ? (
+        selectedArtist && onFocusInArtistsView ? (
           <button
-            onClick={() => onViewSimilarArtistGraph(selectedArtist)}
+            onClick={() => onFocusInArtistsView(selectedArtist, { forceRefocus: true })}
             className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
-            title="Go to artist"
+            title={selectedArtist ? `Go to ${selectedArtist.name}` : "Go to artist"}
           >
             <span>{selectedArtist.name}</span>
               <ChevronRight className="shrink-0 text-muted-foreground size-6"/>

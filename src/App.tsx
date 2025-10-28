@@ -650,6 +650,77 @@ function App() {
     }
   }
 
+  const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
+    if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+
+    const matchesCurrentFilter =
+      selectedGenres.length === 0 ||
+      artist.genres.some((genreId) => selectedGenreIDs.includes(genreId));
+
+    if (selectedGenres.length && !matchesCurrentFilter) {
+      setSelectedGenres([]);
+      setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
+      setGenreInfoToShow(undefined);
+      setShowGenreCard(false);
+    } else if (showGenreCard) {
+      setShowGenreCard(false);
+    }
+
+    let nextArtistList =
+      graph === 'similarArtists'
+        ? (artists.length ? artists : currentArtists)
+        : currentArtists;
+
+    const artistAlreadyPresent = nextArtistList.some((a) => a.id === artist.id);
+    if (!artistAlreadyPresent) {
+      nextArtistList = [...nextArtistList, artist];
+    }
+
+    if (graph === 'similarArtists') {
+      if (currentArtistLinks !== artistLinks) {
+        setCurrentArtistLinks(artistLinks);
+      }
+      if (similarArtistAnchor) {
+        setSimilarArtistAnchor(undefined);
+      }
+    }
+
+    let shouldTriggerRefocus = opts?.forceRefocus === true;
+
+    if (graph !== 'artists') {
+      setGraph('artists');
+      shouldTriggerRefocus = true;
+    }
+
+    if (graph === 'similarArtists' || !artistAlreadyPresent) {
+      if (currentArtists !== nextArtistList) {
+        setCurrentArtists(nextArtistList);
+        shouldTriggerRefocus = true;
+      }
+    }
+
+    setSelectedArtistFromSearch(false);
+    setSelectedArtist((prev) => {
+      if (prev?.id === artist.id) {
+        if (shouldTriggerRefocus) {
+          return { ...prev };
+        }
+        return prev;
+      }
+      return artist;
+    });
+    setShowArtistCard(true);
+
+    if (shouldTriggerRefocus) {
+      setAutoFocusGraph(false);
+      setTimeout(() => setAutoFocusGraph(true), 16);
+    } else {
+      setAutoFocusGraph(true);
+    }
+
+    addRecentSelection(artist);
+  }
+
   // Search selection handlers - open info cards without changing graph view or auto-focusing
   const onSearchGenreSelect = (genre: Genre) => {
     setAutoFocusGraph(false); // Disable auto-focus for search selections
@@ -1432,6 +1503,7 @@ function App() {
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
                 onPlay={onPlayArtist}
+                onFocusInArtistsView={focusArtistInCurrentView}
                 onViewArtistGraph={focusArtistRelatedGenres}
                 onViewSimilarArtistGraph={createSimilarArtistGraph}
                 //playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
