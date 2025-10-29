@@ -261,6 +261,8 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
         signedInUser={signedInUser}
         onSignUpClick={handleSignUp}
         onLoginClick={handleLogin}
+        onCollectionClick={onCollectionClick}
+        isCollectionMode={isCollectionMode}
       />
     </>
   )
