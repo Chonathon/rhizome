@@ -1,8 +1,8 @@
 import {useEffect, useState} from "react";
 import {Artist, ArtistNodeLimitType, BadDataReport, BasicNode, NodeLink, TopTrack} from "@/types";
 import axios, {AxiosError} from "axios";
-import {envBoolean, serverUrl} from "@/lib/utils";
-import {DEFAULT_NODE_COUNT, TOP_ARTISTS_TO_FETCH} from "@/constants";
+import {serverUrl} from "@/lib/utils";
+import {DEFAULT_NODE_COUNT, MAX_NODES, TOP_ARTISTS_TO_FETCH} from "@/constants";
 
 const url = serverUrl();
 
@@ -136,6 +136,36 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         return topTracks;
     }
 
+    const fetchLikedArtists = async (artists: string[], limit = MAX_NODES) => {
+        resetArtistsError();
+        setArtistsLoading(true);
+        try {
+            const response = await axios.post(`${url}/artists/multiple`, { artists: artists.slice(0, limit) });
+            setArtists(response.data.artists);
+            setArtistLinks(response.data.links);
+            setTotalArtistsInDB(artists.length);
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setArtistsError(err);
+            }
+        }
+        setArtistsLoading(false);
+    }
+
+    const fetchSingleArtist = async (artistID: string) => {
+        resetArtistsYTError();
+        setArtistsLoading(true);
+        try {
+            const response = await axios.get(`${url}/artists/fetch/id/${artistID}`);
+            return response.data;
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setArtistsError(err);
+            }
+        }
+        setArtistsLoading(false);
+    }
+
     const resetArtistsError = () => setArtistsError(undefined);
     const resetArtistsYTError = () => setArtistsPlayIDsError(undefined);
     const resetArtistsDataFlagError = () => setArtistsDataFlagError(undefined);
@@ -149,6 +179,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         artistsDataFlagLoading,
         artistsDataFlagError,
         fetchAllArtists,
+        fetchLikedArtists,
         totalArtistsInDB,
         topArtists,
         fetchMultipleGenresArtists,
@@ -159,6 +190,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         resetArtistsDataFlagError,
         artistsPlayIDsLoading,
         artistPlayIDLoadingKey,
+        fetchSingleArtist,
     };
 }
 

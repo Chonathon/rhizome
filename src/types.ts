@@ -39,6 +39,7 @@ export interface Artist extends BasicNode {
     badDataFlag?: boolean;
     topTracks?: TopTrack[];
     noTopTracks?: boolean;
+    degree?: number;
 }
 
 export interface BasicNode {
@@ -116,4 +117,38 @@ export interface TopTrackPlayIDs {
 
 export type PlayerType = 'youtube' | 'spotify' | 'apple';
 
-export type AccountMenuState = "authorized" | "guest" | "nonOffice";
+export type Theme = 'light' | 'dark' | 'system';
+
+export interface Preferences {
+    theme?: Theme;
+    player?: PlayerType;
+}
+
+export type Social = 'google' | 'spotify';
+
+export interface IDAndDate {
+    id: string;
+    date: Date;
+}
+
+export interface User {
+    id: string;
+    name: string;
+    email: string;
+    liked: IDAndDate[];
+    preferences: Preferences;
+    socialUser?: boolean;
+    image?: string;
+}
+
+export interface Feedback {
+    text: string;
+    userID: string;
+    email?: string;
+    resolved: boolean;
+}
+
+export interface ContextAction {
+    type: 'addArtist' | 'viewCollection';
+    artistID?: string;
+}

@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import {BadDataReport, Genre, NodeLink} from "@/types";
 import axios, {AxiosError} from "axios";
-import {envBoolean, serverUrl} from "@/lib/utils";
+import {serverUrl} from "@/lib/utils";
 
 const url = serverUrl();
 
@@ -33,6 +33,12 @@ const useGenres = () => {
     useEffect(() => {
         fetchGenres();
     }, []);
+
+    useEffect(() => {
+        if (genresError) {
+            console.error(genresError);
+        }
+    }, [genresError]);
 
     const flagBadGenreData = async (report: BadDataReport) => {
         setGenresDataFlagLoading(true);

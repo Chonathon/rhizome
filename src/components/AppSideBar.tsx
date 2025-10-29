@@ -53,17 +53,19 @@ interface AppSidebarProps {
   graph: GraphType;
   onGraphChange: (g: GraphType) => void;
   resetAppState: () => void;
-  accountMenuState?: AccountMenuState;
+  onCollectionClick: () => void;
+  onExploreClick: () => void;
+  signedInUser: boolean;
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
+  isCollectionMode: boolean;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, accountMenuState = "authorized", onSignUpClick, onLoginClick }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, onExploreClick, isCollectionMode }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { theme, setTheme } = useTheme()
   const { recentSelections } = useRecentSelections()
   const { toggleSidebar } = useSidebar()
-  const showAccountControls = accountMenuState === "authorized"
   const handleSignUp = useCallback(() => {
     if (onSignUpClick) {
       onSignUpClick()
@@ -79,7 +81,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
     window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'login' } }))
   }, [onLoginClick])
   //console.log("Recent selections in sidebar:", recentSelections);
-  
+
   return (
     <>
       <Sidebar className="" variant="sidebar" collapsible="icon">
@@ -122,8 +124,8 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild tooltip="Collection" size="xl">
-                          <button onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))}>
+                        <SidebarMenuButton asChild tooltip="Collection" size="xl" isActive={isCollectionMode}>
+                          <button onClick={onCollectionClick}>
                             <BookOpen />
                             <span className="truncate">Collection</span>
                           </button>
@@ -151,8 +153,8 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         </SidebarMenuButton>
                       </SidebarMenuItem> */}
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={true} tooltip="Explore" size="xl">
-                        <button onClick={resetAppState}>
+                      <SidebarMenuButton asChild isActive={!isCollectionMode} tooltip="Explore" size="xl">
+                        <button onClick={onExploreClick}>
                           <Telescope />
                           <span>Explore</span>
                         </button>
@@ -192,7 +194,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                           <DropdownMenuContent side="right" align="end">
                             {/* <DropdownMenuLabel>Settings</DropdownMenuLabel>
                             <DropdownMenuSeparator /> */}
-                            {showAccountControls ? (
+                            {signedInUser ? (
                               <>
                                 <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
                                   Profile
@@ -210,7 +212,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                                 <DropdownMenuSeparator />
                               </>
                             )}
-                            <DropdownMenuSub> 
+                            <DropdownMenuSub>
                             <DropdownMenuSubTrigger><span className="aria-hidden">
                               <SunMoon className="mr-2 text-muted-foreground h-4 w-4" />
                             </span>  Appearance</DropdownMenuSubTrigger>
@@ -256,7 +258,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
         onGraphChange={onGraphChange}
         onOpenSearch={() => setSearchOpen(true)}
         resetAppState={resetAppState}
-        accountMenuState={accountMenuState}
+        signedInUser={signedInUser}
         onSignUpClick={handleSignUp}
         onLoginClick={handleLogin}
       />

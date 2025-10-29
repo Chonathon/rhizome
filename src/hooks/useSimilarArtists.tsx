@@ -14,7 +14,7 @@ const useSimilarArtists = (artist?: Artist) => {
         if (artist) {
             setSimilarArtistsLoading(true);
             try {
-                const response = await axios.get(`${url}/artists/similar/${artist.id}`);
+                const response = await axios.get(`${url}/artists/fetch/similar/${artist.id}`);
                 setSimilarArtists([artist, ...response.data]);
             } catch (err) {
                 if (err instanceof AxiosError) {

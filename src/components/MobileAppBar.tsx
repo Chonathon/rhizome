@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { AccountMenuState, GraphType } from "@/types"
+import { GraphType } from "@/types"
 import { AccountMenuGuestSection } from "@/components/AccountMenuGuestSection"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
@@ -20,7 +20,7 @@ type MobileAppBarProps = {
   onGraphChange: (g: GraphType) => void
   onOpenSearch: () => void
   resetAppState: () => void;
-  accountMenuState?: AccountMenuState;
+  signedInUser: boolean;
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
 }
@@ -30,7 +30,7 @@ type MobileAppBarProps = {
  * Provides quick access to Search, Collection, Genres, Artists, and a More menu.
  * Styled to match the existing glassy/rounded aesthetic.
  */
-export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, accountMenuState = "authorized", onSignUpClick, onLoginClick }: MobileAppBarProps) {
+export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, signedInUser, onSignUpClick, onLoginClick }: MobileAppBarProps) {
   return (
     <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-3 z-50 md:hidden"
     style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
@@ -81,7 +81,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
             onClick={() => onGraphChange("artists")}
             icon={<Mic className="size-6" />}
           /> */}
-          <MoreMenu accountMenuState={accountMenuState} onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />
+          <MoreMenu signedInUser={signedInUser} onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />
         </div>
       </div>
     </div>
@@ -112,8 +112,7 @@ function ToolbarButton({
   )
 }
 
-function MoreMenu({ accountMenuState = "authorized", onSignUpClick, onLoginClick }: { accountMenuState?: AccountMenuState; onSignUpClick?: () => void; onLoginClick?: () => void }) {
-  const showAccountControls = accountMenuState === "authorized"
+function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser: boolean; onSignUpClick?: () => void; onLoginClick?: () => void }) {
   const { setTheme } = useTheme()
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false)
   const handleSignUp = () => {
@@ -146,7 +145,7 @@ function MoreMenu({ accountMenuState = "authorized", onSignUpClick, onLoginClick
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="end">
-        {showAccountControls ? (
+        {signedInUser ? (
           <>
             <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
               Profile

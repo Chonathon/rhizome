@@ -4,7 +4,7 @@ import {
     GenreClusterMode,
     GenreNodeLimitType,
     InitialGenreFilter,
-    PlayerType
+    PlayerType, Preferences, Theme
 } from "@/types";
 
 export const DEFAULT_NODE_COUNT = 2000;
@@ -56,8 +56,12 @@ export const SINGLETON_PARENT_GENRE: Genre = {
 export const TOP_ARTISTS_TO_FETCH = 8;
 
 export const BAD_DATA_DESC_LIMIT = 150;
+export const FEEDBACK_TEXT_LIMIT = 500;
 
 export const SEARCH_DEBOUNCE_MS = 500;
+
+export const ALPHA_SURVEY_TIME_MS = 5 * 60 * 1000;
+export const ALPHA_SURVEY_ADDED_ARTISTS = 3;
 
 export const GENRE_FILTER_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
 export const EMPTY_GENRE_FILTER_OBJECT: InitialGenreFilter = {
@@ -66,8 +70,12 @@ export const EMPTY_GENRE_FILTER_OBJECT: InitialGenreFilter = {
     parents: {},
 };
 
+export const UNREGISTERED_USER_ID = 'unregistered';
+
 export const MAX_YTID_QUEUE_SIZE = 200;
 
+export const DEFAULT_THEME: Theme = 'system';
+export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER};
 export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
 export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
 // Tailwind default color palette (lighter/less saturated variants)
