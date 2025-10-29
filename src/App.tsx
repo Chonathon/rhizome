@@ -60,7 +60,7 @@ import {
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
-  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, DEFAULT_PREFERENCES
+  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, ALPHA_SURVEY_TIME_MS, DEFAULT_PREFERENCES, ALPHA_SURVEY_ADDED_ARTISTS
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -68,6 +68,7 @@ import AuthOverlay from '@/components/AuthOverlay';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
+import { showNotiToast } from '@/components/NotiToast';
 import useAuth from "@/hooks/useAuth";
 import SettingsOverlay, {ChangePasswordDialog} from '@/components/SettingsOverlay';
 import {submitFeedback} from "@/apis/feedbackApi";
@@ -186,6 +187,8 @@ function App() {
   } = useAuth();
   const navigate = useNavigate();
 
+  const artistsAddedRef = useRef(0);
+
   // Track window size and pass to ForceGraph for reliable resizing
   useEffect(() => {
     const update = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
@@ -194,6 +197,19 @@ function App() {
     return () => window.removeEventListener('resize', update);
   }, []);
 
+  // Setup alpha feedback timer on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localStorage.getItem('showAlphaSurvey') !== 'false') {
+        showNotiToast('alpha-feedback');
+        localStorage.setItem('showAlphaSurvey', 'false');
+      }
+    }, ALPHA_SURVEY_TIME_MS)
+    return () => {
+      clearTimeout(timer);
+    }
+  }, []);
+  
   // Do any actions requested before login
   useEffect(() => {
     if (userID) {
@@ -962,6 +978,12 @@ function App() {
         await unlikeArtist(artistID);
       } else {
         await likeArtist(artistID);
+        // Logic for alpha survey triggering
+        artistsAddedRef.current++;
+        if (localStorage.getItem('showAlphaSurvey') !== 'false' && artistsAddedRef.current >= ALPHA_SURVEY_ADDED_ARTISTS) {
+          showNotiToast('alpha-feedback');
+          localStorage.setItem('showAlphaSurvey', 'false');
+        }
       }
     } else {
       const action: ContextAction = {type: 'addArtist', artistID};
