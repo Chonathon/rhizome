@@ -1536,10 +1536,7 @@ function App() {
                 show={showGenreCard && !showArtistCard}
                 genreArtistsLoading={artistsLoading}
                 onTopArtistClick={onTopArtistClick}
-                deselectGenre={() => {
-                  setGenreInfoToShow(undefined);
-                  setShowGenreCard(false);
-                }}
+                deselectGenre={deselectGenre}
                 onSelectGenre={onLinkedGenreClick}
                 allArtists={onShowAllArtists}
                 onBadDataSubmit={onBadDataGenreSubmit}
