@@ -23,6 +23,8 @@ type MobileAppBarProps = {
   signedInUser: boolean;
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
+  onCollectionClick: () => void;
+  isCollectionMode: boolean;
 }
 
 /**
@@ -30,7 +32,7 @@ type MobileAppBarProps = {
  * Provides quick access to Search, Collection, Genres, Artists, and a More menu.
  * Styled to match the existing glassy/rounded aesthetic.
  */
-export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, signedInUser, onSignUpClick, onLoginClick }: MobileAppBarProps) {
+export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, isCollectionMode }: MobileAppBarProps) {
   return (
     <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-3 z-50 md:hidden"
     style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
@@ -60,12 +62,13 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
           /> */}
           <ToolbarButton
             label="Collection"
-            onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))}
+            onClick={onCollectionClick}
             icon={<BookOpen className="size-6" />}
+            active={isCollectionMode}
           />
           <ToolbarButton
             label="Explore"
-            active={graph === "genres"}
+            active={!isCollectionMode}
             onClick={resetAppState}
             icon={<Telescope className="size-6" />}
           />
