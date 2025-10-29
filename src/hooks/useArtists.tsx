@@ -152,6 +152,20 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         setArtistsLoading(false);
     }
 
+    const fetchSingleArtist = async (artistID: string) => {
+        resetArtistsYTError();
+        setArtistsLoading(true);
+        try {
+            const response = await axios.get(`${url}/artists/fetch/id/${artistID}`);
+            return response.data;
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setArtistsError(err);
+            }
+        }
+        setArtistsLoading(false);
+    }
+
     const resetArtistsError = () => setArtistsError(undefined);
     const resetArtistsYTError = () => setArtistsPlayIDsError(undefined);
     const resetArtistsDataFlagError = () => setArtistsDataFlagError(undefined);
@@ -176,6 +190,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         resetArtistsDataFlagError,
         artistsPlayIDsLoading,
         artistPlayIDLoadingKey,
+        fetchSingleArtist,
     };
 }
 

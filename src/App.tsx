@@ -7,7 +7,7 @@ import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
-  Artist, ArtistNodeLimitType, BadDataReport,
+  Artist, ArtistNodeLimitType, BadDataReport, ContextAction,
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
@@ -143,6 +143,7 @@ function App() {
     fetchArtistTopTracks,
     artistsPlayIDsLoading,
     artistPlayIDLoadingKey,
+    fetchSingleArtist,
   } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { resolvedTheme } = useTheme();
@@ -208,6 +209,13 @@ function App() {
       clearTimeout(timer);
     }
   }, []);
+  
+  // Do any actions requested before login
+  useEffect(() => {
+    if (userID) {
+      doContextAction();
+    }
+  }, [userID]);
 
   const singletonParentGenre = useMemo(() => {
     return {
@@ -978,6 +986,8 @@ function App() {
         }
       }
     } else {
+      const action: ContextAction = {type: 'addArtist', artistID};
+      localStorage.setItem('unregisteredAction', JSON.stringify(action));
       window.dispatchEvent(new Event('auth:open'));
     }
   }
@@ -997,6 +1007,8 @@ function App() {
         toast.info("You haven't added any artists yet!");
       }
     } else {
+      const action: ContextAction = {type: 'viewCollection'};
+      localStorage.setItem('unregisteredAction', JSON.stringify(action));
       window.dispatchEvent(new Event('auth:open'));
     }
   }
@@ -1022,6 +1034,36 @@ function App() {
     if (beforeFn) beforeFn();
     navigate(pathname);
     if (afterFn) afterFn();
+  }
+
+  // Does the previous action requested before logging in
+  const doContextAction = async () => {
+    const actionString = localStorage.getItem('unregisteredAction');
+    if (actionString && actionString.length) {
+      const action = JSON.parse(actionString) as ContextAction;
+      switch (action.type) {
+        case 'addArtist':
+          // Don't remove artist if already added
+          if (action.artistID && !isInCollection(action.artistID)) {
+            // If the app is reset (OAuth), select the artist with the similar artist graph
+            if (!selectedArtist) {
+              let artist = artists.find(a => a.id === action.artistID);
+              if (!artist) artist = await fetchSingleArtist(action.artistID);
+              if (artist) {
+                setGraph('similarArtists');
+                createSimilarArtistGraph(artist);
+              }
+            }
+            await onAddArtistButtonToggle(action.artistID);
+          }
+          break;
+        case 'viewCollection':
+          await onCollectionClick();
+          break;
+        default:
+      }
+    }
+    localStorage.removeItem('unregisteredAction');
   }
 
   return (
@@ -1145,7 +1187,7 @@ function App() {
                     ref={artistsGraphRef as any}
                     artists={currentArtists}
                     artistLinks={currentArtistLinks}
-                    loading={artistsLoading}
+                    loading={graph === 'similarArtists' ? similarArtistsLoading : artistsLoading}
                     onNodeClick={onArtistNodeClick}
                     selectedArtistId={selectedArtist?.id}
                     show={

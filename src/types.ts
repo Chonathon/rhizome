@@ -147,3 +147,8 @@ export interface Feedback {
     email?: string;
     resolved: boolean;
 }
+
+export interface ContextAction {
+    type: 'addArtist' | 'viewCollection';
+    artistID?: string;
+}
