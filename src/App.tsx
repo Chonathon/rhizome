@@ -900,9 +900,6 @@ function App() {
     // Fetch all similar artists using the search endpoint (genre-agnostic, forgiving matching)
     try {
       const similarArtistNames = artistResult.similar;
-      console.log(`[createSimilarArtistGraph] ${artistResult.name} has ${similarArtistNames.length} similar artists in metadata:`, similarArtistNames);
-
-      toast.info(`Loading similar artists for ${artistResult.name}...`);
 
       const url = serverUrl();
 
@@ -942,7 +939,6 @@ function App() {
 
       if (similarArtistsData.length === 0) {
         console.warn(`[createSimilarArtistGraph] No similar artists found in database for ${artistResult.name}, but metadata lists: ${similarArtistNames.join(', ')}`);
-        toast.error(`No similar artists found in database for ${artistResult.name}. The artist has ${similarArtistNames.length} similar artists listed, but they're not in the database yet.`);
         return;
       }
 
@@ -962,14 +958,8 @@ function App() {
       const foundCount = similarArtistsData.length;
       const totalCount = similarArtistNames.length;
       if (foundCount < totalCount) {
-        toast.success(`Loaded ${foundCount} of ${totalCount} similar artists`);
-        console.warn(`[createSimilarArtistGraph] Missing ${totalCount - foundCount} similar artists from database`);
-      } else {
-      toast.success(`Loaded all ${foundCount} similar artists`);
-      }
+      } 
     } catch (err) {
-      console.error('[createSimilarArtistGraph] Error fetching similar artists:', err);
-      toast.error(`Failed to load similar artists for ${artistResult.name}`);
     }
   }
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
