@@ -25,7 +25,7 @@ import {
   applyMobileDrawerYOffset,
   DEFAULT_MOBILE_CENTER_OFFSET_PX,
   estimateLabelWidth,
-} from "@/lib/graphStyle";
+} from "@/components/Graph/graphStyle";
 import type { GraphHandle } from "@/types";
 
 export type { GraphHandle };
