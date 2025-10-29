@@ -59,7 +59,7 @@ import {
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
-  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER
+  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, ALPHA_SURVEY_TIME_MS
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -154,6 +154,8 @@ function App() {
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
 
+  const artistsAddedRef = useRef(0);
+
   // Track window size and pass to ForceGraph for reliable resizing
   useEffect(() => {
     const update = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
@@ -165,9 +167,15 @@ function App() {
   // Show alpha feedback notification on mount
   // TODO: update condition to trigger after 5 minute session or 3 added artsts
   useEffect(() => {
-    showNotiToast('alpha-feedback', {
-      // feedbackFormUrl: 'https://your-feedback-form-url.com' // Replace with actual form URL
-    });
+    const timer = setTimeout(() => {
+      if (localStorage.getItem('showAlphaSurvey') !== 'false') {
+        showNotiToast('alpha-feedback');
+        localStorage.setItem('showAlphaSurvey', 'false');
+      }
+    }, ALPHA_SURVEY_TIME_MS)
+    return () => {
+      clearTimeout(timer);
+    }
   }, []);
 
   const singletonParentGenre = useMemo(() => {

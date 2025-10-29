@@ -59,6 +59,9 @@ export const BAD_DATA_DESC_LIMIT = 150;
 
 export const SEARCH_DEBOUNCE_MS = 500;
 
+export const ALPHA_SURVEY_TIME_MS = 5 * 60 * 1000;
+export const ALPHA_SURVEY_ADDED_ARTISTS = 3;
+
 export const GENRE_FILTER_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
 export const EMPTY_GENRE_FILTER_OBJECT: InitialGenreFilter = {
     genre: undefined,
