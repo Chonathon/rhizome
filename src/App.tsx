@@ -142,6 +142,7 @@ function App() {
     fetchArtistTopTracks,
     artistsPlayIDsLoading,
     artistPlayIDLoadingKey,
+    fetchSingleArtist,
   } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { resolvedTheme } = useTheme();
@@ -1020,7 +1021,17 @@ function App() {
       const action = JSON.parse(actionString) as ContextAction;
       switch (action.type) {
         case 'addArtist':
-          if (action.artistID) {
+          // Don't remove artist if already added
+          if (action.artistID && !isInCollection(action.artistID)) {
+            // If the app is reset (OAuth), select the artist with the similar artist graph
+            if (!selectedArtist) {
+              let artist = artists.find(a => a.id === action.artistID);
+              if (!artist) artist = await fetchSingleArtist(action.artistID);
+              if (artist) {
+                setGraph('similarArtists');
+                createSimilarArtistGraph(artist);
+              }
+            }
             await onAddArtistButtonToggle(action.artistID);
           }
           break;
@@ -1154,7 +1165,7 @@ function App() {
                     ref={artistsGraphRef as any}
                     artists={currentArtists}
                     artistLinks={currentArtistLinks}
-                    loading={artistsLoading}
+                    loading={graph === 'similarArtists' ? similarArtistsLoading : artistsLoading}
                     onNodeClick={onArtistNodeClick}
                     selectedArtistId={selectedArtist?.id}
                     show={
