@@ -43,6 +43,32 @@ export interface SharedGraphLink {
   target: string;
 }
 
+export interface NodeRenderContext<T> {
+  ctx: CanvasRenderingContext2D;
+  node: SharedGraphNode<T>;
+  x: number;
+  y: number;
+  radius: number;
+  color: string;
+  isSelected: boolean;
+  isNeighbor: boolean;
+  isHovered: boolean;
+  alpha: number;
+  theme: 'light' | 'dark' | undefined;
+}
+
+export interface SelectionRenderContext<T> extends NodeRenderContext<T> {}
+
+export interface LabelRenderContext<T> extends NodeRenderContext<T> {
+  label: string;
+  labelAlpha: number;
+  zoomLevel: number;
+}
+
+export type NodeRenderer<T> = (ctx: NodeRenderContext<T>) => void;
+export type SelectionRenderer<T> = (ctx: SelectionRenderContext<T>) => void;
+export type LabelRenderer<T> = (ctx: LabelRenderContext<T>) => void;
+
 export interface GraphProps<T, L extends SharedGraphLink> {
   nodes: SharedGraphNode<T>[];
   links: L[];
@@ -55,9 +81,36 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   autoFocus?: boolean;
   onNodeClick?: (node: T) => void;
   onNodeHover?: (node: T | undefined) => void;
+  renderNode?: NodeRenderer<T>;
+  renderSelection?: SelectionRenderer<T>;
+  renderLabel?: LabelRenderer<T>;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
+
+function defaultRenderNode<T>(ctx: NodeRenderContext<T>): void {
+  const { ctx: canvas, x, y, radius, color, alpha } = ctx;
+  canvas.save();
+  canvas.globalAlpha = alpha;
+  drawCircleNode(canvas, x, y, radius, color);
+  canvas.restore();
+}
+
+function defaultRenderSelection<T>(ctx: SelectionRenderContext<T>): void {
+  const { ctx: canvas, x, y, radius, color } = ctx;
+  canvas.save();
+  canvas.beginPath();
+  canvas.arc(x, y, radius + 4, 0, 2 * Math.PI);
+  canvas.strokeStyle = color;
+  canvas.lineWidth = 3;
+  canvas.stroke();
+  canvas.restore();
+}
+
+function defaultRenderLabel<T>(ctx: LabelRenderContext<T>): void {
+  const { ctx: canvas, label, x, y, radius, theme, labelAlpha } = ctx;
+  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, LABEL_FONT_SIZE);
+}
 
 const Graph = forwardRef(function GraphInner<
   T,
@@ -75,6 +128,9 @@ const Graph = forwardRef(function GraphInner<
     autoFocus = true,
     onNodeClick,
     onNodeHover,
+    renderNode = defaultRenderNode,
+    renderSelection = defaultRenderSelection,
+    renderLabel = defaultRenderLabel,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -335,29 +391,42 @@ const Graph = forwardRef(function GraphInner<
             alpha = 0.8;
           }
 
-          // Draw node circle
-          ctx.save();
-          ctx.globalAlpha = alpha;
-          drawCircleNode(ctx, x, y, radius, accent);
-          ctx.restore();
+          // Build render context
+          const renderContext: NodeRenderContext<T> = {
+            ctx,
+            node: node as SharedGraphNode<T>,
+            x,
+            y,
+            radius,
+            color: accent,
+            isSelected,
+            isNeighbor,
+            isHovered,
+            alpha,
+            theme: resolvedTheme as 'light' | 'dark' | undefined,
+          };
 
-          // Draw selection ring
+          // Render node
+          renderNode(renderContext);
+
+          // Render selection ring if selected
           if (isSelected) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(x, y, radius + 4, 0, 2 * Math.PI);
-            ctx.strokeStyle = accent;
-            ctx.lineWidth = 3;
-            ctx.stroke();
-            ctx.restore();
+            renderSelection(renderContext);
           }
 
-          // Calculate and draw label
+          // Calculate and render label
           const k = zoomRef.current || 1;
           let labelAlpha = labelAlphaForZoom(k, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END);
           if (isSelected || isHovered) labelAlpha = 1;
           else if (hasSelection && !isNeighbor) labelAlpha = Math.min(labelAlpha, 0.25);
-          drawLabelBelow(ctx, node.label, x, y, radius, resolvedTheme, labelAlpha, LABEL_FONT_SIZE);
+
+          const labelContext: LabelRenderContext<T> = {
+            ...renderContext,
+            label: node.label,
+            labelAlpha,
+            zoomLevel: k,
+          };
+          renderLabel(labelContext);
         }}
         nodePointerAreaPaint={(node, color, ctx) => {
           ctx.fillStyle = color;
