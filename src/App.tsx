@@ -68,6 +68,8 @@ import FeedbackOverlay from '@/components/FeedbackOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
 import SettingsOverlay from '@/components/SettingsOverlay';
+import { showNotiToast } from '@/components/NotiToast';
+
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -158,6 +160,14 @@ function App() {
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
+  }, []);
+
+  // Show alpha feedback notification on mount
+  // TODO: update condition to trigger after 5 minute session or 3 added artsts
+  useEffect(() => {
+    showNotiToast('alpha-feedback', {
+      // feedbackFormUrl: 'https://your-feedback-form-url.com' // Replace with actual form URL
+    });
   }, []);
 
   const singletonParentGenre = useMemo(() => {
