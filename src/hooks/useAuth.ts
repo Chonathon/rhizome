@@ -1,9 +1,6 @@
-import {authClient} from "@/lib/auth-client";
 import {useContext, useEffect, useState} from "react";
-import {Preferences, Social} from "@/types";
-import {BetterAuthError} from "better-auth";
+import {Preferences} from "@/types";
 import {AuthContext} from "@/providers/AuthProvider";
-import axios, {AxiosError} from "axios";
 import {likeArtistUser, unlikeArtistUser, updateUserPreferences} from "@/apis/usersApi";
 
 const useAuth = () => {
