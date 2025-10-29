@@ -60,7 +60,7 @@ import {
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
-  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, ALPHA_SURVEY_TIME_MS, DEFAULT_PREFERENCES
+  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, ALPHA_SURVEY_TIME_MS, DEFAULT_PREFERENCES, ALPHA_SURVEY_ADDED_ARTISTS
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -196,8 +196,7 @@ function App() {
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  // Show alpha feedback notification on mount
-  // TODO: update condition to trigger after 5 minute session or 3 added artsts
+  // Setup alpha feedback timer on mount
   useEffect(() => {
     const timer = setTimeout(() => {
       if (localStorage.getItem('showAlphaSurvey') !== 'false') {
@@ -971,6 +970,12 @@ function App() {
         await unlikeArtist(artistID);
       } else {
         await likeArtist(artistID);
+        // Logic for alpha survey triggering
+        artistsAddedRef.current++;
+        if (localStorage.getItem('showAlphaSurvey') !== 'false' && artistsAddedRef.current >= ALPHA_SURVEY_ADDED_ARTISTS) {
+          showNotiToast('alpha-feedback');
+          localStorage.setItem('showAlphaSurvey', 'false');
+        }
       }
     } else {
       window.dispatchEvent(new Event('auth:open'));
