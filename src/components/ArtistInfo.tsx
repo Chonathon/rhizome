@@ -141,12 +141,13 @@ export function ArtistInfo({
         selectedArtist && onFocusInArtistsView ? (
           <button
             onClick={() => onFocusInArtistsView(selectedArtist, { forceRefocus: true })}
-            className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
+            className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-block"
             title={selectedArtist ? `Go to ${selectedArtist.name}` : "Go to artist"}
           >
-            <span>{selectedArtist.name}</span>
-              <ChevronRight className="shrink-0 text-muted-foreground size-6"/>
-            
+            <span className="whitespace-normal break-words leading-tight">
+              {selectedArtist.name}
+              <ChevronRight className="inline-block align-middle relative size-6 text-muted-foreground" />
+            </span>
           </button>
         ) : (
           selectedArtist?.name
