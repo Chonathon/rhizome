@@ -3,22 +3,25 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import './index.css'
 import App from './App'
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeProvider } from "@/providers/ThemeProvider";
+import { AuthProvider } from "@/providers/AuthProvider";
 
 const container = document.getElementById('root');
 if (!container) throw new Error("Root container not found");
 createRoot(container).render(
   <StrictMode>
     <BrowserRouter>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        storageKey="theme"
-        disableTransitionOnChange
-      >
-        <App />
-      </ThemeProvider>
+        <AuthProvider>
+            <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                storageKey="theme"
+                disableTransitionOnChange
+            >
+                <App />
+            </ThemeProvider>
+        </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 )

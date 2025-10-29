@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CircleUserRound, Cable, HandHeart, Check } from "lucide-react"
+import { CircleUserRound, Cable, HandHeart, Check, X } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
@@ -43,6 +44,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
+import {Preferences, Theme} from "@/types";
 import KofiLogo from "@/assets/kofi_symbol.svg"
 import LastFMLogo from "@/assets/Last.fm Logo.svg"
 
@@ -64,21 +66,28 @@ const SettingsSection = ({ children }: { children: React.ReactNode }) => (
 // Change Email Dialog Component
 const ChangeEmailDialog = ({
   open,
-  onOpenChange
+  onOpenChange,
+  onSubmit,
 }: {
   open: boolean;
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (newEmail: string) => Promise<boolean>;
 }) => {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newEmail, setNewEmail] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Backend integration - submit email change request
-    console.log("Change email request:", { newEmail, currentPassword })
-    onOpenChange(false)
-    setCurrentPassword("")
-    setNewEmail("")
+    const success = await onSubmit(newEmail);
+    if (success) {
+      toast.success('Successfully changed email.');
+      onOpenChange(false);
+      setCurrentPassword("");
+      setNewEmail("");
+    } else {
+      toast.error('Error: could not change email.');
+    }
+
   }
 
   return (
@@ -132,30 +141,52 @@ const ChangeEmailDialog = ({
 }
 
 // Change Password Dialog Component
-const ChangePasswordDialog = ({
+export const ChangePasswordDialog = ({
   open,
-  onOpenChange
+  onOpenChange,
+  onSubmitChange,
+  onSubmitReset,
+  navigateOnReset,
+  forgot,
 }: {
   open: boolean;
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (open: boolean) => void;
+  onSubmitChange: (newPassword: string, currentPassword: string) => Promise<boolean>;
+  onSubmitReset?: (newPassword: string, token: string) => Promise<boolean>;
+  navigateOnReset?: () => void;
+  forgot: boolean;
 }) => {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (newPassword !== confirmPassword) {
-      // TODO: Show error toast
-      console.error("Passwords do not match")
+      toast.error('Passwords do not match!');
       return
     }
-    // TODO: Backend integration - submit password change request
-    console.log("Change password request")
-    onOpenChange(false)
-    setCurrentPassword("")
-    setNewPassword("")
-    setConfirmPassword("")
+    let success;
+    if (forgot) {
+      const token = new URLSearchParams(window.location.search).get("token");
+      if (!token || !onSubmitReset) {
+        success = false;
+      } else {
+        success = await onSubmitReset(newPassword, token);
+      }
+    } else {
+      success = await onSubmitChange(newPassword, currentPassword);
+    }
+    if (success) {
+      toast.success('Successfully changed password.');
+      onOpenChange(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      if (navigateOnReset) navigateOnReset();
+    } else {
+      toast.error('Error: could not change password');
+    }
   }
 
   return (
@@ -163,18 +194,18 @@ const ChangePasswordDialog = ({
       <DialogContent className="bg-card sm:max-w-md">
         <DialogTitle>Change Password</DialogTitle>
         <DialogDescription>
-          Enter your current password and choose a new password.
+          {forgot ? 'Enter a new password for your account.' : 'Enter your current password and choose a new password.'}
         </DialogDescription>
         <form onSubmit={handleSubmit}>
           <FieldGroup>
-            <Field>
+            <Field hidden={forgot}>
               <FieldLabel htmlFor="current-password">Current Password</FieldLabel>
               <Input
                 id="current-password"
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                required
+                required={!forgot}
               />
             </Field>
             <Field>
@@ -220,15 +251,21 @@ const ChangePasswordDialog = ({
 // Logout Dialog Component
 const LogoutDialog = ({
   open,
-  onOpenChange
+  onOpenChange,
+  onLogout,
 }: {
   open: boolean;
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (open: boolean) => void;
+  onLogout: () => Promise<boolean>;
 }) => {
-  const handleLogout = () => {
-    // TODO: Backend integration - logout user
-    console.log("Logout request")
-    onOpenChange(false)
+  const handleLogout = async () => {
+    const success = await onLogout();
+    if (success) {
+      toast.success('Successfully logged out.');
+      onOpenChange(false);
+    } else {
+      toast.error('Error: could not log out.');
+    }
   }
 
   return (
@@ -264,61 +301,95 @@ const LogoutDialog = ({
 // Delete Account Dialog Component
 const DeleteAccountDialog = ({
   open,
-  onOpenChange
+  onOpenChange,
+  onSubmit,
+  isSocial,
 }: {
   open: boolean;
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (password?: string) => Promise<boolean>;
+  isSocial: boolean;
 }) => {
-  const [password, setPassword] = useState("")
-  const [confirmText, setConfirmText] = useState("")
+  const [password, setPassword] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+  const [awaitingEmail, setAwaitingEmail] = useState(false);
 
-  const handleDelete = (e: React.FormEvent) => {
+  const handleDelete = async (e: React.FormEvent) => {
     e.preventDefault()
     if (confirmText !== "DELETE") {
       // TODO: Show error toast
       console.error("Confirmation text does not match")
       return
     }
-    // TODO: Backend integration - delete account
-    console.log("Delete account request")
-    onOpenChange(false)
-    setPassword("")
-    setConfirmText("")
+    if (isSocial) {
+      const success  = await onSubmit();
+      if (success){
+        setAwaitingEmail(true);
+      } else {
+        toast.error("Error: could not delete account.");
+      }
+    } else {
+      const success = await onSubmit(password);
+      if (success) {
+        toast.success('Successfully deleted account.');
+        onOpenChange(false);
+        setPassword("");
+        setConfirmText("");
+      } else {
+        toast.error('Error: could not delete account.');
+      }
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card sm:max-w-md">
         <DialogTitle className="text-destructive">Delete Account</DialogTitle>
-        <DialogDescription>
-          This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
-        </DialogDescription>
         <form onSubmit={handleDelete}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="delete-password">Current Password</FieldLabel>
-              <Input
-                id="delete-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="confirm-delete">
-                Type "DELETE" to confirm
-              </FieldLabel>
-              <Input
-                id="confirm-delete"
-                type="text"
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="DELETE"
-                required
-              />
-            </Field>
-          </FieldGroup>
+          {awaitingEmail ? (
+              <DialogDescription>
+                An email has been sent with a link to delete your account.
+              </DialogDescription>
+          ) : (
+              <>
+                <DialogDescription>
+                  This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                </DialogDescription>
+                <FieldGroup>
+                  {isSocial ? (
+                      <div className="mt-2">
+                        <FieldDescription>
+                          You will receive an email to verify your account deletion.
+                        </FieldDescription>
+                      </div>
+                  ) : (
+                      <Field>
+                        <FieldLabel htmlFor="delete-password">Current Password</FieldLabel>
+                        <Input
+                            id="delete-password"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                      </Field>
+                  )}
+                  <Field>
+                    <FieldLabel htmlFor="confirm-delete">
+                      Type "DELETE" to confirm
+                    </FieldLabel>
+                    <Input
+                        id="confirm-delete"
+                        type="text"
+                        value={confirmText}
+                        onChange={(e) => setConfirmText(e.target.value)}
+                        placeholder="DELETE"
+                        required
+                    />
+                  </Field>
+                </FieldGroup>
+              </>
+          )}
           <div className="flex gap-2 mt-6">
             <Button
               type="button"
@@ -326,7 +397,7 @@ const DeleteAccountDialog = ({
               onClick={() => onOpenChange(false)}
               className="flex-1"
             >
-              Cancel
+              {awaitingEmail ? 'Close' : 'Cancel'}
             </Button>
             <Button
               type="submit"
@@ -334,7 +405,7 @@ const DeleteAccountDialog = ({
               className="flex-1"
               disabled={confirmText !== "DELETE"}
             >
-              Delete Account
+              {isSocial ? `${awaitingEmail ? 'Res' : 'S'}end Email` : 'Delete Account'}
             </Button>
           </div>
         </form>
@@ -348,19 +419,47 @@ const ProfileSection = ({
   onChangeEmail,
   onChangePassword,
   onLogout,
-  onDeleteAccount
+  onDeleteAccount,
+  name,
+  email,
+  onNameChange,
+  preferences,
+  onPreferencesChange,
+  isSocial,
+  newName,
+  setNewName,
 }: {
   onChangeEmail: () => void;
   onChangePassword: () => void;
   onLogout: () => void;
   onDeleteAccount: () => void;
+  name: string;
+  email: string;
+  onNameChange: (newName: string) => Promise<boolean>;
+  preferences: Preferences;
+  onPreferencesChange: (newPreferences: Preferences) => void;
+  isSocial: boolean;
+  newName: string;
+  setNewName: React.Dispatch<React.SetStateAction<string>>;
 }) => {
+  const isDirty = newName !== name;
   const { theme, setTheme } = useTheme()
-
+  const onThemeChange = (newTheme: Theme) => {
+    setTheme(newTheme);
+    onPreferencesChange({...preferences, theme: newTheme});
+  }
+  const changeName = async () => {
+    const success = await onNameChange(newName);
+    if (success) {
+      toast.success('Successfully changed name.');
+    } else {
+      toast.error('Error: could not change name.');
+    }
+  }
   return (
   <>
     <SettingsSection>
-      <form>
+      <form onSubmit={(e) => e.preventDefault()}>
         <FieldGroup>
           <FieldSet>
             <FieldLegend>Profile</FieldLegend>
@@ -370,17 +469,64 @@ const ProfileSection = ({
                 <FieldLabel htmlFor="Preferred Name">
                   Preferred Name
                 </FieldLabel>
-                <Input
-                  id="Preferred Name"
-                  placeholder="Greg"
-                  required
-                />
+                
+                  <motion.div layout className="flex  gap-2 items-center"
+                    transition={{layout: {delay: isDirty ? 0 : 0.4, duration: .2}}}>
+                      <Input
+                        id="Preferred Name"
+                        placeholder="Greg"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && isDirty) {
+                            e.preventDefault();
+                            changeName();
+                          }
+                        }}
+                        required
+                      />
+                    <AnimatePresence>
+                      {isDirty && (
+                        <motion.div
+                          key="name-change-buttons"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1}}
+                          exit={{ opacity: 0}}
+                          transition={{duration: .2}}
+                          className="flex gap-2"
+                        >
+                          <Button
+                            className="size-9"
+                            variant="secondary"
+                            size="icon"
+                            type="button"
+                            onClick={() => {
+                              setNewName(name)
+                            }}
+                            title="Cancel name change"
+                          >
+                            <X />
+                          </Button>
+                          <Button
+                            className="size-9"
+                            size="icon"
+                            type="button"
+                            onClick={changeName}
+                            title="Change name"
+                          >
+                            <Check />
+                          </Button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                
               </Field>
               <Field orientation="responsive">
                 <FieldLabel htmlFor="theme">
                   Appearance
                 </FieldLabel>
-                <Select value={theme || "system"} onValueChange={setTheme}>
+                <Select value={preferences.theme || "system"} onValueChange={onThemeChange}>
                   <SelectTrigger id="theme">
                     <SelectValue placeholder="Choose theme" />
                   </SelectTrigger>
@@ -404,39 +550,43 @@ const ProfileSection = ({
             <FieldLegend>Account</FieldLegend>
             <FieldSeparator />
             <FieldGroup>
-              <Field orientation="responsive">
-                <FieldContent>
-                  <FieldLabel htmlFor="email">
-                    Email
-                  </FieldLabel>
-                  <FieldDescription>email@email.com</FieldDescription>
-                </FieldContent>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={onChangeEmail}
-                >
-                  Change Email
-                </Button>
-              </Field>
-              <Field orientation="responsive">
-                <FieldContent>
-                  <FieldLabel htmlFor="password">
-                    Password
-                  </FieldLabel>
-                  <FieldDescription>Change your password to log in to your account</FieldDescription>
-                </FieldContent>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={onChangePassword}
-                >
-                  Change Password
-                </Button>
-              </Field>
-              <FieldSeparator />
+              {!isSocial && (
+                  <>
+                    <Field orientation="responsive">
+                      <FieldContent>
+                        <FieldLabel htmlFor="email">
+                          Email
+                        </FieldLabel>
+                        <FieldDescription>{email}</FieldDescription>
+                      </FieldContent>
+                      <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          onClick={onChangeEmail}
+                      >
+                        Change Email
+                      </Button>
+                    </Field>
+                    <Field orientation="responsive">
+                      <FieldContent>
+                        <FieldLabel htmlFor="password">
+                          Password
+                        </FieldLabel>
+                        <FieldDescription>Change your password to log in to your account</FieldDescription>
+                      </FieldContent>
+                      <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          onClick={onChangePassword}
+                      >
+                        Change Password
+                      </Button>
+                    </Field>
+                    <FieldSeparator />
+                  </>
+              )}
               <Field orientation="responsive">
                 <FieldLabel htmlFor="logout">
                   Logout
@@ -567,9 +717,24 @@ const SupportSection = () => (
   </SettingsSection>
 )
 
-function SettingsOverlay() {
+interface SettingsOverlayProps {
+  email: string;
+  name: string;
+  socialUser: boolean;
+  preferences: Preferences;
+  onLogout: () => Promise<boolean>;
+  onChangeEmail: (newEmail: string) => Promise<boolean>;
+  onChangePassword: (newPassword: string, currentPassword: string) => Promise<boolean>;
+  onDeleteAccount: (password?: string) => Promise<boolean>;
+  onChangePreferences: (newPreferences: Preferences) => Promise<boolean>;
+  onChangeName: (newName: string) => Promise<boolean>;
+}
+
+function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChangeEmail, onChangePassword, onDeleteAccount, onChangePreferences, onChangeName}: SettingsOverlayProps) {
   const [open, setOpen] = useState(false)
   const [activeView, setActiveView] = useState("Profile")
+  const [newName, setNewName] = useState<string>(name)
+  const isDirty = newName !== name
 
   // Dialog states
   const [changeEmailOpen, setChangeEmailOpen] = useState(false)
@@ -595,6 +760,28 @@ function SettingsOverlay() {
     }
   }, [])
 
+  // Sync newName when name prop changes
+  useEffect(() => {
+    setNewName(name)
+  }, [name])
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && isDirty) {
+      // Reset name if there are unsaved changes when closing
+      setNewName(name)
+    }
+    setOpen(newOpen)
+  }
+
+  const handleEscapeKeyDown = (e: KeyboardEvent) => {
+    if (isDirty) {
+      // If there are unsaved changes, cancel the edit instead of closing
+      e.preventDefault()
+      setNewName(name)
+    }
+    // If not dirty, allow default behavior (close dialog)
+  }
+
   // View mapping
   const views: Record<string, React.ReactNode> = {
     Profile: (
@@ -603,16 +790,37 @@ function SettingsOverlay() {
         onChangePassword={() => setChangePasswordOpen(true)}
         onLogout={() => setLogoutOpen(true)}
         onDeleteAccount={() => setDeleteAccountOpen(true)}
+        name={name}
+        email={email}
+        preferences={preferences}
+        onNameChange={onChangeName}
+        onPreferencesChange={onChangePreferences}
+        isSocial={socialUser}
+        newName={newName}
+        setNewName={setNewName}
       />
     ),
     Connections: <ConnectionsSection />,
     Support: <SupportSection />,
   }
 
+  const closeOnSuccess = async (authFunction: () => Promise<boolean>) => {
+    const success = await authFunction();
+    if (success) {
+      setOpen(false);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-3 md:max-w-[700px] lg:max-w-[800px]">
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent
+          className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-3 md:max-w-[700px] lg:max-w-[800px]"
+          onEscapeKeyDown={handleEscapeKeyDown}
+        >
           
           <DialogTitle className="p-6 pb-0 md:sr-only md:pb-3 bg-transparent">Settings</DialogTitle>
           <DialogDescription className="sr-only">
@@ -674,10 +882,32 @@ function SettingsOverlay() {
       </Dialog>
 
       {/* Account Action Dialogs */}
-      <ChangeEmailDialog open={changeEmailOpen} onOpenChange={setChangeEmailOpen} />
-      <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
-      <LogoutDialog open={logoutOpen} onOpenChange={setLogoutOpen} />
-      <DeleteAccountDialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen} />
+      <ChangeEmailDialog open={changeEmailOpen} onOpenChange={setChangeEmailOpen} onSubmit={onChangeEmail} />
+      <ChangePasswordDialog
+          open={changePasswordOpen}
+          onOpenChange={setChangePasswordOpen}
+          onSubmitChange={onChangePassword}
+          forgot={false}
+      />
+      <LogoutDialog
+          open={logoutOpen}
+          onOpenChange={setLogoutOpen}
+          onLogout={async () => {
+            const success = await onLogout();
+            if (success) {
+              setOpen(false);
+              return true;
+            }
+            return false;
+          }
+      }
+      />
+      <DeleteAccountDialog
+          open={deleteAccountOpen}
+          onOpenChange={setDeleteAccountOpen}
+          onSubmit={onDeleteAccount}
+          isSocial={true} // if password-only deletion is possible simultaneously with email verification, set this to socialUser
+      />
     </>
   )
 }

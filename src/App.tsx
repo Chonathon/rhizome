@@ -7,7 +7,7 @@ import useGenres from "@/hooks/useGenres";
 import ArtistsForceGraph from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
-  AccountMenuState, Artist, ArtistNodeLimitType, BadDataReport,
+  Artist, ArtistNodeLimitType, BadDataReport,
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
@@ -33,8 +33,9 @@ import {
   mixColors,
   primitiveArraysEqual,
   fixWikiImageURL,
+  assignDegreesToArtists,
   formatNumber,
-  until,
+  until, isOnPage
 } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -59,7 +60,7 @@ import {
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
-  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, ALPHA_SURVEY_TIME_MS
+  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, ALPHA_SURVEY_TIME_MS, DEFAULT_PREFERENCES
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -67,9 +68,11 @@ import AuthOverlay from '@/components/AuthOverlay';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
-import SettingsOverlay from '@/components/SettingsOverlay';
 import { showNotiToast } from '@/components/NotiToast';
-
+import useAuth from "@/hooks/useAuth";
+import SettingsOverlay, {ChangePasswordDialog} from '@/components/SettingsOverlay';
+import {submitFeedback} from "@/apis/feedbackApi";
+import {useNavigate} from "react-router";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -115,7 +118,6 @@ function App() {
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
-  const accountMenuState: AccountMenuState = "guest"; // Placeholder for auth state
   const { addRecentSelection } = useRecentSelections();
   const {
     genres,
@@ -137,6 +139,7 @@ function App() {
     artistsDataFlagError,
     totalArtistsInDB,
     topArtists,
+    fetchLikedArtists,
     fetchArtistTopTracks,
     artistsPlayIDsLoading,
     artistPlayIDLoadingKey,
@@ -153,6 +156,35 @@ function App() {
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
+  const [collectionMode, setCollectionMode] = useState<boolean>(false);
+  const [separationDegrees, setSeparationDegrees] = useState<number>(0);
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState<boolean>(isOnPage('reset-password'));
+  const {
+    userID,
+    userName,
+    userEmail,
+    userImage,
+    preferences,
+    likedArtists,
+    isSocialUser,
+    signIn,
+    signInSocial,
+    signUp,
+    signOut,
+    changeEmail,
+    changePassword,
+    deleteUser,
+    updateUser,
+    likeArtist,
+    unlikeArtist,
+    updatePreferences,
+    validSession,
+    forgotPassword,
+    resetPassword,
+    authError,
+    authLoading,
+  } = useAuth();
+  const navigate = useNavigate();
 
   const artistsAddedRef = useRef(0);
 
@@ -181,9 +213,9 @@ function App() {
   const singletonParentGenre = useMemo(() => {
     return {
       ...SINGLETON_PARENT_GENRE,
-      subgenres: genres.filter(g => isSingletonGenre(g, GENRE_FILTER_CLUSTER_MODE)).map(s => {
+      subgenres: genres ? genres.filter(g => isSingletonGenre(g, GENRE_FILTER_CLUSTER_MODE)).map(s => {
         return {id: s.id, name: s.name}
-      })
+      }) : []
     }
   }, [genres]);
 
@@ -326,9 +358,11 @@ function App() {
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
-    const nodeCount = genres.length;
-    onGenreNodeCountChange(nodeCount);
-    setGenreColorMap(buildGenreColorMap(genres, genreRoots));
+    if (genres) {
+      const nodeCount = genres.length;
+      onGenreNodeCountChange(nodeCount);
+      setGenreColorMap(buildGenreColorMap(genres, genreRoots));
+    }
   }, [genres, genreLinks]);
 
   // Fetches top tracks of selected genre player ids in the background
@@ -651,6 +685,7 @@ function App() {
     deselectArtist();
     setCanCreateSimilarArtistGraph(false);
     setGenreClusterMode(DEFAULT_CLUSTER_MODE);
+    setCollectionMode(false);
   }
 
   const deselectGenre = () => {
@@ -754,7 +789,7 @@ function App() {
   }
 
   const getGenreRootsFromID = (genreID: string) => {
-    const genre = genres.find((g) => g.id === genreID);
+    const genre = genres ? genres.find((g) => g.id === genreID) : undefined;
     if (genre) {
       return genre.rootGenres;
     }
@@ -762,10 +797,9 @@ function App() {
   }
 
   const onBadDataGenreSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
-    //TODO: use actual user ID when accounts are implemented
-    const userID = 'dev';
+    const user = userID ? userID : 'unregistered';
     const report: BadDataReport = {
-      userID,
+      userID: user,
       itemID,
       reason,
       type,
@@ -786,10 +820,9 @@ function App() {
   }
 
   const onBadDataArtistSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
-    //TODO: use actual user ID when accounts are implemented
-    const userID = 'dev';
+    const user = userID ? userID : 'unregistered';
     const report: BadDataReport = {
-      userID,
+      userID: user,
       itemID,
       reason,
       type,
@@ -812,7 +845,7 @@ function App() {
   }
 
   const getRootGenreFromTags = (tags: Tag[]) => {
-    if (tags && tags.length) {
+    if (tags && tags.length && genres) {
       const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
       if (genreTags.length > 0) {
         const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
@@ -931,6 +964,61 @@ function App() {
     return { genre, isRoot, parents };
   }
 
+  const onAddArtistButtonToggle = async (artistID?: string) => {
+    if (userID) {
+      if (!artistID) return;
+      if (likedArtists && isInCollection(artistID)) {
+        await unlikeArtist(artistID);
+      } else {
+        await likeArtist(artistID);
+      }
+    } else {
+      window.dispatchEvent(new Event('auth:open'));
+    }
+  }
+
+  const isInCollection = (artistID?: string) => {
+    return artistID ? likedArtists.includes(artistID) : false;
+  }
+
+  // temporary functionality to just show liked artists if logged in
+  const onCollectionClick = async () => {
+    if (userID) {
+      setCollectionMode(true);
+      if (likedArtists.length) {
+        await fetchLikedArtists(likedArtists);
+        setGraph('artists');
+      } else {
+        toast.info("You haven't added any artists yet!");
+      }
+    } else {
+      window.dispatchEvent(new Event('auth:open'));
+    }
+  }
+
+  const onExploreClick = () => {
+    resetAppState();
+  }
+
+  const setDegrees = (value: number) => {
+    if (currentArtists && likedArtists && likedArtists.length) {
+      const degreeArtists = assignDegreesToArtists(currentArtists, likedArtists).filter(da => da.degree === 0 || (da.degree && da.degree <= value));
+      const artistSet = new Set(degreeArtists.map(a => a.id));
+      const newLinks = currentArtistLinks.filter(l => {
+        return artistSet.has(l.source) && artistSet.has(l.target);
+      })
+      setCurrentArtists(degreeArtists);
+      setCurrentArtistLinks(newLinks);
+    }
+  }
+
+  // Uses useNavigate to navigate to a path, accepts optional functions to run before and after navigation
+  const navigateAnd = (pathname: string, beforeFn?: () => void, afterFn?: () => void) => {
+    if (beforeFn) beforeFn();
+    navigate(pathname);
+    if (afterFn) afterFn();
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -941,7 +1029,10 @@ function App() {
         graph={graph}
         onGraphChange={onTabChange}
         resetAppState={resetAppState}
-        accountMenuState={accountMenuState}
+        onCollectionClick={onCollectionClick}
+        onExploreClick={onExploreClick}
+        signedInUser={!!userID}
+        isCollectionMode={collectionMode}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -1074,7 +1165,7 @@ function App() {
             </div>
           {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
             <NodeLimiter
-                totalNodes={genres.length}
+                totalNodes={genres ? genres.length : 0}
                 nodeType={'genres'}
                 initialValue={genreNodeCount}
                 onChange={onGenreNodeCountChange}
@@ -1087,6 +1178,14 @@ function App() {
               onChange={(value) => artistNodeCountSelection(value)}
               show={showArtistNodeLimiter()}
             />
+            {/*For testing node degrees*/}
+            {/*<NodeLimiter*/}
+            {/*    totalNodes={6}*/}
+            {/*    nodeType={'collection'}*/}
+            {/*    initialValue={Infinity}*/}
+            {/*    onChange={(value) => setDegrees(value)}*/}
+            {/*    show={graph === 'artists' && collectionMode}*/}
+            {/*/>*/}
           </div>}
           {/* right controls */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
@@ -1142,7 +1241,6 @@ function App() {
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
                 onPlayGenre={onPlayGenre}
-                //playLoading={playerLoading && (!!selectedGenres[0] ? playerLoadingKey === `genre:${selectedGenres[0].id}` : false)}
                 playLoading={isPlayerLoadingGenre()}
               />
               <ArtistInfo
@@ -1161,8 +1259,9 @@ function App() {
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
                 onPlay={onPlayArtist}
-                //playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
                 playLoading={isPlayerLoadingArtist()}
+                onArtistToggle={onAddArtistButtonToggle}
+                isInCollection={isInCollection(selectedArtist?.id)}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
@@ -1215,9 +1314,39 @@ function App() {
           />
         </div>
       </AppSidebar>
-      <SettingsOverlay />
-      <AuthOverlay />
-      <FeedbackOverlay />
+      <SettingsOverlay
+        name={userName || ''}
+        email={userEmail || ''}
+        preferences={preferences || DEFAULT_PREFERENCES}
+        socialUser={isSocialUser || false}
+        onLogout={signOut}
+        onChangeEmail={changeEmail}
+        onChangePassword={changePassword}
+        onDeleteAccount={deleteUser}
+        onChangeName={updateUser}
+        onChangePreferences={updatePreferences}
+      />
+      <AuthOverlay
+          onSignUp={signUp}
+          onSignInSocial={signInSocial}
+          onSignIn={signIn}
+          onForgotPassword={forgotPassword}
+      />
+      <FeedbackOverlay
+        onSubmit={submitFeedback}
+        userID={userID}
+        userEmail={userEmail}
+      />
+      <ChangePasswordDialog
+          open={isResetPasswordOpen}
+          onOpenChange={setIsResetPasswordOpen}
+          onSubmitChange={changePassword}
+          onSubmitReset={resetPassword}
+          navigateOnReset={() => navigateAnd('/', undefined, () => window.dispatchEvent(
+              new CustomEvent("auth:open", {detail: { mode: "login" }}
+            )))}
+          forgot={true}
+      />
     </SidebarProvider>
   );
 }
