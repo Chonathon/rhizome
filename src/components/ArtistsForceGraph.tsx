@@ -2,7 +2,7 @@ import { forwardRef, useMemo } from "react";
 import Graph, {
   type GraphHandle,
   type SharedGraphNode,
-} from "./Graph/Graph";
+} from "./Graph";
 import { Artist, NodeLink } from "@/types";
 
 interface ArtistsForceGraphProps {
