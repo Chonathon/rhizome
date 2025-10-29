@@ -630,6 +630,7 @@ function App() {
     setShowArtistCard(true);
     setAutoFocusGraph(true); // Enable auto-focus for top artist clicks
     addRecentSelection(artist);
+    setGenreInfoToShow(undefined);
   }
 
   const onArtistNodeClick = (artist: Artist) => {
@@ -1182,6 +1183,9 @@ function App() {
       if (selectedIDs.length === 0) {
         if (selectedGenres.length !== 0) {
           setSelectedGenres([]);
+          // Clear genre card state when clearing genre filter
+          setGenreInfoToShow(undefined);
+          setShowGenreCard(false);
         }
       } else {
         if (!primitiveArraysEqual(selectedIDs, selectedGenres.map(genre => genre.id))) {
