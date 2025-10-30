@@ -239,10 +239,13 @@ export function ArtistInfo({
                      </div>
                 {/* Description */}
                 {isDesktop && (
-                  <button className='text-left'
+                  <button className='text-left' 
+                  type="button"
+                  aria-label={desktopExpanded ? 'Collapse' : 'Expand'}
+                  title={desktopExpanded ? 'Collapse' : 'Expand'}
                   onClick={() => setDesktopExpanded((prev) => !prev)}
                   >
-                    <p className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-muted-foreground/70' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                    <p className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-muted-foreground/80' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
                     >
                       {selectedArtist?.bio?.summary || 'No description'}
                     </p>
