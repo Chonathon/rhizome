@@ -92,6 +92,7 @@ function App() {
   }, [selectedGenres]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [selectedArtistFromSearch, setSelectedArtistFromSearch] = useState<boolean>(false);
+  const [artistInfoToShow, setArtistInfoToShow] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [genreInfoToShow, setGenreInfoToShow] = useState<Genre | undefined>(undefined);
   const [showGenreCard, setShowGenreCard] = useState(false);
@@ -626,7 +627,8 @@ function App() {
   const onTopArtistClick = (artist: Artist) => {
     setGraph('artists');
     setSelectedArtistFromSearch(false);
-    setSelectedArtist(artist);
+    setSelectedArtist(artist); // For graph focus/dimming
+    setArtistInfoToShow(artist); // For drawer display
     setShowArtistCard(true);
     setAutoFocusGraph(true); // Enable auto-focus for top artist clicks
     addRecentSelection(artist);
@@ -636,7 +638,8 @@ function App() {
   const onArtistNodeClick = (artist: Artist) => {
     setSelectedArtistFromSearch(false);
     if (graph === 'artists') {
-      setSelectedArtist(artist);
+      setSelectedArtist(artist); // For graph focus/dimming
+      setArtistInfoToShow(artist); // For drawer display
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
@@ -644,7 +647,8 @@ function App() {
     if (graph === 'similarArtists') {
       // Just select the artist without changing the similar filter
       // Users can use "View Similar Artist Graph" in ArtistInfo to see similar artists
-      setSelectedArtist(artist);
+      setSelectedArtist(artist); // For graph focus/dimming
+      setArtistInfoToShow(artist); // For drawer display
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
@@ -710,6 +714,7 @@ function App() {
       }
       return artist;
     });
+    setArtistInfoToShow(artist); // For drawer display
     setShowArtistCard(true);
 
     if (shouldTriggerRefocus) {
@@ -797,17 +802,11 @@ function App() {
     setAutoFocusGraph(false); // Disable auto-focus for search selections
     setGenreInfoToShow(genre);
     setShowGenreCard(true);
-    setShowArtistCard(false); // ensure only one card
-    setSelectedArtist(undefined);
-    setSelectedArtistFromSearch(false);
+    setShowArtistCard(false); // Hide artist card while showing genre card
+    // Don't clear selectedArtist or selectedArtistFromSearch - preserve focused artist state
 
-    // In genre view: also select and highlight the node (but don't auto-focus)
-    if (graph === 'genres') {
-      if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-      setInitialGenreFilter(createInitialGenreFilterObject(genre));
-      setSelectedGenres([genre]);
-    }
-    // In artist/similarArtists view: just show the info card, don't change any filters
+    // Don't change graph selection/filters - just show the info card as a preview
+    // This prevents unwanted graph dimming during search
 
     addRecentSelection(genre);
   }
@@ -815,7 +814,7 @@ function App() {
   const onSearchArtistSelect = (artist: Artist) => {
     setAutoFocusGraph(false); // Disable auto-focus for search selections
     setSelectedArtistFromSearch(true);
-    setSelectedArtist(artist);
+    setArtistInfoToShow(artist); // Use drawer state, not selectedArtist (prevents graph dimming)
     setShowArtistCard(true);
     addRecentSelection(artist);
   }
@@ -825,7 +824,8 @@ function App() {
       const artist = currentArtists.find((a) => a.id === option.id);
       if (!artist) return;
       setSelectedArtistFromSearch(false);
-      setSelectedArtist(artist);
+      setSelectedArtist(artist); // For graph focus/dimming
+      setArtistInfoToShow(artist); // For drawer display
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for find filter selections
       addRecentSelection(artist);
@@ -883,8 +883,37 @@ function App() {
   const deselectArtist = () => {
     setSelectedArtistFromSearch(false);
     setSelectedArtist(undefined);
+    setArtistInfoToShow(undefined);
     setShowArtistCard(false);
     setSelectedArtistNoGenre(undefined);
+  }
+
+  // Smart dismiss handler for GenreInfo - restores focused genre if showing a search result
+  const onGenreInfoDismiss = () => {
+    if (selectedGenres.length > 0 && genreInfoToShow?.id !== selectedGenres[0]?.id) {
+      // We're showing a search result but have a focused genre - restore focused genre's info
+      setGenreInfoToShow(selectedGenres[0]);
+    } else if ((graph === 'artists' || graph === 'similarArtists') && selectedArtist) {
+      // Dismissing genre from artist view with focused artist - restore artist info
+      setShowGenreCard(false);
+      setGenreInfoToShow(undefined);
+      setShowArtistCard(true);
+      setArtistInfoToShow(selectedArtist);
+    } else {
+      // No focused genre or already showing the focused genre - fully deselect
+      deselectGenre();
+    }
+  }
+
+  // Smart dismiss handler for ArtistInfo - restores focused artist if showing a search result
+  const onArtistInfoDismiss = () => {
+    if (selectedArtist && artistInfoToShow?.id !== selectedArtist?.id) {
+      // Showing search result but have focused artist - restore focused artist info
+      setArtistInfoToShow(selectedArtist);
+    } else {
+      // No focused artist or showing focused artist - fully deselect
+      deselectArtist();
+    }
   }
 
   const similarArtistFilter = (similarArtists: string[]) => {
@@ -1536,7 +1565,7 @@ function App() {
                 show={showGenreCard && !showArtistCard}
                 genreArtistsLoading={artistsLoading}
                 onTopArtistClick={onTopArtistClick}
-                deselectGenre={deselectGenre}
+                deselectGenre={onGenreInfoDismiss}
                 onSelectGenre={onLinkedGenreClick}
                 allArtists={onShowAllArtists}
                 onBadDataSubmit={onBadDataGenreSubmit}
@@ -1550,12 +1579,12 @@ function App() {
                 playLoading={isPlayerLoadingGenre()}
               />
               <ArtistInfo
-                selectedArtist={selectedArtist}
+                selectedArtist={artistInfoToShow}
                 setArtistFromName={setArtistFromName}
                 artistLoading={false}
                 artistError={false}
                 show={showArtistCard}
-                deselectArtist={deselectArtist}
+                deselectArtist={onArtistInfoDismiss}
                 similarFilter={similarArtistFilter}
                 onBadDataSubmit={onBadDataArtistSubmit}
                 onGenreClick={onGenreNameClick}
