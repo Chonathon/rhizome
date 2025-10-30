@@ -924,10 +924,9 @@ function App() {
       setArtistInfoToShow(selectedArtist);
       setShowArtistCard(true); // Actually show the restored artist card
     } else if ((graph === 'artists' || graph === 'similarArtists') && artistGenreFilter.length > 0) {
-      // In artist view with active filter: restore genre card
-      setShowArtistCard(false);
+      // In artist view with active filter: fully deselect artist and restore genre card
+      deselectArtist();
       setShowGenreCard(true);
-      // Keep artist selection for potential restoration, but hide the card
     } else {
       // No focused artist or showing focused artist - fully deselect
       deselectArtist();
