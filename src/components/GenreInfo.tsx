@@ -55,7 +55,7 @@ export function GenreInfo({
     playLoading,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
-  const [desktopExpanded, setDesktopExpanded] = useState(true)
+  const [desktopExpanded, setDesktopExpanded] = useState(false)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
 
 
@@ -321,12 +321,17 @@ export function GenreInfo({
                       </Button>
                     </div>
                     {isDesktop && (
-                      <p
-                        onClick={() => setDesktopExpanded((prev) => !prev)}
-                        className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                      <button className='text-left'
+                      type="button"
+                      aria-label={desktopExpanded ? 'Collapse' : 'Expand'}
+                      title={desktopExpanded ? 'Collapse' : 'Expand'}
+                      onClick={() => setDesktopExpanded((prev) => !prev)}
                       >
-                        {selectedGenre?.description || 'No description'}
-                      </p>
+                        <p className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-muted-foreground/80' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                        >
+                          {selectedGenre?.description || 'No description'}
+                        </p>
+                      </button>
                     )}
                   </div>
                    {!isDesktop && (
