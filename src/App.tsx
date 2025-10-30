@@ -609,9 +609,9 @@ function App() {
     // Ensure the artists hook actually fetches data when switching via this path
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
 
-    // Close the genre info card first
-    setGenreInfoToShow(undefined);
-    setShowGenreCard(false);
+    // Keep the genre info card visible in artist view
+    setGenreInfoToShow(genre);
+    setShowGenreCard(true);
 
     // Set the genre filter and selection
     const filterObj = createInitialGenreFilterObject(genre);
@@ -629,6 +629,14 @@ function App() {
 
   // Switch to artists graph and select the clicked artist
   const onTopArtistClick = (artist: Artist) => {
+    // Apply genre filter from current context
+    const currentGenre = genreInfoToShow || selectedGenres[0];
+    if (currentGenre) {
+      setArtistGenreFilter([currentGenre]);
+      setSelectedGenres([currentGenre]);
+      setInitialGenreFilter(createInitialGenreFilterObject(currentGenre));
+    }
+
     setGraph('artists');
     setSelectedArtistFromSearch(false);
     setSelectedArtist(artist); // For graph focus/dimming
@@ -636,7 +644,8 @@ function App() {
     setShowArtistCard(true);
     setAutoFocusGraph(true); // Enable auto-focus for top artist clicks
     addRecentSelection(artist);
-    setGenreInfoToShow(undefined);
+    // Hide genre card but keep genreInfoToShow for restoration
+    setShowGenreCard(false);
   }
 
   const onArtistNodeClick = (artist: Artist) => {
@@ -900,12 +909,8 @@ function App() {
       setGenreInfoToShow(selectedGenres[0]);
     } else if (graph === 'artists' || graph === 'similarArtists') {
       // In artist view: just hide the genre card, preserve selection and filter for tab switching
+      // Don't restore artist card - this prevents the endless loop
       setShowGenreCard(false);
-      // If there's a selected artist, restore artist info
-      if (selectedArtist) {
-        setShowArtistCard(true);
-        setArtistInfoToShow(selectedArtist);
-      }
     } else {
       // In genre view: fully deselect
       deselectGenre();
@@ -917,6 +922,12 @@ function App() {
     if (selectedArtist && artistInfoToShow?.id !== selectedArtist?.id) {
       // Showing search result but have focused artist - restore focused artist info
       setArtistInfoToShow(selectedArtist);
+      setShowArtistCard(true); // Actually show the restored artist card
+    } else if ((graph === 'artists' || graph === 'similarArtists') && artistGenreFilter.length > 0) {
+      // In artist view with active filter: restore genre card
+      setShowArtistCard(false);
+      setShowGenreCard(true);
+      // Keep artist selection for potential restoration, but hide the card
     } else {
       // No focused artist or showing focused artist - fully deselect
       deselectArtist();
@@ -1087,6 +1098,12 @@ function App() {
       }
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
+
+      // Only show genre card if filter is active
+      if (artistGenreFilter.length === 0) {
+        setShowGenreCard(false);
+      }
+
       // Restore artist card if there's a selected artist
       if (selectedArtist) {
         setShowArtistCard(true);
