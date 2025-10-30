@@ -61,7 +61,7 @@ export function ArtistInfo({
   onArtistToggle,
   isInCollection,
 }: ArtistInfoProps) {
-  const [desktopExpanded, setDesktopExpanded] = useState(true);
+  const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1200px)");
 
@@ -239,12 +239,14 @@ export function ArtistInfo({
                      </div>
                 {/* Description */}
                 {isDesktop && (
-                  <p
+                  <button className='text-left'
                   onClick={() => setDesktopExpanded((prev) => !prev)}
-                  className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
                   >
-                    {selectedArtist?.bio?.summary || 'No description'}
-                  </p>
+                    <p className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-muted-foreground/70' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                    >
+                      {selectedArtist?.bio?.summary || 'No description'}
+                    </p>
+                  </button>
                 )}
                   </div>
                    {!isDesktop && (
