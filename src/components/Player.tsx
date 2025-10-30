@@ -531,6 +531,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
               </div>
                 <Progress
                 value={percent}
+                className="sm:group-hover:h-2"
                 onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
                 onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
                 />
