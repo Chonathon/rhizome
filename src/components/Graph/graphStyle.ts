@@ -43,8 +43,6 @@ export function estimateLabelWidth(name: string, fontPx = LABEL_FONT_SIZE): numb
  * Calculate collision radius for physics simulation.
  *
  * Previously included label dimensions which caused physics jitter.
- * Now uses only visual node radius for smooth, stable simulation.
- * Label overlap will be handled via visual-only collision detection during rendering.
  *
  * @param _label - Node label (unused, kept for API compatibility)
  * @param nodeRadius - Visual radius of the node circle

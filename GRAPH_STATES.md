@@ -67,67 +67,6 @@
   - Click × badge → Return to Artists Graph (Explore)
   - Click Artists tab → Return to Artists Graph (Explore)
 
-## Artist Info Panel
-- **Type**: Overlay/drawer (not a graph state)
-- **Shows**:
-  - Artist details (title is clickable)
-  - Bio, stats
-  - Similar artists (badges)
-  - Genres (badges)
-- **Available From**: Artists Graph, Collections Graph, Similar Artists Graph
-- **Primary Action**:
-  - **Click artist title** → "Go to Artist"
-    - Navigates to Similar Artists Graph (star topology)
-    - Changes to `graph = 'similarArtists'` state
-    - Artist-centric view with one degree of separation
-- **Secondary Actions**:
-  - **View Related Artists** button
-    - Switches to/filters Artists Graph (Explore) by artist's genres
-    - Genre-focused exploration (broader context)
-    - Stays in `graph = 'artists'` state
-  - **View Similar Artist Graph** button
-    - Same as clicking artist title (redundant but explicit)
-    - Navigates to Similar Artists Graph
-    - Changes to `graph = 'similarArtists'` state
-
-## State Transitions
-
-### Navigation Flows
-- **Genres → Artists (Explore)**
-  - Trigger: Click genre node, "All Artists" button, or Artists tab
-  - Effect: Loads artists for selected genre(s), switches to Explore view
-
-- **Any State → Collections**
-  - Trigger: Collections tab/nav button
-  - Effect: Switches to Collections graph, preserves Explore filters independently
-
-- **Collections → Artists (Explore)**
-  - Trigger: Artists/Explore tab
-  - Effect: Returns to Explore view with previously set filters
-
-- **Artists/Collections → Artist Info**
-  - Trigger: Click artist node or artist badge
-  - Effect: Opens info panel overlay
-
-- **Artist Info → Similar Artist Graph ("Go to Artist")**
-  - Trigger: Click artist title OR "View Similar Artist Graph" button
-  - Effect: Changes to `similarArtists` state, shows star topology
-  - Purpose: Artist-centric view, one degree of separation
-  - Note: This is the primary "go to this artist" action
-
-- **Artist Info → Related Artists (filtered Explore)**
-  - Trigger: "View Related Artists" button
-  - Effect: Switches to/filters Explore graph by artist's genres
-  - Purpose: Genre-focused exploration (broader context)
-
-- **Similar Artists → Artists (Explore)**
-  - Trigger: Click × badge or Artists tab
-  - Effect: Restores full artist list, returns to Explore
-
-- **Similar Artists → New Similar Artist Graph**
-  - Trigger: Click another artist node
-  - Effect: Rebuilds graph centered on new artist
-
 ## Data Flow
 
 ### Data Sources
@@ -136,56 +75,12 @@
 - **Collections Graph**: `useCollections()` or user state (TBD) → user's saved artists
 - **Similar Artists Graph**: `artist.similar` names → looked up in loaded artists array
 
-### Filter Scoping
-- **Explore (Artists) Filters**:
-  - Genre Filter (selected genres)
-  - Find Filter (search/filter artists)
-  - Node count/limit settings
-  - Preserved when switching between Genres → Artists → Similar Artists
-  - **NOT** shared with Collections
-
-- **Collections Filters**:
-  - Independent filter state (TBD)
-  - Does NOT inherit Explore filters
-  - May have its own sorting, grouping, or filtering controls
-
-- **Example Flow**:
-  1. User sets Genre Filter to "Jazz" in Explore → Shows jazz artists
-  2. User switches to Collections tab → Shows ALL saved artists (not filtered to Jazz)
-  3. User switches back to Explore → Jazz filter is still active
-
-## Tab/Navigation Behavior
-
-### Tab Display
-- **Genres Graph**: Genres tab active
-- **Artists Graph**: Artists tab active, GenreFilter shows selected genres
-- **Collections Graph**: Collections tab active (TBD: may show count/sort indicator)
-- **Similar Artists Graph**: Artists tab active, Badge shows "Similar artists for {name} ×"
-
-### Mobile/Desktop Consistency
-- Similar Artists Graph treated as part of Artists view in navigation
-- Highlights "Artists" button when `graph === 'artists' || graph === 'similarArtists'`
-- Collections has its own navigation button separate from Artists/Explore
-
-### UX Notes
-- **"Go to Artist" action**: Click artist title → Similar Artists Graph
-  - Simple, predictable, artist-centric
-  - Every artist has same view structure (star topology)
-  - One degree of separation from selected artist
-- **"Explore Related" action**: "View Related Artists" button → Genre-filtered Explore
-  - Genre-focused, broader context
-  - Shows full network of artists in same genres
-  - Multiple degrees of separation
-- **Potential improvements**:
-  - Consider removing "View Similar Artist Graph" button (redundant with title click)
-  - Consider renaming "View Related Artists" to "Explore Related Genres" for clarity
-
 ---
 
 # Unified Graph API Design
 
 ## Overview
-- Refactor to single `<Graph>` component
+- Single `<Graph>` component
 - Flexible API supports different data types, layouts, interactions
 - Configuration-based approach
 
@@ -364,22 +259,6 @@ interface GraphState {
   error={error}
 />
 ```
-
-## Migration Strategy
-1. **Phase 1**: Create unified `<Graph>` component with full API
-2. **Phase 2**: Refactor GenresForceGraph to use new API
-3. **Phase 3**: Refactor ArtistsForceGraph to use new API
-4. **Phase 4**: Implement Collections using new API
-5. **Phase 5**: Remove old graph components
-
-## Benefits
-- Code reusability (single graph implementation)
-- Consistency (uniform behavior across all graphs)
-- Maintainability (changes in one place)
-- Extensibility (easy to add new graph types)
-- Type safety (full TypeScript support with generics)
-- Performance (optimizations benefit all graphs)
-- Testing (test once, validate everywhere)
 
 ## Extensibility Options
 
