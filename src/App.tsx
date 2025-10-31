@@ -97,6 +97,7 @@ function App() {
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [genreInfoToShow, setGenreInfoToShow] = useState<Genre | undefined>(undefined);
   const [showGenreCard, setShowGenreCard] = useState(false);
+  const [restoreGenreCardOnArtistDismiss, setRestoreGenreCardOnArtistDismiss] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
@@ -612,6 +613,7 @@ function App() {
     // Keep the genre info card visible in artist view
     setGenreInfoToShow(genre);
     setShowGenreCard(true);
+    setRestoreGenreCardOnArtistDismiss(false); // Genre card is visible, not hidden
 
     // Set the genre filter and selection
     const filterObj = createInitialGenreFilterObject(genre);
@@ -644,12 +646,14 @@ function App() {
     setShowArtistCard(true);
     setAutoFocusGraph(true); // Enable auto-focus for top artist clicks
     addRecentSelection(artist);
-    // Hide genre card but keep genreInfoToShow for restoration
+    // Hide genre card but mark it for restoration when artist card is dismissed
     setShowGenreCard(false);
+    setRestoreGenreCardOnArtistDismiss(true);
   }
 
   const onArtistNodeClick = (artist: Artist) => {
     setSelectedArtistFromSearch(false);
+    setRestoreGenreCardOnArtistDismiss(false); // Direct node click, don't restore genre card
     if (graph === 'artists') {
       setSelectedArtist(artist); // For graph focus/dimming
       setArtistInfoToShow(artist); // For drawer display
@@ -909,8 +913,9 @@ function App() {
       setGenreInfoToShow(selectedGenres[0]);
     } else if (graph === 'artists' || graph === 'similarArtists') {
       // In artist view: just hide the genre card, preserve selection and filter for tab switching
-      // Don't restore artist card - this prevents the endless loop
+      // Clear the restore flag - user explicitly dismissed it, so don't restore later
       setShowGenreCard(false);
+      setRestoreGenreCardOnArtistDismiss(false);
     } else {
       // In genre view: fully deselect
       deselectGenre();
@@ -923,10 +928,11 @@ function App() {
       // Showing search result but have focused artist - restore focused artist info
       setArtistInfoToShow(selectedArtist);
       setShowArtistCard(true); // Actually show the restored artist card
-    } else if ((graph === 'artists' || graph === 'similarArtists') && artistGenreFilter.length > 0) {
-      // In artist view with active filter: fully deselect artist and restore genre card
+    } else if (restoreGenreCardOnArtistDismiss) {
+      // Genre card should be restored (e.g., after clicking top artist from genre card)
       deselectArtist();
       setShowGenreCard(true);
+      setRestoreGenreCardOnArtistDismiss(false); // Reset flag after restoring
     } else {
       // No focused artist or showing focused artist - fully deselect
       deselectArtist();
