@@ -87,15 +87,25 @@ function App() {
   const artistsGraphRef = useRef<GraphHandle | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
+  const [artistGenreFilter, setArtistGenreFilter] = useState<Genre[]>([]);
+  const artistGenreFilterIDs = useMemo(() => {
+    return artistGenreFilter.map(genre => genre.id);
+  }, [artistGenreFilter]);
   const selectedGenreIDs = useMemo(() => {
     return selectedGenres.map(genre => genre.id);
   }, [selectedGenres]);
+  const artistQueryGenreIDs = useMemo(() => {
+    return artistGenreFilterIDs.length > 0 ? artistGenreFilterIDs : selectedGenreIDs;
+  }, [artistGenreFilterIDs, selectedGenreIDs]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [selectedArtistFromSearch, setSelectedArtistFromSearch] = useState<boolean>(false);
+  const [artistPreviewStack, setArtistPreviewStack] = useState<Artist[]>([]);
+  const [artistInfoDrawerVersion, setArtistInfoDrawerVersion] = useState(0);
   const [artistInfoToShow, setArtistInfoToShow] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [genreInfoToShow, setGenreInfoToShow] = useState<Genre | undefined>(undefined);
   const [showGenreCard, setShowGenreCard] = useState(false);
+  const [restoreGenreCardOnArtistDismiss, setRestoreGenreCardOnArtistDismiss] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
@@ -143,7 +153,7 @@ function App() {
     fetchArtistTopTracks,
     artistsPlayIDsLoading,
     artistPlayIDLoadingKey,
-  } = useArtists(selectedGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
+  } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { resolvedTheme } = useTheme();
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
@@ -316,7 +326,7 @@ function App() {
         selectedArtistName: selectedArtist.name,
         artistExists,
         totalArtists: artists.length,
-        selectedGenreIDs
+        artistGenreFilterIDs
       });
       if (!artistExists) {
         if (selectedArtistFromSearch) {
@@ -356,7 +366,7 @@ function App() {
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
     updateGenrePlayerIDs();
-  }, [topArtists]);
+  }, [topArtists, artistQueryGenreIDs]);
 
   // Fetches top tracks of selected artist player ids in the background
   useEffect(() => {
@@ -377,8 +387,8 @@ function App() {
 
   // Add genre play IDs to the playerIDQueue on genre click
   const updateGenrePlayerIDs = async () => {
-    if (topArtists && topArtists.length && !playerIDQueue.has(selectedGenreIDs[0])) {
-      const currentGenreID = selectedGenreIDs[0];
+    const queueGenreID = artistQueryGenreIDs[0];
+    if (topArtists && topArtists.length && queueGenreID && !playerIDQueue.has(queueGenreID)) {
       const genreTracks: TopTrack[] = [];
       for (const artist of topArtists) {
         if (!artist.noTopTracks) {
@@ -404,7 +414,7 @@ function App() {
           }
         }
       }
-      playerIDQueue.set(currentGenreID, genreTracks);
+      playerIDQueue.set(queueGenreID, genreTracks);
     }
   }
 
@@ -593,7 +603,7 @@ function App() {
 
   const onGenreNodeClick = (genre: Genre) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-    setInitialGenreFilter(createInitialGenreFilterObject(genre));
+    // Don't set initialGenreFilter here - clicking a genre is just for viewing, not filtering
     setSelectedGenres([genre]);
     setGenreInfoToShow(genre);
     setShowGenreCard(true);
@@ -608,14 +618,18 @@ function App() {
     // Ensure the artists hook actually fetches data when switching via this path
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
 
-    // Close the genre info card first
-    setGenreInfoToShow(undefined);
-    setShowGenreCard(false);
+    // Keep the genre info card visible in artist view
+    setGenreInfoToShow(genre);
+    setShowGenreCard(true);
+    setRestoreGenreCardOnArtistDismiss(false); // Genre card is visible, not hidden
 
     // Set the genre filter and selection
     const filterObj = createInitialGenreFilterObject(genre);
     setInitialGenreFilter(filterObj);
     setSelectedGenres([genre]);
+
+    // Apply artist filter - this is what triggers the artist fetch
+    setArtistGenreFilter([genre]);
 
     // Switch to artists view (or stay there)
     setGraph('artists');
@@ -625,18 +639,31 @@ function App() {
 
   // Switch to artists graph and select the clicked artist
   const onTopArtistClick = (artist: Artist) => {
+    // Apply genre filter from current context
+    const currentGenre = genreInfoToShow || selectedGenres[0];
+    if (currentGenre) {
+      setArtistGenreFilter([currentGenre]);
+      setSelectedGenres([currentGenre]);
+      setInitialGenreFilter(createInitialGenreFilterObject(currentGenre));
+    }
+
     setGraph('artists');
     setSelectedArtistFromSearch(false);
+    setArtistPreviewStack([]);
     setSelectedArtist(artist); // For graph focus/dimming
     setArtistInfoToShow(artist); // For drawer display
     setShowArtistCard(true);
     setAutoFocusGraph(true); // Enable auto-focus for top artist clicks
     addRecentSelection(artist);
-    setGenreInfoToShow(undefined);
+    // Hide genre card but mark it for restoration when artist card is dismissed
+    setShowGenreCard(false);
+    setRestoreGenreCardOnArtistDismiss(true);
   }
 
   const onArtistNodeClick = (artist: Artist) => {
     setSelectedArtistFromSearch(false);
+    setArtistPreviewStack([]);
+    setRestoreGenreCardOnArtistDismiss(false); // Direct node click, don't restore genre card
     if (graph === 'artists') {
       setSelectedArtist(artist); // For graph focus/dimming
       setArtistInfoToShow(artist); // For drawer display
@@ -659,11 +686,11 @@ function App() {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
 
     const matchesCurrentFilter =
-      selectedGenres.length === 0 ||
-      artist.genres.some((genreId) => selectedGenreIDs.includes(genreId));
+      artistGenreFilter.length === 0 ||
+      artist.genres.some((genreId) => artistGenreFilterIDs.includes(genreId));
 
-    if (selectedGenres.length && !matchesCurrentFilter) {
-      setSelectedGenres([]);
+    if (artistGenreFilter.length && !matchesCurrentFilter) {
+      setArtistGenreFilter([]);
       setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
       setGenreInfoToShow(undefined);
       setShowGenreCard(false);
@@ -705,6 +732,7 @@ function App() {
     }
 
     setSelectedArtistFromSearch(false);
+    setArtistPreviewStack([]);
     setSelectedArtist((prev) => {
       if (prev?.id === artist.id) {
         if (shouldTriggerRefocus) {
@@ -786,7 +814,7 @@ function App() {
     setShowArtistCard(false);
     setSelectedArtist(undefined);
     setSelectedGenres([fullGenre]);
-    setInitialGenreFilter(createInitialGenreFilterObject(fullGenre));
+    // Don't set initialGenreFilter here - focusing a genre is just for viewing, not filtering
     addRecentSelection(fullGenre);
 
     if (shouldTriggerRefocus) {
@@ -814,6 +842,16 @@ function App() {
   const onSearchArtistSelect = (artist: Artist) => {
     setAutoFocusGraph(false); // Disable auto-focus for search selections
     setSelectedArtistFromSearch(true);
+    setArtistPreviewStack((prev) => {
+      if (artistInfoToShow && artistInfoToShow.id !== artist.id) {
+        const last = prev[prev.length - 1];
+        if (last?.id === artistInfoToShow.id) {
+          return prev;
+        }
+        return [...prev, artistInfoToShow];
+      }
+      return prev;
+    });
     setArtistInfoToShow(artist); // Use drawer state, not selectedArtist (prevents graph dimming)
     setShowArtistCard(true);
     addRecentSelection(artist);
@@ -824,6 +862,7 @@ function App() {
       const artist = currentArtists.find((a) => a.id === option.id);
       if (!artist) return;
       setSelectedArtistFromSearch(false);
+      setArtistPreviewStack([]);
       setSelectedArtist(artist); // For graph focus/dimming
       setArtistInfoToShow(artist); // For drawer display
       setShowArtistCard(true);
@@ -872,6 +911,7 @@ function App() {
 
   const deselectGenre = () => {
     setSelectedGenres([]);
+    setArtistGenreFilter([]);
     setGenreInfoToShow(undefined);
     setShowGenreCard(false);
     setGraph('genres');
@@ -886,21 +926,29 @@ function App() {
     setArtistInfoToShow(undefined);
     setShowArtistCard(false);
     setSelectedArtistNoGenre(undefined);
+    setArtistPreviewStack([]);
   }
+
+  // Force the drawer to remount when restoring a previously focused artist without flashing the genre card
+  const reopenArtistInfoCard = (artist: Artist, options?: { fromSearch?: boolean }) => {
+    setArtistInfoToShow(artist);
+    setSelectedArtistFromSearch(!!options?.fromSearch);
+    setArtistInfoDrawerVersion((prev) => prev + 1);
+    setShowArtistCard(true);
+  };
 
   // Smart dismiss handler for GenreInfo - restores focused genre if showing a search result
   const onGenreInfoDismiss = () => {
     if (selectedGenres.length > 0 && genreInfoToShow?.id !== selectedGenres[0]?.id) {
       // We're showing a search result but have a focused genre - restore focused genre's info
       setGenreInfoToShow(selectedGenres[0]);
-    } else if ((graph === 'artists' || graph === 'similarArtists') && selectedArtist) {
-      // Dismissing genre from artist view with focused artist - restore artist info
+    } else if (graph === 'artists' || graph === 'similarArtists') {
+      // In artist view: just hide the genre card, preserve selection and filter for tab switching
+      // Clear the restore flag - user explicitly dismissed it, so don't restore later
       setShowGenreCard(false);
-      setGenreInfoToShow(undefined);
-      setShowArtistCard(true);
-      setArtistInfoToShow(selectedArtist);
+      setRestoreGenreCardOnArtistDismiss(false);
     } else {
-      // No focused genre or already showing the focused genre - fully deselect
+      // In genre view: fully deselect
       deselectGenre();
     }
   }
@@ -909,11 +957,31 @@ function App() {
   const onArtistInfoDismiss = () => {
     if (selectedArtist && artistInfoToShow?.id !== selectedArtist?.id) {
       // Showing search result but have focused artist - restore focused artist info
-      setArtistInfoToShow(selectedArtist);
-    } else {
-      // No focused artist or showing focused artist - fully deselect
-      deselectArtist();
+      reopenArtistInfoCard(selectedArtist);
+      setArtistPreviewStack([]);
+      return;
     }
+
+    const previousPreview =
+      artistPreviewStack.length > 0
+        ? artistPreviewStack[artistPreviewStack.length - 1]
+        : undefined;
+    if (previousPreview) {
+      setArtistPreviewStack((prev) => prev.slice(0, -1));
+      reopenArtistInfoCard(previousPreview, { fromSearch: true });
+      return;
+    }
+
+    if (restoreGenreCardOnArtistDismiss) {
+      // Genre card should be restored (e.g., after clicking top artist from genre card)
+      deselectArtist();
+      setShowGenreCard(true);
+      setRestoreGenreCardOnArtistDismiss(false); // Reset flag after restoring
+      return;
+    }
+
+    // No focused artist or showing focused artist - fully deselect
+    deselectArtist();
   }
 
   const similarArtistFilter = (similarArtists: string[]) => {
@@ -977,6 +1045,7 @@ function App() {
       const links = generateSimilarLinks(graphArtists);
 
       setSelectedArtistFromSearch(false);
+      setArtistPreviewStack([]);
       setSelectedArtist(artistResult);
       setSelectedArtistNoGenre(artistResult);
       setSimilarArtistAnchor(artistResult);
@@ -1065,6 +1134,11 @@ function App() {
       // Don't clear currentArtists/currentArtistLinks - preserve them like genre graph does
       // Just hide the artist graph with the show prop
       setShowArtistCard(false);
+      // Restore genre info card if a genre is selected
+      if (selectedGenres.length > 0) {
+        setGenreInfoToShow(selectedGenres[0]);
+        setShowGenreCard(true);
+      }
       // Don't clear selected genres or genre filter - they're needed for artist data
     } else {
       // Switching to artists view - restore full artist list if coming from similarArtists
@@ -1075,6 +1149,12 @@ function App() {
       }
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
+
+      // Only show genre card if filter is active
+      if (artistGenreFilter.length === 0) {
+        setShowGenreCard(false);
+      }
+
       // Restore artist card if there's a selected artist
       if (selectedArtist) {
         setShowArtistCard(true);
@@ -1210,6 +1290,11 @@ function App() {
     } else {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       if (selectedIDs.length === 0) {
+        // Clear artist filter
+        if (artistGenreFilter.length !== 0) {
+          setArtistGenreFilter([]);
+        }
+        // Also clear genre selection
         if (selectedGenres.length !== 0) {
           setSelectedGenres([]);
           // Clear genre card state when clearing genre filter
@@ -1217,6 +1302,13 @@ function App() {
           setShowGenreCard(false);
         }
       } else {
+        // Update artist filter - this triggers the artist fetch
+        if (!primitiveArraysEqual(selectedIDs, artistGenreFilter.map(genre => genre.id))) {
+          setArtistGenreFilter(selectedIDs.map(s => {
+            return { id: s } as Genre
+          }));
+        }
+        // Also sync genre selection so switching to genre tab shows the filtered genre highlighted
         if (!primitiveArraysEqual(selectedIDs, selectedGenres.map(genre => genre.id))) {
           setSelectedGenres(selectedIDs.map(s => {
             return { id: s } as Genre
@@ -1224,7 +1316,7 @@ function App() {
         }
       }
     }
-  }, [graph, isBeforeArtistLoad, selectedGenres]);
+  }, [graph, isBeforeArtistLoad, selectedGenres, artistGenreFilter]);
 
   const artistNodeCountSelection = (value: number) => {
     if (value <= artistNodeCount) {
@@ -1344,9 +1436,12 @@ function App() {
 
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
     setSelectedArtistFromSearch(false);
+    setArtistPreviewStack([]);
     setSelectedArtist(artist);
     setShowArtistCard(true);
     setSelectedGenres(matched);
+    // Apply artist filter - this triggers the artist fetch
+    setArtistGenreFilter(matched);
     setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
     setPendingArtistGenreGraph(artist); // Will trigger graph switch when artists load
   };
@@ -1434,7 +1529,7 @@ function App() {
                     graphType={graph}
                     onGenreSelectionChange={onGenreFilterSelectionChange}
                     initialSelection={initialGenreFilter}
-                    selectedGenreIds={selectedGenreIDs}
+                    selectedGenreIds={artistGenreFilterIDs}
                    />
 
                   <Button size='lg' variant='outline'
@@ -1579,6 +1674,7 @@ function App() {
                 playLoading={isPlayerLoadingGenre()}
               />
               <ArtistInfo
+                key={artistInfoDrawerVersion}
                 selectedArtist={artistInfoToShow}
                 setArtistFromName={setArtistFromName}
                 artistLoading={false}
@@ -1612,7 +1708,7 @@ function App() {
                       // setSelectedArtist(undefined)
                     }
                     }
-                    show={graph === 'artists' && selectedGenres.length > 0}
+                    show={graph === 'artists' && artistGenreFilter.length > 0}
                   />
                 <motion.div
                   layout
