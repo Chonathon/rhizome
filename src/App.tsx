@@ -444,6 +444,13 @@ function App() {
           const artistTracks = await fetchArtistTopTracks(currentSelectedArtist.id, currentSelectedArtist.name);
           if (artistTracks) {
             playerIDQueue.set(currentSelectedArtist.id, artistTracks);
+            // Update the selectedArtist state so the UI reflects the newly fetched tracks
+            setSelectedArtist(prev => {
+              if (prev && prev.id === currentSelectedArtist.id) {
+                return { ...prev, topTracks: artistTracks };
+              }
+              return prev;
+            });
           }
         }
       }
