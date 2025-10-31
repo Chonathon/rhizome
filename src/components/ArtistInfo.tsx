@@ -195,43 +195,46 @@ export function ArtistInfo({
                                 Play
                               </Button>
 
-                                  <ButtonGroupSeparator className="bg-white/60" />
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    size={isDesktop ? "sm" : "xl"}
-                                    variant="default"
-                                    className="disabled:opacity-100 h-auto"
-                                    disabled={!!playLoading || !selectedArtist?.topTracks || selectedArtist.topTracks.length === 0}
-                                    aria-label="Select track"
-                                  >
-                                    <ChevronDown className="size-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start" className="w-[280px]">
-                                  <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
-                                  <DropdownMenuSeparator />
-                                  {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 ? (
-                                    selectedArtist.topTracks.map((track, index) => (
-                                      <DropdownMenuItem
-                                        key={`${track.title}-${index}`}
-                                        onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
-                                        className="cursor-pointer"
-                                      >
-                                        <CirclePlay className="size-4" />
-                                        <div className="flex flex-col flex-1 min-w-0">
-                                          <span className="text-sm font-medium truncate">{track.title}</span>
-                                          <span className="text-xs text-muted-foreground truncate">{track.artistName}</span>
-                                        </div>
+                                  {isDesktop && 
+                                  <>
+                                    <ButtonGroupSeparator />
+                                                                  <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                    <Button
+                                      size={isDesktop ? "sm" : "xl"}
+                                      variant="default"
+                                      className="disabled:opacity-100 h-auto !pl-1 !pr-1.5"
+                                      disabled={!!playLoading || !selectedArtist?.topTracks || selectedArtist.topTracks.length === 0}
+                                      aria-label="Select track"
+                                    >
+                                      <ChevronDown className="size-4" />
+                                    </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="start" className="w-[280px]">
+                                    <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 ? (
+                                      selectedArtist.topTracks.map((track, index) => (
+                                        <DropdownMenuItem
+                                          key={`${track.title}-${index}`}
+                                          onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
+                                          className="cursor-pointer"
+                                        >
+                                          <CirclePlay className="size-4" />
+                                          <div className="flex flex-col flex-1 min-w-0">
+                                            <span className="text-sm font-medium truncate">{track.title}</span>
+                                            <span className="text-xs text-muted-foreground truncate">{track.artistName}</span>
+                                          </div>
+                                        </DropdownMenuItem>
+                                      ))
+                                    ) : (
+                                      <DropdownMenuItem disabled>
+                                        No tracks available
                                       </DropdownMenuItem>
-                                    ))
-                                  ) : (
-                                    <DropdownMenuItem disabled>
-                                      No tracks available
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                    )}
+                                                                    </DropdownMenuContent>
+                                                                  </DropdownMenu>
+                                  </>}
                             </ButtonGroup>
                             <AddButton
                               isDesktop={isDesktop}
