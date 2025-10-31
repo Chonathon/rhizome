@@ -91,6 +91,12 @@ function App() {
   const artistGenreFilterIDs = useMemo(() => {
     return artistGenreFilter.map(genre => genre.id);
   }, [artistGenreFilter]);
+  const selectedGenreIDs = useMemo(() => {
+    return selectedGenres.map(genre => genre.id);
+  }, [selectedGenres]);
+  const artistQueryGenreIDs = useMemo(() => {
+    return artistGenreFilterIDs.length > 0 ? artistGenreFilterIDs : selectedGenreIDs;
+  }, [artistGenreFilterIDs, selectedGenreIDs]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [selectedArtistFromSearch, setSelectedArtistFromSearch] = useState<boolean>(false);
   const [artistPreviewStack, setArtistPreviewStack] = useState<Artist[]>([]);
@@ -147,7 +153,7 @@ function App() {
     fetchArtistTopTracks,
     artistsPlayIDsLoading,
     artistPlayIDLoadingKey,
-  } = useArtists(artistGenreFilterIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
+  } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
   const { resolvedTheme } = useTheme();
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
@@ -360,7 +366,7 @@ function App() {
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
     updateGenrePlayerIDs();
-  }, [topArtists]);
+  }, [topArtists, artistQueryGenreIDs]);
 
   // Fetches top tracks of selected artist player ids in the background
   useEffect(() => {
@@ -381,8 +387,8 @@ function App() {
 
   // Add genre play IDs to the playerIDQueue on genre click
   const updateGenrePlayerIDs = async () => {
-    if (topArtists && topArtists.length && artistGenreFilterIDs[0] && !playerIDQueue.has(artistGenreFilterIDs[0])) {
-      const currentGenreID = artistGenreFilterIDs[0];
+    const queueGenreID = artistQueryGenreIDs[0];
+    if (topArtists && topArtists.length && queueGenreID && !playerIDQueue.has(queueGenreID)) {
       const genreTracks: TopTrack[] = [];
       for (const artist of topArtists) {
         if (!artist.noTopTracks) {
@@ -408,7 +414,7 @@ function App() {
           }
         }
       }
-      playerIDQueue.set(currentGenreID, genreTracks);
+      playerIDQueue.set(queueGenreID, genreTracks);
     }
   }
 
