@@ -1,9 +1,9 @@
-import { BasicNode, Genre, Artist } from '@/types'
+import { BasicNode, Genre, Artist, TopTrack } from '@/types'
 import {fixWikiImageURL, formatNumber} from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
 import useArtists from "@/hooks/useArtists";
-import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info, CirclePlay, Loader2 } from 'lucide-react';
+import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info, CirclePlay, Loader2, ChevronDown } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge} from './ui/badge';
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
@@ -12,6 +12,15 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
+import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from "@/components/ui/dropdown-menu";
 
 
 
@@ -33,6 +42,8 @@ interface GenreInfoProps {
   getArtistColor: (artist: Artist) => string;
   onPlayGenre?: (genre: Genre) => void;
   playLoading?: boolean;
+  genreTracks?: TopTrack[];
+  onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
 }
 
 export function GenreInfo({
@@ -53,6 +64,8 @@ export function GenreInfo({
     genreColorMap,
     onPlayGenre,
     playLoading,
+    genreTracks,
+    onPlayTrack,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(false)
@@ -299,17 +312,60 @@ export function GenreInfo({
 
                   <div className={`flex flex-col gap-6 ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
                     <div className="flex gap-3 w-full">
-                      <Button
-                        disabled={genreArtistsLoading || !!playLoading}
-                        aria-busy={genreArtistsLoading || !!playLoading}
-                        size={isDesktop ? 'lg' : 'xl'}
-                        variant="default"
-                        className={`${isDesktop ? 'self-start' : 'flex-1'} disabled:opacity-100`}
-                        onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
-                      >
-                        {playLoading ? <Loader2 className="animate-spin" aria-hidden /> : <CirclePlay />} 
-                        Play
-                      </Button>
+                      <ButtonGroup className={isDesktop ? 'self-start' : 'flex-1'}>
+                        <Button
+                          disabled={genreArtistsLoading || !!playLoading}
+                          aria-busy={genreArtistsLoading || !!playLoading}
+                          size={isDesktop ? 'lg' : 'xl'}
+                          variant="default"
+                          className="disabled:opacity-100 flex-1"
+                          onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
+                        >
+                          {playLoading ? <Loader2 className="animate-spin" aria-hidden /> : <CirclePlay />}
+                          Play
+                        </Button>
+
+                        {isDesktop &&
+                        <>
+                          <ButtonGroupSeparator />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size={isDesktop ? "sm" : "xl"}
+                                variant="default"
+                                className="disabled:opacity-100 h-auto !pl-1 !pr-1.5"
+                                disabled={genreArtistsLoading || !!playLoading || !genreTracks || genreTracks.length === 0}
+                                aria-label="Select track"
+                              >
+                                <ChevronDown className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-[280px]">
+                              <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              {genreTracks && genreTracks.length > 0 ? (
+                                genreTracks.map((track, index) => (
+                                  <DropdownMenuItem
+                                    key={`${track.title}-${track.artistName}-${index}`}
+                                    onClick={() => genreTracks && onPlayTrack?.(genreTracks, index)}
+                                    className="cursor-pointer"
+                                  >
+                                    <CirclePlay className="size-4" />
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                      <span className="text-sm font-medium truncate">{track.title}</span>
+                                      <span className="text-xs text-muted-foreground truncate">{track.artistName}</span>
+                                    </div>
+                                  </DropdownMenuItem>
+                                ))
+                              ) : (
+                                <DropdownMenuItem disabled>
+                                  No tracks available
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </>}
+                      </ButtonGroup>
                       <Button
                         disabled={genreArtistsLoading}
                         size={isDesktop ? 'lg' : 'xl'}
