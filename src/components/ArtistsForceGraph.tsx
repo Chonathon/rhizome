@@ -5,6 +5,7 @@ import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
+import { useTouchGestureDetection } from "@/hooks/useTouchGestureDetection";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -90,6 +91,21 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Detect multi-touch gestures to prevent accidental node interactions during pinch-to-zoom
+    const { isMultiTouchActive } = useTouchGestureDetection(containerRef);
+
+    // Wrap node interaction handlers to suppress during multi-touch gestures
+    const handleNodeClick = (artist: Artist) => {
+        if (isMultiTouchActive) return; // Suppress during pinch-to-zoom
+        onNodeClick(artist);
+    };
+
+    const handleNodeHover = (n: any) => {
+        if (isMultiTouchActive) return; // Suppress during pinch-to-zoom
+        setHoveredId(n ? n.id : undefined);
+    };
 
     // Expose simple zoom API to parent
     useImperativeHandle(ref, () => ({
@@ -252,7 +268,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     return !show ? null : loading ? (<div className="flex-1 w-full" style={{ height: height ?? '100%' }}>
         <Loading />
     </div>) : (
-        (<ForceGraph
+        <div ref={containerRef} style={{ width: width ?? '100%', height: height ?? '100%' }}>
+            <ForceGraph
             ref={fgRef as any}
             graphData={preparedData}
             width={width}
@@ -274,8 +291,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 return (s === selectedArtistId || t === selectedArtistId) ? 2.5 : 0.6;
             }}
             linkCurvature={preparedData.links.length <= curvedLinksAbove ? curvedLinkCurvature : 0}
-            onNodeClick={onNodeClick}
-            onNodeHover={(n: any) => setHoveredId(n ? n.id : undefined)}
+            onNodeClick={handleNodeClick}
+            onNodeHover={handleNodeHover}
             // We'll custom-draw nodes; keep built-in node invisible to avoid double-draw
             nodeColor={() => 'rgba(0,0,0,0)'}
             nodeCanvasObjectMode={() => 'replace'}
@@ -340,7 +357,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 const t = (v - minLog) / Math.max(1e-6, (maxLog - minLog));
                 return 1 + t * 6; // 1..7
             }}
-        />)
+        />
+        </div>
     )
 });
 

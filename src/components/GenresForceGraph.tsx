@@ -7,6 +7,7 @@ import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset } from "@/lib/graphStyle";
+import { useTouchGestureDetection } from "@/hooks/useTouchGestureDetection";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -38,8 +39,12 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const { theme, resolvedTheme } = useTheme();
     const activeTheme = resolvedTheme ?? theme;
+
+    // Detect multi-touch gestures to prevent accidental node interactions during pinch-to-zoom
+    const { isMultiTouchActive } = useTouchGestureDetection(containerRef);
 
     // Expose simple zoom API to parent
     useImperativeHandle(ref, () => ({
@@ -59,6 +64,17 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         },
         getZoom: () => zoomRef.current || 1,
     }), []);
+
+    // Wrap node interaction handlers to suppress during multi-touch gestures
+    const handleNodeClick = (genre: Genre) => {
+        if (isMultiTouchActive) return; // Suppress during pinch-to-zoom
+        onNodeClick(genre);
+    };
+
+    const handleNodeHover = (n: any) => {
+        if (isMultiTouchActive) return; // Suppress during pinch-to-zoom
+        setHoveredId(n ? n.id : undefined);
+    };
 
     const preparedData: GraphData<Genre, NodeLink> = useMemo(() => {
         if (!graphData) return { nodes: [], links: [] };
@@ -291,8 +307,9 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
     }
 
     return !show ? null : loading ? <Loading /> : (
-        <ForceGraph
-            ref={fgRef}
+        <div ref={containerRef} style={{ width: width ?? '100%', height: height ?? '100%' }}>
+            <ForceGraph
+                ref={fgRef}
              d3AlphaDecay={0.01}     // Length forces are active; smaller → slower cooling
              d3VelocityDecay={.75}    // How springy tugs feel; smaller → more inertia
             cooldownTime={20000} // How long to run the simulation before stopping
@@ -317,14 +334,15 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
                 return (s === selectedGenreId || t === selectedGenreId) ? 2.5 : 0.6;
             }}
-            onNodeClick={node => onNodeClick(node)}
+            onNodeClick={handleNodeClick}
             onZoom={({ k }) => { zoomRef.current = k; }}
-            onNodeHover={(n: any) => setHoveredId(n ? n.id : undefined)}
+            onNodeHover={handleNodeHover}
             nodeCanvasObject={nodeCanvasObject}
             nodeCanvasObjectMode={() => 'replace'}
             nodeVal={(node: Genre) => calculateRadius(node.artistCount)}
             nodePointerAreaPaint={nodePointerAreaPaint}
         />
+        </div>
     )
 });
 
