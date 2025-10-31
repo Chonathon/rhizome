@@ -5,19 +5,23 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2 } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-  DropdownMenuItem
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
 } from "@/components/ui/dropdown-menu"
+import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "@/components/ui/button-group"
 import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
 import { AddButton } from "./AddButton";
+import { Separator } from "@radix-ui/react-separator";
 
 
 interface ArtistInfoProps {
@@ -178,18 +182,57 @@ export function ArtistInfo({
                 <div className={`flex  flex-col gap-6
                     ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
                      <div className="flex gap-3 w-full">
-                           <Button
-                              size={isDesktop ? "lg" : "xl"}
-                              variant="default"
-                              // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                              className={`${isDesktop ? 'self-start' : 'flex-1'} disabled:opacity-100`}
-                              onClick={() => selectedArtist && onPlay?.(selectedArtist)}
-                              disabled={!!playLoading}
-                              aria-busy={!!playLoading}
-                              >
-                              {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
-                              Play
-                            </Button>
+                           <ButtonGroup className={isDesktop ? 'self-start' : 'flex-1'}>
+                             <Button
+                                size={isDesktop ? "lg" : "xl"}
+                                variant="default"
+                                className="disabled:opacity-100 flex-1"
+                                onClick={() => selectedArtist && onPlay?.(selectedArtist)}
+                                disabled={!!playLoading}
+                                aria-busy={!!playLoading}
+                                >
+                                {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
+                                Play
+                              </Button>
+
+                                  <ButtonGroupSeparator className="bg-white/60" />
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    size={isDesktop ? "sm" : "xl"}
+                                    variant="default"
+                                    className="disabled:opacity-100 h-auto"
+                                    disabled={!!playLoading || !selectedArtist?.topTracks || selectedArtist.topTracks.length === 0}
+                                    aria-label="Select track"
+                                  >
+                                    <ChevronDown className="size-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-[280px]">
+                                  <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 ? (
+                                    selectedArtist.topTracks.map((track, index) => (
+                                      <DropdownMenuItem
+                                        key={`${track.title}-${index}`}
+                                        onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
+                                        className="cursor-pointer"
+                                      >
+                                        <CirclePlay className="size-4" />
+                                        <div className="flex flex-col flex-1 min-w-0">
+                                          <span className="text-sm font-medium truncate">{track.title}</span>
+                                          <span className="text-xs text-muted-foreground truncate">{track.artistName}</span>
+                                        </div>
+                                      </DropdownMenuItem>
+                                    ))
+                                  ) : (
+                                    <DropdownMenuItem disabled>
+                                      No tracks available
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </ButtonGroup>
                             <AddButton
                               isDesktop={isDesktop}
                               onToggle={() => onArtistToggle(selectedArtist?.id)}
@@ -305,37 +348,6 @@ export function ArtistInfo({
                 )}
 
                 {/* Description */}
-
-                {/* Top Tracks */}
-                {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <span className="text-md font-semibold">Top Tracks</span>
-                    <div className="flex flex-col gap-1.5">
-                      {selectedArtist.topTracks.map((track, index) => (
-                        <button
-                          key={`${track.title}-${index}`}
-                          onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
-                          className="group flex items-center gap-2 py-2 rounded-md transition-colors text-left group"
-                          title={`Play ${track.title}`}
-                        >
-                          <div className="flex-1 gap-1 min-w-0 flex items-center">
-                          <span className="relative grid place-items-center size-5">
-                            <CirclePlay
-                              className="absolute opacity-0 group-hover:opacity-100"
-                              size={16}
-                              aria-hidden
-                            />
-                            <span className="text-sm text-muted-foreground text-center leading-none opacity-100 group-hover:opacity-0">
-                              {index + 1}
-                            </span>
-                          </span>
-                            <div className="text-sm group-hover:text-muted-foreground font-medium truncate">{track.title}</div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Similar Artists */}
                 {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
