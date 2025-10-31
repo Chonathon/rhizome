@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Artist } from "@/types";
+import { Artist, TopTrack } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -39,6 +39,7 @@ interface ArtistInfoProps {
   playLoading?: boolean;
   onArtistToggle: (id: string | undefined) => void;
   isInCollection: boolean;
+  onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
 }
 
 export function ArtistInfo({
@@ -60,6 +61,7 @@ export function ArtistInfo({
   playLoading,
   onArtistToggle,
   isInCollection,
+  onPlayTrack,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -119,10 +121,6 @@ export function ArtistInfo({
       }
     }
   }
-
-  const artistGenres = [
-    { name: ''}
-  ]
 
 
   if (!show) return null;
@@ -307,7 +305,31 @@ export function ArtistInfo({
                 )}
 
                 {/* Description */}
-                
+
+                {/* Top Tracks */}
+                {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-md font-semibold">Top Tracks</span>
+                    <div className="flex flex-col gap-1.5">
+                      {selectedArtist.topTracks.map((track, index) => (
+                        <button
+                          key={`${track.title}-${index}`}
+                          onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
+                          className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors text-left group"
+                          title={`Play ${track.title}`}
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                            <CirclePlay size={16} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">{track.title}</div>
+                            <div className="text-xs text-muted-foreground truncate">{track.artistName}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Similar Artists */}
                 {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
