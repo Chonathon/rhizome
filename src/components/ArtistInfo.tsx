@@ -305,32 +305,36 @@ export function ArtistInfo({
                    )}
                 
                 
-                {/* <div
-                  className={`flex gap-2 flex-col ${
-                    isDesktop ? "gap-3" : ""
-                  }`}
-                >
-                  <DrawerTitle className="lg:text-xl">{selectedArtist?.name}</DrawerTitle>
-                  {!isDesktop && <Button
-                      size="lg"
-                      variant="secondary"
-                      // onClick={console.log("Add Artist")}
-                      className=''
-                    >
-                      <CirclePlay />Add Artist
-                    </Button>}
-                <p
-                  onClick={() => isDesktop && setDesktopExpanded((prev) => !prev)}
-                  className={`break-words text-muted-foreground ${
-                    isDesktop
-                      ? "cursor-pointer hover:text-gray-400"
-                      : "cursor-default"
-                  } ${isExpanded ? "text-muted-foreground" : "line-clamp-3 overflow-hidden"}`}
-                >
-                  {selectedArtist?.bio?.summary || "No bio"}
-                </p>
-                </div>
- */}
+                {/* Top Tracks V2*/}
+                  {/* {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <span className="text-md font-semibold">Top Tracks</span>
+                      <div className="flex flex-col gap-1.5">
+                        {selectedArtist.topTracks.map((track, index) => (
+                          <button
+                            key={`${track.title}-${index}`}
+                            onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
+                            className="group flex items-center gap-2 py-2 hover:bg-accent rounded-md transition-colors text-left group"
+                            title={`Play ${track.title}`}
+                          >
+                            <div className="flex-1 gap-1 min-w-0 flex items-center">
+                            <span className="relative grid place-items-center size-5">
+                              <CirclePlay
+                                className="absolute opacity-0 group-hover:opacity-100"
+                                size={16}
+                                aria-hidden
+                              />
+                              <span className="text-sm text-muted-foreground text-center leading-none opacity-100">
+                                {index + 1}
+                              </span>
+                            </span>
+                              <div className="text-sm group-hover:text-muted-foreground font-medium truncate">{track.title}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )} */}
 
                 {/* Mobile Thumbnail */}
                 {!isDesktop && (
