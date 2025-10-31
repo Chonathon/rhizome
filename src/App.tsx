@@ -596,6 +596,56 @@ function App() {
     }
   };
 
+  const onPlayGenreTrack = async (tracks: TopTrack[], startIndex: number) => {
+    if (!tracks || tracks.length === 0) {
+      toast.error('No tracks available');
+      return;
+    }
+    const req = ++playRequest.current;
+    setPlayerLoading(true);
+    setPlayerSource('genre');
+    // Extract video IDs based on DEFAULT_PLAYER preference
+    const videoIds: string[] = [];
+    for (const track of tracks) {
+      const videoId = track[DEFAULT_PLAYER];
+      if (videoId) {
+        videoIds.push(videoId);
+      }
+    }
+    if (videoIds.length === 0) {
+      toast.error('No playable tracks found');
+      setPlayerLoading(false);
+      return;
+    }
+    // Use the selected genre's metadata if available
+    if (selectedGenres.length > 0) {
+      const genre = selectedGenres[0];
+      setPlayerTitle(genre.name);
+      setPlayerEntityName(genre.name);
+      // Use artwork from first top artist with an image
+      const source = topArtists && topArtists.length ? topArtists : currentArtists;
+      const coverArtist = source.find(a => typeof a.image === 'string' && (a.image as string).trim());
+      const img = coverArtist ? fixWikiImageURL(coverArtist.image as string) : undefined;
+      setPlayerArtworkUrl(img);
+    }
+    setPlayerVideoIds(videoIds);
+    setPlayerStartIndex(startIndex);
+    setPlayerOpen(true);
+    try {
+      // Player will handle loading
+      if (req === playRequest.current) {
+        setPlayerLoading(false);
+      }
+    } catch (e) {
+      if (req === playRequest.current) {
+        toast.error('Unable to play track');
+        setPlayerLoading(false);
+        setPlayerSource(undefined);
+        setPlayerOpen(false);
+      }
+    }
+  };
+
   // Returns only the play IDs of the DEFAULT_PLAYER from an artist/genre
   const getSpecificPlayerIDs = (id: string) => {
     let ids: string[] = [];
@@ -1331,7 +1381,7 @@ function App() {
                   }
                 `}
             >
-              <GenreInfo 
+              <GenreInfo
                 selectedGenre={selectedGenres[0]}
                 onLinkedGenreClick={onLinkedGenreClick}
                 show={graph === 'genres' && selectedGenres.length === 1 && !showArtistCard}
@@ -1347,6 +1397,8 @@ function App() {
                 getArtistColor={getArtistColor}
                 onPlayGenre={onPlayGenre}
                 playLoading={isPlayerLoadingGenre()}
+                genreTracks={selectedGenres.length > 0 ? playerIDQueue.get(selectedGenres[0].id) : undefined}
+                onPlayTrack={onPlayGenreTrack}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
