@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {BasicNode} from "@/types";
 
 const LOCAL_STORAGE_KEY = 'recentSelections';
-const MAX_RECENT_SELECTIONS = 5;
+const MAX_RECENT_SELECTIONS = 10;
 
 export function useRecentSelections() {
   const [recentSelections, setRecentSelections] = useState<BasicNode[]>([]);
