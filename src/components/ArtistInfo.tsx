@@ -218,9 +218,17 @@ export function ArtistInfo({
                                         <DropdownMenuItem
                                           key={`${track.title}-${index}`}
                                           onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
-                                          className="cursor-pointer"
+                                          className="cursor-pointer group"
                                         >
-                                          <CirclePlay className="size-4" />
+                                          <span className="relative grid place-items-center size-4">
+                                            <CirclePlay
+                                              className="absolute opacity-0 group-hover:opacity-100 size-4"
+                                              aria-hidden
+                                            />
+                                            <span className="text-sm text-muted-foreground text-center leading-none opacity-100 group-hover:opacity-0">
+                                              {index + 1}
+                                            </span>
+                                          </span>
                                           <div className="flex flex-col flex-1 min-w-0">
                                             <span className="text-sm font-medium truncate">{track.title}</span>
                                             <span className="text-xs text-muted-foreground truncate">{track.artistName}</span>
