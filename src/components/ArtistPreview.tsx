@@ -78,7 +78,7 @@ export function ArtistPreview({
         }
 
         title={
-          <h2 className="w-full text-md font-semibold">
+          <h2 className="w-full leading-5 text-md font-semibold">
             {artist.name}
           </h2>
         }
@@ -87,22 +87,22 @@ export function ArtistPreview({
           <>
             {typeof artist.listeners === 'number' && (
               <h3>
-                <span className="font-medium">Listeners:</span>{' '}
-                {formatNumber(artist.listeners)}
+                {formatNumber(artist.listeners)}{' '}
+                <span className="">Listeners</span>
               </h3>
             )}
-            {artist.startDate && (
+            {/* {artist.startDate && (
               <h3>
                 <span className="font-medium">Founded:</span>{' '}
                 {formatDate(artist.startDate)}
               </h3>
-            )}
-            {typeof artist.playcount === 'number' && (
+            )} */}
+            {/* {typeof artist.playcount === 'number' && (
               <h3>
                 <span className="font-medium">Plays:</span>{' '}
                 {formatNumber(artist.playcount)}
               </h3>
-            )}
+            )} */}
           </>
         }
 

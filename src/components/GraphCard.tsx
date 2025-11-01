@@ -92,7 +92,7 @@ export function GraphCard({
           exit={{ opacity: 0 }}
           transition={{
             layout: { duration: 0, ease: "easeOut" },
-            opacity: { delay: 0.3, duration: 0.3, ease: "easeOut" },
+            opacity: { delay: 0.0, duration: 0.2, ease: "easeOut" },
           }}
           layout
           className={`flex items-start gap-3 ${stacked ? "flex-col" : ""} ${contentClassName ?? ""}`}
@@ -105,8 +105,10 @@ export function GraphCard({
             <>
               {thumbnail}
               <div className="flex-1 flex flex-col items-start gap-1 min-w-0">
-                {title}
-                {meta && <div className="text-sm w-full">{meta}</div>}
+                <div className="">
+                  {title}
+                  {meta && <div className="text-sm text-muted-foreground w-full">{meta}</div>}
+                </div>
                 {description && <div className="w-full flex flex-col text-sm">{description}</div>}
                 {actions && <div className="w-full mt-2">{actions}</div>}
               </div>
