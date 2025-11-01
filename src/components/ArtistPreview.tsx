@@ -62,16 +62,16 @@ export function ArtistPreview({
 
         thumbnail={
           imageUrl ? (
-            <div className="w-24 h-24 shrink-0 overflow-hidden rounded-xl border border-border">
+            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border">
               <img
-                className="w-24 h-24 object-cover"
+                className="w-full h-full object-cover"
                 src={imageUrl}
                 alt={artist?.name ?? 'Artist image'}
                 loading="lazy"
               />
             </div>
           ) : (
-            <div className="w-24 h-24 shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
+            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
               <span className="text-4xl font-semibold">{initial}</span>
             </div>
           )

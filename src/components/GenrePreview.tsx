@@ -55,7 +55,7 @@ export function GenrePreview({
 
         thumbnail={
           imageArtists.length >= 2 ? (
-            <div className="w-24 h-24 shrink-0 overflow-hidden rounded-xl border border-border">
+            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border">
               <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-0.5">
                 {imageArtists.map((artist, i) => {
                   const spanClasses = [
@@ -80,7 +80,7 @@ export function GenrePreview({
               </div>
             </div>
           ) : (
-            <div className="w-24 h-24 shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
+            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
               <span className="text-4xl font-semibold">{initial}</span>
             </div>
           )
