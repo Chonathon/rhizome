@@ -3,7 +3,7 @@ import { fixWikiImageURL, formatNumber } from '@/lib/utils'
 import { useMemo } from 'react'
 import { Button } from './ui/button'
 import { CirclePlay, ArrowRight, Loader2 } from 'lucide-react'
-import { Card } from '@/components/ui/card'
+import GraphCard from './GraphCard'
 
 interface GenrePreviewProps {
   genre: Genre
@@ -40,119 +40,118 @@ export function GenrePreview({
   if (!visible) return null
 
   return (
-    <Card
-      className="absolute z-50 w-80 p-0 overflow-hidden pointer-events-auto shadow-lg border-sidebar-border"
+    <div
+      className="absolute z-50 pointer-events-auto"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
         transform: 'translate(-50%, calc(-100% - 8px))', // Center horizontally, position above node with 8px spacing
       }}
     >
-      {/* Image Grid - First Slide Only */}
-      <div className="w-full h-[160px] overflow-hidden border-b border-sidebar-border">
-        {imageArtists.length >= 2 ? (
-          <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-1">
-            {imageArtists.map((artist, i) => {
-              const spanClasses = [
-                'col-span-1 row-span-2', // 0: big left spans two rows
-                'col-span-1 row-span-1', // 1: top-right
-                'col-span-1 row-span-1', // 2: bottom-right
-              ][i] || 'col-span-1 row-span-1'
-              return (
-                <div
-                  key={artist.id}
-                  className={`${spanClasses} relative overflow-hidden`}
-                >
-                  <img
-                    src={fixWikiImageURL(artist.image as string)}
-                    alt={artist.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
-                  <span className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm">
-                    {artist.name}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
-            <span className="text-4xl font-semibold">{initial}</span>
-          </div>
-        )}
-      </div>
+      <GraphCard
+        show={visible}
+        dismissible={false}
+        contentKey={genre?.name}
 
-      {/* Content */}
-      <div className="p-4 flex flex-col gap-3">
-        {/* Header */}
-        <div>
-          <h3 className="font-semibold text-base leading-tight">
+        thumbnail={
+          imageArtists.length >= 2 ? (
+            <div className="w-24 h-24 shrink-0 overflow-hidden rounded-xl border border-border">
+              <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-0.5">
+                {imageArtists.map((artist, i) => {
+                  const spanClasses = [
+                    'col-span-1 row-span-2', // 0: big left spans two rows
+                    'col-span-1 row-span-1', // 1: top-right
+                    'col-span-1 row-span-1', // 2: bottom-right
+                  ][i] || 'col-span-1 row-span-1'
+                  return (
+                    <div
+                      key={artist.id}
+                      className={`${spanClasses} relative overflow-hidden`}
+                    >
+                      <img
+                        src={fixWikiImageURL(artist.image as string)}
+                        alt={artist.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="w-24 h-24 shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
+              <span className="text-4xl font-semibold">{initial}</span>
+            </div>
+          )
+        }
+
+        title={
+          <h2 className="w-full text-md font-semibold">
             {genre.name}
-          </h3>
-          {typeof genre.totalListeners === 'number' && (
-            <p className="text-sm text-muted-foreground">
-              {formatNumber(genre.totalListeners)} Listeners
-            </p>
-          )}
-        </div>
+          </h2>
+        }
 
-        {/* Description */}
-        {genre.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {genre.description}
-          </p>
-        )}
-
-        {/* Stats */}
-        <div className="flex gap-4 text-sm">
-          {typeof genre.artistCount === 'number' && (
-            <div>
-              <span className="text-muted-foreground">Artists: </span>
-              <span className="font-medium">
-                {formatNumber(genre.artistCount)}
-              </span>
-            </div>
-          )}
-          {typeof genre.totalPlays === 'number' && (
-            <div>
-              <span className="text-muted-foreground">Plays: </span>
-              <span className="font-medium">
-                {formatNumber(genre.totalPlays)}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-2 pt-1">
-          <Button
-            size="sm"
-            variant="default"
-            onClick={() => onPlay?.(genre)}
-            disabled={playLoading}
-            className="flex-1 disabled:opacity-100"
-          >
-            {playLoading ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-            ) : (
-              <CirclePlay className="size-4" />
+        meta={
+          <>
+            {typeof genre.totalListeners === 'number' && (
+              <h3>
+                <span className="font-medium">Listeners:</span>{' '}
+                {formatNumber(genre.totalListeners)}
+              </h3>
             )}
-            Play
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => onNavigate?.(genre)}
-            className="flex-1"
-          >
-            <ArrowRight className="size-4" />
-            View
-          </Button>
-        </div>
-      </div>
-    </Card>
+            {typeof genre.artistCount === 'number' && (
+              <h3>
+                <span className="font-medium">Artists:</span>{' '}
+                {formatNumber(genre.artistCount)}
+              </h3>
+            )}
+            {typeof genre.totalPlays === 'number' && (
+              <h3>
+                <span className="font-medium">Plays:</span>{' '}
+                {formatNumber(genre.totalPlays)}
+              </h3>
+            )}
+          </>
+        }
+
+        description={
+          genre.description && (
+            <p className="break-words text-muted-foreground line-clamp-2">
+              {genre.description}
+            </p>
+          )
+        }
+
+        actions={
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => onPlay?.(genre)}
+              disabled={playLoading}
+              className="flex-1 disabled:opacity-100"
+            >
+              {playLoading ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <CirclePlay className="size-4" />
+              )}
+              Play
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => onNavigate?.(genre)}
+              className="flex-1"
+            >
+              <ArrowRight className="size-4" />
+              View
+            </Button>
+          </div>
+        }
+      />
+    </div>
   )
 }
 
