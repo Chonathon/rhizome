@@ -1,4 +1,4 @@
-import {Genre, GenreClusterMode, GenreGraphData, NodeLink} from "@/types";
+import {Genre, GenreClusterMode, GenreGraphData, NodeLink, Artist} from "@/types";
 import React, {forwardRef, useEffect, useImperativeHandle, useRef, useMemo, useState} from "react";
 import ForceGraph, {ForceGraphMethods, GraphData, NodeObject} from "react-force-graph-2d";
 import {Loading} from "./Loading";
@@ -7,6 +7,7 @@ import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset } from "@/lib/graphStyle";
+import GenrePreview from "@/components/GenrePreview";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -35,6 +36,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
+    const [hoverCardVisible, setHoverCardVisible] = useState<boolean>(false);
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
@@ -235,6 +238,57 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         return () => clearTimeout(t);
     }, [selectedGenreId, show, preparedData]);
 
+    // Get hovered genre data
+    const hoveredGenre = useMemo(() => {
+        if (!hoveredId) return null;
+        return preparedData.nodes.find(n => n.id === hoveredId) || null;
+    }, [hoveredId, preparedData.nodes]);
+
+    // Get top artists for hovered genre
+    const hoveredGenreTopArtists = useMemo(() => {
+        if (!hoveredGenre?.topArtists) return [];
+        return hoveredGenre.topArtists as Artist[];
+    }, [hoveredGenre]);
+
+    // Handle hover delay for card visibility
+    useEffect(() => {
+        if (hoveredId) {
+            // Clear any pending hide timeout
+            if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+                hoverTimeoutRef.current = null;
+            }
+            // Show card after delay
+            const showTimeout = setTimeout(() => {
+                setHoverCardVisible(true);
+            }, 300);
+            return () => clearTimeout(showTimeout);
+        } else {
+            // Hide card after delay
+            const hideTimeout = setTimeout(() => {
+                setHoverCardVisible(false);
+            }, 200);
+            hoverTimeoutRef.current = hideTimeout;
+            return () => {
+                if (hoverTimeoutRef.current) {
+                    clearTimeout(hoverTimeoutRef.current);
+                    hoverTimeoutRef.current = null;
+                }
+            };
+        }
+    }, [hoveredId]);
+
+    // Get screen position for hovered node
+    const hoveredNodeScreenPos = useMemo(() => {
+        if (!hoveredGenre || !fgRef.current) return null;
+        const node = hoveredGenre as Genre & { x?: number; y?: number };
+        if (node.x === undefined || node.y === undefined) return null;
+
+        // Convert graph coordinates to screen coordinates
+        const screenCoords = fgRef.current.graph2ScreenCoords?.(node.x, node.y);
+        return screenCoords ? { x: screenCoords.x, y: screenCoords.y } : null;
+    }, [hoveredGenre]);
+
     const calculateRadius = (artistCount: number) => {
         return 5 + Math.sqrt(artistCount) * .5;
     };
@@ -291,40 +345,68 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
     }
 
     return !show ? null : loading ? <Loading /> : (
-        <ForceGraph
-            ref={fgRef}
-             d3AlphaDecay={0.01}     // Length forces are active; smaller → slower cooling
-             d3VelocityDecay={.75}    // How springy tugs feel; smaller → more inertia
-            cooldownTime={20000} // How long to run the simulation before stopping
-            autoPauseRedraw={false}
-            width={width}
-            height={height}
-            graphData={preparedData}
-            dagMode={dag ? 'radialin' : undefined}
-            dagLevelDistance={200}
-            linkCurvature={dag ? 0 : 0.5}
-            linkColor={(l: any) => {
-                const s = typeof l.source === 'string' ? l.source : l.source?.id;
-                const t = typeof l.target === 'string' ? l.target : l.target?.id;
-                const connectedToSelected = !!selectedGenreId && (s === selectedGenreId || t === selectedGenreId);
-                const base = (s && nodeColorById.get(s)) || (activeTheme === 'dark' ? '#ffffff' : '#000000');
-                const alpha = selectedGenreId ? (connectedToSelected ? 'cc' : '30') : '80';
-                return base + alpha;
-            }}
-            linkWidth={(l: any) => {
-                if (!selectedGenreId) return 1;
-                const s = typeof l.source === 'string' ? l.source : l.source?.id;
-                const t = typeof l.target === 'string' ? l.target : l.target?.id;
-                return (s === selectedGenreId || t === selectedGenreId) ? 2.5 : 0.6;
-            }}
-            onNodeClick={node => onNodeClick(node)}
-            onZoom={({ k }) => { zoomRef.current = k; }}
-            onNodeHover={(n: any) => setHoveredId(n ? n.id : undefined)}
-            nodeCanvasObject={nodeCanvasObject}
-            nodeCanvasObjectMode={() => 'replace'}
-            nodeVal={(node: Genre) => calculateRadius(node.artistCount)}
-            nodePointerAreaPaint={nodePointerAreaPaint}
-        />
+        <div style={{ position: 'relative', width: width || '100%', height: height || '100%' }}>
+            <ForceGraph
+                ref={fgRef}
+                 d3AlphaDecay={0.01}     // Length forces are active; smaller → slower cooling
+                 d3VelocityDecay={.75}    // How springy tugs feel; smaller → more inertia
+                cooldownTime={20000} // How long to run the simulation before stopping
+                autoPauseRedraw={false}
+                width={width}
+                height={height}
+                graphData={preparedData}
+                dagMode={dag ? 'radialin' : undefined}
+                dagLevelDistance={200}
+                linkCurvature={dag ? 0 : 0.5}
+                linkColor={(l: any) => {
+                    const s = typeof l.source === 'string' ? l.source : l.source?.id;
+                    const t = typeof l.target === 'string' ? l.target : l.target?.id;
+                    const connectedToSelected = !!selectedGenreId && (s === selectedGenreId || t === selectedGenreId);
+                    const base = (s && nodeColorById.get(s)) || (activeTheme === 'dark' ? '#ffffff' : '#000000');
+                    const alpha = selectedGenreId ? (connectedToSelected ? 'cc' : '30') : '80';
+                    return base + alpha;
+                }}
+                linkWidth={(l: any) => {
+                    if (!selectedGenreId) return 1;
+                    const s = typeof l.source === 'string' ? l.source : l.source?.id;
+                    const t = typeof l.target === 'string' ? l.target : l.target?.id;
+                    return (s === selectedGenreId || t === selectedGenreId) ? 2.5 : 0.6;
+                }}
+                onNodeClick={node => onNodeClick(node)}
+                onZoom={({ k }) => { zoomRef.current = k; }}
+                onNodeHover={(n: any) => setHoveredId(n ? n.id : undefined)}
+                nodeCanvasObject={nodeCanvasObject}
+                nodeCanvasObjectMode={() => 'replace'}
+                nodeVal={(node: Genre) => calculateRadius(node.artistCount)}
+                nodePointerAreaPaint={nodePointerAreaPaint}
+            />
+            {hoveredGenre && hoveredNodeScreenPos && hoverCardVisible && (
+                <div
+                    onMouseEnter={() => {
+                        // Keep card visible when hovering over it
+                        if (hoverTimeoutRef.current) {
+                            clearTimeout(hoverTimeoutRef.current);
+                            hoverTimeoutRef.current = null;
+                        }
+                    }}
+                    onMouseLeave={() => {
+                        // Hide card when leaving it
+                        setHoveredId(undefined);
+                    }}
+                >
+                    <GenrePreview
+                        genre={hoveredGenre}
+                        topArtists={hoveredGenreTopArtists}
+                        genreColorMap={externalColorMap}
+                        onNavigate={(genre) => onNodeClick(genre)}
+                        onPlay={undefined}
+                        playLoading={false}
+                        position={hoveredNodeScreenPos}
+                        visible={true}
+                    />
+                </div>
+            )}
+        </div>
     )
 });
 
