@@ -23,6 +23,9 @@ interface ArtistPreviewProps {
   getArtistByName?: (name: string) => Artist | undefined
   setArtistFromName?: (name: string) => void
   getArtistColor?: (artist: Artist) => string | undefined
+  // Hover delay
+  previewModeActive?: boolean
+  onShow?: () => void
 }
 
 export function ArtistPreview({
@@ -40,6 +43,8 @@ export function ArtistPreview({
   getArtistByName,
   setArtistFromName,
   getArtistColor,
+  previewModeActive,
+  onShow,
 }: ArtistPreviewProps) {
   const initial = artist?.name?.[0]?.toUpperCase() ?? '?'
 
@@ -75,6 +80,9 @@ export function ArtistPreview({
         show={visible}
         dismissible={false}
         contentKey={artist?.name}
+        enableHoverDelay={true}
+        previewModeActive={previewModeActive}
+        onShow={onShow}
 
         thumbnail={
           imageUrl ? (

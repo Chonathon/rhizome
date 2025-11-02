@@ -1,4 +1,4 @@
-import { ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CircleX } from "lucide-react";
@@ -20,6 +20,10 @@ export interface GraphCardProps {
   meta?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
+  // Hover delay props
+  enableHoverDelay?: boolean;
+  previewModeActive?: boolean;
+  onShow?: () => void;
 }
 
 export function GraphCard({
@@ -37,11 +41,16 @@ export function GraphCard({
   meta,
   description,
   actions,
+  enableHoverDelay = false,
+  previewModeActive = false,
+  onShow,
 }: GraphCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const isMobile = useMediaQuery({ maxWidth: 640 });
   const cardRef = useRef<HTMLDivElement>(null);
   const [cardHeight, setCardHeight] = useState<number | null>(null);
+  const [actuallyShow, setActuallyShow] = useState(show && !enableHoverDelay);
+  const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useLayoutEffect(() => {
     if (cardRef.current && !loading) {
@@ -49,7 +58,41 @@ export function GraphCard({
     }
   }, [loading]);
 
-  if (!show) return null;
+  // Handle hover delay logic
+  useEffect(() => {
+    // Clear any pending timeout
+    if (showTimeoutRef.current) {
+      clearTimeout(showTimeoutRef.current);
+      showTimeoutRef.current = null;
+    }
+
+    if (!show) {
+      // Hide immediately
+      setActuallyShow(false);
+      return;
+    }
+
+    if (!enableHoverDelay || previewModeActive) {
+      // Show immediately (delay disabled or preview mode active)
+      setActuallyShow(true);
+      onShow?.();
+      return;
+    }
+
+    // First hover - delay 400ms
+    showTimeoutRef.current = setTimeout(() => {
+      setActuallyShow(true);
+      onShow?.();
+    }, 400);
+
+    return () => {
+      if (showTimeoutRef.current) {
+        clearTimeout(showTimeoutRef.current);
+      }
+    };
+  }, [show, enableHoverDelay, previewModeActive, onShow]);
+
+  if (!actuallyShow) return null;
 
   return (
     <AnimatePresence mode="wait">

@@ -14,6 +14,8 @@ interface GenrePreviewProps {
   playLoading?: boolean
   position: { x: number; y: number }
   visible: boolean
+  previewModeActive?: boolean
+  onShow?: () => void
 }
 
 export function GenrePreview({
@@ -25,6 +27,8 @@ export function GenrePreview({
   playLoading,
   position,
   visible,
+  previewModeActive,
+  onShow,
 }: GenrePreviewProps) {
   const initial = genre?.name?.[0]?.toUpperCase() ?? '?'
 
@@ -52,6 +56,9 @@ export function GenrePreview({
         show={visible}
         dismissible={false}
         contentKey={genre?.name}
+        enableHoverDelay={true}
+        previewModeActive={previewModeActive}
+        onShow={onShow}
 
         thumbnail={
           imageArtists.length >= 2 ? (
@@ -138,7 +145,6 @@ export function GenrePreview({
               onClick={() => onNavigate?.(genre)}
               className="flex-1"
               title='All Artists'
-              onClick={() => selectedGenre && allArtists(selectedGenre)}
             >
               <SquareArrowUp size={24}/>
               

@@ -101,6 +101,8 @@ function App() {
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [hoveredGenre, setHoveredGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
   const [hoveredArtist, setHoveredArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [previewModeActive, setPreviewModeActive] = useState(false);
+  const previewModeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
@@ -611,6 +613,21 @@ function App() {
   const getGenreNameById = (id: string) => {
     return genres.find((g) => g.id === id)?.name;
   }
+
+  // Activate preview mode when a card is shown
+  const handlePreviewShown = () => {
+    setPreviewModeActive(true);
+
+    // Clear existing timeout
+    if (previewModeTimeoutRef.current) {
+      clearTimeout(previewModeTimeoutRef.current);
+    }
+
+    // Reset after 2.5s of inactivity
+    previewModeTimeoutRef.current = setTimeout(() => {
+      setPreviewModeActive(false);
+    }, 1000);
+  };
 
   // Get hovered genre data for preview
   const hoveredGenreData = useMemo(() => {
@@ -1230,6 +1247,8 @@ function App() {
                     playLoading={false}
                     position={hoveredGenre.position}
                     visible={true}
+                    previewModeActive={previewModeActive}
+                    onShow={handlePreviewShown}
                   />
                 )}
 
@@ -1250,6 +1269,8 @@ function App() {
                     getArtistByName={getArtistByName}
                     setArtistFromName={setArtistFromName}
                     getArtistColor={getArtistColor}
+                    previewModeActive={previewModeActive}
+                    onShow={handlePreviewShown}
                   />
                 )}
 
