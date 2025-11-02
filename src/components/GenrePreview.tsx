@@ -1,5 +1,5 @@
 import { Genre, Artist } from '@/types'
-import { fixWikiImageURL, formatNumber } from '@/lib/utils'
+import { fixWikiImageURL, formatNumber, formatNumberCompact } from '@/lib/utils'
 import { useMemo } from 'react'
 import { Button } from './ui/button'
 import { CirclePlay, ArrowRight, Loader2, SquareArrowUp } from 'lucide-react'
@@ -96,9 +96,9 @@ export function GenrePreview({
           <>
             {typeof genre.totalListeners === 'number' && (
               <h3>
-                <span>{formatNumber(genre.totalListeners)}{' '}Listeners</span>
+                <span>{formatNumberCompact(genre.totalListeners)}{' '}Listeners</span>
                 {typeof genre.artistCount === 'number' && (
-                <span>{' • '}{formatNumber(genre.artistCount)}{' '}Artists</span>
+                <span>{' · '}{formatNumberCompact(genre.artistCount)}{' '}Artists</span>
                 )}
                 {/* {typeof genre.totalPlays === 'number' && (
                 <span>{' • '}{formatNumber(genre.totalPlays)} Plays:{' '}</span>
