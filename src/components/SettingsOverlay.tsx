@@ -7,6 +7,7 @@ import { CircleUserRound, Cable, HandHeart, Check, X } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
+import { Switch } from "@/components/ui/switch"
 import {
   Dialog,
   DialogContent,
@@ -47,7 +48,6 @@ import { toast } from "sonner"
 import {Preferences, Theme} from "@/types";
 import KofiLogo from "@/assets/kofi_symbol.svg"
 import LastFMLogo from "@/assets/Last.fm Logo.svg"
-import { Switch } from "@radix-ui/react-switch"
 
 const data = {
   nav: [
@@ -538,20 +538,20 @@ const ProfileSection = ({
                   </SelectContent>
                 </Select>
               </Field>
-              <Field orientation="responsive">
+              <Field orientation="horizontal">
                 <FieldContent>
-                  <FieldLabel htmlFor="hover-cards">
-                    Hover Cards
-                  </FieldLabel>
-                  <FieldDescription>Show preview cards when hovering over nodes</FieldDescription>
+                  <FieldLabel htmlFor="hover-cards">Preview Cards</FieldLabel>
+                  <FieldDescription>
+                    Show preview cards when hovering over nodes
+                  </FieldDescription>
                 </FieldContent>
                 <Switch
+                  id="hover-cards"
                   checked={preferences.enableHoverCards ?? true}
-                  aria-label="Toggle Hover Cards"
-                  onToggle={() => {
+                  onCheckedChange={(checked) => {
                     onPreferencesChange({
                       ...preferences,
-                      enableHoverCards: !preferences.enableHoverCards
+                      enableHoverCards: checked
                     });
                   }}
                 />
