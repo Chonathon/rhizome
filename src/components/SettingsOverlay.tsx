@@ -47,6 +47,7 @@ import { toast } from "sonner"
 import {Preferences, Theme} from "@/types";
 import KofiLogo from "@/assets/kofi_symbol.svg"
 import LastFMLogo from "@/assets/Last.fm Logo.svg"
+import { Switch } from "@radix-ui/react-switch"
 
 const data = {
   nav: [
@@ -536,6 +537,24 @@ const ProfileSection = ({
                     <SelectItem value="light">Light</SelectItem>
                   </SelectContent>
                 </Select>
+              </Field>
+              <Field orientation="responsive">
+                <FieldContent>
+                  <FieldLabel htmlFor="hover-cards">
+                    Hover Cards
+                  </FieldLabel>
+                  <FieldDescription>Show preview cards when hovering over nodes</FieldDescription>
+                </FieldContent>
+                <Switch
+                  checked={preferences.enableHoverCards ?? true}
+                  aria-label="Toggle Hover Cards"
+                  onToggle={() => {
+                    onPreferencesChange({
+                      ...preferences,
+                      enableHoverCards: !preferences.enableHoverCards
+                    });
+                  }}
+                />
               </Field>
             </FieldGroup>
           </FieldSet>
