@@ -137,13 +137,14 @@ export function GenrePreview({
               ) : (
                 <CirclePlay />
               )}
-              Play
+              {/* Play */}
             </Button>
             <Button
               size="sm"
-              variant="outline"
+              variant="secondary"
               onClick={() => onNavigate?.(genre)}
               className="flex-1"
+              title='All Artists'
             >
               <SquareArrowUp size={24}/>
               {/* All Artists */}
@@ -152,6 +153,7 @@ export function GenrePreview({
               size="sm"
               variant="outline"
               onClick={() => onNavigate?.(genre)}
+              title='Go to Genre'
             >
               <ArrowRight />
             </Button>

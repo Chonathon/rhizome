@@ -599,15 +599,13 @@ function App() {
   }
 
   const getArtistImageByName = (name: string) => {
-    // Look in artists first (broader set from useArtists), then fall back to currentArtists
-    const a = artists.find((x) => x.name === name) || currentArtists.find((x) => x.name === name);
+    const a = currentArtists.find((x) => x.name === name);
     const raw = a?.image as string | undefined;
     return raw ? fixWikiImageURL(raw) : undefined;
   }
 
   const getArtistByName = (name: string) => {
-    // Look in artists first (broader set from useArtists), then fall back to currentArtists
-    return artists.find((a) => a.name === name) || currentArtists.find((a) => a.name === name);
+    return currentArtists.find((a) => a.name === name);
   }
 
   const getGenreNameById = (id: string) => {
@@ -620,14 +618,8 @@ function App() {
     const genre = currentGenres.nodes.find((g) => g.id === hoveredGenre.id);
     if (!genre) return null;
 
-    // Map topArtists BasicNode[] to full Artist[] objects
-    // We use the global artists array which should have artist data
-    const artistsList = genre.topArtists
-      ? genre.topArtists.map(basicNode => getArtistByName(basicNode.name)).filter((a): a is Artist => a !== undefined)
-      : [];
-
-    return { genre, topArtists: artistsList };
-  }, [hoveredGenre, currentGenres, artists, currentArtists]);
+    return { genre, topArtists: [] };
+  }, [hoveredGenre, currentGenres]);
 
   // Get hovered artist data for preview
   const hoveredArtistData = useMemo(() => {
