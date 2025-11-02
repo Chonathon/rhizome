@@ -96,20 +96,13 @@ export function GenrePreview({
           <>
             {typeof genre.totalListeners === 'number' && (
               <h3>
-                <span className="font-medium">Listeners:</span>{' '}
-                {formatNumber(genre.totalListeners)}
-              </h3>
-            )}
-            {typeof genre.artistCount === 'number' && (
-              <h3>
-                <span className="font-medium">Artists:</span>{' '}
-                {formatNumber(genre.artistCount)}
-              </h3>
-            )}
-            {typeof genre.totalPlays === 'number' && (
-              <h3>
-                <span className="font-medium">Plays:</span>{' '}
-                {formatNumber(genre.totalPlays)}
+                <span>{formatNumber(genre.totalListeners)}{' '}Listeners</span>
+                {typeof genre.artistCount === 'number' && (
+                <span>{' • '}{formatNumber(genre.artistCount)}{' '}Artists</span>
+                )}
+                {/* {typeof genre.totalPlays === 'number' && (
+                <span>{' • '}{formatNumber(genre.totalPlays)} Plays:{' '}</span>
+                )} */}
               </h3>
             )}
           </>
@@ -137,7 +130,7 @@ export function GenrePreview({
               ) : (
                 <CirclePlay />
               )}
-              {/* Play */}
+              Play
             </Button>
             <Button
               size="sm"
@@ -145,9 +138,11 @@ export function GenrePreview({
               onClick={() => onNavigate?.(genre)}
               className="flex-1"
               title='All Artists'
+              onClick={() => selectedGenre && allArtists(selectedGenre)}
             >
               <SquareArrowUp size={24}/>
-              {/* All Artists */}
+              
+              All Artists
             </Button>
             <Button
               size="sm"
