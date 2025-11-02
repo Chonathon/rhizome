@@ -234,12 +234,16 @@ export default function GenresFilter({
                 role="button"
                 tabIndex={-1}
                 aria-label="Clear all filters"
+                className="group"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => { e.stopPropagation(); clearAll(); }}
                 title="Clear all genre selections"
               >
                 {totalSelected > 1 ? (
-                  <span className=" text-xs leading-none">{totalSelected}</span>
+                  <>
+                  <span className="group-hover:opacity-0 text-xs leading-none">{totalSelected}</span>
+                  <X className="group-hover:opacity-100 absolute opacity-0 h-4 w-4" />
+                  </>
                 ) : (
                   <X className="h-4 w-4" />
                 )}

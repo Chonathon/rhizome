@@ -99,6 +99,7 @@ export default function DecadesFilter({
             >
               <span
                 role="button"
+                className="group"
                 tabIndex={-1}
                 aria-label="Clear all filters"
                 onMouseDown={(e) => e.preventDefault()}
@@ -109,7 +110,10 @@ export default function DecadesFilter({
                 title="Clear all decade selections"
               >
                 {totalSelected > 1 ? (
-                  <span className="text-xs leading-none">{totalSelected}</span>
+                  <>
+                    <span className="group-hover:opacity-0 text-xs leading-none">{totalSelected}</span>
+                    <X className="group-hover:opacity-100 absolute opacity-0 h-4 w-4" />
+                  </>
                 ) : (
                   <X className="h-4 w-4" />
                 )}
