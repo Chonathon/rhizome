@@ -112,8 +112,8 @@ export default function DecadesFilter({
               >
                 {totalSelected > 1 ? (
                   <>
-                    <span className="group-hover:opacity-0 text-xs leading-none">{totalSelected}</span>
-                    <X className="group-hover:opacity-100 absolute opacity-0 h-4 w-4" />
+                    <span className="group-hover:opacity-0 group-hover:scale-0 transition-all text-xs leading-none">{totalSelected}</span>
+                    <X className="transition-all group-hover:opacity-100 absolute scale-0 group-hover:scale-100 opacity-0 h-4 w-4 group-hover:-rotate-90" />
                   </>
                 ) : (
                   <X className="h-4 w-4" />
