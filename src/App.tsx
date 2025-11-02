@@ -48,6 +48,7 @@ import { SidebarProvider, useSidebar } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
 import { GenreInfo } from './components/GenreInfo';
 import GenresFilter from './components/GenresFilter';
+import DecadesFilter from './components/DecadesFilter';
 import {useTheme} from "next-themes";
 import {
   DEFAULT_DARK_NODE_COLOR,
@@ -95,6 +96,7 @@ function App() {
   const selectedGenreIDs = useMemo(() => {
     return selectedGenres.map(genre => genre.id);
   }, [selectedGenres]);
+  const [selectedDecades, setSelectedDecades] = useState<string[]>([]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
@@ -933,6 +935,11 @@ function App() {
     }
   }
 
+  const onDecadeSelectionChange = (selectedIDs: string[]) => {
+    setSelectedDecades(selectedIDs);
+    // TODO: Implement decade filtering logic
+  }
+
   const artistNodeCountSelection = (value: number) => {
     if (value <= artistNodeCount) {
       if (artists && artists.length) {
@@ -1148,11 +1155,9 @@ function App() {
                   >Mood & Activity
                     <ChevronDown />
                   </Button>
-                  <Button size='lg' className='self-start' variant='outline'
-                  onClick={() => toast('Opens a filter menu for decades...')}
-                  >Decade
-                    <ChevronDown />
-                  </Button>
+                  <DecadesFilter
+                    onDecadeSelectionChange={onDecadeSelectionChange}
+                  />
                 </div>
                 }
                 <FindFilter
