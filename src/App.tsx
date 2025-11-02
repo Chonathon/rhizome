@@ -1,5 +1,6 @@
 import './App.css'
 import {useEffect, useMemo, useRef, useState} from 'react'
+import axios from 'axios'
 import { ChevronDown, Divide, Settings } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
@@ -37,7 +38,7 @@ import {
   fixWikiImageURL,
   assignDegreesToArtists,
   formatNumber,
-  until, isOnPage
+  until, isOnPage, serverUrl
 } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -106,6 +107,7 @@ function App() {
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
+  const [genreTopArtistsCache, setGenreTopArtistsCache] = useState<Map<string, Artist[]>>(new Map());
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [dagMode, setDagMode] = useState<boolean>(() => {
@@ -614,6 +616,19 @@ function App() {
     return genres.find((g) => g.id === id)?.name;
   }
 
+  // Fetch top artists for a genre
+  const fetchGenreTopArtists = async (genreID: string) => {
+    // Check if already in cache
+    if (genreTopArtistsCache.has(genreID)) return;
+
+    try {
+      const response = await axios.get(`${serverUrl()}/artists/top/${genreID}/${TOP_ARTISTS_TO_FETCH}`);
+      setGenreTopArtistsCache(prev => new Map(prev).set(genreID, response.data));
+    } catch (err) {
+      console.error('Failed to fetch genre top artists:', err);
+    }
+  };
+
   // Activate preview mode when a card is shown
   const handlePreviewShown = () => {
     setPreviewModeActive(true);
@@ -629,14 +644,28 @@ function App() {
     }, 1000);
   };
 
+  // Handle genre hover - set hovered genre and fetch top artists
+  const handleGenreHover = (id: string | null, position: { x: number; y: number } | null) => {
+    setHoveredGenre(id && position ? { id, position } : null);
+    if (id) {
+      fetchGenreTopArtists(id);
+    }
+  };
+
   // Get hovered genre data for preview
   const hoveredGenreData = useMemo(() => {
     if (!hoveredGenre || !currentGenres) return null;
     const genre = currentGenres.nodes.find((g) => g.id === hoveredGenre.id);
     if (!genre) return null;
 
-    return { genre, topArtists: [] };
-  }, [hoveredGenre, currentGenres]);
+    // If the hovered genre is the selected genre, use the loaded topArtists data
+    // Otherwise, use cached artist data (fetched on hover)
+    const isSelectedGenre = selectedGenres.some(g => g.id === genre.id);
+    const cachedArtists = genreTopArtistsCache.get(genre.id) || [];
+    const artists = isSelectedGenre ? topArtists : cachedArtists;
+
+    return { genre, topArtists: artists };
+  }, [hoveredGenre, currentGenres, selectedGenres, topArtists, genreTopArtistsCache]);
 
   // Get hovered artist data for preview
   const hoveredArtistData = useMemo(() => {
@@ -657,10 +686,12 @@ function App() {
   const onShowAllArtists = (genre: Genre) => {
     // Ensure the artists hook actually fetches data when switching via this path
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-    if (!selectedGenres.length) setSelectedGenres([genre]); // safety in case no genre selected
+    setSelectedGenres([genre]); // Always set the selected genre
+    setInitialGenreFilter(createInitialGenreFilterObject(genre)); // Set the filter so GenresFilter knows about the selection
+    setShowArtistCard(false); // ensure only one card
+    setSelectedArtist(undefined);
     setGraph('artists');
     addRecentSelection(genre);
-    console.log("Show all artists for genre:", genre);
   }
 
   // Switch to artists graph and select the clicked artist
@@ -1123,7 +1154,7 @@ function App() {
           <Gradient />
           <motion.div
             className={
-              "fixed top-0 left-0 z-50 pt-2 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
+              "fixed top-0 left-0 z-70 pt-2 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
             }
             style={{
               left: "var(--sidebar-gap)",
@@ -1210,7 +1241,7 @@ function App() {
                   ref={genresGraphRef as any}
                   graphData={currentGenres}
                   onNodeClick={onGenreNodeClick}
-                  onNodeHover={(id, position) => setHoveredGenre(id && position ? { id, position } : null)}
+                  onNodeHover={handleGenreHover}
                   loading={genresLoading}
                   show={graph === "genres" && !genresError}
                   dag={dagMode}
@@ -1243,6 +1274,7 @@ function App() {
                     topArtists={hoveredGenreData.topArtists}
                     genreColorMap={genreColorMap}
                     onNavigate={(genre) => onGenreNodeClick(genre)}
+                    onAllArtists={(genre) => onShowAllArtists(genre)}
                     onPlay={undefined}
                     playLoading={false}
                     position={hoveredGenre.position}

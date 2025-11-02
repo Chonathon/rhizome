@@ -69,7 +69,7 @@ export function ArtistPreview({
 
   return (
     <div
-      className="absolute z-50 pointer-events-auto"
+      className="absolute pointer-events-auto"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,

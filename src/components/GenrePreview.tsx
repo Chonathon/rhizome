@@ -10,6 +10,7 @@ interface GenrePreviewProps {
   topArtists?: Artist[]
   genreColorMap?: Map<string, string>
   onNavigate?: (genre: Genre) => void
+  onAllArtists?: (genre: Genre) => void
   onPlay?: (genre: Genre) => void
   playLoading?: boolean
   position: { x: number; y: number }
@@ -23,6 +24,7 @@ export function GenrePreview({
   topArtists,
   genreColorMap,
   onNavigate,
+  onAllArtists,
   onPlay,
   playLoading,
   position,
@@ -45,7 +47,7 @@ export function GenrePreview({
 
   return (
     <div
-      className="absolute z-50 pointer-events-auto"
+      className="absolute pointer-events-auto"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
@@ -142,12 +144,12 @@ export function GenrePreview({
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => onNavigate?.(genre)}
+              onClick={() => onAllArtists?.(genre)}
               className="flex-1"
               title='All Artists'
             >
               <SquareArrowUp size={24}/>
-              
+
               All Artists
             </Button>
             <Button
