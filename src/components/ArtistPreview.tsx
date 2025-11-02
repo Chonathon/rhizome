@@ -1,5 +1,5 @@
 import { Artist } from '@/types'
-import { fixWikiImageURL, formatNumber, formatDate } from '@/lib/utils'
+import { fixWikiImageURL, formatNumberCompact, formatDate } from '@/lib/utils'
 import { useMemo } from 'react'
 import { Button } from './ui/button'
 import { CirclePlay, ArrowRight, SquarePlus, Loader2, Check } from 'lucide-react'
@@ -111,7 +111,7 @@ export function ArtistPreview({
           <>
             {typeof artist.listeners === 'number' && (
               <h3>
-                {formatNumber(artist.listeners)}{' '}
+                {formatNumberCompact(artist.listeners)}{' '}
                 <span className="">Listeners</span>
               </h3>
             )}
