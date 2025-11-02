@@ -1150,11 +1150,11 @@ function App() {
                     initialSelection={initialGenreFilter}
                    />
 
-                  <Button size='lg' variant='outline'
+                  {/* <Button size='lg' variant='outline'
                   onClick={() => toast('Opens a filter menu for Moods & Activities...')}
-                  >Mood & Activity
+                  >Moods & Activities
                     <ChevronDown />
-                  </Button>
+                  </Button> */}
                   <DecadesFilter
                     onDecadeSelectionChange={onDecadeSelectionChange}
                   />

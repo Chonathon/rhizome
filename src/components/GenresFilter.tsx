@@ -110,6 +110,14 @@ export default function GenresFilter({
     });
   };
 
+  // Toggle only the parent state without affecting children (for Selected section)
+  const toggleParentOnly = (parent: Genre) => {
+    setParentSelected((prev) => ({
+      ...prev,
+      [parent.id]: !prev[parent.id]
+    }));
+  };
+
   useEffect(() => {
     const q = query.trim().toLowerCase();
     childrenSearchResults.current = [];
@@ -270,7 +278,7 @@ export default function GenresFilter({
                 <CommandItem
                   key={`sel-parent-${genre.id}`}
                   value={`selected-parent:${genre.id} ${genre.name}`}
-                  onSelect={() => toggleParent(genre)}
+                  onSelect={() => toggleParentOnly(genre)}
                   className="flex items-center gap-2"
                 >
                   <Check className="opacity-100" />
