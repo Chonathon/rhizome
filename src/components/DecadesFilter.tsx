@@ -12,6 +12,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { toast } from "sonner";
 
 // Dummy data: decades from 1930s to 2020s
 const DECADES = [
@@ -143,7 +144,9 @@ export default function DecadesFilter({
                 <CommandItem
                   key={`sel-${decade.id}`}
                   value={`selected:${decade.id} ${decade.name}`}
-                  onSelect={() => toggleDecade(decade.id)}
+                  onSelect={() => {
+                    toggleDecade(decade.id);
+                  }}
                   className="flex items-center gap-2"
                 >
                   <Check className="opacity-100" />
@@ -161,7 +164,10 @@ export default function DecadesFilter({
                 <CommandItem
                   key={decade.id}
                   value={decade.name}
-                  onSelect={() => toggleDecade(decade.id)}
+                  onSelect={() => {
+                    toggleDecade(decade.id)
+                    toast(`You selected the ${decade.name} decade but's it's not hooked up yet 🙃`);
+                  }}
                   className="flex items-center gap-2"
                 >
                   <Check className={isSelected ? "opacity-100" : "hidden"} />
