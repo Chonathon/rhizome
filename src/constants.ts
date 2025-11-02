@@ -75,7 +75,7 @@ export const UNREGISTERED_USER_ID = 'unregistered';
 export const MAX_YTID_QUEUE_SIZE = 200;
 
 export const DEFAULT_THEME: Theme = 'system';
-export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER, enableHoverCards: true};
+export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER, enableGraphCards: true};
 export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
 export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
 // Tailwind default color palette (lighter/less saturated variants)

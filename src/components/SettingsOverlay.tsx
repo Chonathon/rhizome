@@ -547,11 +547,11 @@ const ProfileSection = ({
                 </FieldContent>
                 <Switch
                   id="hover-cards"
-                  checked={preferences.enableHoverCards ?? true}
+                  checked={preferences.enableGraphCards ?? true}
                   onCheckedChange={(checked) => {
                     onPreferencesChange({
                       ...preferences,
-                      enableHoverCards: checked
+                      enableGraphCards: checked
                     });
                   }}
                 />

@@ -647,7 +647,7 @@ function App() {
   // Handle genre hover - set hovered genre and fetch top artists
   const handleGenreHover = (id: string | null, position: { x: number; y: number } | null) => {
     // Only set hover if feature is enabled
-    if (preferences?.enableHoverCards ?? true) {
+    if (preferences?.enableGraphCards ?? true) {
       setHoveredGenre(id && position ? { id, position } : null);
       if (id) {
         fetchGenreTopArtists(id);
@@ -1261,7 +1261,7 @@ function App() {
                     loading={graph === 'similarArtists' ? similarArtistsLoading : artistsLoading}
                     onNodeClick={onArtistNodeClick}
                     onNodeHover={(id, position) => {
-                      if (preferences?.enableHoverCards ?? true) {
+                      if (preferences?.enableGraphCards ?? true) {
                         setHoveredArtist(id && position ? { id, position } : null);
                       }
                     }}
