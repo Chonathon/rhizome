@@ -1260,9 +1260,9 @@ function App() {
                     getGenreNameById={getGenreNameById}
                     onNavigate={(artist) => onArtistNodeClick(artist)}
                     onPlay={undefined}
-                    onToggle={toggleLikedArtist}
+                    onToggle={onAddArtistButtonToggle}
                     playLoading={false}
-                    isInCollection={liked.has(hoveredArtistData.id)}
+                    isInCollection={isInCollection(hoveredArtistData.id)}
                     position={hoveredArtist.position}
                     visible={true}
                     getArtistImageByName={getArtistImageByName}
