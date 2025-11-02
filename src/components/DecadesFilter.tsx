@@ -166,7 +166,7 @@ export default function DecadesFilter({
                   value={decade.name}
                   onSelect={() => {
                     toggleDecade(decade.id)
-                    toast(`You selected the ${decade.name} decade but's it's not hooked up yet 🙃`);
+                    toast(`You selected the ${decade.name} decade but's the feature isn't implemented yet 🙃`);
                   }}
                   className="flex items-center gap-2"
                 >
