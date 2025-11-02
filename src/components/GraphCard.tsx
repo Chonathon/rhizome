@@ -64,7 +64,7 @@ export function GraphCard({
         className={`
           w-96 min-h-[126px] h-auto p-3 z-50 pb-4
           bg-card backdrop-blur-xs shadow-lg rounded-3xl border border-border
-          max-w-full overflow-hidden
+         overflow-hidden
           ${loading ? "bg-stone-50/86" : ""}
           ${className ?? ""}
         `}
@@ -104,13 +104,13 @@ export function GraphCard({
           ) : (
             <>
               {thumbnail}
-              <div className="flex-1 flex flex-col items-start gap-1 min-w-0">
+              <div className="flex-1 flex flex-col items-stretch gap-1 min-w-0 h-full">
                 <div className="">
                   {title}
                   {meta && <div className="text-sm text-muted-foreground w-full">{meta}</div>}
                 </div>
                 {description && <div className="w-full flex flex-col text-sm">{description}</div>}
-                {actions && <div className="w-full mt-2">{actions}</div>}
+                {actions && <div className="w-full h-full pt-2">{actions}</div>}
               </div>
             </>
           )}

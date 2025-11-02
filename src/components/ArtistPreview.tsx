@@ -5,6 +5,7 @@ import { Button } from './ui/button'
 import { CirclePlay, ArrowRight, SquarePlus, Loader2, Check } from 'lucide-react'
 import GenreBadge from '@/components/GenreBadge'
 import GraphCard from './GraphCard'
+import ArtistBadge from './ArtistBadge'
 
 interface ArtistPreviewProps {
   artist: Artist
@@ -17,6 +18,11 @@ interface ArtistPreviewProps {
   isInCollection?: boolean
   position: { x: number; y: number }
   visible: boolean
+  // Similar artists
+  getArtistImageByName?: (name: string) => string | undefined
+  getArtistByName?: (name: string) => Artist | undefined
+  setArtistFromName?: (name: string) => void
+  getArtistColor?: (artist: Artist) => string | undefined
 }
 
 export function ArtistPreview({
@@ -30,6 +36,10 @@ export function ArtistPreview({
   isInCollection,
   position,
   visible,
+  getArtistImageByName,
+  getArtistByName,
+  setArtistFromName,
+  getArtistColor,
 }: ArtistPreviewProps) {
   const initial = artist?.name?.[0]?.toUpperCase() ?? '?'
 
@@ -42,6 +52,12 @@ export function ArtistPreview({
   const topGenres = useMemo(
     () => (artist?.genres ?? []).slice(0, 3),
     [artist?.genres]
+  )
+
+  // Get top 3 similar artists
+  const topSimilarArtists = useMemo(
+    () => (artist?.similar ?? []).slice(0, 3),
+    [artist?.similar]
   )
 
   if (!visible) return null
@@ -107,11 +123,37 @@ export function ArtistPreview({
         }
 
         description={
-          artist?.bio?.summary && (
-            <p className="break-words text-muted-foreground line-clamp-2">
-              {artist.bio.summary}
-            </p>
-          )
+          <>
+            {artist?.bio?.summary && (
+              <p className="break-words text-muted-foreground line-clamp-2">
+                {artist.bio.summary}
+              </p>
+            )}
+
+            {/* Similar Artists */}
+            {/* {topSimilarArtists.length > 0 && (
+              <div className="flex flex-col gap-1.5 pt-1">
+                <span className="text-xs font-semibold">Similar Artists</span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {topSimilarArtists.map((name) => {
+                    const img = getArtistImageByName?.(name)
+                    const artistObj = getArtistByName?.(name)
+                    const genreColor = artistObj && getArtistColor ? getArtistColor(artistObj) : undefined
+                    return (
+                      <ArtistBadge
+                        key={name}
+                        name={name}
+                        imageUrl={img}
+                        genreColor={genreColor}
+                        onClick={() => setArtistFromName?.(name)}
+                        title={`Go to ${name}`}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
+            )} */}
+          </>
         }
 
         actions={
