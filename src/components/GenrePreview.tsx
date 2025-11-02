@@ -2,7 +2,7 @@ import { Genre, Artist } from '@/types'
 import { fixWikiImageURL, formatNumber } from '@/lib/utils'
 import { useMemo } from 'react'
 import { Button } from './ui/button'
-import { CirclePlay, ArrowRight, Loader2 } from 'lucide-react'
+import { CirclePlay, ArrowRight, Loader2, SquareArrowUp } from 'lucide-react'
 import GraphCard from './GraphCard'
 
 interface GenrePreviewProps {
@@ -135,18 +135,25 @@ export function GenrePreview({
               {playLoading ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden />
               ) : (
-                <CirclePlay className="size-4" />
+                <CirclePlay />
               )}
               Play
             </Button>
             <Button
               size="sm"
-              variant="secondary"
+              variant="outline"
               onClick={() => onNavigate?.(genre)}
               className="flex-1"
             >
-              <ArrowRight className="size-4" />
-              View
+              <SquareArrowUp size={24}/>
+              {/* All Artists */}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onNavigate?.(genre)}
+            >
+              <ArrowRight />
             </Button>
           </div>
         }

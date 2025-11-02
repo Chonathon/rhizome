@@ -1,4 +1,4 @@
-import {Genre, GenreClusterMode, GenreGraphData, NodeLink, Artist} from "@/types";
+import {Genre, GenreClusterMode, GenreGraphData, NodeLink} from "@/types";
 import React, {forwardRef, useEffect, useImperativeHandle, useRef, useMemo, useState} from "react";
 import ForceGraph, {ForceGraphMethods, GraphData, NodeObject} from "react-force-graph-2d";
 import {Loading} from "./Loading";
@@ -7,7 +7,6 @@ import * as d3 from 'd3-force';
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS } from "@/constants";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, LABEL_FONT_SIZE, applyMobileDrawerYOffset } from "@/lib/graphStyle";
-import GenrePreview from "@/components/GenrePreview";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -19,6 +18,7 @@ export type GraphHandle = {
 interface GenresForceGraphProps {
     graphData?: GenreGraphData;
     onNodeClick: (genre: Genre) => void;
+    onNodeHover?: (genreId: string | null, screenPosition: { x: number; y: number } | null) => void;
     loading: boolean;
     show: boolean;
     dag: boolean;
@@ -32,12 +32,10 @@ interface GenresForceGraphProps {
 
 // Styling shared via graphStyle utils
 
-const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId, width, height }, ref) => {
+const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graphData, onNodeClick, onNodeHover, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId, width, height }, ref) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
-    const [hoverCardVisible, setHoverCardVisible] = useState<boolean>(false);
-    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
@@ -244,40 +242,6 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         return preparedData.nodes.find(n => n.id === hoveredId) || null;
     }, [hoveredId, preparedData.nodes]);
 
-    // Get top artists for hovered genre
-    const hoveredGenreTopArtists = useMemo(() => {
-        if (!hoveredGenre?.topArtists) return [];
-        return hoveredGenre.topArtists as Artist[];
-    }, [hoveredGenre]);
-
-    // Handle hover delay for card visibility
-    useEffect(() => {
-        if (hoveredId) {
-            // Clear any pending hide timeout
-            if (hoverTimeoutRef.current) {
-                clearTimeout(hoverTimeoutRef.current);
-                hoverTimeoutRef.current = null;
-            }
-            // Show card after delay
-            const showTimeout = setTimeout(() => {
-                setHoverCardVisible(true);
-            }, 300);
-            return () => clearTimeout(showTimeout);
-        } else {
-            // Hide card after delay
-            const hideTimeout = setTimeout(() => {
-                setHoverCardVisible(false);
-            }, 200);
-            hoverTimeoutRef.current = hideTimeout;
-            return () => {
-                if (hoverTimeoutRef.current) {
-                    clearTimeout(hoverTimeoutRef.current);
-                    hoverTimeoutRef.current = null;
-                }
-            };
-        }
-    }, [hoveredId]);
-
     // Get screen position for hovered node
     const hoveredNodeScreenPos = useMemo(() => {
         if (!hoveredGenre || !fgRef.current) return null;
@@ -288,6 +252,14 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         const screenCoords = fgRef.current.graph2ScreenCoords?.(node.x, node.y);
         return screenCoords ? { x: screenCoords.x, y: screenCoords.y } : null;
     }, [hoveredGenre]);
+
+    // Notify parent of hover state changes
+    useEffect(() => {
+        if (onNodeHover) {
+            onNodeHover(hoveredId || null, hoveredNodeScreenPos);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hoveredId, hoveredNodeScreenPos]); // Don't include onNodeHover to avoid infinite loops
 
     const calculateRadius = (artistCount: number) => {
         return 5 + Math.sqrt(artistCount) * .5;
@@ -380,32 +352,6 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
                 nodeVal={(node: Genre) => calculateRadius(node.artistCount)}
                 nodePointerAreaPaint={nodePointerAreaPaint}
             />
-            {hoveredGenre && hoveredNodeScreenPos && hoverCardVisible && (
-                <div
-                    onMouseEnter={() => {
-                        // Keep card visible when hovering over it
-                        if (hoverTimeoutRef.current) {
-                            clearTimeout(hoverTimeoutRef.current);
-                            hoverTimeoutRef.current = null;
-                        }
-                    }}
-                    onMouseLeave={() => {
-                        // Hide card when leaving it
-                        setHoveredId(undefined);
-                    }}
-                >
-                    <GenrePreview
-                        genre={hoveredGenre}
-                        topArtists={hoveredGenreTopArtists}
-                        genreColorMap={externalColorMap}
-                        onNavigate={(genre) => onNodeClick(genre)}
-                        onPlay={undefined}
-                        playLoading={false}
-                        position={hoveredNodeScreenPos}
-                        visible={true}
-                    />
-                </div>
-            )}
         </div>
     )
 });

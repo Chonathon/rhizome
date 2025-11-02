@@ -5,7 +5,6 @@ import { Loading } from "./Loading";
 import { useTheme } from "next-themes";
 import { drawCircleNode, drawLabelBelow, labelAlphaForZoom, collideRadiusForNode, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END, LABEL_FONT_SIZE, applyMobileDrawerYOffset } from "@/lib/graphStyle";
 import * as d3 from 'd3-force';
-import ArtistPreview from "@/components/ArtistPreview";
 
 export type GraphHandle = {
     zoomIn: () => void;
@@ -18,6 +17,7 @@ interface ArtistsForceGraphProps {
     artists: Artist[];
     artistLinks: NodeLink[];
     onNodeClick: (artist: Artist) => void;
+    onNodeHover?: (artistId: string | null, screenPosition: { x: number; y: number } | null) => void;
     loading: boolean;
     show: boolean;
     // Selected artist id to highlight and focus
@@ -43,17 +43,13 @@ interface ArtistsForceGraphProps {
     // Explicit size for the canvas (viewport)
     width?: number;
     height?: number;
-    // Optional props for hover preview
-    genreColorMap?: Map<string, string>;
-    getGenreNameById?: (id: string) => string | undefined;
-    likedArtists?: Set<string>;
-    onToggleArtist?: (artistId: string) => void;
 }
 
 const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     artists,
     artistLinks,
     onNodeClick,
+    onNodeHover,
     loading,
     show,
     selectedArtistId,
@@ -68,14 +64,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     strokeMinPx = 13,
     width,
     height,
-    genreColorMap,
-    getGenreNameById,
-    likedArtists,
-    onToggleArtist,
 }, ref) => {
     const { resolvedTheme } = useTheme();
-    const [hoverCardVisible, setHoverCardVisible] = useState<boolean>(false);
-    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const preparedData: GraphData<Artist, NodeLink> = useMemo(() => {
         if (!artists || !artistLinks) return { nodes: [], links: [] };
@@ -267,34 +257,6 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         return preparedData.nodes.find(n => n.id === hoveredId) || null;
     }, [hoveredId, preparedData.nodes]);
 
-    // Handle hover delay for card visibility
-    useEffect(() => {
-        if (hoveredId) {
-            // Clear any pending hide timeout
-            if (hoverTimeoutRef.current) {
-                clearTimeout(hoverTimeoutRef.current);
-                hoverTimeoutRef.current = null;
-            }
-            // Show card after delay
-            const showTimeout = setTimeout(() => {
-                setHoverCardVisible(true);
-            }, 300);
-            return () => clearTimeout(showTimeout);
-        } else {
-            // Hide card after delay
-            const hideTimeout = setTimeout(() => {
-                setHoverCardVisible(false);
-            }, 200);
-            hoverTimeoutRef.current = hideTimeout;
-            return () => {
-                if (hoverTimeoutRef.current) {
-                    clearTimeout(hoverTimeoutRef.current);
-                    hoverTimeoutRef.current = null;
-                }
-            };
-        }
-    }, [hoveredId]);
-
     // Get screen position for hovered node
     const hoveredNodeScreenPos = useMemo(() => {
         if (!hoveredArtist || !fgRef.current) return null;
@@ -305,6 +267,14 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         const screenCoords = fgRef.current.graph2ScreenCoords?.(node.x, node.y);
         return screenCoords ? { x: screenCoords.x, y: screenCoords.y } : null;
     }, [hoveredArtist]);
+
+    // Notify parent of hover state changes
+    useEffect(() => {
+        if (onNodeHover) {
+            onNodeHover(hoveredId || null, hoveredNodeScreenPos);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hoveredId, hoveredNodeScreenPos]); // Don't include onNodeHover to avoid infinite loops
 
     return !show ? null : loading ? (<div className="flex-1 w-full" style={{ height: height ?? '100%' }}>
         <Loading />
@@ -399,34 +369,6 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 return 1 + t * 6; // 1..7
             }}
         />
-        {hoveredArtist && hoveredNodeScreenPos && hoverCardVisible && (
-            <div
-                onMouseEnter={() => {
-                    // Keep card visible when hovering over it
-                    if (hoverTimeoutRef.current) {
-                        clearTimeout(hoverTimeoutRef.current);
-                        hoverTimeoutRef.current = null;
-                    }
-                }}
-                onMouseLeave={() => {
-                    // Hide card when leaving it
-                    setHoveredId(undefined);
-                }}
-            >
-                <ArtistPreview
-                    artist={hoveredArtist}
-                    genreColorMap={genreColorMap}
-                    getGenreNameById={getGenreNameById}
-                    onNavigate={(artist: Artist) => onNodeClick(artist)}
-                    onPlay={undefined}
-                    onToggle={onToggleArtist}
-                    playLoading={false}
-                    isInCollection={likedArtists?.has(hoveredArtist.id)}
-                    position={hoveredNodeScreenPos}
-                    visible={true}
-                />
-            </div>
-        )}
         </div>
     )
 });

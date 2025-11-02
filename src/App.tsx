@@ -21,6 +21,8 @@ import { Toaster, toast } from 'sonner'
 import { useMediaQuery } from 'react-responsive';
 import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
+import GenrePreview from './components/GenrePreview';
+import ArtistPreview from './components/ArtistPreview';
 import Player from "@/components/Player";
 import { Search } from './components/Search';
 import FindFilter, { FindOption } from "@/components/FindFilter";
@@ -97,6 +99,8 @@ function App() {
   }, [selectedGenres]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
+  const [hoveredGenre, setHoveredGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [hoveredArtist, setHoveredArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
@@ -595,18 +599,41 @@ function App() {
   }
 
   const getArtistImageByName = (name: string) => {
-    const a = currentArtists.find((x) => x.name === name);
+    // Look in artists first (broader set from useArtists), then fall back to currentArtists
+    const a = artists.find((x) => x.name === name) || currentArtists.find((x) => x.name === name);
     const raw = a?.image as string | undefined;
     return raw ? fixWikiImageURL(raw) : undefined;
   }
 
   const getArtistByName = (name: string) => {
-    return currentArtists.find((a) => a.name === name);
+    // Look in artists first (broader set from useArtists), then fall back to currentArtists
+    return artists.find((a) => a.name === name) || currentArtists.find((a) => a.name === name);
   }
 
   const getGenreNameById = (id: string) => {
     return genres.find((g) => g.id === id)?.name;
   }
+
+  // Get hovered genre data for preview
+  const hoveredGenreData = useMemo(() => {
+    if (!hoveredGenre || !currentGenres) return null;
+    const genre = currentGenres.nodes.find((g) => g.id === hoveredGenre.id);
+    if (!genre) return null;
+
+    // Map topArtists BasicNode[] to full Artist[] objects
+    // We use the global artists array which should have artist data
+    const artistsList = genre.topArtists
+      ? genre.topArtists.map(basicNode => getArtistByName(basicNode.name)).filter((a): a is Artist => a !== undefined)
+      : [];
+
+    return { genre, topArtists: artistsList };
+  }, [hoveredGenre, currentGenres, artists, currentArtists]);
+
+  // Get hovered artist data for preview
+  const hoveredArtistData = useMemo(() => {
+    if (!hoveredArtist) return null;
+    return currentArtists.find((a) => a.id === hoveredArtist.id) || null;
+  }, [hoveredArtist, currentArtists]);
 
   const onGenreNodeClick = (genre: Genre) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
@@ -1174,6 +1201,7 @@ function App() {
                   ref={genresGraphRef as any}
                   graphData={currentGenres}
                   onNodeClick={onGenreNodeClick}
+                  onNodeHover={(id, position) => setHoveredGenre(id && position ? { id, position } : null)}
                   loading={genresLoading}
                   show={graph === "genres" && !genresError}
                   dag={dagMode}
@@ -1189,6 +1217,7 @@ function App() {
                     artistLinks={currentArtistLinks}
                     loading={graph === 'similarArtists' ? similarArtistsLoading : artistsLoading}
                     onNodeClick={onArtistNodeClick}
+                    onNodeHover={(id, position) => setHoveredArtist(id && position ? { id, position } : null)}
                     selectedArtistId={selectedArtist?.id}
                     show={
                         (graph === "artists" || graph === "similarArtists") && !artistsError
@@ -1197,6 +1226,40 @@ function App() {
                     width={viewport.width || undefined}
                     height={viewport.height || undefined}
                 />
+
+                {/* Genre hover preview */}
+                {hoveredGenreData && hoveredGenre && graph === 'genres' && (
+                  <GenrePreview
+                    genre={hoveredGenreData.genre}
+                    topArtists={hoveredGenreData.topArtists}
+                    genreColorMap={genreColorMap}
+                    onNavigate={(genre) => onGenreNodeClick(genre)}
+                    onPlay={undefined}
+                    playLoading={false}
+                    position={hoveredGenre.position}
+                    visible={true}
+                  />
+                )}
+
+                {/* Artist hover preview */}
+                {hoveredArtistData && hoveredArtist && (graph === 'artists' || graph === 'similarArtists') && (
+                  <ArtistPreview
+                    artist={hoveredArtistData}
+                    genreColorMap={genreColorMap}
+                    getGenreNameById={getGenreNameById}
+                    onNavigate={(artist) => onArtistNodeClick(artist)}
+                    onPlay={undefined}
+                    onToggle={toggleLikedArtist}
+                    playLoading={false}
+                    isInCollection={liked.has(hoveredArtistData.id)}
+                    position={hoveredArtist.position}
+                    visible={true}
+                    getArtistImageByName={getArtistImageByName}
+                    getArtistByName={getArtistByName}
+                    setArtistFromName={setArtistFromName}
+                    getArtistColor={getArtistColor}
+                  />
+                )}
 
             <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
               <ZoomButtons

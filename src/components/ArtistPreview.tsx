@@ -168,7 +168,7 @@ export function ArtistPreview({
               {playLoading ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden />
               ) : (
-                <CirclePlay className="size-4" />
+                <CirclePlay />
               )}
               Play
             </Button>
@@ -179,9 +179,9 @@ export function ArtistPreview({
               className="flex-1"
             >
               {isInCollection ? (
-                <Check className="size-4" />
+                <Check />
               ) : (
-                <SquarePlus className="size-4" />
+                <SquarePlus />
               )}
               {isInCollection ? 'Added' : 'Add'}
             </Button>
@@ -190,7 +190,7 @@ export function ArtistPreview({
               variant="outline"
               onClick={() => onNavigate?.(artist)}
             >
-              <ArrowRight className="size-4" />
+              <ArrowRight />
             </Button>
           </div>
         }
