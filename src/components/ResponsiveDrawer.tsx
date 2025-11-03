@@ -37,6 +37,16 @@ export interface ResponsiveDrawerProps {
    * @default '[data-drawer-scroll]'
    */
   scrollContainerSelector?: string;
+  /**
+   * Index of the snap point to start at when opening (mobile only).
+   * @default 0
+   */
+  initialSnapIndex?: number;
+  /**
+   * Allow swiping to dismiss the drawer (mobile only).
+   * @default true
+   */
+  dismissible?: boolean;
 }
 
 /**
@@ -50,7 +60,7 @@ export function ResponsiveDrawer({
   contentClassName,
   bodyClassName,
   directionDesktop = "left",
-  snapPoints = [0.50, 0.9],
+  snapPoints = [0.50, 0.98],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 768px)",
   showMobileHandle = false,
@@ -61,11 +71,13 @@ export function ResponsiveDrawer({
   headerSubtitle,
   lockDragToHandleWhenScrolled = true,
   scrollContainerSelector = '[data-drawer-scroll]',
+  initialSnapIndex = 0,
+  dismissible = true,
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
   const { state: sidebarState } = useSidebar();
   const [open, setOpen] = useState(false);
-  const [activeSnap, setActiveSnap] = useState<number | string | null>(snapPoints[0] ?? 0.9);
+  const [activeSnap, setActiveSnap] = useState<number | string | null>(snapPoints[initialSnapIndex] ?? snapPoints[0] ?? 0.9);
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const cardRef = React.useRef<HTMLDivElement | null>(null);
   const scrollElRef = React.useRef<HTMLElement | null>(null);
@@ -82,12 +94,12 @@ export function ResponsiveDrawer({
 
   // Ensure consistent snap height when resizing to mobile while open
   useEffect(() => {
-    // Reset to the first snap only when transitioning to mobile or opening,
+    // Reset to the initial snap when transitioning to mobile or opening,
     // not on every render when parents pass a new snapPoints array literal.
     if (!isDesktop && open) {
-      setActiveSnap(snapPoints[0] ?? 0.9);
+      setActiveSnap(snapPoints[initialSnapIndex] ?? snapPoints[0] ?? 0.9);
     }
-  }, [isDesktop, open]);
+  }, [isDesktop, open, initialSnapIndex]);
 
   // Track whether the scroll container is at the very top to gate dragging.
   React.useEffect(() => {
@@ -254,12 +266,9 @@ export function ResponsiveDrawer({
         if (!isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
       }}
       direction={isDesktop ? directionDesktop : "bottom"}
-      // Reduce velocity-driven jumps between distant snap points
-      snapToSequentialPoint
-      // Conservative: on mobile, only the handle can drag between snaps.
-      // This eliminates unintended cycles from content taps/drags.
-      handleOnly={!isDesktop && lockDragToHandleWhenScrolled}
-      dismissible={true}
+      // When at top, allow content dragging to enable natural swipe-to-dismiss.
+      handleOnly={!isDesktop && lockDragToHandleWhenScrolled && !isScrollAtTop}
+      dismissible={dismissible}
       modal={false}
       {...(!isDesktop
         ? {

@@ -39,6 +39,7 @@ interface ArtistInfoProps {
   playLoading?: boolean;
   onArtistToggle: (id: string | undefined) => void;
   isInCollection: boolean;
+  initialSnapIndex?: number;
 }
 
 export function ArtistInfo({
@@ -60,6 +61,7 @@ export function ArtistInfo({
   playLoading,
   onArtistToggle,
   isInCollection,
+  initialSnapIndex = 0,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -139,6 +141,7 @@ export function ArtistInfo({
           ? `${formatNumber(selectedArtist.listeners)} Listeners`
           : undefined
       }
+      initialSnapIndex={initialSnapIndex}
     >
       {({ isDesktop, isAtMaxSnap, isAtMinSnap }) => {
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;

@@ -21,6 +21,7 @@ import { ResetButton } from "@/components/ResetButton";
 import { Toaster, toast } from 'sonner'
 import { useMediaQuery } from 'react-responsive';
 import { ArtistInfo } from './components/ArtistInfo'
+import { ArtistCard } from './components/ArtistCard'
 import { Gradient } from './components/Gradient';
 import GenrePreview from './components/GenrePreview';
 import ArtistPreview from './components/ArtistPreview';
@@ -100,6 +101,7 @@ function App() {
   }, [selectedGenres]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
+  const [showArtistInfoDrawer, setShowArtistInfoDrawer] = useState(false);
   const [hoveredGenre, setHoveredGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
   const [hoveredArtist, setHoveredArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
   const [previewModeActive, setPreviewModeActive] = useState(false);
@@ -681,6 +683,7 @@ function App() {
     setInitialGenreFilter(createInitialGenreFilterObject(genre));
     setSelectedGenres([genre]);
     setShowArtistCard(false); // ensure only one card
+    setShowArtistInfoDrawer(false);
     setSelectedArtist(undefined);
     addRecentSelection(genre);
   }
@@ -692,6 +695,7 @@ function App() {
     setSelectedGenres([genre]); // Always set the selected genre
     setInitialGenreFilter(createInitialGenreFilterObject(genre)); // Set the filter so GenresFilter knows about the selection
     setShowArtistCard(false); // ensure only one card
+    setShowArtistInfoDrawer(false);
     setSelectedArtist(undefined);
     setGraph('artists');
     addRecentSelection(genre);
@@ -701,19 +705,42 @@ function App() {
   const onTopArtistClick = (artist: Artist) => {
     setGraph('artists');
     setSelectedArtist(artist);
-    setShowArtistCard(true);
     addRecentSelection(artist);
+
+    // Mobile: Show card only, Desktop: Show full drawer directly
+    if (isMobile) {
+      setShowArtistCard(true);
+      setShowArtistInfoDrawer(false);
+    } else {
+      setShowArtistCard(true);
+      setShowArtistInfoDrawer(true);
+    }
   }
 
   const onArtistNodeClick = (artist: Artist) => {
     if (graph === 'artists') {
       setSelectedArtist(artist);
-      setShowArtistCard(true);
       addRecentSelection(artist);
+
+      // Mobile: Show card only (not full drawer yet)
+      // Desktop: Show full drawer directly
+      if (isMobile) {
+        setShowArtistCard(true);
+        setShowArtistInfoDrawer(false);
+      } else {
+        setShowArtistCard(true);
+        setShowArtistInfoDrawer(true);
+      }
     }
     if (graph === 'similarArtists') {
       createSimilarArtistGraph(artist);
     }
+  }
+
+  // Handler for when mobile ArtistCard is clicked to open full info
+  const onArtistCardClick = () => {
+    // Card stays visible, but now we also show the full drawer
+    setShowArtistInfoDrawer(true);
   }
 
   const handleFindSelect = (option: FindOption) => {
@@ -721,8 +748,17 @@ function App() {
       const artist = currentArtists.find((a) => a.id === option.id);
       if (!artist) return;
       setSelectedArtist(artist);
-      setShowArtistCard(true);
       addRecentSelection(artist);
+
+      // Mobile: Show card only, Desktop: Show full drawer directly
+      if (isMobile) {
+        setShowArtistCard(true);
+        setShowArtistInfoDrawer(false);
+      } else {
+        setShowArtistCard(true);
+        setShowArtistInfoDrawer(true);
+      }
+
       if (graph === 'similarArtists') {
         setSelectedArtistNoGenre(artist);
       } else if (graph !== 'artists') {
@@ -776,6 +812,7 @@ function App() {
   const deselectArtist = () => {
     setSelectedArtist(undefined);
     setShowArtistCard(false);
+    setShowArtistInfoDrawer(false);
     setSelectedArtistNoGenre(undefined);
   }
 
@@ -786,7 +823,16 @@ function App() {
   const createSimilarArtistGraph = (artistResult: Artist) => {
     setSelectedArtist(artistResult);
     setSelectedArtistNoGenre(artistResult);
-    setShowArtistCard(true);
+
+    // Mobile: Show card only, Desktop: Show full drawer directly
+    if (isMobile) {
+      setShowArtistCard(true);
+      setShowArtistInfoDrawer(false);
+    } else {
+      setShowArtistCard(true);
+      setShowArtistInfoDrawer(true);
+    }
+
     setCanCreateSimilarArtistGraph(true);
   }
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
@@ -858,6 +904,7 @@ function App() {
       setCurrentArtistLinks([]);
       setSelectedGenres([]);
       setShowArtistCard(false);
+      setShowArtistInfoDrawer(false);
       setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
     } else {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
@@ -1410,8 +1457,8 @@ function App() {
                 setArtistFromName={setArtistFromName}
                 artistLoading={false}
                 artistError={false}
-                show={showArtistCard}
-                deselectArtist={deselectArtist}
+                show={isMobile ? showArtistInfoDrawer : showArtistCard}
+                deselectArtist={isMobile ? () => setShowArtistInfoDrawer(false) : deselectArtist}
                 similarFilter={similarArtistFilter}
                 onBadDataSubmit={onBadDataArtistSubmit}
                 onGenreClick={onGenreNameClick}
@@ -1424,6 +1471,22 @@ function App() {
                 playLoading={isPlayerLoadingArtist()}
                 onArtistToggle={onAddArtistButtonToggle}
                 isInCollection={isInCollection(selectedArtist?.id)}
+                initialSnapIndex={isMobile && showArtistInfoDrawer ? 1 : 0}
+              />
+
+              {/* Mobile Artist Card - shown on node click, before full drawer */}
+              <ArtistCard
+                artist={selectedArtist}
+                genreColorMap={genreColorMap}
+                getGenreNameById={getGenreNameById}
+                onCardClick={onArtistCardClick}
+                onPlay={onPlayArtist}
+                onToggle={onAddArtistButtonToggle}
+                playLoading={isPlayerLoadingArtist()}
+                isInCollection={isInCollection(selectedArtist?.id)}
+                show={showArtistCard}
+                deselectArtist={deselectArtist}
+                isMobile={isMobile}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

@@ -1,117 +1,144 @@
-import {Artist} from '@/types'
-import {fixWikiImageURL, formatDate, formatNumber, formatNumberCompact} from '@/lib/utils'
-import { useState } from "react"
-import GraphCard from "./GraphCard";
-import { Button } from './ui/button';
-// committment issues
+import { Artist } from '@/types'
+import { fixWikiImageURL, formatNumberCompact } from '@/lib/utils'
+import { useMemo } from 'react'
+import { Button } from './ui/button'
+import { CirclePlay, ArrowRight, SquarePlus, Loader2, Check } from 'lucide-react'
+import GraphCard from './GraphCard'
 
 interface ArtistCardProps {
-    selectedArtist?: Artist;
-    setArtistFromName: (artist: string) => void;
-    setSelectedArtist: (artist: Artist | undefined) => void;
-    artistLoading: boolean;
-    artistError?: boolean;
-    show: boolean;
-    setShowArtistCard: (show: boolean) => void;
-    deselectArtist: () => void;
-    similarFilter: (artists: string[]) => string[];
-    onBadDataClick: () => void;
+  artist?: Artist
+  genreColorMap?: Map<string, string>
+  getGenreNameById?: (id: string) => string | undefined
+  onCardClick?: () => void // Click entire card to open full info
+  onPlay?: (artist: Artist) => void
+  onToggle?: (artistId: string) => void
+  playLoading?: boolean
+  isInCollection?: boolean
+  show: boolean
+  deselectArtist: () => void
+  isMobile?: boolean
 }
 
 export function ArtistCard({
-    selectedArtist,
-    setArtistFromName,
-    setSelectedArtist,
-    artistLoading,
-    artistError,
-    show,
-    setShowArtistCard,
-    deselectArtist,
-    similarFilter,
-    onBadDataClick,
+  artist,
+  genreColorMap,
+  getGenreNameById,
+  onCardClick,
+  onPlay,
+  onToggle,
+  playLoading,
+  isInCollection,
+  show,
+  deselectArtist,
+  isMobile,
 }: ArtistCardProps) {
-    const [isExpanded, setIsExpanded] = useState(false)
-    // Card expansion is toggled via description click
+  const initial = artist?.name?.[0]?.toUpperCase() ?? '?'
 
-    const onDeselectArtist = () => {
-        setIsExpanded(false);
-        deselectArtist();
-    }
+  const imageUrl = useMemo(() => {
+    const raw = artist?.image
+    return raw ? fixWikiImageURL(raw) : undefined
+  }, [artist?.image])
 
-    return (
-      <GraphCard
-        show={!!show}
-        loading={artistLoading}
-        error={
-          artistError && (
-            <p>Can't find {selectedArtist && selectedArtist.name} 🤔</p>
-          )
-        }
-        dismissible
-        onDismiss={onDeselectArtist}
-        contentKey={selectedArtist?.name}
-        stacked={isExpanded}
+  if (!show || !isMobile) return null
 
-        thumbnail={
-          selectedArtist?.image && selectedArtist ? (
-            <div
-              className={`w-24 h-24 shrink-0 overflow-hidden rounded-xl border border-border ${
-                isExpanded ? "w-full h-[200px]" : ""
-              }`}
-            >
-              <img
-                className={`w-24 h-24 object-cover ${isExpanded ? "w-full h-full" : ""}`}
-                src={fixWikiImageURL(selectedArtist.image)}
-                alt={selectedArtist.name}
-              />
+  return (
+    <div
+      className="fixed left-1/2 transform -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-md pointer-events-auto"
+      style={{
+        bottom: 'calc(68px + env(safe-area-inset-bottom))',
+      }}
+    >
+      <div onClick={onCardClick} className="cursor-pointer">
+        <GraphCard
+          show={show}
+          dismissible={true}
+          onDismiss={deselectArtist}
+          contentKey={artist?.name}
+          thumbnail={
+            imageUrl ? (
+              <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border">
+                <img
+                  className="w-full h-full object-cover"
+                  src={imageUrl}
+                  alt={artist?.name ?? 'Artist image'}
+                  loading="lazy"
+                />
+              </div>
+            ) : (
+              <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
+                <span className="text-4xl font-semibold">{initial}</span>
+              </div>
+            )
+          }
+          title={
+            <h2 className="w-full leading-5 text-md font-semibold">
+              {artist?.name}
+            </h2>
+          }
+          meta={
+            <>
+              {typeof artist?.listeners === 'number' && (
+                <h3>
+                  {formatNumberCompact(artist.listeners)}{' '}
+                  <span className="">Listeners</span>
+                </h3>
+              )}
+            </>
+          }
+          description={
+            <>
+              {artist?.bio?.summary && (
+                <p className="break-words text-muted-foreground line-clamp-2">
+                  {artist.bio.summary}
+                </p>
+              )}
+            </>
+          }
+          actions={
+            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+              <Button
+                size="sm"
+                variant="default"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  artist && onPlay?.(artist)
+                }}
+                disabled={playLoading}
+                className="flex-1 disabled:opacity-100"
+              >
+                {playLoading ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : (
+                  <CirclePlay />
+                )}
+                Play
+              </Button>
+              <Button
+                size="sm"
+                variant={isInCollection ? 'secondary' : 'secondary'}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  artist && onToggle?.(artist.id)
+                }}
+                className="flex-1"
+              >
+                {isInCollection ? <Check /> : <SquarePlus />}
+                {isInCollection ? 'Added' : 'Add'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onCardClick?.()
+                }}
+              >
+                <ArrowRight />
+              </Button>
             </div>
-          ) : undefined
-        }
-        title={
-          <h2 className="w-full text-md font-semibold">
-            {selectedArtist && selectedArtist.name}
-          </h2>
-        }
-        meta={
-          <>
-            {selectedArtist && selectedArtist.listeners && (
-              <h3>
-                <span className="font-medium">Listeners:</span>{" "}
-                {formatNumberCompact(selectedArtist.listeners)}
-              </h3>
-            )}
-            <h3>
-              <span className="font-medium">Founded:</span>{" "}
-              {selectedArtist && selectedArtist.startDate
-                ? formatDate(selectedArtist.startDate)
-                : "Unknown"}{" "}
-            </h3>
-            {selectedArtist && selectedArtist.similar && (
-              <h3>
-                <span className="font-medium">Similar:</span>{" "}
-                {similarFilter(selectedArtist.similar).map((name, index, array) => (
-                  <>
-                    <Button variant="link" size="sm" key={index + name} onClick={() => setArtistFromName(name)}>
-                      {name}
-                    </Button>
-                    {index < array.length - 1 ? ", " : ""}
-                  </>
-                ))}
-              </h3>
-            )}
-          </>
-        }
-        description={
-          <p
-            onClick={() => setIsExpanded((prev) => !prev)}
-            className={`break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${
-              isExpanded ? "text-muted-foreground" : "line-clamp-3 overflow-hidden"
-            }`}
-          >
-            {selectedArtist && selectedArtist.bio ? selectedArtist.bio.summary : "No bio"}
-          </p>
-        }
-        // actions can be provided later (e.g., Play/Add/More)
-      />
-    );
+          }
+        />
+      </div>
+    </div>
+  )
 }
