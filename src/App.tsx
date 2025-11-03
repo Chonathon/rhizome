@@ -626,10 +626,17 @@ function App() {
     // Ensure the artists hook actually fetches data when switching via this path
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
 
+    // Clear any previously selected artist - we're viewing "all artists" for this genre
+    setSelectedArtist(undefined);
+    setArtistInfoToShow(undefined);
+    setShowArtistCard(false);
+    setSelectedArtistFromSearch(false);
+    setArtistPreviewStack([]);
+    setRestoreGenreCardOnArtistDismiss(false);
+
     // Keep the genre info card visible in artist view
     setGenreInfoToShow(genre);
     setShowGenreCard(true);
-    setRestoreGenreCardOnArtistDismiss(false); // Genre card is visible, not hidden
 
     // Set the genre filter and selection
     const filterObj = createInitialGenreFilterObject(genre);
