@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, 
+import { createPortal } from "react-dom";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose,
   DrawerHandle
  } from "@/components/ui/drawer";
 import { ChevronUp, ChevronDown, X } from 'lucide-react';
@@ -37,6 +38,19 @@ export interface ResponsiveDrawerProps {
    * @default '[data-drawer-scroll]'
    */
   scrollContainerSelector?: string;
+  /**
+   * When enabled, tapping the canvas/graph area while the drawer is at middle snap
+   * will minimize it to the first (smallest) snap point. Similar to Google Maps behavior.
+   * Mobile only.
+   * @default false
+   */
+  minimizeOnCanvasTouch?: boolean;
+  /**
+   * A key that identifies the current content. When this changes, the drawer will
+   * reset to the default middle snap position. Useful for resetting position when
+   * switching between different items (e.g., different artists or genres).
+   */
+  contentKey?: string | number;
 }
 
 /**
@@ -50,7 +64,7 @@ export function ResponsiveDrawer({
   contentClassName,
   bodyClassName,
   directionDesktop = "left",
-  snapPoints = [0.50, 0.9],
+  snapPoints = [0.20, 0.50, 0.9],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 768px)",
   showMobileHandle = false,
@@ -61,11 +75,15 @@ export function ResponsiveDrawer({
   headerSubtitle,
   lockDragToHandleWhenScrolled = true,
   scrollContainerSelector = '[data-drawer-scroll]',
+  minimizeOnCanvasTouch = false,
+  contentKey,
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
   const { state: sidebarState } = useSidebar();
   const [open, setOpen] = useState(false);
-  const [activeSnap, setActiveSnap] = useState<number | string | null>(snapPoints[0] ?? 0.9);
+  // Default to middle snap point (index 1) if available, otherwise first snap point
+  const defaultSnapIndex = snapPoints.length >= 2 ? 1 : 0;
+  const [activeSnap, setActiveSnap] = useState<number | string | null>(snapPoints[defaultSnapIndex] ?? 0.9);
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const cardRef = React.useRef<HTMLDivElement | null>(null);
   const scrollElRef = React.useRef<HTMLElement | null>(null);
@@ -82,12 +100,21 @@ export function ResponsiveDrawer({
 
   // Ensure consistent snap height when resizing to mobile while open
   useEffect(() => {
-    // Reset to the first snap only when transitioning to mobile or opening,
+    // Reset to the middle snap when transitioning to mobile or opening,
     // not on every render when parents pass a new snapPoints array literal.
     if (!isDesktop && open) {
-      setActiveSnap(snapPoints[0] ?? 0.9);
+      const middleSnapIndex = snapPoints.length >= 2 ? 1 : 0;
+      setActiveSnap(snapPoints[middleSnapIndex] ?? 0.9);
     }
   }, [isDesktop, open]);
+
+  // Reset to middle snap when content changes (e.g., switching between different artists/genres)
+  useEffect(() => {
+    if (!isDesktop && open && contentKey !== undefined) {
+      const middleSnapIndex = snapPoints.length >= 2 ? 1 : 0;
+      setActiveSnap(snapPoints[middleSnapIndex] ?? 0.9);
+    }
+  }, [contentKey]);
 
   // Track whether the scroll container is at the very top to gate dragging.
   React.useEffect(() => {
@@ -150,11 +177,21 @@ export function ResponsiveDrawer({
     return activeSnapIndex === 0;
   }, [activeSnapIndex, isDesktop]);
 
+  const isAtMiddleSnap = useMemo(() => {
+    if (isDesktop || snapPoints.length < 3) return false;
+    return activeSnapIndex > 0 && activeSnapIndex < snapPoints.length - 1;
+  }, [activeSnapIndex, isDesktop, snapPoints.length]);
+
   const cycleSnap = () => {
     if (isDesktop || !clickToCycleSnap) return;
     const idx = activeSnapIndex;
     const nextIdx = idx === snapPoints.length - 1 ? 0 : Math.max(0, idx + 1);
     setActiveSnap(snapPoints[nextIdx] ?? snapPoints[0]);
+  };
+
+  const minimizeToFirstSnap = () => {
+    if (isDesktop || !minimizeOnCanvasTouch) return;
+    setActiveSnap(snapPoints[0]);
   };
 
   if (!show) return null;
@@ -214,10 +251,21 @@ export function ResponsiveDrawer({
   }, [isDesktop, directionDesktop, sidebarState]);
 
   return (
-    <Drawer
-      key={drawerKey}
-      open={open}
-      onOpenChange={(next) => {
+    <>
+      {/* Canvas touch overlay - rendered in portal to be in same stacking context as drawer */}
+      {!isDesktop && minimizeOnCanvasTouch && isAtMiddleSnap && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-40"
+          onClick={minimizeToFirstSnap}
+          aria-hidden="true"
+        />,
+        document.body
+      )}
+
+      <Drawer
+        key={drawerKey}
+        open={open}
+        onOpenChange={(next) => {
         // Clear any pending close callbacks when state changes
         if (closeTimerRef.current) {
           window.clearTimeout(closeTimerRef.current);
@@ -251,7 +299,10 @@ export function ResponsiveDrawer({
         // Opening
         if (isDesktop) setUseDesktopOffset(true);
         setOpen(true);
-        if (!isDesktop) setActiveSnap(snapPoints[0] ?? 0.9);
+        if (!isDesktop) {
+          const middleSnapIndex = snapPoints.length >= 2 ? 1 : 0;
+          setActiveSnap(snapPoints[middleSnapIndex] ?? 0.9);
+        }
       }}
       direction={isDesktop ? directionDesktop : "bottom"}
       // Reduce velocity-driven jumps between distant snap points
@@ -362,6 +413,7 @@ export function ResponsiveDrawer({
         </div>
       </DrawerContent>
     </Drawer>
+    </>
   );
 }
 

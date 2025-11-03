@@ -199,7 +199,9 @@ export function GenreInfo({
       show={!!(show && selectedGenre)}
       onDismiss={onDismiss}
       bodyClassName=""
-      // snapPoints={[0.28, 0.9]}
+      snapPoints={[0.20, 0.50, 0.9]}
+      minimizeOnCanvasTouch={true}
+      contentKey={selectedGenre?.id}
       headerTitle={selectedGenre?.name}
       headerSubtitle={
         typeof selectedGenre?.totalListeners === 'number'

@@ -132,7 +132,9 @@ export function ArtistInfo({
       show={!!(show && selectedArtist)}
       onDismiss={onDismiss}
       bodyClassName=""
-      // snapPoints={[0.28, 0.9]}
+      snapPoints={[0.20, 0.50, 0.9]}
+      minimizeOnCanvasTouch={true}
+      contentKey={selectedArtist?.id}
       headerTitle={selectedArtist?.name}
       headerSubtitle={
         typeof selectedArtist?.listeners === "number"
@@ -181,7 +183,7 @@ export function ArtistInfo({
                     ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
                      <div className="flex gap-3 w-full">
                            <Button
-                              size={isDesktop ? "lg" : "xl"}
+                              size={isDesktop ? "lg" : "lg"}
                               variant="default"
                               // onClick={() => selectedArtist && allArtists(selectedArtist)}
                               className={`${isDesktop ? 'self-start' : 'flex-1'} disabled:opacity-100`}
@@ -192,24 +194,24 @@ export function ArtistInfo({
                               {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
                               Play
                             </Button>
-                            <AddButton
+                            {/* <AddButton
                               isDesktop={isDesktop}
                               onToggle={() => onArtistToggle(selectedArtist?.id)}
                               isInCollection={isInCollection}
-                            />
-                           {/* <Button
-                              size={isDesktop ? "lg" : "xl"}
+                            /> */}
+                           <Button
+                              size={isDesktop ? "lg" : "lg"}
                               variant="secondary"
                               onClick={() => window.dispatchEvent(new Event('auth:open'))}
                               className={isDesktop ? 'self-start' : 'flex-1'}
                                                 >
                               <SquarePlus size={24}/>Add
-                            </Button> */}
+                            </Button>
 
                        <DropdownMenu>
                          <DropdownMenuTrigger asChild>
                            <Button
-                              size={isDesktop ? "lg" : "xl"}
+                              size={isDesktop ? "lg" : "lg"}
                               variant="secondary"
                               // onClick={() => selectedArtist && allArtists(selectedArtist)}
                               className={isDesktop ? 'self-start' : 'flex-1'}
