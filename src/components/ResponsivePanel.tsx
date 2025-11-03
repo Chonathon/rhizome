@@ -43,7 +43,7 @@ export function ResponsivePanel({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       
-      <DrawerContent className={cn("px-3 bg-popover backdrop-blur-sm border border-sidebar-border rounded-3xl shadow-sm")}>
+      <DrawerContent className={cn("px-3 bg-popover backdrop-blur-sm border border-sidebar-border rounded-3xl pb-3 shadow-sm mb-2")}>
         <div>
           <div className="bg-stone-300 mx-auto my-3 hidden h-1 w-[64px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         </div>
