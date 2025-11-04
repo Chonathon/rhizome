@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu"
-import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "@/components/ui/button-group"
+import { SplitButton, SplitButtonAction, SplitButtonTrigger } from "@/components/ui/split-button"
 import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
@@ -182,68 +182,79 @@ export function ArtistInfo({
                 <div className={`flex  flex-col gap-6
                     ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
                      <div className="flex gap-3 w-full">
-                           <ButtonGroup className={isDesktop ? 'self-start' : 'flex-1'}>
-                             <Button
-                                size={isDesktop ? "lg" : "xl"}
-                                variant="default"
-                                className={`disabled:opacity-100 flex-1 ${isDesktop ? "!pr-2" : ""}`}
-                                onClick={() => selectedArtist && onPlay?.(selectedArtist)}
-                                disabled={!!playLoading}
-                                aria-busy={!!playLoading}
-                                >
-                                {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
-                                Play
-                              </Button>
+                           {/* Desktop: Split button with play action and track dropdown */}
+                           {isDesktop ? (
+                             <SplitButton
+                               variant="default"
+                               size="lg"
+                               disabled={!!playLoading}
+                             >
+                               <SplitButtonAction
+                                 aria-busy={!!playLoading}
+                                 className="disabled:opacity-100"
+                                 onClick={() => selectedArtist && onPlay?.(selectedArtist)}
+                               >
+                                 {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
+                                 Play
+                               </SplitButtonAction>
 
-                                  {isDesktop && 
-                                  <>
-                                    {/* <ButtonGroupSeparator /> */}
-                                                                  <DropdownMenu>
-                                                                    <DropdownMenuTrigger asChild>
-                                    <Button
-                                      size={isDesktop ? "sm" : "xl"}
-                                      variant="default"
-                                      className="disabled:opacity-100 h-auto !pl-1 !pr-1.5"
-                                      disabled={!!playLoading || !selectedArtist?.topTracks || selectedArtist.topTracks.length === 0}
-                                      aria-label="Select track"
-                                    >
-                                      <ChevronDown className="size-4" />
-                                    </Button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent align="start" className="w-[280px]">
-                                    <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 ? (
-                                      selectedArtist.topTracks.map((track, index) => (
-                                        <DropdownMenuItem
-                                          key={`${track.title}-${index}`}
-                                          onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
-                                          className="cursor-pointer group"
-                                        >
-                                          <span className="relative grid place-items-center size-4">
-                                            <CirclePlay
-                                              className="absolute opacity-0 group-hover:opacity-100 size-4"
-                                              aria-hidden
-                                            />
-                                            <span className="text-sm text-muted-foreground text-center leading-none opacity-100 group-hover:opacity-0">
-                                              {index + 1}
-                                            </span>
-                                          </span>
-                                          <div className="flex flex-col flex-1 min-w-0">
-                                            <span className="text-sm font-medium truncate">{track.title}</span>
-                                            <span className="text-xs text-muted-foreground truncate">{track.artistName}</span>
-                                          </div>
-                                        </DropdownMenuItem>
-                                      ))
-                                    ) : (
-                                      <DropdownMenuItem disabled>
-                                        No tracks available
-                                      </DropdownMenuItem>
-                                    )}
-                                                                    </DropdownMenuContent>
-                                                                  </DropdownMenu>
-                                  </>}
-                            </ButtonGroup>
+                               <DropdownMenu>
+                                 <DropdownMenuTrigger asChild>
+                                   <SplitButtonTrigger
+                                     className="disabled:opacity-100"
+                                     disabled={!!playLoading || !selectedArtist?.topTracks || selectedArtist.topTracks.length === 0}
+                                     aria-label="Select track"
+                                   >
+                                     <ChevronDown className="size-4" />
+                                   </SplitButtonTrigger>
+                                 </DropdownMenuTrigger>
+                                 <DropdownMenuContent align="start" className="w-[280px]">
+                                   <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
+                                   <DropdownMenuSeparator />
+                                   {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 ? (
+                                     selectedArtist.topTracks.map((track, index) => (
+                                       <DropdownMenuItem
+                                         key={`${track.title}-${index}`}
+                                         onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
+                                         className="cursor-pointer group"
+                                       >
+                                         <span className="relative grid place-items-center size-4">
+                                           <CirclePlay
+                                             className="absolute opacity-0 group-hover:opacity-100 size-4"
+                                             aria-hidden
+                                           />
+                                           <span className="text-sm text-muted-foreground text-center leading-none opacity-100 group-hover:opacity-0">
+                                             {index + 1}
+                                           </span>
+                                         </span>
+                                         <div className="flex flex-col flex-1 min-w-0">
+                                           <span className="text-sm font-medium truncate">{track.title}</span>
+                                           <span className="text-xs text-muted-foreground truncate">{track.artistName}</span>
+                                         </div>
+                                       </DropdownMenuItem>
+                                     ))
+                                   ) : (
+                                     <DropdownMenuItem disabled>
+                                       No tracks available
+                                     </DropdownMenuItem>
+                                   )}
+                                 </DropdownMenuContent>
+                               </DropdownMenu>
+                             </SplitButton>
+                           ) : (
+                             // Mobile: Simple play button
+                             <Button
+                               size="xl"
+                               variant="default"
+                               className="flex-1 disabled:opacity-100"
+                               onClick={() => selectedArtist && onPlay?.(selectedArtist)}
+                               disabled={!!playLoading}
+                               aria-busy={!!playLoading}
+                             >
+                               {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
+                               Play
+                             </Button>
+                           )}
                             <AddButton
                               isDesktop={isDesktop}
                               onToggle={() => onArtistToggle(selectedArtist?.id)}

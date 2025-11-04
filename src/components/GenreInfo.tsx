@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
-import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
+import { SplitButton, SplitButtonAction, SplitButtonTrigger } from "@/components/ui/split-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -312,34 +312,31 @@ export function GenreInfo({
 
                   <div className={`flex flex-col gap-6 ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
                     <div className="flex gap-3 w-full">
-                      {/* Desktop-only split-button */}
-                      {isDesktop ? 
-                      <ButtonGroup className='self-start' >
-                        <Button
-                          disabled={genreArtistsLoading || !!playLoading}
-                          aria-busy={genreArtistsLoading || !!playLoading}
-                          size='lg'
+                      {/* Desktop: Split button with play action and track dropdown */}
+                      {isDesktop ? (
+                        <SplitButton
                           variant="default"
-                          className={`disabled:opacity-100 !pr-1.5`}
-                          onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
+                          size="lg"
+                          disabled={genreArtistsLoading || !!playLoading}
                         >
-                          {playLoading ? <Loader2 className="animate-spin" aria-hidden /> : <CirclePlay />}
-                          Play
-                        </Button>
+                          <SplitButtonAction
+                            aria-busy={genreArtistsLoading || !!playLoading}
+                            className="disabled:opacity-100"
+                            onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
+                          >
+                            {playLoading ? <Loader2 className="animate-spin" aria-hidden /> : <CirclePlay />}
+                            Play
+                          </SplitButtonAction>
 
-                        {isDesktop &&
-                        <>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button
-                                size={isDesktop ? "sm" : "xl"}
-                                variant="default"
-                                className="disabled:opacity-100 h-auto !pl-1 !pr-2"
+                              <SplitButtonTrigger
+                                className="disabled:opacity-100"
                                 disabled={genreArtistsLoading || !!playLoading || !genreTracks || genreTracks.length === 0}
                                 aria-label="Select track"
                               >
                                 <ChevronDown className="size-4" />
-                              </Button>
+                              </SplitButtonTrigger>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-[280px]">
                               <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
@@ -373,19 +370,21 @@ export function GenreInfo({
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        </>}
-                      </ButtonGroup> :
-                      <Button
-                        disabled={genreArtistsLoading || !!playLoading}
-                        aria-busy={genreArtistsLoading || !!playLoading}
-                        size={isDesktop ? 'lg' : 'xl'}
-                        variant="default"
-                        className={`${isDesktop ? 'self-start' : 'flex-1'} disabled:opacity-100`}
-                        onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
-                      >
-                        {playLoading ? <Loader2 className="animate-spin" aria-hidden /> : <CirclePlay />} 
-                        Play
-                      </Button>}
+                        </SplitButton>
+                      ) : (
+                        // Mobile: Simple play button
+                        <Button
+                          disabled={genreArtistsLoading || !!playLoading}
+                          aria-busy={genreArtistsLoading || !!playLoading}
+                          size="xl"
+                          variant="default"
+                          className="flex-1 disabled:opacity-100"
+                          onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
+                        >
+                          {playLoading ? <Loader2 className="animate-spin" aria-hidden /> : <CirclePlay />}
+                          Play
+                        </Button>
+                      )}
 
                       <Button
                         disabled={genreArtistsLoading}
