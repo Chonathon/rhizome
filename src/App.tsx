@@ -158,6 +158,7 @@ function App() {
   const playRequest = useRef(0);
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
+  const [playerStartIndex, setPlayerStartIndex] = useState<number>(0);
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
   const [collectionMode, setCollectionMode] = useState<boolean>(false);
   const [separationDegrees, setSeparationDegrees] = useState<number>(0);
@@ -445,6 +446,13 @@ function App() {
           const artistTracks = await fetchArtistTopTracks(currentSelectedArtist.id, currentSelectedArtist.name);
           if (artistTracks) {
             playerIDQueue.set(currentSelectedArtist.id, artistTracks);
+            // Update the selectedArtist state so the UI reflects the newly fetched tracks
+            setSelectedArtist(prev => {
+              if (prev && prev.id === currentSelectedArtist.id) {
+                return { ...prev, topTracks: artistTracks };
+              }
+              return prev;
+            });
           }
         }
       }
@@ -466,6 +474,7 @@ function App() {
       : undefined;
     setPlayerArtworkUrl(imgEarly);
     setPlayerVideoIds([]); // clear any previous playlist immediately
+    setPlayerStartIndex(0); // reset start index when playing full artist
     setPlayerOpen(true);
     try {
       // wait until artist's tracks are done loading
@@ -510,6 +519,7 @@ function App() {
       setPlayerArtworkUrl(img);
     }
     setPlayerVideoIds([]);
+    setPlayerStartIndex(0); // reset start index when playing genre
     setPlayerOpen(true);
     try {
       if (req !== playRequest.current) return; // superseded
@@ -534,6 +544,104 @@ function App() {
         toast.error('Unable to fetch tracks for genre');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
+        setPlayerSource(undefined);
+        setPlayerOpen(false);
+      }
+    }
+  };
+
+  const onPlayArtistTrack = async (tracks: TopTrack[], startIndex: number) => {
+    if (!tracks || tracks.length === 0) {
+      toast.error('No tracks available');
+      return;
+    }
+    const req = ++playRequest.current;
+    setPlayerLoading(true);
+    setPlayerSource('artist');
+    // Extract video IDs based on DEFAULT_PLAYER preference
+    const videoIds: string[] = [];
+    for (const track of tracks) {
+      const videoId = track[DEFAULT_PLAYER];
+      if (videoId) {
+        videoIds.push(videoId);
+      }
+    }
+    if (videoIds.length === 0) {
+      toast.error('No playable tracks found');
+      setPlayerLoading(false);
+      return;
+    }
+    // Use the selected artist's metadata if available
+    if (selectedArtist) {
+      setPlayerTitle(selectedArtist.name);
+      setPlayerEntityName(selectedArtist.name);
+      const imgEarly = typeof selectedArtist.image === 'string' && selectedArtist.image.trim()
+        ? fixWikiImageURL(selectedArtist.image as string)
+        : undefined;
+      setPlayerArtworkUrl(imgEarly);
+    }
+    setPlayerVideoIds(videoIds);
+    setPlayerStartIndex(startIndex);
+    setPlayerOpen(true);
+    try {
+      // Player will handle loading
+      if (req === playRequest.current) {
+        setPlayerLoading(false);
+      }
+    } catch (e) {
+      if (req === playRequest.current) {
+        toast.error('Unable to play track');
+        setPlayerLoading(false);
+        setPlayerSource(undefined);
+        setPlayerOpen(false);
+      }
+    }
+  };
+
+  const onPlayGenreTrack = async (tracks: TopTrack[], startIndex: number) => {
+    if (!tracks || tracks.length === 0) {
+      toast.error('No tracks available');
+      return;
+    }
+    const req = ++playRequest.current;
+    setPlayerLoading(true);
+    setPlayerSource('genre');
+    // Extract video IDs based on DEFAULT_PLAYER preference
+    const videoIds: string[] = [];
+    for (const track of tracks) {
+      const videoId = track[DEFAULT_PLAYER];
+      if (videoId) {
+        videoIds.push(videoId);
+      }
+    }
+    if (videoIds.length === 0) {
+      toast.error('No playable tracks found');
+      setPlayerLoading(false);
+      return;
+    }
+    // Use the selected genre's metadata if available
+    if (selectedGenres.length > 0) {
+      const genre = selectedGenres[0];
+      setPlayerTitle(genre.name);
+      setPlayerEntityName(genre.name);
+      // Use artwork from first top artist with an image
+      const source = topArtists && topArtists.length ? topArtists : currentArtists;
+      const coverArtist = source.find(a => typeof a.image === 'string' && (a.image as string).trim());
+      const img = coverArtist ? fixWikiImageURL(coverArtist.image as string) : undefined;
+      setPlayerArtworkUrl(img);
+    }
+    setPlayerVideoIds(videoIds);
+    setPlayerStartIndex(startIndex);
+    setPlayerOpen(true);
+    try {
+      // Player will handle loading
+      if (req === playRequest.current) {
+        setPlayerLoading(false);
+      }
+    } catch (e) {
+      if (req === playRequest.current) {
+        toast.error('Unable to play track');
+        setPlayerLoading(false);
         setPlayerSource(undefined);
         setPlayerOpen(false);
       }
@@ -1278,7 +1386,7 @@ function App() {
                   }
                 `}
             >
-              <GenreInfo 
+              <GenreInfo
                 selectedGenre={selectedGenres[0]}
                 onLinkedGenreClick={onLinkedGenreClick}
                 show={graph === 'genres' && selectedGenres.length === 1 && !showArtistCard}
@@ -1294,6 +1402,8 @@ function App() {
                 getArtistColor={getArtistColor}
                 onPlayGenre={onPlayGenre}
                 playLoading={isPlayerLoadingGenre()}
+                genreTracks={selectedGenres.length > 0 ? playerIDQueue.get(selectedGenres[0].id) : undefined}
+                onPlayTrack={onPlayGenreTrack}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
@@ -1314,6 +1424,7 @@ function App() {
                 playLoading={isPlayerLoadingArtist()}
                 onArtistToggle={onAddArtistButtonToggle}
                 isInCollection={isInCollection(selectedArtist?.id)}
+                onPlayTrack={onPlayArtistTrack}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
@@ -1363,6 +1474,7 @@ function App() {
             onLoadingChange={handlePlayerLoadingChange}
             headerPreferProvidedTitle={playerSource === 'genre'}
             onTitleClick={handlePlayerTitleClick}
+            startIndex={playerStartIndex}
           />
         </div>
       </AppSidebar>

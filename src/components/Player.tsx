@@ -33,6 +33,8 @@ type PlayerProps = {
   sidebarGapPx?: number;
   // Pixels between the drawer edge and the player when a left drawer is open
   drawerGapPx?: number;
+  // Optional index to start playing from in the playlist
+  startIndex?: number;
 };
 
 // Load the YouTube IFrame API once
@@ -66,7 +68,7 @@ const anchorClass = (anchor: Anchor) => {
   }
 }
 
-export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl, loading, onLoadingChange, headerPreferProvidedTitle, onTitleClick, sidebarGapPx = 12, drawerGapPx = 0 }: PlayerProps) {
+export default function Player({ open, onOpenChange, videoIds, title, autoplay = true, anchor = 'bottom-left', artworkUrl, loading, onLoadingChange, headerPreferProvidedTitle, onTitleClick, sidebarGapPx = 12, drawerGapPx = 0, startIndex = 0 }: PlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
@@ -125,7 +127,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
         onReady: () => {
           setReady(true);
           setDuration(playerRef.current?.getDuration?.() || 0);
-          setCurrentIndex(0);
+          setCurrentIndex(startIndex);
           try {
             const data = playerRef.current?.getVideoData?.();
             if (data && typeof data.title === 'string') setVideoTitle(data.title);
@@ -133,7 +135,10 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
           if (hasPlaylist) {
             // Cue/load playlist based on autoplay
             const fn = autoplay ? 'loadPlaylist' : 'cuePlaylist';
-            playerRef.current?.[fn]?.(videoIds);
+            playerRef.current?.[fn]?.({
+              playlist: videoIds,
+              index: startIndex
+            });
           }
           try { onLoadingChange?.(false); } catch {}
         },
@@ -167,7 +172,7 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
         }
       }
     });
-  }, [open, videoIds, autoplay, hasPlaylist]);
+  }, [open, videoIds, autoplay, hasPlaylist, startIndex]);
 
   // Mount player when opened or video list changes
   useEffect(() => {
