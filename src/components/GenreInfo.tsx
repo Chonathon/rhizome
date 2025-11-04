@@ -362,7 +362,7 @@ export function GenreInfo({
                                     </span>
                                     <div className="flex flex-col flex-1 min-w-0">
                                       <span className="text-sm font-medium truncate">{track.title}</span>
-                                      <span className="text-xs text-muted-foreground truncate">{track.artistName}</span>
+                                      <span className="text-xs text-muted-foreground truncate font-medium leading-tight">{track.artistName}</span>
                                     </div>
                                   </DropdownMenuItem>
                                 ))
