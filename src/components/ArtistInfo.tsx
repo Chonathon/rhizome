@@ -186,7 +186,7 @@ export function ArtistInfo({
                              <Button
                                 size={isDesktop ? "lg" : "xl"}
                                 variant="default"
-                                className="disabled:opacity-100 flex-1"
+                                className={`disabled:opacity-100 flex-1 ${isDesktop ? "!pr-2" : ""}`}
                                 onClick={() => selectedArtist && onPlay?.(selectedArtist)}
                                 disabled={!!playLoading}
                                 aria-busy={!!playLoading}
@@ -197,7 +197,7 @@ export function ArtistInfo({
 
                                   {isDesktop && 
                                   <>
-                                    <ButtonGroupSeparator />
+                                    {/* <ButtonGroupSeparator /> */}
                                                                   <DropdownMenu>
                                                                     <DropdownMenuTrigger asChild>
                                     <Button

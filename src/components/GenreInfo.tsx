@@ -312,13 +312,15 @@ export function GenreInfo({
 
                   <div className={`flex flex-col gap-6 ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
                     <div className="flex gap-3 w-full">
-                      <ButtonGroup className={isDesktop ? 'self-start' : 'flex-1'}>
+                      {/* Desktop-only split-button */}
+                      {isDesktop ? 
+                      <ButtonGroup className='self-start' >
                         <Button
                           disabled={genreArtistsLoading || !!playLoading}
                           aria-busy={genreArtistsLoading || !!playLoading}
-                          size={isDesktop ? 'lg' : 'xl'}
+                          size='lg'
                           variant="default"
-                          className="disabled:opacity-100 flex-1"
+                          className={`disabled:opacity-100 !pr-1.5`}
                           onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
                         >
                           {playLoading ? <Loader2 className="animate-spin" aria-hidden /> : <CirclePlay />}
@@ -327,13 +329,12 @@ export function GenreInfo({
 
                         {isDesktop &&
                         <>
-                          <ButtonGroupSeparator />
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 size={isDesktop ? "sm" : "xl"}
                                 variant="default"
-                                className="disabled:opacity-100 h-auto !pl-1 !pr-1.5"
+                                className="disabled:opacity-100 h-auto !pl-1 !pr-2"
                                 disabled={genreArtistsLoading || !!playLoading || !genreTracks || genreTracks.length === 0}
                                 aria-label="Select track"
                               >
@@ -373,13 +374,25 @@ export function GenreInfo({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </>}
-                      </ButtonGroup>
+                      </ButtonGroup> :
+                      <Button
+                        disabled={genreArtistsLoading || !!playLoading}
+                        aria-busy={genreArtistsLoading || !!playLoading}
+                        size={isDesktop ? 'lg' : 'xl'}
+                        variant="default"
+                        className={`${isDesktop ? 'self-start' : 'flex-1'} disabled:opacity-100`}
+                        onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
+                      >
+                        {playLoading ? <Loader2 className="animate-spin" aria-hidden /> : <CirclePlay />} 
+                        Play
+                      </Button>}
+
                       <Button
                         disabled={genreArtistsLoading}
                         size={isDesktop ? 'lg' : 'xl'}
                         variant="secondary"
                         onClick={() => selectedGenre && allArtists(selectedGenre)}
-                        className={isDesktop ? 'self-start' : 'flex-1'}
+                        className={isDesktop ? 'self-start' : 'flex-1 min-w-0'}
                       >
                         <SquareArrowUp size={24}/>All Artists
                       </Button>
