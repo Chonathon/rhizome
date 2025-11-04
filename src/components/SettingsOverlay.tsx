@@ -711,6 +711,19 @@ const SupportSection = () => (
               </Button>
             </a>
           </Field>
+          <Field orientation="responsive">
+            <FieldContent>
+              <FieldLabel htmlFor="password">
+                Alpha Survey
+              </FieldLabel>
+              <FieldDescription>Thanks for signing up for Rhizome's alpha! Help us make it better with some quick feedback. It'll take 2 minutes 🌱</FieldDescription>
+            </FieldContent>
+            <a className="w-full" target="_blank" href="https://tally.so/r/3EjzA2">
+              <Button variant='outline' className="w-full" size="sm">
+                Take Survey
+              </Button>
+            </a>
+          </Field>
         </FieldGroup>
       </FieldSet>
     </FieldGroup>
