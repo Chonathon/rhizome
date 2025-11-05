@@ -183,11 +183,6 @@ export function ResponsiveDrawer({
     return activeSnapIndex === 0;
   }, [activeSnapIndex]);
 
-  // Track activeSnap changes
-  useEffect(() => {
-    console.log('[ResponsiveDrawer] activeSnap changed to:', activeSnap, 'index:', activeSnapIndex, 'isAtMinSnap:', isAtMinSnap);
-  }, [activeSnap, activeSnapIndex, isAtMinSnap]);
-
   const cycleSnap = () => {
     if (isDesktop || !clickToCycleSnap) return;
     const idx = activeSnapIndex;
@@ -196,85 +191,53 @@ export function ResponsiveDrawer({
   };
 
   const minimizeToFirstSnap = () => {
-    console.log('[ResponsiveDrawer] minimizeToFirstSnap called', {
-      isDesktop,
-      minimizeOnCanvasTouch,
-      firstSnapPoint: snapPoints[0],
-      currentSnap: activeSnap
-    });
-    if (isDesktop || !minimizeOnCanvasTouch) {
-      console.log('[ResponsiveDrawer] minimizeToFirstSnap - early return');
-      return;
-    }
-    console.log('[ResponsiveDrawer] Setting active snap to:', snapPoints[0]);
+    if (isDesktop || !minimizeOnCanvasTouch) return;
     setActiveSnap(snapPoints[0]);
   };
 
   // Detect canvas/graph drags to minimize drawer (when not already at min snap)
   useEffect(() => {
-    console.log('[ResponsiveDrawer] Canvas drag effect setup:', {
-      minimizeOnCanvasTouch,
-      isAtMinSnap,
-      isDesktop,
-      activeSnapIndex,
-      activeSnap
-    });
+    // Early return if feature is disabled
+    if (!minimizeOnCanvasTouch) return;
 
-    if (!minimizeOnCanvasTouch || isAtMinSnap) {
-      console.log('[ResponsiveDrawer] Skipping canvas drag setup - early return');
-      return;
-    }
+    // On mobile: skip if already at minimum snap (no need for listeners)
+    // On desktop: always listen (no snap behavior, need to trigger undimming)
+    if (!isDesktop && isAtMinSnap) return;
 
     const handlePointerDown = (e: PointerEvent) => {
       // Check if the target is outside the drawer card
       const card = cardRef.current;
       if (card && !card.contains(e.target as Node)) {
-        console.log('[ResponsiveDrawer] PointerDown outside drawer - tracking', {
-          x: e.clientX,
-          y: e.clientY,
-          target: e.target
-        });
         canvasDragStartRef.current = { x: e.clientX, y: e.clientY };
       }
     };
 
     const handlePointerMove = (e: PointerEvent) => {
       if (canvasDragStartRef.current) {
-        console.log('[ResponsiveDrawer] PointerMove detected - minimizing drawer', {
-          from: canvasDragStartRef.current,
-          to: { x: e.clientX, y: e.clientY },
-          isDesktop,
-          snapPoints
-        });
         // Notify parent immediately (e.g., to undim the graph)
         canvasDragStartRef.current = null;
         onCanvasDragStart?.();
-        // Then minimize drawer
+        // Then minimize drawer (mobile only)
         minimizeToFirstSnap();
       }
     };
 
     const handlePointerUp = () => {
-      if (canvasDragStartRef.current) {
-        console.log('[ResponsiveDrawer] PointerUp - clearing drag ref');
-      }
       canvasDragStartRef.current = null;
     };
 
-    console.log('[ResponsiveDrawer] Adding canvas drag listeners');
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerup', handlePointerUp);
     document.addEventListener('pointercancel', handlePointerUp);
 
     return () => {
-      console.log('[ResponsiveDrawer] Removing canvas drag listeners');
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('pointercancel', handlePointerUp);
     };
-  }, [minimizeOnCanvasTouch, isAtMinSnap, onCanvasDragStart]);
+  }, [minimizeOnCanvasTouch, isAtMinSnap, onCanvasDragStart, isDesktop]);
 
   if (!show) return null;
 
