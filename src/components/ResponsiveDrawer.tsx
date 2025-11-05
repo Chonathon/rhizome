@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose,
   DrawerHandle
  } from "@/components/ui/drawer";
@@ -39,8 +38,9 @@ export interface ResponsiveDrawerProps {
    */
   scrollContainerSelector?: string;
   /**
-   * When enabled, tapping the canvas/graph area while the drawer is at middle snap
-   * will minimize it to the first (smallest) snap point. Similar to Google Maps behavior.
+   * When enabled, dragging outside the drawer while at middle snap will minimize it to the
+   * first (smallest) snap point, allowing the user to interact with content underneath (like
+   * a graph or map) while simultaneously minimizing the drawer. Similar to Google Maps behavior.
    * Mobile only.
    * @default false
    */
@@ -88,6 +88,7 @@ export function ResponsiveDrawer({
   const cardRef = React.useRef<HTMLDivElement | null>(null);
   const scrollElRef = React.useRef<HTMLElement | null>(null);
   const closeTimerRef = React.useRef<number | null>(null);
+  const canvasDragStartRef = React.useRef<{ x: number; y: number } | null>(null);
 
   // keep open state in sync with `show`
   useEffect(() => {
@@ -194,6 +195,43 @@ export function ResponsiveDrawer({
     setActiveSnap(snapPoints[0]);
   };
 
+  // Detect canvas/graph drags to minimize drawer (mobile only, when at middle snap)
+  useEffect(() => {
+    if (isDesktop || !minimizeOnCanvasTouch || !isAtMiddleSnap) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      // Check if the target is outside the drawer card
+      const card = cardRef.current;
+      if (card && !card.contains(e.target as Node)) {
+        canvasDragStartRef.current = { x: e.clientX, y: e.clientY };
+      }
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (canvasDragStartRef.current) {
+        // Minimize drawer immediately on first movement
+        canvasDragStartRef.current = null;
+        minimizeToFirstSnap();
+      }
+    };
+
+    const handlePointerUp = () => {
+      canvasDragStartRef.current = null;
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerUp);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerUp);
+    };
+  }, [isDesktop, minimizeOnCanvasTouch, isAtMiddleSnap]);
+
   if (!show) return null;
 
   const drawerKey = isDesktop ? "desktop" : "mobile";
@@ -252,16 +290,6 @@ export function ResponsiveDrawer({
 
   return (
     <>
-      {/* Canvas touch overlay - rendered in portal to be in same stacking context as drawer */}
-      {!isDesktop && minimizeOnCanvasTouch && isAtMiddleSnap && typeof document !== 'undefined' && createPortal(
-        <div
-          className="fixed inset-0 z-40"
-          onClick={minimizeToFirstSnap}
-          aria-hidden="true"
-        />,
-        document.body
-      )}
-
       <Drawer
         key={drawerKey}
         open={open}
