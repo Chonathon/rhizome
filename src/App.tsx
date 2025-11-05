@@ -97,6 +97,8 @@ function App() {
   }, [selectedGenres]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
+  const [isGenreDrawerAtMinSnap, setIsGenreDrawerAtMinSnap] = useState(false);
+  const [isArtistDrawerAtMinSnap, setIsArtistDrawerAtMinSnap] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
@@ -1182,6 +1184,7 @@ function App() {
                   selectedGenreId={selectedGenres[0]?.id}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
+                  undimWhenMinimized={isGenreDrawerAtMinSnap}
                 />
                 <ArtistsForceGraph
                     ref={artistsGraphRef as any}
@@ -1196,6 +1199,7 @@ function App() {
                     computeArtistColor={getArtistColor}
                     width={viewport.width || undefined}
                     height={viewport.height || undefined}
+                    undimWhenMinimized={isArtistDrawerAtMinSnap}
                 />
 
             <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
@@ -1273,7 +1277,7 @@ function App() {
                   }
                 `}
             >
-              <GenreInfo 
+              <GenreInfo
                 selectedGenre={selectedGenres[0]}
                 onLinkedGenreClick={onLinkedGenreClick}
                 show={graph === 'genres' && selectedGenres.length === 1 && !showArtistCard}
@@ -1289,6 +1293,7 @@ function App() {
                 getArtistColor={getArtistColor}
                 onPlayGenre={onPlayGenre}
                 playLoading={isPlayerLoadingGenre()}
+                onDrawerSnapChange={setIsGenreDrawerAtMinSnap}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
@@ -1309,6 +1314,7 @@ function App() {
                 playLoading={isPlayerLoadingArtist()}
                 onArtistToggle={onAddArtistButtonToggle}
                 isInCollection={isInCollection(selectedArtist?.id)}
+                onDrawerSnapChange={setIsArtistDrawerAtMinSnap}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

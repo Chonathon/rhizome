@@ -33,6 +33,7 @@ interface GenreInfoProps {
   getArtistColor: (artist: Artist) => string;
   onPlayGenre?: (genre: Genre) => void;
   playLoading?: boolean;
+  onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
 }
 
 export function GenreInfo({
@@ -53,6 +54,7 @@ export function GenreInfo({
     genreColorMap,
     onPlayGenre,
     playLoading,
+    onDrawerSnapChange,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(false)
@@ -211,6 +213,10 @@ export function GenreInfo({
     >
       {({ isDesktop, isAtMaxSnap, isAtMinSnap }) => {
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
+        // Notify parent of drawer snap state changes for graph dimming
+        useEffect(() => {
+          onDrawerSnapChange?.(isAtMinSnap);
+        }, [isAtMinSnap]);
         return (
           <>
             

@@ -27,11 +27,13 @@ interface GenresForceGraphProps {
     selectedGenreId?: string;
     width?: number;
     height?: number;
+    // When true, undims all nodes/edges regardless of selection (e.g., when drawer minimized)
+    undimWhenMinimized?: boolean;
 }
 
 // Styling shared via graphStyle utils
 
-const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId, width, height }, ref) => {
+const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graphData, onNodeClick, loading, show, dag, clusterModes, colorMap: externalColorMap, selectedGenreId, width, height, undimWhenMinimized = false }, ref) => {
     const fgRef = useRef<ForceGraphMethods<Genre, NodeLink> | undefined>(undefined);
     const zoomRef = useRef<number>(1);
     const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
@@ -250,7 +252,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         const isSelected = !!selectedGenreId && genreNode.id === selectedGenreId;
         const isNeighbor = !!selectedGenreId && neighborsById.get(selectedGenreId)?.has(genreNode.id);
         const hasSelection = !!selectedGenreId;
-        const color = accent + (hasSelection && !isSelected && !isNeighbor ? '30' : 'ff');
+        const shouldDim = hasSelection && !undimWhenMinimized && !isSelected && !isNeighbor;
+        const color = accent + (shouldDim ? '30' : 'ff');
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineWidth = 0.5;
@@ -273,7 +276,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         let alpha = labelAlphaForZoom(k);
         if (isSelected) alpha = 1;
         else if (isNeighbor) alpha = Math.max(alpha, 0.85);
-        else if (hasSelection) alpha = Math.min(alpha, 0.2);
+        else if (hasSelection && !undimWhenMinimized) alpha = Math.min(alpha, 0.2);
         const yOffset = yOffsetByIdRef.current.get(genreNode.id) || 0;
         drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, activeTheme, alpha, LABEL_FONT_SIZE, yOffset);
     };
@@ -308,11 +311,11 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
                 const connectedToSelected = !!selectedGenreId && (s === selectedGenreId || t === selectedGenreId);
                 const base = (s && nodeColorById.get(s)) || (activeTheme === 'dark' ? '#ffffff' : '#000000');
-                const alpha = selectedGenreId ? (connectedToSelected ? 'cc' : '30') : '80';
+                const alpha = (selectedGenreId && !undimWhenMinimized) ? (connectedToSelected ? 'cc' : '30') : '80';
                 return base + alpha;
             }}
             linkWidth={(l: any) => {
-                if (!selectedGenreId) return 1;
+                if (!selectedGenreId || undimWhenMinimized) return 1;
                 const s = typeof l.source === 'string' ? l.source : l.source?.id;
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
                 return (s === selectedGenreId || t === selectedGenreId) ? 2.5 : 0.6;

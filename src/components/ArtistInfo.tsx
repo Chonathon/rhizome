@@ -39,6 +39,7 @@ interface ArtistInfoProps {
   playLoading?: boolean;
   onArtistToggle: (id: string | undefined) => void;
   isInCollection: boolean;
+  onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
 }
 
 export function ArtistInfo({
@@ -60,6 +61,7 @@ export function ArtistInfo({
   playLoading,
   onArtistToggle,
   isInCollection,
+  onDrawerSnapChange,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -144,6 +146,10 @@ export function ArtistInfo({
     >
       {({ isDesktop, isAtMaxSnap, isAtMinSnap }) => {
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
+        // Notify parent of drawer snap state changes for graph dimming
+        useEffect(() => {
+          onDrawerSnapChange?.(isAtMinSnap);
+        }, [isAtMinSnap]);
         return (
           <>
             

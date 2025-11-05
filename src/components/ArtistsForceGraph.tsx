@@ -42,6 +42,8 @@ interface ArtistsForceGraphProps {
     // Explicit size for the canvas (viewport)
     width?: number;
     height?: number;
+    // When true, undims all nodes/edges regardless of selection (e.g., when drawer minimized)
+    undimWhenMinimized?: boolean;
 }
 
 const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({ 
@@ -62,6 +64,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     strokeMinPx = 13,
     width,
     height,
+    undimWhenMinimized = false,
 }, ref) => {
     const { resolvedTheme } = useTheme();
 
@@ -264,11 +267,11 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
                 const connectedToSelected = !!selectedArtistId && (s === selectedArtistId || t === selectedArtistId);
                 const base = (s && colorById.get(s)) || (resolvedTheme === 'dark' ? '#ffffff' : '#000000');
-                const alpha = selectedArtistId ? (connectedToSelected ? 'ff' : '30') : '80';
+                const alpha = (selectedArtistId && !undimWhenMinimized) ? (connectedToSelected ? 'ff' : '30') : '80';
                 return base + alpha;
             }}
             linkWidth={(l: any) => {
-                if (!selectedArtistId) return 1;
+                if (!selectedArtistId || undimWhenMinimized) return 1;
                 const s = typeof l.source === 'string' ? l.source : l.source?.id;
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
                 return (s === selectedArtistId || t === selectedArtistId) ? 2.5 : 0.6;
@@ -298,7 +301,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
 
                 // Dim non-neighbors when a selection exists
                 const hasSelection = !!selectedArtistId;
-                const dimmed = hasSelection && !isSelected && !isNeighbor;
+                const dimmed = hasSelection && !undimWhenMinimized && !isSelected && !isNeighbor;
                 const color = accent + (dimmed ? '30' : 'ff');
                 drawCircleNode(ctx, x, y, r, color);
 
@@ -318,7 +321,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 let alpha = labelAlphaForZoom(k, labelFadeInStart, labelFadeInEnd);
                 if (isSelected) alpha = 1;
                 else if (isNeighbor) alpha = Math.max(alpha, 0.85);
-                else if (hasSelection) alpha = Math.min(alpha, 0.2);
+                else if (hasSelection && !undimWhenMinimized) alpha = Math.min(alpha, 0.2);
                 const label = node.name;
                 const yOffset = yOffsetByIdRef.current.get(artist.id) || 0;
                 drawLabelBelow(ctx, label, x, y, r, resolvedTheme, alpha, LABEL_FONT_SIZE, yOffset);

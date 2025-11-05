@@ -34,14 +34,14 @@ type MobileAppBarProps = {
  */
 export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, isCollectionMode }: MobileAppBarProps) {
   return (
-    <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-3 z-50 md:hidden"
+    <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-4 z-50 md:hidden w-[calc(100%-1.5rem)] max-w-[386px] mx-auto"
     style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div
-        className="pointer-events-auto rounded-full w-fit
+        className="pointer-events-auto rounded-full w-auto
          border border-border bg-sidebar backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
         
       >
-        <div className="w-fit grid grid-cols-1">
+        <div className="w-auto cols-span-1">
           <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
@@ -50,11 +50,11 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
         </div>
       </div>
       <div
-        className="pointer-events-auto rounded-full w-fit
+        className="pointer-events-auto rounded-full w-full
          border border-border bg-sidebar backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
         
       >
-        <div className="w-fit grid grid-cols-3">
+        <div className="w-full grid grid-cols-3">
           {/* <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
@@ -107,7 +107,7 @@ function ToolbarButton({
       variant="ghost"
       size="xl"
       onClick={onClick}
-      className={`font-regular max-w-[56px] rounded-full ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
+      className={`font-regular min-w-[56px] rounded-full ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
     >
       {icon}
       {/* <span className="text-[10px] leading-tight">{label}</span> */}
