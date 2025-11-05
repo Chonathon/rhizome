@@ -14,16 +14,8 @@ const useSimilarArtists = (artist?: Artist) => {
         if (artist) {
             setSimilarArtistsLoading(true);
             try {
-                const response = await axios.get(`${url}/artists/similar/${artist.id}`);
-                
-                // Handle different response structures
-                const similarArtistsData = Array.isArray(response.data)
-                    ? response.data
-                    : Array.isArray(response.data?.artists)
-                    ? response.data.artists
-                    : [];
-
-                setSimilarArtists([artist, ...similarArtistsData]);
+                const response = await axios.get(`${url}/artists/fetch/similar/${artist.id}`);
+                setSimilarArtists([artist, ...response.data]);
             } catch (err) {
                 if (err instanceof AxiosError) {
                     setSimilarArtistsError(err);

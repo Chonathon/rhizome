@@ -13,7 +13,7 @@ import {
   CHILD_FIELD_MAP,
   CLUSTER_COLORS,
   SINGLETON_PARENT_GENRE,
-  SINGLETON_PARENT_COLOR, SERVER_DEVELOPMENT_URL, SERVER_PRODUCTION_URL, CLIENT_DEPLOYMENT_URL
+  SINGLETON_PARENT_COLOR, SERVER_PRODUCTION_URL, CLIENT_DEPLOYMENT_URL, SERVER_DEVELOPMENT_URL
 } from "@/constants";
 
 export function cn(...inputs: ClassValue[]) {
@@ -50,6 +50,10 @@ export const clientUrl = () => {
   return envBoolean(import.meta.env.VITE_USE_LOCAL_CLIENT)
       ? import.meta.env.VITE_CLIENT_LOCALHOST
       : (import.meta.env.VITE_CLIENT_URL || CLIENT_DEPLOYMENT_URL);
+}
+
+export const isOnPage = (pathname: string) => {
+  return window.location.pathname.toLowerCase().includes(pathname.toLowerCase());
 }
 
 export const primitiveArraysEqual = (a: Array<string | number>, b: Array<string | number>) => {
@@ -407,4 +411,63 @@ export const getRootGenreOfChild = (genre: Genre, genres: Genre[], genreClusterM
 
 export const appendYoutubeWatchURL = (ytID: string) => {
   return `https://www.youtube.com/watch?v=${ytID}`;
+}
+
+export const assignDegreesToArtists = (currentArtists: Artist[], likedArtists: string[]) => {
+  if (!currentArtists || !likedArtists) return [];
+  // Index artists for quick membership checks
+  const artistSet = new Set(currentArtists.map((artist) => artist.id));
+  // Map names to IDs because the Last.fm similar artists are only the artist's name.
+  // This could run into issues with artists of the same name in current artists
+  const artistNameIDMap = new Map<string, string>(currentArtists.map(a => [a.name, a.id]));
+  //console.log(artistSet.size)
+  // Undirected adjacency graph of artists/links (i.e. ensures edges are both ways)
+  const artistAdj = new Map<string, string[]>();
+  for (const artist of currentArtists) {
+    if (!artistAdj.has(artist.id)) artistAdj.set(artist.id, []);
+    const linksList = artistAdj.get(artist.id)!;
+
+    for (const link of artist.similar) {
+      const linkedID = artistNameIDMap.get(link);
+      if (linkedID) {
+        linksList.push(linkedID);
+        if (!artistAdj.has(linkedID)) artistAdj.set(linkedID, [artist.id]);
+      }
+    }
+    artistAdj.set(artist.id, linksList);
+  }
+
+  //console.log(artistAdj.values().filter(v => v.length))
+
+  // Map of artist IDs to degrees
+  const artistDegrees = new Map<string, number>();
+
+  const visited: string[] = [];
+
+  // Only use nodes from B that are in A; set those nodes as degree 0
+  for (const liked of likedArtists) {
+    if (artistSet.has(liked) && !artistDegrees.has(liked)) {
+      artistDegrees.set(liked, 0);
+      visited.push(liked);
+    }
+  }
+
+  // BFS to calculate the degrees (expanding for loop based on visited)
+  for (let vi = 0; vi < visited.length; vi++) {
+    const likedInAB = visited[vi];
+    const degree = artistDegrees.get(likedInAB)!;
+    const neighbors = artistAdj.get(likedInAB) || [];
+    for (const neighbor of neighbors) {
+      if (!artistDegrees.has(neighbor)) {
+        artistDegrees.set(neighbor, degree + 1);
+        visited.push(neighbor);
+      }
+    }
+  }
+
+  //console.log(artistDegrees)
+
+  return currentArtists.map(a => {
+    return {...a, degree: artistDegrees.get(a.id)}
+  });
 }

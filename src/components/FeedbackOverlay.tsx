@@ -18,11 +18,20 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
+import {Feedback} from "@/types";
+import {FEEDBACK_TEXT_LIMIT, UNREGISTERED_USER_ID} from "@/constants";
 
-function FeedbackOverlay() {
+interface FeedbackOverlayProps {
+    userID?: string;
+    userEmail?: string;
+    onSubmit: (feedback: Feedback) => Promise<boolean>;
+}
+
+function FeedbackOverlay({ userID, userEmail, onSubmit }: FeedbackOverlayProps) {
     const [open, setOpen] = useState(false);
     const [includeEmail, setIncludeEmail] = useState(false);
-    const [email, setEmail] = useState("");
+    const [email, setEmail] = useState(userEmail);
+    const [text, setText] = useState('');
     useEffect(() => {
         const handleOpen = () => setOpen(true);
         window.addEventListener("feedback:open", handleOpen as EventListener);
@@ -31,7 +40,23 @@ function FeedbackOverlay() {
         };
       }, []);
 
-
+    const submit = async () => {
+        const success = await onSubmit({
+            email: includeEmail ? email : undefined,
+            text,
+            userID: userID ? userID : UNREGISTERED_USER_ID,
+            resolved: false,
+        });
+        if (success) {
+            toast.success('Thank you for your feedback!');
+            setEmail('');
+            setText('');
+            setIncludeEmail(false);
+            setOpen(false);
+        } else {
+            toast.error('Error: could not submit feedback.');
+        }
+    }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -53,6 +78,8 @@ function FeedbackOverlay() {
                   id="feedback-comments"
                   placeholder=""
                   className="resize-none min-h-[160px] "
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
                 />
               </Field>
                   {/* <Field>
@@ -74,9 +101,6 @@ function FeedbackOverlay() {
                         checked={includeEmail}
                         onCheckedChange={(checked) => {
                           setIncludeEmail(checked);
-                          if (!checked) {
-                            setEmail("");
-                          }
                         }}
                         aria-label={includeEmail ? "Sending with email" : "Sending anonymously"}
                       />
@@ -112,8 +136,8 @@ function FeedbackOverlay() {
                     <Button variant="outline">Close</Button>
                 </DialogClose> 
                     {/* feedback:success → toast.success + setOpen(false) + setSubmitting(false) */}
-                    <Button className="flex-1" onClick={() => toast.success('Got it. Thanks for the tip!')} 
-                    type="submit" disabled={true}>Submit
+                    <Button className="flex-1" onClick={() => submit()}
+                    type="submit" disabled={!text.length || text.length > FEEDBACK_TEXT_LIMIT}>Submit
                     </Button>
             </DialogFooter>
                     </DialogContent>
