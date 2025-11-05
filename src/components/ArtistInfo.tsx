@@ -40,6 +40,7 @@ interface ArtistInfoProps {
   onArtistToggle: (id: string | undefined) => void;
   isInCollection: boolean;
   onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
+  onCanvasDragStart?: () => void;
 }
 
 export function ArtistInfo({
@@ -62,6 +63,7 @@ export function ArtistInfo({
   onArtistToggle,
   isInCollection,
   onDrawerSnapChange,
+  onCanvasDragStart,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -136,6 +138,7 @@ export function ArtistInfo({
       bodyClassName=""
       snapPoints={[0.20, 0.50, 0.9]}
       minimizeOnCanvasTouch={true}
+      onCanvasDragStart={onCanvasDragStart}
       contentKey={selectedArtist?.id}
       headerTitle={selectedArtist?.name}
       headerSubtitle={
@@ -146,10 +149,10 @@ export function ArtistInfo({
     >
       {({ isDesktop, isAtMaxSnap, isAtMinSnap }) => {
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
-        // Notify parent of drawer snap state changes for graph dimming
+        // Notify parent to undim graph on mobile when at min snap
         useEffect(() => {
-          onDrawerSnapChange?.(isAtMinSnap);
-        }, [isAtMinSnap]);
+          onDrawerSnapChange?.(!isDesktop && isAtMinSnap);
+        }, [isAtMinSnap, isDesktop]);
         return (
           <>
             

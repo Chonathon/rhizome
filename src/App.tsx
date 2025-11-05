@@ -99,6 +99,8 @@ function App() {
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [isGenreDrawerAtMinSnap, setIsGenreDrawerAtMinSnap] = useState(false);
   const [isArtistDrawerAtMinSnap, setIsArtistDrawerAtMinSnap] = useState(false);
+  const [isUserDraggingGenreCanvas, setIsUserDraggingGenreCanvas] = useState(false);
+  const [isUserDraggingArtistCanvas, setIsUserDraggingArtistCanvas] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
@@ -617,6 +619,7 @@ function App() {
     setShowArtistCard(false); // ensure only one card
     setSelectedArtist(undefined);
     addRecentSelection(genre);
+    setIsUserDraggingGenreCanvas(false); // Re-enable dimming when selecting a node
   }
 
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
@@ -646,6 +649,15 @@ function App() {
     if (graph === 'similarArtists') {
       createSimilarArtistGraph(artist);
     }
+    setIsUserDraggingArtistCanvas(false); // Re-enable dimming when selecting a node
+  }
+
+  const handleGenreCanvasDragStart = () => {
+    setIsUserDraggingGenreCanvas(true); // Undim graph immediately when dragging starts
+  }
+
+  const handleArtistCanvasDragStart = () => {
+    setIsUserDraggingArtistCanvas(true); // Undim graph immediately when dragging starts
   }
 
   const handleFindSelect = (option: FindOption) => {
@@ -1184,7 +1196,7 @@ function App() {
                   selectedGenreId={selectedGenres[0]?.id}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
-                  undimWhenMinimized={isGenreDrawerAtMinSnap}
+                  undimWhenMinimized={isUserDraggingGenreCanvas || isGenreDrawerAtMinSnap}
                 />
                 <ArtistsForceGraph
                     ref={artistsGraphRef as any}
@@ -1199,7 +1211,7 @@ function App() {
                     computeArtistColor={getArtistColor}
                     width={viewport.width || undefined}
                     height={viewport.height || undefined}
-                    undimWhenMinimized={isArtistDrawerAtMinSnap}
+                    undimWhenMinimized={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
                 />
 
             <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
@@ -1294,6 +1306,7 @@ function App() {
                 onPlayGenre={onPlayGenre}
                 playLoading={isPlayerLoadingGenre()}
                 onDrawerSnapChange={setIsGenreDrawerAtMinSnap}
+                onCanvasDragStart={handleGenreCanvasDragStart}
               />
               <ArtistInfo
                 selectedArtist={selectedArtist}
@@ -1315,6 +1328,7 @@ function App() {
                 onArtistToggle={onAddArtistButtonToggle}
                 isInCollection={isInCollection(selectedArtist?.id)}
                 onDrawerSnapChange={setIsArtistDrawerAtMinSnap}
+                onCanvasDragStart={handleArtistCanvasDragStart}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

@@ -46,6 +46,11 @@ export interface ResponsiveDrawerProps {
    */
   minimizeOnCanvasTouch?: boolean;
   /**
+   * Called when user starts dragging outside the drawer (on the canvas/graph).
+   * Useful for triggering immediate UI changes like undimming the graph.
+   */
+  onCanvasDragStart?: () => void;
+  /**
    * A key that identifies the current content. When this changes, the drawer will
    * reset to the default middle snap position. Useful for resetting position when
    * switching between different items (e.g., different artists or genres).
@@ -64,7 +69,7 @@ export function ResponsiveDrawer({
   contentClassName,
   bodyClassName,
   directionDesktop = "left",
-  snapPoints = [0.10, 0.50, 0.9],
+  snapPoints = [0.08, 0.50, 0.9],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 768px)",
   showMobileHandle = false,
@@ -76,6 +81,7 @@ export function ResponsiveDrawer({
   lockDragToHandleWhenScrolled = true,
   scrollContainerSelector = '[data-drawer-scroll]',
   minimizeOnCanvasTouch = false,
+  onCanvasDragStart,
   contentKey,
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
@@ -115,7 +121,7 @@ export function ResponsiveDrawer({
       const middleSnapIndex = snapPoints.length >= 2 ? 1 : 0;
       setActiveSnap(snapPoints[middleSnapIndex] ?? 0.9);
     }
-  }, [contentKey]);
+  }, [contentKey, isDesktop, open, snapPoints]);
 
   // Track whether the scroll container is at the very top to gate dragging.
   React.useEffect(() => {
@@ -169,19 +175,12 @@ export function ResponsiveDrawer({
   }, [activeSnap, snapPoints]);
 
   const isAtMaxSnap = useMemo(() => {
-    if (isDesktop) return true;
     return activeSnapIndex === snapPoints.length - 1;
-  }, [activeSnapIndex, isDesktop, snapPoints.length]);
+  }, [activeSnapIndex, snapPoints.length]);
 
   const isAtMinSnap = useMemo(() => {
-    if (isDesktop) return true;
     return activeSnapIndex === 0;
-  }, [activeSnapIndex, isDesktop]);
-
-  const isAtMiddleSnap = useMemo(() => {
-    if (isDesktop || snapPoints.length < 3) return false;
-    return activeSnapIndex > 0 && activeSnapIndex < snapPoints.length - 1;
-  }, [activeSnapIndex, isDesktop, snapPoints.length]);
+  }, [activeSnapIndex]);
 
   const cycleSnap = () => {
     if (isDesktop || !clickToCycleSnap) return;
@@ -195,9 +194,9 @@ export function ResponsiveDrawer({
     setActiveSnap(snapPoints[0]);
   };
 
-  // Detect canvas/graph drags to minimize drawer (mobile only, when at middle snap)
+  // Detect canvas/graph drags to minimize drawer (when not already at min snap)
   useEffect(() => {
-    if (isDesktop || !minimizeOnCanvasTouch || !isAtMiddleSnap) return;
+    if (!minimizeOnCanvasTouch || isAtMinSnap) return;
 
     const handlePointerDown = (e: PointerEvent) => {
       // Check if the target is outside the drawer card
@@ -209,8 +208,10 @@ export function ResponsiveDrawer({
 
     const handlePointerMove = (e: PointerEvent) => {
       if (canvasDragStartRef.current) {
-        // Minimize drawer immediately on first movement
+        // Notify parent immediately (e.g., to undim the graph)
         canvasDragStartRef.current = null;
+        onCanvasDragStart?.();
+        // Then minimize drawer
         minimizeToFirstSnap();
       }
     };
@@ -230,7 +231,7 @@ export function ResponsiveDrawer({
       document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('pointercancel', handlePointerUp);
     };
-  }, [isDesktop, minimizeOnCanvasTouch, isAtMiddleSnap]);
+  }, [minimizeOnCanvasTouch, isAtMinSnap, onCanvasDragStart]);
 
   if (!show) return null;
 

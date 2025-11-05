@@ -34,6 +34,7 @@ interface GenreInfoProps {
   onPlayGenre?: (genre: Genre) => void;
   playLoading?: boolean;
   onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
+  onCanvasDragStart?: () => void;
 }
 
 export function GenreInfo({
@@ -55,6 +56,7 @@ export function GenreInfo({
     onPlayGenre,
     playLoading,
     onDrawerSnapChange,
+    onCanvasDragStart,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(false)
@@ -203,6 +205,7 @@ export function GenreInfo({
       bodyClassName=""
       snapPoints={[0.20, 0.50, 0.9]}
       minimizeOnCanvasTouch={true}
+      onCanvasDragStart={onCanvasDragStart}
       contentKey={selectedGenre?.id}
       headerTitle={selectedGenre?.name}
       headerSubtitle={
@@ -213,10 +216,10 @@ export function GenreInfo({
     >
       {({ isDesktop, isAtMaxSnap, isAtMinSnap }) => {
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
-        // Notify parent of drawer snap state changes for graph dimming
+        // Notify parent to undim graph on mobile when at min snap
         useEffect(() => {
-          onDrawerSnapChange?.(isAtMinSnap);
-        }, [isAtMinSnap]);
+          onDrawerSnapChange?.(!isDesktop && isAtMinSnap);
+        }, [isAtMinSnap, isDesktop]);
         return (
           <>
             
@@ -310,7 +313,7 @@ export function GenreInfo({
                       <Button
                         disabled={genreArtistsLoading || !!playLoading}
                         aria-busy={genreArtistsLoading || !!playLoading}
-                        size={isDesktop ? 'lg' : 'xl'}
+                        size={isDesktop || isAtMinSnap ? 'lg' : 'xl'}
                         variant="default"
                         className={`${isDesktop ? 'self-start' : 'flex-1'} disabled:opacity-100`}
                         onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
@@ -320,7 +323,7 @@ export function GenreInfo({
                       </Button>
                       <Button
                         disabled={genreArtistsLoading}
-                        size={isDesktop ? 'lg' : 'xl'}
+                        size={isDesktop || isAtMinSnap ? 'lg' : 'xl'}
                         variant="secondary"
                         onClick={() => selectedGenre && allArtists(selectedGenre)}
                         className={isDesktop ? 'self-start' : 'flex-1'}
