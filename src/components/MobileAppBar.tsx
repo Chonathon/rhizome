@@ -34,14 +34,14 @@ type MobileAppBarProps = {
  */
 export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, isCollectionMode }: MobileAppBarProps) {
   return (
-    <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-4 z-50 md:hidden w-[calc(100%-1.5rem)] max-w-[386px] mx-auto"
+    <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-4 z-50 md:hidden w-[calc(100%-1.5rem)] h-[56px] max-w-[386px] mx-auto"
     style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div
         className="pointer-events-auto p-1 rounded-full w-auto
          border border-border bg-sidebar backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
         
       >
-        <div className="w-auto flex items-center justify-center h-full cols-span-1">
+        <div className="w-auto flex items-center justify-center h-full col-span-1">
           <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
@@ -50,11 +50,11 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
         </div>
       </div>
       <div
-        className="pointer-events-auto p-1 rounded-full w-full
+        className="pointer-events-auto p-1 rounded-full w-full h-full
          border border-border bg-sidebar backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
         
       >
-        <div className="w-full grid grid-cols-3">
+        <div className="w-full grid grid-cols-3 items-center gap-1">
           {/* <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
@@ -107,7 +107,7 @@ function ToolbarButton({
       variant="ghost"
       size="default"
       onClick={onClick}
-      className={`font-regular min-w-[56px] h-full rounded-full ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
+      className={`font-regular h-full min-w-[48px] rounded-full ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
     >
       {icon}
       {/* <span className="text-[10px] leading-tight">{label}</span> */}
@@ -142,7 +142,7 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
       }}
     >
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="default" className="w-full rounded-full py-4 h-full min-w-[56px] text-muted-foreground">
+        <Button variant="ghost" size="default" className="w-full rounded-full h-full px-4 min-w-[56px] text-muted-foreground">
           <TwoLines className="size-6" />
           {/* <span className="text-[10px] leading-tight">More</span> */}
         </Button>
