@@ -93,6 +93,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
+    const dimTransitionRef = useRef<number>(0); // 0 = dimmed, 1 = undimmed
+    const dimAnimRafRef = useRef<number | null>(null);
 
     // Expose simple zoom API to parent
     useImperativeHandle(ref, () => ({
@@ -156,6 +158,36 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         };
     }, [hoveredId]);
 
+    // Animate dimming transition when undimWhenMinimized changes
+    useEffect(() => {
+        const target = undimWhenMinimized ? 1 : 0;
+        const ease = (c: number, t: number) => c + (t - c) * 0.15;
+
+        const step = () => {
+            const current = dimTransitionRef.current;
+            const next = ease(current, target);
+            dimTransitionRef.current = next;
+
+            fgRef.current?.refresh?.();
+
+            if (Math.abs(next - target) > 0.01) {
+                dimAnimRafRef.current = requestAnimationFrame(step);
+            } else {
+                dimTransitionRef.current = target;
+                dimAnimRafRef.current = null;
+                fgRef.current?.refresh?.();
+            }
+        };
+
+        if (dimAnimRafRef.current) cancelAnimationFrame(dimAnimRafRef.current);
+        dimAnimRafRef.current = requestAnimationFrame(step);
+
+        return () => {
+            if (dimAnimRafRef.current) cancelAnimationFrame(dimAnimRafRef.current);
+            dimAnimRafRef.current = null;
+        };
+    }, [undimWhenMinimized]);
+
     useEffect(() => {
         if (fgRef.current) {
             // Tighter, more lively simulation to prevent dullness
@@ -193,6 +225,10 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
         });
         return m;
     }, [preparedData]);
+
+    // Helper functions for smooth dimming transitions
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    const toHex = (n: number) => Math.round(n).toString(16).padStart(2, '0');
 
     // When selection changes, center + zoom to the node
     useEffect(() => {
@@ -267,14 +303,25 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
                 const connectedToSelected = !!selectedArtistId && (s === selectedArtistId || t === selectedArtistId);
                 const base = (s && colorById.get(s)) || (resolvedTheme === 'dark' ? '#ffffff' : '#000000');
-                const alpha = (selectedArtistId && !undimWhenMinimized) ? (connectedToSelected ? 'ff' : '30') : '80';
-                return base + alpha;
+                // Interpolate link alpha based on transition state
+                let alphaValue: number;
+                if (selectedArtistId) {
+                    const connectedAlpha = 0xff;
+                    const dimmedAlpha = 0x30;
+                    alphaValue = connectedToSelected ? connectedAlpha : lerp(dimmedAlpha, 0x80, dimTransitionRef.current);
+                } else {
+                    alphaValue = 0x80;
+                }
+                return base + toHex(alphaValue);
             }}
             linkWidth={(l: any) => {
-                if (!selectedArtistId || undimWhenMinimized) return 1;
+                if (!selectedArtistId) return 1;
                 const s = typeof l.source === 'string' ? l.source : l.source?.id;
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
-                return (s === selectedArtistId || t === selectedArtistId) ? 2.5 : 0.6;
+                const connectedToSelected = s === selectedArtistId || t === selectedArtistId;
+                // Interpolate link width based on transition state
+                if (connectedToSelected) return 2.5;
+                return lerp(0.6, 1, dimTransitionRef.current);
             }}
             linkCurvature={preparedData.links.length <= curvedLinksAbove ? curvedLinkCurvature : 0}
             onNodeClick={onNodeClick}
@@ -301,8 +348,12 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
 
                 // Dim non-neighbors when a selection exists
                 const hasSelection = !!selectedArtistId;
-                const dimmed = hasSelection && !undimWhenMinimized && !isSelected && !isNeighbor;
-                const color = accent + (dimmed ? '30' : 'ff');
+                const shouldDim = hasSelection && !isSelected && !isNeighbor;
+                // Interpolate alpha between dimmed (0x30) and undimmed (0xff) based on transition state
+                const dimmedNodeAlpha = 0x30;
+                const undimmedNodeAlpha = 0xff;
+                const nodeAlpha = shouldDim ? lerp(dimmedNodeAlpha, undimmedNodeAlpha, dimTransitionRef.current) : undimmedNodeAlpha;
+                const color = accent + toHex(nodeAlpha);
                 drawCircleNode(ctx, x, y, r, color);
 
                 // Emphasize selection ring
@@ -321,7 +372,11 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(({
                 let alpha = labelAlphaForZoom(k, labelFadeInStart, labelFadeInEnd);
                 if (isSelected) alpha = 1;
                 else if (isNeighbor) alpha = Math.max(alpha, 0.85);
-                else if (hasSelection && !undimWhenMinimized) alpha = Math.min(alpha, 0.2);
+                else if (hasSelection) {
+                    // Interpolate between dimmed (0.2) and undimmed (current alpha) based on transition state
+                    const dimmedLabelAlpha = 0.2;
+                    alpha = lerp(dimmedLabelAlpha, alpha, dimTransitionRef.current);
+                }
                 const label = node.name;
                 const yOffset = yOffsetByIdRef.current.get(artist.id) || 0;
                 drawLabelBelow(ctx, label, x, y, r, resolvedTheme, alpha, LABEL_FONT_SIZE, yOffset);

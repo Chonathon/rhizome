@@ -40,6 +40,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
     const prevHoveredRef = useRef<string | undefined>(undefined);
     const yOffsetByIdRef = useRef<Map<string, number>>(new Map());
     const animRafRef = useRef<number | null>(null);
+    const dimTransitionRef = useRef<number>(0); // 0 = dimmed, 1 = undimmed
+    const dimAnimRafRef = useRef<number | null>(null);
     const { theme, resolvedTheme } = useTheme();
     const activeTheme = resolvedTheme ?? theme;
 
@@ -118,6 +120,36 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
             animRafRef.current = null;
         };
     }, [hoveredId]);
+
+    // Animate dimming transition when undimWhenMinimized changes
+    useEffect(() => {
+        const target = undimWhenMinimized ? 1 : 0;
+        const ease = (c: number, t: number) => c + (t - c) * 0.15;
+
+        const step = () => {
+            const current = dimTransitionRef.current;
+            const next = ease(current, target);
+            dimTransitionRef.current = next;
+
+            fgRef.current?.refresh?.();
+
+            if (Math.abs(next - target) > 0.01) {
+                dimAnimRafRef.current = requestAnimationFrame(step);
+            } else {
+                dimTransitionRef.current = target;
+                dimAnimRafRef.current = null;
+                fgRef.current?.refresh?.();
+            }
+        };
+
+        if (dimAnimRafRef.current) cancelAnimationFrame(dimAnimRafRef.current);
+        dimAnimRafRef.current = requestAnimationFrame(step);
+
+        return () => {
+            if (dimAnimRafRef.current) cancelAnimationFrame(dimAnimRafRef.current);
+            dimAnimRafRef.current = null;
+        };
+    }, [undimWhenMinimized]);
 
     // Compute a color per top-level parent and propagate to descendants, unless provided
     const nodeColorById = useMemo(() => {
@@ -241,6 +273,10 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         return 5 + Math.sqrt(artistCount) * .5;
     };
 
+    // Helper functions for smooth dimming transitions
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    const toHex = (n: number) => Math.round(n).toString(16).padStart(2, '0');
+
     const nodeCanvasObject = (node: NodeObject, ctx: CanvasRenderingContext2D) => {
         const genreNode = node as Genre;
         const radius = calculateRadius(genreNode.artistCount);
@@ -252,8 +288,12 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         const isSelected = !!selectedGenreId && genreNode.id === selectedGenreId;
         const isNeighbor = !!selectedGenreId && neighborsById.get(selectedGenreId)?.has(genreNode.id);
         const hasSelection = !!selectedGenreId;
-        const shouldDim = hasSelection && !undimWhenMinimized && !isSelected && !isNeighbor;
-        const color = accent + (shouldDim ? '30' : 'ff');
+        const shouldDim = hasSelection && !isSelected && !isNeighbor;
+        // Interpolate alpha between dimmed (0x30) and undimmed (0xff) based on transition state
+        const dimmedNodeAlpha = 0x30;
+        const undimmedNodeAlpha = 0xff;
+        const nodeAlpha = shouldDim ? lerp(dimmedNodeAlpha, undimmedNodeAlpha, dimTransitionRef.current) : undimmedNodeAlpha;
+        const color = accent + toHex(nodeAlpha);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineWidth = 0.5;
@@ -276,7 +316,11 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
         let alpha = labelAlphaForZoom(k);
         if (isSelected) alpha = 1;
         else if (isNeighbor) alpha = Math.max(alpha, 0.85);
-        else if (hasSelection && !undimWhenMinimized) alpha = Math.min(alpha, 0.2);
+        else if (hasSelection) {
+            // Interpolate between dimmed (0.2) and undimmed (current alpha) based on transition state
+            const dimmedLabelAlpha = 0.2;
+            alpha = lerp(dimmedLabelAlpha, alpha, dimTransitionRef.current);
+        }
         const yOffset = yOffsetByIdRef.current.get(genreNode.id) || 0;
         drawLabelBelow(ctx, genreNode.name, nodeX, nodeY, isSelected ? radius * 1.35 : radius, activeTheme, alpha, LABEL_FONT_SIZE, yOffset);
     };
@@ -311,14 +355,25 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(({ graph
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
                 const connectedToSelected = !!selectedGenreId && (s === selectedGenreId || t === selectedGenreId);
                 const base = (s && nodeColorById.get(s)) || (activeTheme === 'dark' ? '#ffffff' : '#000000');
-                const alpha = (selectedGenreId && !undimWhenMinimized) ? (connectedToSelected ? 'cc' : '30') : '80';
-                return base + alpha;
+                // Interpolate link alpha based on transition state
+                let alphaValue: number;
+                if (selectedGenreId) {
+                    const connectedAlpha = 0xcc;
+                    const dimmedAlpha = 0x30;
+                    alphaValue = connectedToSelected ? connectedAlpha : lerp(dimmedAlpha, 0x80, dimTransitionRef.current);
+                } else {
+                    alphaValue = 0x80;
+                }
+                return base + toHex(alphaValue);
             }}
             linkWidth={(l: any) => {
-                if (!selectedGenreId || undimWhenMinimized) return 1;
+                if (!selectedGenreId) return 1;
                 const s = typeof l.source === 'string' ? l.source : l.source?.id;
                 const t = typeof l.target === 'string' ? l.target : l.target?.id;
-                return (s === selectedGenreId || t === selectedGenreId) ? 2.5 : 0.6;
+                const connectedToSelected = s === selectedGenreId || t === selectedGenreId;
+                // Interpolate link width based on transition state
+                if (connectedToSelected) return 2.5;
+                return lerp(0.6, 1, dimTransitionRef.current);
             }}
             onNodeClick={node => onNodeClick(node)}
             onZoom={({ k }) => { zoomRef.current = k; }}
