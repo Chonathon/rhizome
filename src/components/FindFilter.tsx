@@ -4,13 +4,7 @@ import {Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandL
 import {ResponsivePanel} from "@/components/ResponsivePanel";
 import {TextSearch} from "lucide-react";
 import {cn} from "@/lib/utils";
-
-export interface FindOption {
-  id: string;
-  name: string;
-  entityType: 'artist' | 'genre';
-  subtitle?: string;
-}
+import {FindOption} from "@/types";
 
 interface FindFilterProps {
   items: FindOption[];

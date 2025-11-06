@@ -17,6 +17,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
     const [artistsPlayIDsLoading, setArtistsPlayIDsLoading] = useState<boolean>(false);
     const [artistPlayIDLoadingKey, setArtistPlayIDLoadingKey] = useState<string>('');
     const [artistsPlayIDsError, setArtistsPlayIDsError] = useState<AxiosError>();
+    const [similarArtists, setSimilarArtists] = useState<Artist[]>([]);
 
     const fetchArtists = async () => {
         resetArtistsError();
@@ -157,6 +158,20 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         setArtistsLoading(false);
     }
 
+    const fetchSimilarArtists = async (artist: Artist) => {
+        resetArtistsError();
+        setArtistsLoading(true);
+        try {
+            const response = await axios.get(`${url}/artists/fetch/similar/${artist.id}`);
+            setSimilarArtists([artist, ...response.data]);
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setArtistsError(err);
+            }
+        }
+        setArtistsLoading(false);
+    }
+
     const resetArtistsError = () => setArtistsError(undefined);
     const resetArtistsYTError = () => setArtistsPlayIDsError(undefined);
     const resetArtistsDataFlagError = () => setArtistsDataFlagError(undefined);
@@ -181,6 +196,8 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         artistsPlayIDsLoading,
         artistPlayIDLoadingKey,
         fetchSingleArtist,
+        similarArtists,
+        fetchSimilarArtists,
     };
 }
 

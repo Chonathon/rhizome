@@ -1,5 +1,5 @@
 import './App.css'
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {useEffect, useMemo, useRef, useState} from 'react'
 import { ChevronDown, Divide, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
@@ -8,7 +8,7 @@ import useGenreTopArtists from "@/hooks/useGenreTopArtists";
 import ArtistsForceGraph, { type GraphHandle } from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
-  Artist, ArtistNodeLimitType, BadDataReport, ContextAction,
+  Artist, ArtistNodeLimitType, BadDataReport, ContextAction, FindOption,
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
@@ -24,8 +24,7 @@ import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
 import Player from "@/components/Player";
 import { Search } from './components/Search';
-import FindFilter, { FindOption } from "@/components/FindFilter";
-
+import FindFilter from "@/components/FindFilter";
 import {
   buildGenreColorMap,
   generateSimilarLinks,
@@ -37,17 +36,14 @@ import {
   assignDegreesToArtists,
   formatNumber,
   until,
-  serverUrl,
   isOnPage,
 } from "@/lib/utils";
-import axios from "axios";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
 import NodeLimiter from './components/NodeLimiter'
-import useSimilarArtists from "@/hooks/useSimilarArtists";
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
 import { GenreInfo } from './components/GenreInfo';
@@ -123,6 +119,7 @@ function App() {
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
+  const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState(false);
   const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [dagMode, setDagMode] = useState<boolean>(() => {
@@ -167,12 +164,13 @@ function App() {
     artistsPlayIDsLoading,
     artistPlayIDLoadingKey,
     fetchSingleArtist,
+    similarArtists,
+    fetchSimilarArtists,
   } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
 
   // Fetch top artists for the currently displayed genre info or the active filter
   const topArtistsGenreId = genreInfoToShow?.id || artistFilterGenres[0]?.id;
   const { topArtists, loading: topArtistsLoading } = useGenreTopArtists(topArtistsGenreId);
-  const { similarArtists, similarArtistsLoading, similarArtistsError } = useSimilarArtists(selectedArtistNoGenre);
   const { resolvedTheme } = useTheme();
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
@@ -385,37 +383,34 @@ function App() {
 
     // Only manage currentArtists when graph is in 'artists' mode
     // similarArtists mode manages its own filtered list and fetches directly from API
-    if (graph !== 'artists') {
-      return;
-    }
+    // if (graph !== 'artists') {
+    //   return;
+    // }
 
     // Ensure the selected artist is always included in the results unless they were opened via search
     if (selectedArtist && artists.length > 0) {
       const artistExists = artists.some(a => a.id === selectedArtist.id);
-      console.log('[useEffect artists]', {
-        selectedArtistId: selectedArtist.id,
-        selectedArtistName: selectedArtist.name,
-        artistExists,
-        totalArtists: artists.length,
-        artistGenreFilterIDs
-      });
       if (!artistExists) {
         if (selectedArtistFromSearch) {
           console.log('[useEffect artists] Selected artist filtered out by current view; keeping graph results unchanged');
-          setCurrentArtists(artists);
         } else {
           console.log('[useEffect artists] Adding missing artist to results');
           // Add the selected artist to the results if it's not already there
           setCurrentArtists([...artists, selectedArtist]);
         }
-      } else {
-        setCurrentArtists(artists);
       }
-    } else {
-      setCurrentArtists(artists);
     }
+  }, [selectedArtist, selectedArtistFromSearch, pendingArtistGenreGraph]);
+
+  // Sets current artists/links shown in the graph when artists are fetched from the DB
+  useEffect(() => {
+    // Don't override if we're waiting for artist genre graph to be built
+    // if (pendingArtistGenreGraph) {
+    //   return;
+    // }
+    setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
-  }, [artists, selectedArtist, selectedArtistFromSearch, graph, pendingArtistGenreGraph]);
+  }, [artists]);
 
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
@@ -446,8 +441,19 @@ function App() {
     updateArtistPlayerIDs();
   }, [selectedArtist]);
 
-  // Note: Similar artist graph is now built directly in createSimilarArtistGraph()
-  // by fetching all similar artists from the API, not limited by current genre selection
+  // Switches to the similar artists view once similar artist data is loaded
+  useEffect(() => {
+    if (canCreateSimilarArtistGraph) {
+      if (similarArtists.length > 1) {
+        const links = generateSimilarLinks(similarArtists);
+        setCurrentArtists(similarArtists);
+        setCurrentArtistLinks(links);
+        setGraph('similarArtists');
+        setShowArtistCard(true);
+      }
+      setCanCreateSimilarArtistGraph(false);
+    }
+  }, [similarArtists]);
 
   // Switch to artist graph after genres' artists are loaded
   useEffect(() => {
@@ -882,34 +888,32 @@ function App() {
       artistGenreFilter.length === 0 ||
       artist.genres.some((genreId) => artistGenreFilterIDs.includes(genreId));
 
-    if (artistGenreFilter.length && !matchesCurrentFilter) {
-      setArtistGenreFilter([]);
-      setArtistFilterGenres([]);
-      setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
-      setGenreInfoToShow(undefined);
-      setShowGenreCard(false);
-    } else if (showGenreCard) {
-      setShowGenreCard(false);
-    }
+    if (showGenreCard) setShowGenreCard(false);
+    setSelectedArtist(artist);
 
-    let nextArtistList =
-      graph === 'similarArtists'
-        ? (artists.length ? artists : currentArtists)
-        : currentArtists;
-
-    const artistAlreadyPresent = nextArtistList.some((a) => a.id === artist.id);
-    if (!artistAlreadyPresent) {
-      nextArtistList = [...nextArtistList, artist];
-    }
-
-    if (graph === 'similarArtists') {
-      if (currentArtistLinks !== artistLinks) {
-        setCurrentArtistLinks(artistLinks);
-      }
-      if (similarArtistAnchor) {
-        setSimilarArtistAnchor(undefined);
-      }
-    }
+    // Artist not in current custom genre filter
+    // if (artistGenreFilter.length && !matchesCurrentFilter) {
+    //
+    // }
+    //
+    // let nextArtistList =
+    //   graph === 'similarArtists'
+    //     ? (artists.length ? artists : currentArtists)
+    //     : currentArtists;
+    //
+    // const artistAlreadyPresent = nextArtistList.some((a) => a.id === artist.id);
+    // if (!artistAlreadyPresent) {
+    //   nextArtistList = [...nextArtistList, artist];
+    // }
+    //
+    // if (graph === 'similarArtists') {
+    //   if (currentArtistLinks !== artistLinks) {
+    //     setCurrentArtistLinks(artistLinks);
+    //   }
+    //   if (similarArtistAnchor) {
+    //     setSimilarArtistAnchor(undefined);
+    //   }
+    // }
 
     let shouldTriggerRefocus = opts?.forceRefocus === true;
 
@@ -918,26 +922,26 @@ function App() {
       shouldTriggerRefocus = true;
     }
 
-    if (graph === 'similarArtists' || !artistAlreadyPresent) {
-      if (currentArtists !== nextArtistList) {
-        setCurrentArtists(nextArtistList);
-        shouldTriggerRefocus = true;
-      }
-    }
+    // if (graph === 'similarArtists' || !artistAlreadyPresent) {
+    //   if (currentArtists !== nextArtistList) {
+    //     setCurrentArtists(nextArtistList);
+    //     shouldTriggerRefocus = true;
+    //   }
+    // }
 
     setSelectedArtistFromSearch(false);
-    setArtistPreviewStack([]);
-    setSelectedArtist((prev) => {
-      if (prev?.id === artist.id) {
-        if (shouldTriggerRefocus) {
-          return { ...prev };
-        }
-        return prev;
-      }
-      return artist;
-    });
-    setArtistInfoToShow(artist); // For drawer display
-    setShowArtistCard(true);
+    // setArtistPreviewStack([]);
+    // setSelectedArtist((prev) => {
+    //   if (prev?.id === artist.id) {
+    //     if (shouldTriggerRefocus) {
+    //       return { ...prev };
+    //     }
+    //     return prev;
+    //   }
+    //   return artist;
+    // });
+    // setArtistInfoToShow(artist); // For drawer display
+    // setShowArtistCard(true);
 
     if (shouldTriggerRefocus) {
       setAutoFocusGraph(false);
@@ -950,66 +954,17 @@ function App() {
   }
 
   const focusGenreInCurrentView = (genre: Genre, opts?: { forceRefocus?: boolean }) => {
-    const fullGenre = genres.find((g) => g.id === genre.id) ?? genre;
-
-    let workingNodes = currentGenres?.nodes ?? [];
-    let workingLinks = currentGenres?.links ?? [];
     let shouldTriggerRefocus = opts?.forceRefocus === true || !currentGenres;
-    let nodesChanged = false;
-    let linksChanged = false;
-
-    if (workingNodes.length === 0 && genres.length > 0) {
-      workingNodes = genres;
-      workingLinks = filterLinksByClusterMode(genreClusterMode);
-      shouldTriggerRefocus = true;
-      nodesChanged = true;
-      linksChanged = true;
-    }
-
-    const nodeMap = new Map(workingNodes.map((node) => [node.id, node]));
-    if (!nodeMap.has(fullGenre.id)) {
-      nodeMap.set(fullGenre.id, fullGenre);
-      shouldTriggerRefocus = true;
-      nodesChanged = true;
-    }
-
-    const nextNodes = Array.from(nodeMap.values());
-
-    const existingLinkKeys = new Set(workingLinks.map((l) => `${l.source}|${l.target}|${l.linkType}`));
-    const allowedIds = new Set(nextNodes.map((n) => n.id));
-    const newLinks: NodeLink[] = [];
-
-    genreLinks.forEach((link) => {
-      if (!allowedIds.has(link.source) || !allowedIds.has(link.target)) return;
-      const key = `${link.source}|${link.target}|${link.linkType}`;
-      if (!existingLinkKeys.has(key)) {
-        existingLinkKeys.add(key);
-        newLinks.push(link);
-      }
-    });
-
-    if (newLinks.length) {
-      workingLinks = [...workingLinks, ...newLinks];
-      shouldTriggerRefocus = true;
-      linksChanged = true;
-    }
-
-    if (!currentGenres || nodesChanged || linksChanged) {
-      setCurrentGenres({ nodes: nextNodes, links: workingLinks });
-    }
-
     if (graph !== 'genres') {
       setGraph('genres');
       shouldTriggerRefocus = true;
     }
-
-    setGenreInfoToShow(fullGenre);
+    setGenreInfoToShow(genre);
     setShowGenreCard(true);
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
-    setSelectedGenres([fullGenre]);
+    setSelectedGenres([genre]);
     // Don't set initialGenreFilter here - focusing a genre is just for viewing, not filtering
-    addRecentSelection(fullGenre);
-
+    addRecentSelection(genre);
     if (shouldTriggerRefocus) {
       setAutoFocusGraph(false);
       setTimeout(() => setAutoFocusGraph(true), 16);
@@ -1189,73 +1144,15 @@ function App() {
       toast.error(`No similar artist data available for ${artistResult.name}`);
       return;
     }
-
-    // Fetch all similar artists using the search endpoint (genre-agnostic, forgiving matching)
-    try {
-      const similarArtistNames = artistResult.similar;
-
-      const url = serverUrl();
-
-      // Search for each similar artist using the search endpoint (same as Search component)
-      // This uses full-text search which handles name variations better than exact matching
-      const searchPromises = similarArtistNames.map(name =>
-        axios.get(`${url}/search/${encodeURIComponent(name)}`)
-          .then(response => ({ name, results: response.data }))
-          .catch(err => {
-            console.warn(`[createSimilarArtistGraph] Failed to search for "${name}":`, err);
-            return { name, results: [] };
-          })
-      );
-
-      const searchResults = await Promise.all(searchPromises);
-      console.log('[createSimilarArtistGraph] Search results:', searchResults);
-
-      // Extract artists from search results (filter out genres)
-      const foundArtistsMap = new Map<string, Artist>();
-
-      searchResults.forEach(({ name, results }) => {
-        // Find the first artist result (search returns both artists and genres)
-        const artistResult = results.find((item: Artist | Genre) =>
-          'tags' in item || 'similar' in item // Artists have these properties, genres don't
-        ) as Artist | undefined;
-
-        if (artistResult) {
-          console.log(`[createSimilarArtistGraph] Found "${name}" as "${artistResult.name}"`);
-          foundArtistsMap.set(artistResult.id, artistResult);
-        } else {
-          console.warn(`[createSimilarArtistGraph] Could not find artist for "${name}"`);
-        }
-      });
-
-      const similarArtistsData = Array.from(foundArtistsMap.values());
-      console.log(`[createSimilarArtistGraph] Found ${similarArtistsData.length} similar artists with full data in database`);
-
-      if (similarArtistsData.length === 0) {
-        console.warn(`[createSimilarArtistGraph] No similar artists found in database for ${artistResult.name}, but metadata lists: ${similarArtistNames.join(', ')}`);
-        return;
-      }
-
-      // Build graph with the selected artist + all fetched similar artists
-      const graphArtists = [artistResult, ...similarArtistsData];
-      const links = generateSimilarLinks(graphArtists);
-
-      setSelectedArtistFromSearch(false);
-      setArtistPreviewStack([]);
-      setSelectedArtist(artistResult);
-      setSelectedArtistNoGenre(artistResult);
-      setSimilarArtistAnchor(artistResult);
-      setCurrentArtists(graphArtists);
-      setCurrentArtistLinks(links);
-      setGraph('similarArtists');
-      setShowArtistCard(true);
-
-      const foundCount = similarArtistsData.length;
-      const totalCount = similarArtistNames.length;
-      if (foundCount < totalCount) {
-      }
-    } catch (err) {
-    }
+    setCanCreateSimilarArtistGraph(true);
+    await fetchSimilarArtists(artistResult);
+    setSelectedArtistFromSearch(false);
+    setArtistPreviewStack([]);
+    setSelectedArtist(artistResult);
+    setSelectedArtistNoGenre(artistResult);
+    setSimilarArtistAnchor(artistResult);
   }
+
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
     setGenreClusterMode([...newMode]);
     if (currentGenres) {

@@ -159,3 +159,10 @@ export interface GraphHandle {
   zoomTo: (k: number, ms?: number) => void;
   getZoom: () => number;
 }
+
+export interface FindOption {
+    id: string;
+    name: string;
+    entityType: 'artist' | 'genre';
+    subtitle?: string;
+}
