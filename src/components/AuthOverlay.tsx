@@ -226,7 +226,7 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onForgotPassword}: Aut
                   <div className="flex items-center">
                     <Label htmlFor="password">Password</Label>
                     <a
-                      className="ml-auto text-sm underline-offset-4 hover:underline cursor-pointer"
+                      className="ml-auto text-sm  underline-offset-4 hover:underline hover:text-muted-foreground cursor-pointer"
                       hidden={isSignup}
                       onClick={() => forgotPassword()}
                     >
@@ -250,7 +250,7 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onForgotPassword}: Aut
                 <button
                   type="button"
                   onClick={() => setMode(footerMode)}
-                  className="underline underline-offset-4"
+                  className="underline hover:text-muted-foreground underline-offset-4"
                 >
                   {footerAction}
                 </button>
