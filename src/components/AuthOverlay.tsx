@@ -38,14 +38,8 @@ function AuthOverlay({onSignUp, onSignInSocial, onSignIn, onForgotPassword}: Aut
       setMode(customEvent.detail?.mode ?? "signup");
     };
     window.addEventListener("auth:open", handleOpen);
-    // Support manual alpha gate testing trigger as well
-    const handleAlphaOpen = () => {
-      window.dispatchEvent(new Event('alpha:open'));
-    };
-    window.addEventListener('alpha:trigger', handleAlphaOpen);
     return () => {
       window.removeEventListener("auth:open", handleOpen);
-      window.removeEventListener('alpha:trigger', handleAlphaOpen);
     };
   }, []);
 

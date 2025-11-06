@@ -98,11 +98,18 @@ function App() {
     setAlphaOpen(!isAlphaValidated);
   }, [isAlphaValidated]);
 
-  // Manual trigger for testing
+  // Manual trigger for testing - listen for both alpha:open and alpha:trigger
   useEffect(() => {
     const handleOpen = () => setAlphaOpen(true);
+    const handleTrigger = () => window.dispatchEvent(new Event('alpha:open'));
+
     window.addEventListener('alpha:open', handleOpen as any);
-    return () => window.removeEventListener('alpha:open', handleOpen as any);
+    window.addEventListener('alpha:trigger', handleTrigger);
+
+    return () => {
+      window.removeEventListener('alpha:open', handleOpen as any);
+      window.removeEventListener('alpha:trigger', handleTrigger);
+    };
   }, []);
   type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number }
   const genresGraphRef = useRef<GraphHandle | null>(null);
