@@ -66,6 +66,8 @@ import {
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
 import AuthOverlay from '@/components/AuthOverlay';
+import AlphaAccessDialog from '@/components/AlphaAccessDialog';
+import { useAlphaAccess } from '@/hooks/useAlphaAccess';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
@@ -88,6 +90,20 @@ function SidebarLogoTrigger() {
 }
 
 function App() {
+  const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess();
+  const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
+
+  // Keep alpha dialog open state in sync with validation
+  useEffect(() => {
+    setAlphaOpen(!isAlphaValidated);
+  }, [isAlphaValidated]);
+
+  // Manual trigger for testing
+  useEffect(() => {
+    const handleOpen = () => setAlphaOpen(true);
+    window.addEventListener('alpha:open', handleOpen as any);
+    return () => window.removeEventListener('alpha:open', handleOpen as any);
+  }, []);
   type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number }
   const genresGraphRef = useRef<GraphHandle | null>(null);
   const artistsGraphRef = useRef<GraphHandle | null>(null);
@@ -1495,6 +1511,14 @@ function App() {
           onSignInSocial={signInSocial}
           onSignIn={signIn}
           onForgotPassword={forgotPassword}
+      />
+      <AlphaAccessDialog
+        open={alphaOpen}
+        onValidPassword={() => {
+          setAlphaValidated();
+          setAlphaOpen(false);
+        }}
+        onValidatePassword={(pwd) => validatePassword(pwd)}
       />
       <FeedbackOverlay
         onSubmit={submitFeedback}
