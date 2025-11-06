@@ -48,6 +48,7 @@ interface ArtistInfoProps {
   isInCollection: boolean;
   onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
   viewRelatedArtistsLoading?: boolean;
+  shouldShowChevron?: boolean;
 }
 
 export function ArtistInfo({
@@ -74,6 +75,7 @@ export function ArtistInfo({
   isInCollection,
   onPlayTrack,
   viewRelatedArtistsLoading,
+  shouldShowChevron,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -144,7 +146,7 @@ export function ArtistInfo({
       bodyClassName=""
       // snapPoints={[0.28, 0.9]}
       headerTitle={
-        selectedArtist && onFocusInArtistsView ? (
+        selectedArtist && onFocusInArtistsView && shouldShowChevron ? (
           <button
             onClick={() => onFocusInArtistsView(selectedArtist, { forceRefocus: true })}
             className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-block"

@@ -1,5 +1,5 @@
 import './App.css'
-import {useEffect, useMemo, useRef, useState} from 'react'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import { ChevronDown, Divide, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
@@ -375,32 +375,32 @@ function App() {
   }, []);
 
   // Sets current artists/links shown in the graph when artists are fetched from the DB
-  useEffect(() => {
-    // Don't override if we're waiting for artist genre graph to be built
-    if (pendingArtistGenreGraph) {
-      return;
-    }
-
-    // Only manage currentArtists when graph is in 'artists' mode
-    // similarArtists mode manages its own filtered list and fetches directly from API
-    // if (graph !== 'artists') {
-    //   return;
-    // }
-
-    // Ensure the selected artist is always included in the results unless they were opened via search
-    if (selectedArtist && artists.length > 0) {
-      const artistExists = artists.some(a => a.id === selectedArtist.id);
-      if (!artistExists) {
-        if (selectedArtistFromSearch) {
-          console.log('[useEffect artists] Selected artist filtered out by current view; keeping graph results unchanged');
-        } else {
-          console.log('[useEffect artists] Adding missing artist to results');
-          // Add the selected artist to the results if it's not already there
-          setCurrentArtists([...artists, selectedArtist]);
-        }
-      }
-    }
-  }, [selectedArtist, selectedArtistFromSearch, pendingArtistGenreGraph]);
+  // useEffect(() => {
+  //   // Don't override if we're waiting for artist genre graph to be built
+  //   if (pendingArtistGenreGraph) {
+  //     return;
+  //   }
+  //
+  //   // Only manage currentArtists when graph is in 'artists' mode
+  //   // similarArtists mode manages its own filtered list and fetches directly from API
+  //   // if (graph !== 'artists') {
+  //   //   return;
+  //   // }
+  //
+  //   // Ensure the selected artist is always included in the results unless they were opened via search
+  //   if (selectedArtist && artists.length > 0) {
+  //     const artistExists = artists.some(a => a.id === selectedArtist.id);
+  //     if (!artistExists) {
+  //       if (selectedArtistFromSearch) {
+  //         console.log('[useEffect artists] Selected artist filtered out by current view; keeping graph results unchanged');
+  //       } else {
+  //         console.log('[useEffect artists] Adding missing artist to results');
+  //         // Add the selected artist to the results if it's not already there
+  //         setCurrentArtists([...artists, selectedArtist]);
+  //       }
+  //     }
+  //   }
+  // }, [selectedArtist, selectedArtistFromSearch, pendingArtistGenreGraph]);
 
   // Sets current artists/links shown in the graph when artists are fetched from the DB
   useEffect(() => {
@@ -1321,7 +1321,7 @@ function App() {
     return success;
   }
 
-  const getRootGenreFromTags = (tags: Tag[]) => {
+  const getRootGenreFromTags = useCallback((tags: Tag[]) => {
     if (tags && tags.length && genres) {
       const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
       if (genreTags.length > 0) {
@@ -1331,9 +1331,38 @@ function App() {
       }
     }
     return [];
-  }
+  }, [genres]);
 
-  const getArtistColor = (artist: Artist) => {
+  const getGenreColorFromRoots = useCallback((roots: string[]) => {
+    let color;
+    if (roots.length === 1) {
+      color = genreColorMap.get(roots[0]);
+    } else if (roots.length > 1) {
+      const colors: string[] = [];
+      roots.forEach(root => {
+        const rootColor = genreColorMap.get(root);
+        if (rootColor) colors.push(rootColor);
+      });
+      color = mixColors(colors);
+    }
+    return color;
+  }, [genreColorMap]);
+
+  const colorFallback = useCallback((genreID?: string) => {
+    let color;
+    if (genreID) color = genreColorMap.get(genreID);
+    if (!color) color = resolvedTheme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
+    return color;
+  }, [genreColorMap, resolvedTheme]);
+
+  const getGenreColorFromID = useCallback((genreID: string) => {
+    const roots = getGenreRootsFromID(genreID);
+    let color = getGenreColorFromRoots(roots);
+    if (!color) color = colorFallback(genreID);
+    return color;
+  }, [getGenreRootsFromID, getGenreColorFromRoots, colorFallback]);
+
+  const getArtistColor = useCallback((artist: Artist) => {
     let color;
     // First try strongest tag that is a genre
     const rootIDs = getRootGenreFromTags(artist.tags);
@@ -1349,38 +1378,16 @@ function App() {
     // If no roots are found
     if (!color) color = colorFallback();
     return color;
-  }
+  }, [getRootGenreFromTags, getGenreColorFromRoots, getGenreColorFromID, colorFallback]);
 
-  const getGenreColorFromID = (genreID: string) => {
-    const roots = getGenreRootsFromID(genreID);
-    let color = getGenreColorFromRoots(roots);
-    if (!color) color = colorFallback(genreID);
-    return color;
-  }
+  useEffect(() => {
+    console.log('artistGenreFilter: ', artistGenreFilter);
+  }, [artistGenreFilter]);
+  useEffect(() => {
+    console.log('artistFilterGenres: ', artistFilterGenres);
+  }, [artistFilterGenres]);
 
-  const getGenreColorFromRoots = (roots: string[]) => {
-    let color;
-    if (roots.length === 1) {
-      color = genreColorMap.get(roots[0]);
-    } else if (roots.length > 1) {
-      const colors: string[] = [];
-      roots.forEach(root => {
-        const rootColor = genreColorMap.get(root);
-        if (rootColor) colors.push(rootColor);
-      });
-      color = mixColors(colors);
-    }
-    return color;
-  }
-
-  const colorFallback = (genreID?: string) => {
-    let color;
-    if (genreID) color = genreColorMap.get(genreID);
-    if (!color) color = resolvedTheme === 'dark' ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR;
-    return color;
-  }
-
-  const onGenreFilterSelectionChange = async (selectedIDs: string[]) => {
+  const onGenreFilterSelectionChange = useCallback(async (selectedIDs: string[]) => {
     if (graph === 'genres') {
       // filters genres in genre mode; buggy
       // setCurrentGenres({ nodes: genres.filter((g) => selectedIDs.includes(g.id)), links: genreLinks.filter(l => {
@@ -1390,7 +1397,7 @@ function App() {
       // });
     } else {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-      // console.log('gf selection change: ' + selectedIDs.length)
+      console.log('gf selection change: ' + selectedIDs.length)
       if (selectedIDs.length === 0) {
         // Clear artist filter - do NOT clear selectedGenres (viewing selection is independent)
         if (artistGenreFilter.length !== 0) {
@@ -1420,7 +1427,7 @@ function App() {
         }
       }
     }
-  }
+  }, [graph, isBeforeArtistLoad, selectedGenres, artistGenreFilter]);
 
   const onDecadeSelectionChange = (selectedIDs: string[]) => {
     setSelectedDecades(selectedIDs);
@@ -1649,6 +1656,13 @@ function App() {
       }
     }
     localStorage.removeItem('unregisteredAction');
+  }
+
+  const showArtistGoTo = () => {
+    if (graph === 'similarArtists') {
+      return !!artistInfoToShow && similarArtists.includes(artistInfoToShow);
+    }
+    return !!(artistInfoToShow && currentArtists.includes(artistInfoToShow));
   }
 
   return (
@@ -1913,6 +1927,7 @@ function App() {
                 onArtistToggle={onAddArtistButtonToggle}
                 isInCollection={isInCollection(selectedArtist?.id)}
                 onPlayTrack={onPlayArtistTrack}
+                shouldShowChevron={showArtistGoTo()}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
