@@ -34,7 +34,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
     
     const labelStyles = "w-full text-left text-md font-medium text-foreground"
     const badgeStyles = "w-12 p-1 text-center"
-    const feildsetStyles = "flex flex-col gap-4 p-2 rounded-2xl  shadow-sm bg-accent dark:dark:bg-accent/50 border-accent border"
+    const feildsetStyles = "flex flex-col gap-4 p-2 rounded-2xl bg-accent dark:dark:bg-accent/50 border-accent border"
 
     return (
         <ResponsivePanel
