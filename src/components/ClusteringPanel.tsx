@@ -34,7 +34,7 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
             <RadioGroup
                 value={clusterMode}
                 onValueChange={(value) => setClusterMode([value as GenreClusterMode])}
-                className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm p-1 rounded-2xl border border-accent dark:border-border/50 bg-accent"
+                className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm rounded-2xl  bg-accent"
             >
                 {options.map((option) => (
                     <div key={option.id} className="w-full">
@@ -63,7 +63,7 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
                                             transition={{
                                                 opacity: { duration: 0.2, ease: "easeOut" },
                                                 height: { duration: 0.2, ease: "easeOut" },
-                                                y: { duration: 0.2, ease: "easeOut" }
+                                                y: { duration: 0.08, ease: "easeOut" }
                                             }}
                                             className="text-sm text-gray-700 dark:text-gray-300 mt-1 text-left"
                                         >
