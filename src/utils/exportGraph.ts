@@ -38,18 +38,24 @@ export const exportGraphAsImage = (
       return;
     }
 
+    // Scale the context first for all operations
+    ctx.scale(scale, scale);
+
     // Get the actual background color from the body element
     // This will automatically match whatever CSS theme is applied
     const bodyStyles = window.getComputedStyle(document.body);
-    const backgroundColor = bodyStyles.backgroundColor ||
-      (options.theme === 'dark' ? '#0a0a0a' : '#ffffff'); // Fallback if needed
+    let backgroundColor = bodyStyles.backgroundColor;
 
-    // Fill background with the computed theme color
+    // Check if background color is transparent or empty, use fallback
+    if (!backgroundColor || backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') {
+      backgroundColor = options.theme === 'dark' ? '#0a0a0a' : '#ffffff';
+    }
+
+    // Fill background with the computed theme color (using unscaled coordinates since context is already scaled)
     ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Scale the context and draw the original canvas
-    ctx.scale(scale, scale);
+    // Draw the original canvas
     ctx.drawImage(canvas, 0, 0);
 
     // Generate filename with timestamp and scale info
