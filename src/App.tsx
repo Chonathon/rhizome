@@ -43,6 +43,7 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
+import SharePanel from './components/SharePanel';
 import NodeLimiter from './components/NodeLimiter'
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
@@ -76,6 +77,7 @@ import useAuth from "@/hooks/useAuth";
 import SettingsOverlay, {ChangePasswordDialog} from '@/components/SettingsOverlay';
 import {submitFeedback} from "@/apis/feedbackApi";
 import {useNavigate} from "react-router";
+import { exportGraphAsImage } from "@/utils/exportGraph";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -111,7 +113,7 @@ function App() {
       window.removeEventListener('alpha:trigger', handleTrigger);
     };
   }, []);
-  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number }
+  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
   const genresGraphRef = useRef<GraphHandle | null>(null);
   const artistsGraphRef = useRef<GraphHandle | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -368,6 +370,14 @@ function App() {
       setIsFindFilterOpen(true);
     },
   }, [graph, findPanelDisabled]);
+
+  // Export graph handler
+  const handleExportGraph = useCallback(() => {
+    const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+    const canvas = ref?.getCanvas?.() ?? null;
+    const graphType = graph === 'genres' ? 'genre' : 'artist';
+    exportGraphAsImage(canvas, { graphType, theme: resolvedTheme });
+  }, [graph, resolvedTheme]);
 
   // Restore standalone Escape handling (deselect)
   useEffect(() => {
@@ -1783,15 +1793,16 @@ function App() {
           {/* right controls */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               {/* <ModeToggle /> */}
-              <ClusteringPanel 
+              <ClusteringPanel
                 clusterMode={genreClusterMode[0]}
                 setClusterMode={onGenreClusterModeChange}
-                dagMode={dagMode} 
+                dagMode={dagMode}
                 setDagMode={setDagMode} />
               <DisplayPanel
                 genreArtistCountThreshold={genreSizeThreshold}
                 setGenreArtistCountThreshold={setGenreSizeThreshold}
               />
+              <SharePanel onExport={handleExportGraph} />
               {/* Bottom positioned Zoomies */}
               <div className='pt-6 hidden sm:block'>
                 <ZoomButtons
