@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { SwatchBook, RotateCcw } from "lucide-react"
 import { ResponsivePanel } from "@/components/ResponsivePanel"
 import { motion } from "framer-motion"
+import { Input } from "./ui/input"
 
 interface DisplayPanelProps {
     genreArtistCountThreshold: number;
@@ -14,10 +15,12 @@ interface DisplayPanelProps {
 
 export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtistCountThreshold }: DisplayPanelProps) {
     const [nodeSize, setNodeSize] = useState(50)
-    const [edgeThickness, setEdgeThickness] = useState(50)
+    const [linkThickness, setLinkThickness] = useState(50)
+    const [linkCurvature, setLinkCurvature] = useState(50)
     const [textFadeThreshold, setTextFadeThreshold] = useState(50)
     //const [genreSizeThreshold, setGenreSizeThreshold] = useState(genreArtistCountThreshold)
     const [showLabels, setShowLabels] = useState(false)
+    const [labelSize, setLabelSize] = useState(14)
     // TODO: Reset logic for graph controls can be implemented here
     const [isRotating, setIsRotating] = useState(false);
     const handleResetClick = () => {
@@ -74,16 +77,16 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                         />
                     </div>
                 </div>
-                {/* Edge Thickness */}
+                {/* Link Thickness */}
                 <div className="flex items-center justify-start gap-6">
-                    <label htmlFor="edge-thickness" className={labelStyles}>Edge thickness</label>
+                    <label htmlFor="link-thickness" className={labelStyles}>Link Thickness</label>
                     <div className="w-full flex items-center gap-2">
-                        <Badge variant="outline" className={badgeStyles}>{edgeThickness}</Badge>
+                        <Badge variant="outline" className={badgeStyles}>{linkThickness}</Badge>
                         <Slider
-                            id="edge-thickness-slider"
-                            aria-labelledby="edge-thickness"
-                            value={[edgeThickness]}
-                            onValueChange={([value]) => setEdgeThickness(value)}
+                            id="link-thickness-slider"
+                            aria-labelledby="link-thickness"
+                            value={[linkThickness]}
+                            onValueChange={([value]) => setLinkThickness(value)}
                             min={0}
                             max={100}
                             step={1}
@@ -91,16 +94,16 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                         />
                     </div>
                 </div>
-                {/* Edge Curvature */}
+                {/* Link Curvature */}
                 <div className="flex items-center justify-start gap-6">
-                    <label htmlFor="edge-thickness" className={labelStyles}>Edge Curvature</label>
+                    <label htmlFor="link-thickness" className={labelStyles}>Link Curvature</label>
                     <div className="w-full flex items-center gap-2">
-                        <Badge variant="outline" className={badgeStyles}>{edgeThickness}</Badge>
+                        <Badge variant="outline" className={badgeStyles}>{linkThickness}</Badge>
                         <Slider
-                            id="edge-thickness-slider"
-                            aria-labelledby="edge-thickness"
-                            value={[edgeThickness]}
-                            onValueChange={([value]) => setEdgeThickness(value)}
+                            id="link-curvature-slider"
+                            aria-labelledby="link-thickness"
+                            value={[linkCurvature]}
+                            onValueChange={([value]) => setLinkThickness(value)}
                             min={0}
                             max={100}
                             step={1}
@@ -143,13 +146,24 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 {/*    </div>*/}
                 {/*</div>*/}
                 <fieldset className="flex flex-col gap-4">
-                    <legend className="sr-only">Display options</legend>
+                    <legend className="sr-only">Text options</legend>
                     <div className="flex items-center justify-between">
-                        <label htmlFor="show-labels" className={labelStyles}>Show labels</label>
+                        <label htmlFor="show-labels" className={labelStyles}>Show Labels</label>
                         <Switch
                             id="show-labels"
                             checked={showLabels}
                             onCheckedChange={setShowLabels}
+                        />
+                    </div>
+                    <legend className="sr-only">Text options</legend>
+                    <div className="flex items-center justify-between">
+                        <label htmlFor="show-labels" className={labelStyles}>Text Size</label>
+                        <Input
+                            id="show-labels"
+                            type="number"
+                            value={labelSize}
+                            className="w-20"
+                            onChange={(e) => setLabelSize(Number(e.target.value))}
                         />
                     </div>
                 </fieldset>
