@@ -144,14 +144,13 @@ function App() {
   const [hoveredGenre, setHoveredGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
   const [hoveredArtist, setHoveredArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
   const [previewModeActive, setPreviewModeActive] = useState(false);
-  const previewModeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previewModeTimeoutRef = useRef<number | null>(null);
   const [genreInfoToShow, setGenreInfoToShow] = useState<Genre | undefined>(undefined);
   const [showGenreCard, setShowGenreCard] = useState(false);
   const [restoreGenreCardOnArtistDismiss, setRestoreGenreCardOnArtistDismiss] = useState(false);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
-  const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState(false);
   const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
   const [genreTopArtistsCache, setGenreTopArtistsCache] = useState<Map<string, Artist[]>>(new Map());
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
@@ -202,8 +201,8 @@ function App() {
   } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
 
   // Fetch top artists for the currently displayed genre info or the active filter
-  const topArtistsGenreId = genreInfoToShow?.id || artistFilterGenres[0]?.id;
-  const { topArtists, loading: topArtistsLoading } = useGenreTopArtists(topArtistsGenreId);
+  const [topArtistsGenreId, setTopArtistsGenreId] = useState<string | undefined>(undefined);
+  const { topArtists, loading: topArtistsLoading, getTopArtistsFromApi } = useGenreTopArtists(topArtistsGenreId);
   const { resolvedTheme } = useTheme();
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
@@ -250,6 +249,12 @@ function App() {
   const navigate = useNavigate();
 
   const artistsAddedRef = useRef(0);
+
+  // Get hovered artist data for preview
+  const hoveredArtistData = useMemo(() => {
+    if (!hoveredArtist) return null;
+    return currentArtists.find((a) => a.id === hoveredArtist.id) || null;
+  }, [hoveredArtist, currentArtists]);
 
   // Track window size and pass to ForceGraph for reliable resizing
   useEffect(() => {
@@ -444,13 +449,35 @@ function App() {
 
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
+    if (topArtistsGenreId && topArtists.length) {
+      setGenreTopArtistsCache(prev => new Map(prev).set(topArtistsGenreId, topArtists));
+    }
     updateGenrePlayerIDs();
   }, [topArtists, topArtistsGenreId]);
 
+  // Sets the genre ID for which to fetch top artists
+  useEffect(() => {
+    if (genreInfoToShow) {
+      setTopArtistsGenreId(genreInfoToShow.id);
+    }
+  }, [genreInfoToShow]);
+
+  // Sets the genre ID for which to fetch top artists
+  useEffect(() => {
+    if (artistFilterGenres.length) {
+      setTopArtistsGenreId(artistFilterGenres[0]?.id);
+    }
+  }, [artistFilterGenres]);
+
   // Fetches top tracks of selected artist player ids in the background
   useEffect(() => {
-    updateArtistPlayerIDs();
+    if (selectedArtist) updateArtistPlayerIDs(selectedArtist)
   }, [selectedArtist]);
+
+  // Fetches top tracks of hovered artist player ids in the background
+  useEffect(() => {
+    if (hoveredArtistData) updateArtistPlayerIDs(hoveredArtistData)
+  }, [hoveredArtistData]);
 
   // Switches to the similar artists view once similar artist data is loaded
   useEffect(() => {
@@ -521,14 +548,15 @@ function App() {
   }
 
   // Add artist play IDs to the playerIDQueue on genre click
-  const updateArtistPlayerIDs = async () => {
-    if (selectedArtist && !playerIDQueue.has(selectedArtist.id)) {
+  const updateArtistPlayerIDs = async (artist: Artist) => {
+    if (artist && !playerIDQueue.has(artist.id)) {
       const currentSelectedArtist = {
-        id: selectedArtist.id,
-        name: selectedArtist.name,
-        noTopTracks: selectedArtist.noTopTracks,
-        topTracks: selectedArtist.topTracks
+        id: artist.id,
+        name: artist.name,
+        noTopTracks: artist.noTopTracks,
+        topTracks: artist.topTracks
       };
+      // If we haven't already tried and failed to fetch tracks for this artist
       if (!currentSelectedArtist.noTopTracks) {
         if (currentSelectedArtist.topTracks) {
           playerIDQueue.set(currentSelectedArtist.id, currentSelectedArtist.topTracks);
@@ -738,6 +766,10 @@ function App() {
     }
   };
 
+  const onPlayGenreFromPreview = () => {
+
+  }
+
   // Returns only the play IDs of the DEFAULT_PLAYER from an artist/genre
   const getSpecificPlayerIDs = (id: string) => {
     let ids: string[] = [];
@@ -814,13 +846,7 @@ function App() {
   const fetchGenreTopArtists = async (genreID: string) => {
     // Check if already in cache
     if (genreTopArtistsCache.has(genreID)) return;
-
-    try {
-      const response = await axios.get(`${serverUrl()}/artists/top/${genreID}/${TOP_ARTISTS_TO_FETCH}`);
-      setGenreTopArtistsCache(prev => new Map(prev).set(genreID, response.data));
-    } catch (err) {
-      console.error('Failed to fetch genre top artists:', err);
-    }
+    setTopArtistsGenreId(genreID);
   };
 
   // Activate preview mode when a card is shown
@@ -832,7 +858,7 @@ function App() {
       clearTimeout(previewModeTimeoutRef.current);
     }
 
-    // Reset after 2.5s of inactivity
+    // Reset after 1s of inactivity
     previewModeTimeoutRef.current = setTimeout(() => {
       setPreviewModeActive(false);
     }, 1000);
@@ -841,7 +867,7 @@ function App() {
   // Handle genre hover - set hovered genre and fetch top artists
   const handleGenreHover = (id: string | null, position: { x: number; y: number } | null) => {
     // Only set hover if feature is enabled
-    if (preferences?.enableGraphCards ?? true) {
+    if ((preferences?.enableGraphCards ?? true) && !showGenreCard && !showArtistCard) {
       setHoveredGenre(id && position ? { id, position } : null);
       if (id) {
         fetchGenreTopArtists(id);
@@ -863,12 +889,6 @@ function App() {
 
     return { genre, topArtists: artists };
   }, [hoveredGenre, currentGenres, selectedGenres, topArtists, genreTopArtistsCache]);
-
-  // Get hovered artist data for preview
-  const hoveredArtistData = useMemo(() => {
-    if (!hoveredArtist) return null;
-    return currentArtists.find((a) => a.id === hoveredArtist.id) || null;
-  }, [hoveredArtist, currentArtists]);
 
   const onGenreNodeClick = (genre: Genre) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
@@ -1829,15 +1849,15 @@ function App() {
                 />
 
                 {/* Genre hover preview */}
-                {hoveredGenreData && hoveredGenre && graph === 'genres' && (
+                {hoveredGenreData && hoveredGenre && graph === 'genres' && !showGenreCard && (
                   <GenrePreview
                     genre={hoveredGenreData.genre}
                     topArtists={hoveredGenreData.topArtists}
                     genreColorMap={genreColorMap}
                     onNavigate={(genre) => onGenreNodeClick(genre)}
                     onAllArtists={(genre) => onShowAllArtists(genre)}
-                    onPlay={undefined}
-                    playLoading={false}
+                    onPlay={onPlayGenre}
+                    playLoading={playerLoading}
                     position={hoveredGenre.position}
                     visible={true}
                     previewModeActive={previewModeActive}
@@ -1846,15 +1866,15 @@ function App() {
                 )}
 
                 {/* Artist hover preview */}
-                {hoveredArtistData && hoveredArtist && (graph === 'artists' || graph === 'similarArtists') && (
+                {hoveredArtistData && hoveredArtist && (graph === 'artists' || graph === 'similarArtists') && !showArtistCard && (
                   <ArtistPreview
                     artist={hoveredArtistData}
                     genreColorMap={genreColorMap}
                     getGenreNameById={getGenreNameById}
                     onNavigate={(artist) => onArtistNodeClick(artist)}
-                    onPlay={undefined}
+                    onPlay={onPlayArtist}
                     onToggle={onAddArtistButtonToggle}
-                    playLoading={false}
+                    playLoading={playerLoading}
                     isInCollection={isInCollection(hoveredArtistData.id)}
                     position={hoveredArtist.position}
                     visible={true}

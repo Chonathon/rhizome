@@ -26,7 +26,7 @@ import {
   DEFAULT_MOBILE_CENTER_OFFSET_PX,
   estimateLabelWidth,
 } from "@/components/Graph/graphStyle";
-import type { GraphHandle } from "@/types";
+import type {BasicNode, GraphHandle} from "@/types";
 
 export type { GraphHandle };
 
@@ -80,7 +80,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   dagMode?: boolean;
   autoFocus?: boolean;
   onNodeClick?: (node: T) => void;
-  onNodeHover?: (node: T | undefined) => void;
+  onNodeHover?: (node: T | undefined, screenPosition: { x: number; y: number } | null) => void;
   renderNode?: NodeRenderer<T>;
   renderSelection?: SelectionRenderer<T>;
   renderLabel?: LabelRenderer<T>;
@@ -323,6 +323,31 @@ const Graph = forwardRef(function GraphInner<
     return () => window.clearTimeout(timeout);
   }, [autoFocus, preparedData.nodes, selectedId, show]);
 
+  // Get hovered genre data
+  const hoveredNode = useMemo(() => {
+      if (!hoveredId) return null;
+      return preparedData.nodes.find(n => n.id === hoveredId) || null;
+  }, [hoveredId, preparedData.nodes]);
+
+  // Get screen position for hovered node
+  const hoveredNodeScreenPos = useMemo(() => {
+      if (!hoveredNode || !fgRef.current) return null;
+      const node = hoveredNode as unknown as BasicNode & { x?: number; y?: number };
+      if (node.x === undefined || node.y === undefined) return null;
+
+      // Convert graph coordinates to screen coordinates
+      const screenCoords = fgRef.current.graph2ScreenCoords?.(node.x, node.y);
+      return screenCoords ? { x: screenCoords.x, y: screenCoords.y } : null;
+  }, [hoveredNode]);
+
+  // Notify parent of hover state changes
+  useEffect(() => {
+      if (onNodeHover) {
+          onNodeHover(hoveredId || undefined, hoveredNodeScreenPos);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoveredId, hoveredNodeScreenPos]); // Don't include onNodeHover to avoid infinite loops
+
   return (
     <div
       ref={containerRef}
@@ -379,7 +404,9 @@ const Graph = forwardRef(function GraphInner<
         onNodeHover={(node) => {
           const id = node?.id as string | undefined;
           setHoveredId(id);
-          if (onNodeHover) onNodeHover(id ? (node as PreparedNode<T>).data : undefined);
+          if (onNodeHover) {
+            onNodeHover(id ? (node as PreparedNode<T>).data : undefined, {x: node?.x ?? 0, y: node?.y ?? 0});
+          }
         }}
         onNodeClick={(node) => {
           onNodeClick?.((node as PreparedNode<T>).data);

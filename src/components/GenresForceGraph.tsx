@@ -86,31 +86,6 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         .filter((link): link is NodeLink => Boolean(link));
     }, [graphData]);
 
-      // // Get hovered genre data
-      // const hoveredGenre = useMemo(() => {
-      //     if (!hoveredId) return null;
-      //     return preparedData.nodes.find(n => n.id === hoveredId) || null;
-      // }, [hoveredId, preparedData.nodes]);
-      //
-      // // Get screen position for hovered node
-      // const hoveredNodeScreenPos = useMemo(() => {
-      //     if (!hoveredGenre || !fgRef.current) return null;
-      //     const node = hoveredGenre as Genre & { x?: number; y?: number };
-      //     if (node.x === undefined || node.y === undefined) return null;
-      //
-      //     // Convert graph coordinates to screen coordinates
-      //     const screenCoords = fgRef.current.graph2ScreenCoords?.(node.x, node.y);
-      //     return screenCoords ? { x: screenCoords.x, y: screenCoords.y } : null;
-      // }, [hoveredGenre]);
-      //
-      // // Notify parent of hover state changes
-      // useEffect(() => {
-      //     if (onNodeHover) {
-      //         onNodeHover(hoveredId || null, hoveredNodeScreenPos);
-      //     }
-      //     // eslint-disable-next-line react-hooks/exhaustive-deps
-      // }, [hoveredId, hoveredNodeScreenPos]); // Don't include onNodeHover to avoid infinite loops
-
     return (
       <Graph
         ref={ref}
@@ -124,6 +99,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         dagMode={dag}
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
+        onNodeHover={onNodeHover}
       />
     );
   },
