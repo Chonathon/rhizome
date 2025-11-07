@@ -158,7 +158,7 @@ function App() {
   const [nodeSize, setNodeSize] = useState(50);
   const [linkThickness, setLinkThickness] = useState(50);
   const [linkCurvature, setLinkCurvature] = useState(50);
-  const [textFadeThreshold, setTextFadeThreshold] = useState(0);
+  const [textFadeThreshold, setTextFadeThreshold] = useState(50);
   const [showLabels, setShowLabels] = useState(true);
   const [labelSize, setLabelSize] = useState<'Small' | 'Default' | 'Large'>('Default');
 
@@ -167,7 +167,7 @@ function App() {
     setNodeSize(50);
     setLinkThickness(50);
     setLinkCurvature(50);
-    setTextFadeThreshold(0);
+    setTextFadeThreshold(50);
     setShowLabels(true);
     setLabelSize('Default');
   }, []);

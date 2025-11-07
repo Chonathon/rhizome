@@ -159,9 +159,12 @@ const Graph = forwardRef(function GraphInner<
   const linkThicknessScale = 0.5 + (linkThickness / 100) * 1.5; // 0-100 → 0.5-2.0
   const linkCurvatureValue = linkCurvature / 100; // 0-100 → 0.0-1.0
   const labelFontSize = labelSize === 'Small' ? 10 : labelSize === 'Large' ? 16 : 12;
-  const fadeFactor = textFadeThreshold / 100; // 0-100 → 0.0-1.0
-  const labelFadeStart = 0.1 + fadeFactor * 0.4; // 0.1-0.5
-  const labelFadeEnd = 0.3 + fadeFactor * 1.0; // 0.3-1.3
+  // Map textFadeThreshold (0-100, center at 50) to fade scale factor
+  const fadeScale = textFadeThreshold <= 50
+    ? 0.5 + (textFadeThreshold / 50) * 0.5  // 0-50 → 0.5x-1.0x
+    : 1.0 + ((textFadeThreshold - 50) / 50) * 2.0; // 50-100 → 1.0x-3.0x
+  const labelFadeStart = DEFAULT_LABEL_FADE_START * fadeScale;
+  const labelFadeEnd = DEFAULT_LABEL_FADE_END * fadeScale;
 
   useImperativeHandle(
     ref,
