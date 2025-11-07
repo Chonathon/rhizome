@@ -3,8 +3,9 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "./ui/badge"
 import { Button } from "@/components/ui/button"
-import { SwatchBook } from "lucide-react"
+import { SwatchBook, RotateCcw } from "lucide-react"
 import { ResponsivePanel } from "@/components/ResponsivePanel"
+import { motion } from "framer-motion"
 
 interface DisplayPanelProps {
     genreArtistCountThreshold: number;
@@ -17,8 +18,14 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
     const [textFadeThreshold, setTextFadeThreshold] = useState(50)
     //const [genreSizeThreshold, setGenreSizeThreshold] = useState(genreArtistCountThreshold)
     const [showLabels, setShowLabels] = useState(false)
-    const [showArtistImage, setShowArtistImage] = useState(false)
-    const [showUnfollowedArtists, setShowUnfollowedArtists] = useState(false)
+    // TODO: Reset logic for graph controls can be implemented here
+    const [isRotating, setIsRotating] = useState(false);
+    const handleResetClick = () => {
+      setIsRotating(true);
+      setTimeout(() => {
+        setIsRotating(false);
+      }, 200);
+    };
 
     return (
         <ResponsivePanel
@@ -32,6 +39,19 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
             side="left"
             headerTitle="Display Settings"
         >
+                <div className="flex items-center">
+                    <h2 className="text-lg w-full font-semibold leading-tight text-gray-900 dark:text-gray-100">{Display}</h2>
+                    <Button
+                              onClick={handleResetClick}
+                              variant="ghost" size="icon" className=" size-10">
+                                   <motion.div
+                     animate={ isRotating ? { rotate: -45 } : { rotate: 0 } }
+                     transition={{ type: "spring", stiffness: 300, damping: 12 }}
+                                   >
+                     <RotateCcw size={24} />
+                                   </motion.div>
+                              </Button>
+                </div>
             <div className="flex flex-col gap-4 p-2 rounded-2xl  shadow-sm bg-accent dark:dark:bg-background">
                 {/* Node Size */}
                 <div className="flex items-center justify-start gap-6">
@@ -109,22 +129,6 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                             id="show-labels"
                             checked={showLabels}
                             onCheckedChange={setShowLabels}
-                        />
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <label htmlFor="show-artist-image" className="w-full text-left text-md font-medium text-gray-900 dark:text-gray-100">Show artist image</label>
-                        <Switch
-                            id="show-artist-image"
-                            checked={showArtistImage}
-                            onCheckedChange={setShowArtistImage}
-                        />
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <label htmlFor="show-unfollowed-artists" className="w-full text-left text-md font-medium text-gray-900 dark:text-gray-100">Show unfollowed artists</label>
-                        <Switch
-                            id="show-unfollowed-artists"
-                            checked={showUnfollowedArtists}
-                            onCheckedChange={setShowUnfollowedArtists}
                         />
                     </div>
                 </fieldset>
