@@ -43,18 +43,9 @@ export default function SharePanel({ onExport }: SharePanelProps) {
                 </div>
 
                 {/* Future share options can go here */}
-                {/* Example:
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex flex-col gap-3">
-                        <span className="text-md font-semibold text-gray-900 dark:text-gray-100">
-                            Share Link
-                        </span>
-                        <Button variant="outline" className="w-full">
-                            Copy Share Link
-                        </Button>
-                    </div>
-                </div>
-                */}
+                {/* 
+                - Scaling Options
+                - Other sharing options */}
             </div>
         </ResponsivePanel>
     )

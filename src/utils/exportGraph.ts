@@ -6,7 +6,6 @@ export interface GraphExportOptions {
   filename?: string;
   graphType?: 'genre' | 'artist';
   theme?: 'light' | 'dark' | string;
-  scale?: number; // Resolution multiplier (1 = original, 2 = 2x, 3 = 3x, etc.)
 }
 
 /**
@@ -24,13 +23,10 @@ export const exportGraphAsImage = (
   }
 
   try {
-    // Get scale factor (default to 2 for higher quality exports)
-    const scale = options.scale ?? 2;
-
-    // Create a temporary canvas with scaled dimensions
+    // Create a temporary canvas with the same dimensions
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width * scale;
-    tempCanvas.height = canvas.height * scale;
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
     const ctx = tempCanvas.getContext('2d');
 
     if (!ctx) {
@@ -38,31 +34,23 @@ export const exportGraphAsImage = (
       return;
     }
 
-    // Scale the context first for all operations
-    ctx.scale(scale, scale);
-
     // Get the actual background color from the body element
     // This will automatically match whatever CSS theme is applied
     const bodyStyles = window.getComputedStyle(document.body);
-    let backgroundColor = bodyStyles.backgroundColor;
+    const backgroundColor = bodyStyles.backgroundColor ||
+      (options.theme === 'dark' ? '#0a0a0a' : '#ffffff'); // Fallback if needed
 
-    // Check if background color is transparent or empty, use fallback
-    if (!backgroundColor || backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') {
-      backgroundColor = options.theme === 'dark' ? '#0a0a0a' : '#ffffff';
-    }
-
-    // Fill background with the computed theme color (using unscaled coordinates since context is already scaled)
+    // Fill background with the computed theme color
     ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-    // Draw the original canvas
+    // Draw the original canvas on top
     ctx.drawImage(canvas, 0, 0);
 
-    // Generate filename with timestamp and scale info
+    // Generate filename with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const graphType = options.graphType || 'graph';
-    const scaleInfo = scale > 1 ? `-${scale}x` : '';
-    const filename = options.filename || `Rhizome ${graphType}-export${scaleInfo}-${timestamp}.png`;
+    const filename = options.filename || `Rhizome ${graphType}-export-${timestamp}.png`;
 
     // Convert canvas to blob for better memory handling
     tempCanvas.toBlob((blob) => {
