@@ -42,6 +42,7 @@ interface GenreInfoProps {
   getArtistColor: (artist: Artist) => string;
   onPlayGenre?: (genre: Genre) => void;
   playLoading?: boolean;
+  onFocusInGenresView?: (genre: Genre, options?: { forceRefocus?: boolean }) => void;
   genreTracks?: TopTrack[];
   onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
 }
@@ -64,6 +65,7 @@ export function GenreInfo({
     genreColorMap,
     onPlayGenre,
     playLoading,
+    onFocusInGenresView,
     genreTracks,
     onPlayTrack,
 }: GenreInfoProps) {
@@ -213,7 +215,22 @@ export function GenreInfo({
       onDismiss={onDismiss}
       bodyClassName=""
       // snapPoints={[0.28, 0.9]}
-      headerTitle={selectedGenre?.name}
+      headerTitle={
+        selectedGenre && onFocusInGenresView ? (
+          <button
+            onClick={() => onFocusInGenresView(selectedGenre, { forceRefocus: true })}
+            className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-block"
+            title={selectedGenre ? `Go to ${selectedGenre.name}` : "Go to genre"}
+          >
+            <span className="whitespace-normal break-words leading-tight">
+              {selectedGenre.name}
+              <ChevronRight className="inline-block align-middle relative size-6 text-muted-foreground" />
+            </span>
+          </button>
+        ) : (
+          selectedGenre?.name
+        )
+      }
       headerSubtitle={
         typeof selectedGenre?.totalListeners === 'number'
           ? `${formatNumber(selectedGenre.totalListeners)} Listeners`
@@ -562,8 +579,8 @@ export function GenreInfo({
                   </AlertDescription>
                 </Alert>
               )}
-              <div className='w-full pt-3 flex items-end'>
-                <Button className='self-start' variant={'outline'} size={'lg'} onClick={() => setReportDialogOpen(true)}>
+              <div className='w-full pt-8 flex items-end'>
+                <Button className='self-start' variant={'link'} size={'lg'} onClick={() => setReportDialogOpen(true)}>
                   <Flag />Report Incorrect Information
                 </Button>
               </div>

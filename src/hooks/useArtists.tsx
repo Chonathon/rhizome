@@ -14,16 +14,16 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
     const [artistsDataFlagLoading, setArtistsDataFlagLoading] = useState<boolean>(false);
     const [artistsDataFlagError, setArtistsDataFlagError] = useState<AxiosError>();
     const [totalArtistsInDB, setTotalArtistsInDB] = useState<number>(DEFAULT_NODE_COUNT);
-    const [topArtists, setTopArtists] = useState<Artist[]>([]);
     const [artistsPlayIDsLoading, setArtistsPlayIDsLoading] = useState<boolean>(false);
     const [artistPlayIDLoadingKey, setArtistPlayIDLoadingKey] = useState<string>('');
     const [artistsPlayIDsError, setArtistsPlayIDsError] = useState<AxiosError>();
+    const [similarArtists, setSimilarArtists] = useState<Artist[]>([]);
 
     const fetchArtists = async () => {
         resetArtistsError();
         if (!initial) {
             setArtistsLoading(true);
-            // console.log('fetching....')
+            //console.log('fetching....')
             try {
                 const selectedSize = genreIDs.length;
                 if (selectedSize === 0) {
@@ -31,10 +31,6 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
                     setArtists(response.data.artists);
                     setArtistLinks(response.data.links);
                     setTotalArtistsInDB(response.data.count);
-                }
-                if (selectedSize === 1) {
-                    const topRes = await axios.get(`${url}/artists/top/${genreIDs[0]}/${topAmount}`);
-                    setTopArtists(topRes.data);
                 }
                 if (selectedSize > 0) {
                     const response = await axios.post(`${url}/artists/${filter}/${amount}`, {genres: genreIDs});
@@ -77,10 +73,6 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         if (genres.length && filter && amount) {
             setArtistsLoading(true);
             try {
-                if (genres.length === 1) {
-                    const topRes = await axios.get(`${url}/artists/top/${genres[0]}/${topAmount}`);
-                    setTopArtists(topRes.data);
-                }
                 const response = await axios.post(`${url}/artists/${filter}/${amount}`, {genres: genres});
                 setArtists(response.data.artists);
                 setArtistLinks(response.data.links);
@@ -166,6 +158,20 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         setArtistsLoading(false);
     }
 
+    const fetchSimilarArtists = async (artist: Artist) => {
+        resetArtistsError();
+        setArtistsLoading(true);
+        try {
+            const response = await axios.get(`${url}/artists/fetch/similar/${artist.id}`);
+            setSimilarArtists([artist, ...response.data]);
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setArtistsError(err);
+            }
+        }
+        setArtistsLoading(false);
+    }
+
     const resetArtistsError = () => setArtistsError(undefined);
     const resetArtistsYTError = () => setArtistsPlayIDsError(undefined);
     const resetArtistsDataFlagError = () => setArtistsDataFlagError(undefined);
@@ -181,7 +187,6 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         fetchAllArtists,
         fetchLikedArtists,
         totalArtistsInDB,
-        topArtists,
         fetchMultipleGenresArtists,
         fetchArtistTopTracks,
         artistsPlayIDsError,
@@ -191,6 +196,8 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         artistsPlayIDsLoading,
         artistPlayIDLoadingKey,
         fetchSingleArtist,
+        similarArtists,
+        fetchSimilarArtists,
     };
 }
 

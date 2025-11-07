@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronDown } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -40,10 +40,15 @@ interface ArtistInfoProps {
   getArtistColor: (artist: Artist) => string;
   getGenreNameById?: (id: string) => string | undefined;
   onPlay?: (artist: Artist) => void;
+  onFocusInArtistsView?: (artist: Artist, options?: { forceRefocus?: boolean }) => void;
+  onViewArtistGraph?: (artist: Artist) => void;
+  onViewSimilarArtistGraph?: (artist: Artist) => void;
   playLoading?: boolean;
   onArtistToggle: (id: string | undefined) => void;
   isInCollection: boolean;
   onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
+  viewRelatedArtistsLoading?: boolean;
+  shouldShowChevron?: boolean;
 }
 
 export function ArtistInfo({
@@ -62,10 +67,15 @@ export function ArtistInfo({
   getArtistColor,
   getGenreNameById,
   onPlay,
+  onFocusInArtistsView,
+  onViewArtistGraph,
+  onViewSimilarArtistGraph,
   playLoading,
   onArtistToggle,
   isInCollection,
   onPlayTrack,
+  viewRelatedArtistsLoading,
+  shouldShowChevron,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -135,7 +145,22 @@ export function ArtistInfo({
       onDismiss={onDismiss}
       bodyClassName=""
       // snapPoints={[0.28, 0.9]}
-      headerTitle={selectedArtist?.name}
+      headerTitle={
+        selectedArtist && onFocusInArtistsView && shouldShowChevron ? (
+          <button
+            onClick={() => onFocusInArtistsView(selectedArtist, { forceRefocus: true })}
+            className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-block"
+            title={selectedArtist ? `Go to ${selectedArtist.name}` : "Go to artist"}
+          >
+            <span className="whitespace-normal break-words leading-tight">
+              {selectedArtist.name}
+              <ChevronRight className="inline-block align-middle relative size-6 text-muted-foreground" />
+            </span>
+          </button>
+        ) : (
+          selectedArtist?.name
+        )
+      }
       headerSubtitle={
         typeof selectedArtist?.listeners === "number"
           ? `${formatNumber(selectedArtist.listeners)} Listeners`
@@ -269,7 +294,7 @@ export function ArtistInfo({
                               <SquarePlus size={24}/>Add
                             </Button> */}
 
-                       <DropdownMenu>
+                       {/* <DropdownMenu>
                          <DropdownMenuTrigger asChild>
                            <Button
                               size={isDesktop ? "lg" : "xl"}
@@ -283,26 +308,17 @@ export function ArtistInfo({
                          <DropdownMenuContent>
                             <DropdownMenuItem
                               onSelect={() => {
-                                setReportDialogOpen(true);
+                                onViewArtistGraph
                               }}
                             >
-                              <Flag />
-                              Report Incorrect Information
+                              View Genres
                             </DropdownMenuItem>
                          </DropdownMenuContent>
-                       </DropdownMenu>
-
-                        <ReportIncorrectInfoDialog
-                          open={reportDialogOpen}
-                          onOpenChange={setReportDialogOpen}
-                          reasons={artistReasons}
-                          description="Please let us know what information about this artist seems incorrect. Select a reason and provide any extra details if you’d like."
-                          onSubmit={(reason, details) => onSubmitBadData(reason, details)}
-                        />
+                       </DropdownMenu> */}
                      </div>
                 {/* Description */}
                 {isDesktop && (
-                  <button className='text-left' 
+                  <button className='text-left'
                   type="button"
                   aria-label={desktopExpanded ? 'Collapse' : 'Expand'}
                   title={desktopExpanded ? 'Collapse' : 'Expand'}
@@ -378,7 +394,15 @@ export function ArtistInfo({
                 {/* Similar Artists */}
                 {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <span className="text-md font-semibold">Similar Artists</span>
+                    {onViewSimilarArtistGraph && selectedArtist ? (
+                    <button
+                    className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
+                    onClick={() => onViewSimilarArtistGraph(selectedArtist)}
+                    title={`Explore artists similar to ${selectedArtist.name}`}>
+                      <span className="text-md font-semibold">Similar Artists</span><ChevronRight className="shrink-0 text-muted-foreground size-5"/></button>
+                    ) : (
+                      <span className="text-md font-semibold">Similar Artists</span>
+                    )}
                     <div className="flex flex-wrap items-center gap-1.5">
                       {similarFilter(selectedArtist.similar).map((name) => {
                         const img = getArtistImageByName?.(name);
@@ -396,13 +420,36 @@ export function ArtistInfo({
                         );
                       })}
                     </div>
+                    {/* {onViewSimilarArtistGraph && selectedArtist && (
+                      <Button
+                        size={isDesktop ? "lg" : "xl"}
+                        variant="secondary"
+                        className={isDesktop ? "w-fit mt-2" : "w-full mt-3"}
+                        onClick={() => onViewSimilarArtistGraph(selectedArtist)}
+                      >
+                        View Similar Artists
+                      </Button>
+                    )} */}
                   </div>
                 )}
 
                 {/* Genres */}
                 {selectedArtist?.genres && selectedArtist.genres.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <span className="text-md font-semibold">Genres</span>
+                    {onViewArtistGraph && selectedArtist ? (
+                      <button
+                        className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
+                        onClick={() => onViewArtistGraph(selectedArtist)}
+                        type="button"
+                        disabled={viewRelatedArtistsLoading}
+                        title={`Explore Related Genres for ${selectedArtist.name}`}
+                      >
+                        <span className="text-md font-semibold">Explore Related Genres</span>
+                        <ChevronRight className="shrink-0 text-muted-foreground size-5" />
+                      </button>
+                    ) : (
+                      <span className="text-md font-semibold">Genres</span>
+                    )}
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                       {selectedArtist.genres.map((genreId) => {
                         const name = getGenreNameById?.(genreId) ?? genreId;
@@ -456,9 +503,23 @@ export function ArtistInfo({
               {selectedArtist && selectedArtist.badDataFlag && (
                   <Alert>
                     <Info />
-                    <AlertDescription>Hmm… something about this artist’s info doesn’t sound quite right. We’re checking it out</AlertDescription>
+                    <AlertDescription>Hmm… something about this artist's info doesn't sound quite right. We're checking it out</AlertDescription>
                   </Alert>
               )}
+              <div className='w-full pt-8 flex items-end'>
+                <Button className='self-start' variant={'link'} size={'lg'} onClick={() => setReportDialogOpen(true)}>
+                  <Flag />Report Incorrect Information
+                </Button>
+              </div>
+
+              {/* Report Incorrect Info Dialog */}
+              <ReportIncorrectInfoDialog
+                open={reportDialogOpen}
+                onOpenChange={setReportDialogOpen}
+                reasons={artistReasons}
+                description="Please let us know what information about this artist seems incorrect. Select a reason and provide any extra details if you'd like."
+                onSubmit={(reason, details) => onSubmitBadData(reason, details)}
+              />
               </div>
             </div>
           </>

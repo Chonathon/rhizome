@@ -152,3 +152,17 @@ export interface ContextAction {
     type: 'addArtist' | 'viewCollection';
     artistID?: string;
 }
+
+export interface GraphHandle {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  zoomTo: (k: number, ms?: number) => void;
+  getZoom: () => number;
+}
+
+export interface FindOption {
+    id: string;
+    name: string;
+    entityType: 'artist' | 'genre';
+    subtitle?: string;
+}
