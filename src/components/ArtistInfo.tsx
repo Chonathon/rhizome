@@ -1,23 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
-import { Artist } from "@/types";
+import { Artist, TopTrack } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-  DropdownMenuItem
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
 } from "@/components/ui/dropdown-menu"
+import { SplitButton, SplitButtonAction, SplitButtonTrigger } from "@/components/ui/split-button"
 import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
 import { AddButton } from "./AddButton";
+import { Separator } from "@radix-ui/react-separator";
 
 
 interface ArtistInfoProps {
@@ -40,7 +44,11 @@ interface ArtistInfoProps {
   onViewArtistGraph?: (artist: Artist) => void;
   onViewSimilarArtistGraph?: (artist: Artist) => void;
   playLoading?: boolean;
+  onArtistToggle: (id: string | undefined) => void;
+  isInCollection: boolean;
+  onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
   viewRelatedArtistsLoading?: boolean;
+  shouldShowChevron?: boolean;
 }
 
 export function ArtistInfo({
@@ -63,9 +71,13 @@ export function ArtistInfo({
   onViewArtistGraph,
   onViewSimilarArtistGraph,
   playLoading,
+  onArtistToggle,
+  isInCollection,
+  onPlayTrack,
   viewRelatedArtistsLoading,
+  shouldShowChevron,
 }: ArtistInfoProps) {
-  const [desktopExpanded, setDesktopExpanded] = useState(true);
+  const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1200px)");
 
@@ -124,10 +136,6 @@ export function ArtistInfo({
     }
   }
 
-  const artistGenres = [
-    { name: ''}
-  ]
-
 
   if (!show) return null;
 
@@ -138,7 +146,7 @@ export function ArtistInfo({
       bodyClassName=""
       // snapPoints={[0.28, 0.9]}
       headerTitle={
-        selectedArtist && onFocusInArtistsView ? (
+        selectedArtist && onFocusInArtistsView && shouldShowChevron ? (
           <button
             onClick={() => onFocusInArtistsView(selectedArtist, { forceRefocus: true })}
             className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-block"
@@ -199,29 +207,88 @@ export function ArtistInfo({
                 <div className={`flex  flex-col gap-6
                     ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
                      <div className="flex gap-3 w-full">
-                           <Button
-                              size={isDesktop ? "lg" : "xl"}
-                              variant="default"
-                              // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                              className={`${isDesktop ? 'self-start' : 'flex-1'} disabled:opacity-100`}
-                              onClick={() => selectedArtist && onPlay?.(selectedArtist)}
-                              disabled={!!playLoading}
-                              aria-busy={!!playLoading}
-                              >
-                              {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
-                              Play
-                            </Button>
+                           {/* Desktop: Split button with play action and track dropdown */}
+                           {isDesktop ? (
+                             <SplitButton
+                               variant="default"
+                               size="lg"
+                               disabled={!!playLoading}
+                             >
+                               <SplitButtonAction
+                                 aria-busy={!!playLoading}
+                                 className="disabled:opacity-100"
+                                 onClick={() => selectedArtist && onPlay?.(selectedArtist)}
+                               >
+                                 {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
+                                 Play
+                               </SplitButtonAction>
+
+                               <DropdownMenu>
+                                 <DropdownMenuTrigger asChild>
+                                   <SplitButtonTrigger
+                                     className="disabled:opacity-100"
+                                     disabled={!!playLoading || !selectedArtist?.topTracks || selectedArtist.topTracks.length === 0}
+                                     aria-label="Select track"
+                                   >
+                                     <ChevronDown className="size-4" />
+                                   </SplitButtonTrigger>
+                                 </DropdownMenuTrigger>
+                                 <DropdownMenuContent align="start" className="w-[280px]">
+                                   <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
+                                   <DropdownMenuSeparator />
+                                   {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 ? (
+                                     selectedArtist.topTracks.map((track, index) => (
+                                       <DropdownMenuItem
+                                         key={`${track.title}-${index}`}
+                                         onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
+                                         className="cursor-pointer group"
+                                       >
+                                         <span className="relative grid place-items-center size-4">
+                                           <CirclePlay
+                                             className="absolute opacity-0 group-hover:opacity-100 size-4"
+                                             aria-hidden
+                                           />
+                                           <span className="text-sm text-muted-foreground text-center leading-none opacity-100 group-hover:opacity-0">
+                                             {index + 1}
+                                           </span>
+                                         </span>
+                                         <div className="flex flex-col flex-1 min-w-0">
+                                           <span className="text-sm font-medium truncate">{track.title}</span>
+                                           <span className="text-xs text-muted-foreground truncate">{track.artistName}</span>
+                                         </div>
+                                       </DropdownMenuItem>
+                                     ))
+                                   ) : (
+                                     <DropdownMenuItem disabled>
+                                       No tracks available
+                                     </DropdownMenuItem>
+                                   )}
+                                 </DropdownMenuContent>
+                               </DropdownMenu>
+                             </SplitButton>
+                           ) : (
+                             // Mobile: Simple play button
+                             <Button
+                               size="xl"
+                               variant="default"
+                               className="flex-1 disabled:opacity-100"
+                               onClick={() => selectedArtist && onPlay?.(selectedArtist)}
+                               disabled={!!playLoading}
+                               aria-busy={!!playLoading}
+                             >
+                               {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
+                               Play
+                             </Button>
+                           )}
                             <AddButton
                               isDesktop={isDesktop}
-                              // onToggle={() => toast('Feature coming soon!')}
-                             // isInCollection={isInCollection}
-                             // onToggle={() => console.log('Toggle collection state')}
-                             
+                              onToggle={() => onArtistToggle(selectedArtist?.id)}
+                              isInCollection={isInCollection}
                             />
                            {/* <Button
                               size={isDesktop ? "lg" : "xl"}
                               variant="secondary"
-                              onClick={() => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }))}
+                              onClick={() => window.dispatchEvent(new Event('auth:open'))}
                               className={isDesktop ? 'self-start' : 'flex-1'}
                                                 >
                               <SquarePlus size={24}/>Add
@@ -251,12 +318,17 @@ export function ArtistInfo({
                      </div>
                 {/* Description */}
                 {isDesktop && (
-                  <p
+                  <button className='text-left'
+                  type="button"
+                  aria-label={desktopExpanded ? 'Collapse' : 'Expand'}
+                  title={desktopExpanded ? 'Collapse' : 'Expand'}
                   onClick={() => setDesktopExpanded((prev) => !prev)}
-                  className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-gray-400' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
                   >
-                    {selectedArtist?.bio?.summary || 'No description'}
-                  </p>
+                    <p className={`break-words text-muted-foreground ${isDesktop ? 'cursor-pointer hover:text-muted-foreground/80' : 'cursor-default'} ${isExpanded ? 'text-muted-foreground' : 'line-clamp-3 overflow-hidden'}`}
+                    >
+                      {selectedArtist?.bio?.summary || 'No description'}
+                    </p>
+                  </button>
                 )}
                   </div>
                    {!isDesktop && (
@@ -268,32 +340,36 @@ export function ArtistInfo({
                    )}
                 
                 
-                {/* <div
-                  className={`flex gap-2 flex-col ${
-                    isDesktop ? "gap-3" : ""
-                  }`}
-                >
-                  <DrawerTitle className="lg:text-xl">{selectedArtist?.name}</DrawerTitle>
-                  {!isDesktop && <Button
-                      size="lg"
-                      variant="secondary"
-                      // onClick={console.log("Add Artist")}
-                      className=''
-                    >
-                      <CirclePlay />Add Artist
-                    </Button>}
-                <p
-                  onClick={() => isDesktop && setDesktopExpanded((prev) => !prev)}
-                  className={`break-words text-muted-foreground ${
-                    isDesktop
-                      ? "cursor-pointer hover:text-gray-400"
-                      : "cursor-default"
-                  } ${isExpanded ? "text-muted-foreground" : "line-clamp-3 overflow-hidden"}`}
-                >
-                  {selectedArtist?.bio?.summary || "No bio"}
-                </p>
-                </div>
- */}
+                {/* Top Tracks V2*/}
+                  {/* {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <span className="text-md font-semibold">Top Tracks</span>
+                      <div className="flex flex-col gap-1.5">
+                        {selectedArtist.topTracks.map((track, index) => (
+                          <button
+                            key={`${track.title}-${index}`}
+                            onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
+                            className="group flex items-center gap-2 py-2 hover:bg-accent rounded-md transition-colors text-left group"
+                            title={`Play ${track.title}`}
+                          >
+                            <div className="flex-1 gap-1 min-w-0 flex items-center">
+                            <span className="relative grid place-items-center size-5">
+                              <CirclePlay
+                                className="absolute opacity-0 group-hover:opacity-100"
+                                size={16}
+                                aria-hidden
+                              />
+                              <span className="text-sm text-muted-foreground text-center leading-none opacity-100">
+                                {index + 1}
+                              </span>
+                            </span>
+                              <div className="text-sm group-hover:text-muted-foreground font-medium truncate">{track.title}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )} */}
 
                 {/* Mobile Thumbnail */}
                 {!isDesktop && (
@@ -314,13 +390,12 @@ export function ArtistInfo({
                 )}
 
                 {/* Description */}
-                
 
                 {/* Similar Artists */}
                 {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
                   <div className="flex flex-col gap-2">
                     {onViewSimilarArtistGraph && selectedArtist ? (
-                    <button 
+                    <button
                     className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
                     onClick={() => onViewSimilarArtistGraph(selectedArtist)}
                     title={`Explore artists similar to ${selectedArtist.name}`}>

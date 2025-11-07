@@ -32,7 +32,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
             side="left"
             headerTitle="Display Settings"
         >
-            <div className="flex flex-col gap-4 p-2 rounded-2xl border border-accent shadow-sm bg-accent dark:dark:bg-background">
+            <div className="flex flex-col gap-4 p-2 rounded-2xl  shadow-sm bg-accent dark:dark:bg-background">
                 {/* Node Size */}
                 <div className="flex items-center justify-start gap-6">
                     <label htmlFor="node-size" className="w-full text-left text-md font-medium text-gray-900 dark:text-gray-100">Node Size</label>

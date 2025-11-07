@@ -117,6 +117,14 @@ export default function GenresFilter({
     });
   };
 
+  // Toggle only the parent state without affecting children (for Selected section)
+  const toggleParentOnly = (parent: Genre) => {
+    setParentSelected((prev) => ({
+      ...prev,
+      [parent.id]: !prev[parent.id]
+    }));
+  };
+
   useEffect(() => {
     const q = query.trim().toLowerCase();
     childrenSearchResults.current = [];
@@ -244,7 +252,7 @@ export default function GenresFilter({
 
     const ids = [...selectedParents.map(p => p.id), ...selectedChildrenFlat.map(c => c.child.id)];
     onGenreSelectionChange(ids);
-  }, [selectedParents, selectedChildrenFlat, onGenreSelectionChange]);
+  }, [selectedParents, selectedChildrenFlat]);
 
   // Preserve scroll position when the Selected group grows/shrinks above the list.
   useLayoutEffect(() => {
@@ -298,18 +306,22 @@ export default function GenresFilter({
               asChild
               size="icon"
               variant="secondary"
-              className="-m-1.5 w-6 h-6 group"
+              className="-m-1 w-6 h-6 group"
             >
               <span
                 role="button"
                 tabIndex={-1}
                 aria-label="Clear all filters"
+                className="group"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => { e.stopPropagation(); clearAll(); }}
                 title="Clear all genre selections"
               >
                 {totalSelected > 1 ? (
-                  <span className=" text-xs leading-none">{totalSelected}</span>
+                  <>
+                  <span className="group-hover:opacity-0 group-hover:scale-0 transition-all text-xs leading-none">{totalSelected}</span>
+                  <X className="transition-all group-hover:opacity-100 absolute scale-0 group-hover:scale-100 opacity-0 h-4 w-4 group-hover:-rotate-90" />
+                  </>
                 ) : (
                   <X className="h-4 w-4" />
                 )}
@@ -336,7 +348,7 @@ export default function GenresFilter({
                 <CommandItem
                   key={`sel-parent-${genre.id}`}
                   value={`selected-parent:${genre.id} ${genre.name}`}
-                  onSelect={() => toggleParent(genre)}
+                  onSelect={() => toggleParentOnly(genre)}
                   className="flex items-center gap-2"
                 >
                   <Check className="opacity-100" />

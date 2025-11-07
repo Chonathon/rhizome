@@ -8,7 +8,7 @@ import useGenreTopArtists from "@/hooks/useGenreTopArtists";
 import ArtistsForceGraph, { type GraphHandle } from "@/components/ArtistsForceGraph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
-  AccountMenuState, Artist, ArtistNodeLimitType, BadDataReport,
+  Artist, ArtistNodeLimitType, BadDataReport, ContextAction, FindOption,
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
@@ -24,8 +24,7 @@ import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
 import Player from "@/components/Player";
 import { Search } from './components/Search';
-import FindFilter, { FindOption } from "@/components/FindFilter";
-
+import FindFilter from "@/components/FindFilter";
 import {
   buildGenreColorMap,
   generateSimilarLinks,
@@ -34,11 +33,11 @@ import {
   mixColors,
   primitiveArraysEqual,
   fixWikiImageURL,
+  assignDegreesToArtists,
   formatNumber,
   until,
-  serverUrl,
+  isOnPage,
 } from "@/lib/utils";
-import axios from "axios";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
@@ -49,6 +48,7 @@ import { SidebarProvider, useSidebar } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
 import { GenreInfo } from './components/GenreInfo';
 import GenresFilter from './components/GenresFilter';
+import DecadesFilter from './components/DecadesFilter';
 import {useTheme} from "next-themes";
 import {
   DEFAULT_DARK_NODE_COLOR,
@@ -61,7 +61,7 @@ import {
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
-  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER
+  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, ALPHA_SURVEY_TIME_MS, DEFAULT_PREFERENCES, ALPHA_SURVEY_ADDED_ARTISTS
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -69,7 +69,11 @@ import AuthOverlay from '@/components/AuthOverlay';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
-import SettingsOverlay from '@/components/SettingsOverlay';
+import { showNotiToast } from '@/components/NotiToast';
+import useAuth from "@/hooks/useAuth";
+import SettingsOverlay, {ChangePasswordDialog} from '@/components/SettingsOverlay';
+import {submitFeedback} from "@/apis/feedbackApi";
+import {useNavigate} from "react-router";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -96,6 +100,7 @@ function App() {
   const selectedGenreIDs = useMemo(() => {
     return selectedGenres.map(genre => genre.id);
   }, [selectedGenres]);
+  const [selectedDecades, setSelectedDecades] = useState<string[]>([]);
   const artistFilterGenreIDs = useMemo(() => {
     return artistFilterGenres.map(genre => genre.id);
   }, [artistFilterGenres]);
@@ -114,6 +119,7 @@ function App() {
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
+  const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState(false);
   const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [dagMode, setDagMode] = useState<boolean>(() => {
@@ -121,7 +127,6 @@ function App() {
     return storedDagMode ? JSON.parse(storedDagMode) : false;
   });
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
-  const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
   const [similarArtistAnchor, setSimilarArtistAnchor] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -133,7 +138,6 @@ function App() {
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
-  const accountMenuState: AccountMenuState = "guest"; // Placeholder for auth state
   const { addRecentSelection } = useRecentSelections();
   const {
     genres,
@@ -154,15 +158,18 @@ function App() {
     artistsDataFlagLoading,
     artistsDataFlagError,
     totalArtistsInDB,
+    fetchLikedArtists,
     fetchArtistTopTracks,
     artistsPlayIDsLoading,
     artistPlayIDLoadingKey,
+    fetchSingleArtist,
+    similarArtists,
+    fetchSimilarArtists,
   } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
 
   // Fetch top artists for the currently displayed genre info or the active filter
   const topArtistsGenreId = genreInfoToShow?.id || artistFilterGenres[0]?.id;
   const { topArtists, loading: topArtistsLoading } = useGenreTopArtists(topArtistsGenreId);
-
   const { resolvedTheme } = useTheme();
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
@@ -173,8 +180,42 @@ function App() {
   const playRequest = useRef(0);
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
+  const [playerStartIndex, setPlayerStartIndex] = useState<number>(0);
+  // TODO: prob need to make playerIDQueue an array or update state differently as it sometimes is out of sync with the ui
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
   const [autoFocusGraph, setAutoFocusGraph] = useState<boolean>(true);
+  const [collectionMode, setCollectionMode] = useState<boolean>(false);
+  const [separationDegrees, setSeparationDegrees] = useState<number>(0);
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState<boolean>(isOnPage('reset-password'));
+  const [showArtistGoTo, setShowArtistGoTo] = useState<boolean>(false);
+  const {
+    userID,
+    userName,
+    userEmail,
+    userImage,
+    preferences,
+    likedArtists,
+    isSocialUser,
+    signIn,
+    signInSocial,
+    signUp,
+    signOut,
+    changeEmail,
+    changePassword,
+    deleteUser,
+    updateUser,
+    likeArtist,
+    unlikeArtist,
+    updatePreferences,
+    validSession,
+    forgotPassword,
+    resetPassword,
+    authError,
+    authLoading,
+  } = useAuth();
+  const navigate = useNavigate();
+
+  const artistsAddedRef = useRef(0);
 
   // Track window size and pass to ForceGraph for reliable resizing
   useEffect(() => {
@@ -184,12 +225,32 @@ function App() {
     return () => window.removeEventListener('resize', update);
   }, []);
 
+  // Setup alpha feedback timer on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localStorage.getItem('showAlphaSurvey') !== 'false') {
+        showNotiToast('alpha-feedback');
+        localStorage.setItem('showAlphaSurvey', 'false');
+      }
+    }, ALPHA_SURVEY_TIME_MS)
+    return () => {
+      clearTimeout(timer);
+    }
+  }, []);
+
+  // Do any actions requested before login
+  useEffect(() => {
+    if (userID) {
+      doContextAction();
+    }
+  }, [userID]);
+
   const singletonParentGenre = useMemo(() => {
     return {
       ...SINGLETON_PARENT_GENRE,
-      subgenres: genres.filter(g => isSingletonGenre(g, GENRE_FILTER_CLUSTER_MODE)).map(s => {
+      subgenres: genres ? genres.filter(g => isSingletonGenre(g, GENRE_FILTER_CLUSTER_MODE)).map(s => {
         return {id: s.id, name: s.name}
-      })
+      }) : []
     }
   }, [genres]);
 
@@ -316,44 +377,9 @@ function App() {
 
   // Sets current artists/links shown in the graph when artists are fetched from the DB
   useEffect(() => {
-    // Don't override if we're waiting for artist genre graph to be built
-    if (pendingArtistGenreGraph) {
-      return;
-    }
-
-    // Only manage currentArtists when graph is in 'artists' mode
-    // similarArtists mode manages its own filtered list and fetches directly from API
-    if (graph !== 'artists') {
-      return;
-    }
-
-    // Ensure the selected artist is always included in the results unless they were opened via search
-    if (selectedArtist && artists.length > 0) {
-      const artistExists = artists.some(a => a.id === selectedArtist.id);
-      console.log('[useEffect artists]', {
-        selectedArtistId: selectedArtist.id,
-        selectedArtistName: selectedArtist.name,
-        artistExists,
-        totalArtists: artists.length,
-        artistGenreFilterIDs
-      });
-      if (!artistExists) {
-        if (selectedArtistFromSearch) {
-          console.log('[useEffect artists] Selected artist filtered out by current view; keeping graph results unchanged');
-          setCurrentArtists(artists);
-        } else {
-          console.log('[useEffect artists] Adding missing artist to results');
-          // Add the selected artist to the results if it's not already there
-          setCurrentArtists([...artists, selectedArtist]);
-        }
-      } else {
-        setCurrentArtists(artists);
-      }
-    } else {
-      setCurrentArtists(artists);
-    }
+    setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
-  }, [artists, selectedArtist, selectedArtistFromSearch, graph, pendingArtistGenreGraph]);
+  }, [artists]);
 
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
@@ -367,9 +393,11 @@ function App() {
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
-    const nodeCount = genres.length;
-    onGenreNodeCountChange(nodeCount);
-    setGenreColorMap(buildGenreColorMap(genres, genreRoots));
+    if (genres) {
+      const nodeCount = genres.length;
+      onGenreNodeCountChange(nodeCount);
+      setGenreColorMap(buildGenreColorMap(genres, genreRoots));
+    }
   }, [genres, genreLinks]);
 
   // Fetches top tracks of selected genre player ids in the background
@@ -382,10 +410,22 @@ function App() {
     updateArtistPlayerIDs();
   }, [selectedArtist]);
 
-  // Note: Similar artist graph is now built directly in createSimilarArtistGraph()
-  // by fetching all similar artists from the API, not limited by current genre selection
+  // Switches to the similar artists view once similar artist data is loaded
+  useEffect(() => {
+    if (canCreateSimilarArtistGraph) {
+      if (similarArtists.length > 1) {
+        const links = generateSimilarLinks(similarArtists);
+        setCurrentArtists(similarArtists);
+        setCurrentArtistLinks(links);
+        setGraph('similarArtists');
+        setShowArtistCard(true);
+      }
+      setCanCreateSimilarArtistGraph(false);
+    }
+  }, [similarArtists]);
 
   // Switch to artist graph after genres' artists are loaded
+  // TODO: I suspect this causes "no genre selected" top 2000 artists to always be fetched, wasteful if clicking "All Artists"
   useEffect(() => {
     if (pendingArtistGenreGraph && artists.length > 0 && !artistsLoading) {
       console.log('[useEffect pendingArtistGenreGraph] Artists loaded, switching to artists graph');
@@ -393,6 +433,17 @@ function App() {
       setPendingArtistGenreGraph(undefined);
     }
   }, [pendingArtistGenreGraph, artists, artistsLoading]);
+
+  // Whether or not to show the chevron/focusing action on the artists info
+  useEffect(() => {
+    let show = false;
+    if (graph === 'similarArtists') {
+      show = !!artistInfoToShow && similarArtists.map(s => s.id).includes(artistInfoToShow.id);
+    } else {
+      show = !!artistInfoToShow && currentArtists.map(c => c.id).includes(artistInfoToShow.id);
+    }
+    setShowArtistGoTo(show);
+  }, [graph, artistInfoToShow, currentArtists, similarArtists]);
 
   // Add genre play IDs to the playerIDQueue on genre click
   const updateGenrePlayerIDs = async () => {
@@ -443,6 +494,13 @@ function App() {
           const artistTracks = await fetchArtistTopTracks(currentSelectedArtist.id, currentSelectedArtist.name);
           if (artistTracks) {
             playerIDQueue.set(currentSelectedArtist.id, artistTracks);
+            // Update the selectedArtist state so the UI reflects the newly fetched tracks
+            setSelectedArtist(prev => {
+              if (prev && prev.id === currentSelectedArtist.id) {
+                return { ...prev, topTracks: artistTracks };
+              }
+              return prev;
+            });
           }
         }
       }
@@ -464,6 +522,7 @@ function App() {
       : undefined;
     setPlayerArtworkUrl(imgEarly);
     setPlayerVideoIds([]); // clear any previous playlist immediately
+    setPlayerStartIndex(0); // reset start index when playing full artist
     setPlayerOpen(true);
     try {
       // wait until artist's tracks are done loading
@@ -508,6 +567,7 @@ function App() {
       setPlayerArtworkUrl(img);
     }
     setPlayerVideoIds([]);
+    setPlayerStartIndex(0); // reset start index when playing genre
     setPlayerOpen(true);
     try {
       if (req !== playRequest.current) return; // superseded
@@ -532,6 +592,104 @@ function App() {
         toast.error('Unable to fetch tracks for genre');
         setPlayerLoading(false);
         setPlayerLoadingKey(undefined);
+        setPlayerSource(undefined);
+        setPlayerOpen(false);
+      }
+    }
+  };
+
+  const onPlayArtistTrack = async (tracks: TopTrack[], startIndex: number) => {
+    if (!tracks || tracks.length === 0) {
+      toast.error('No tracks available');
+      return;
+    }
+    const req = ++playRequest.current;
+    setPlayerLoading(true);
+    setPlayerSource('artist');
+    // Extract video IDs based on DEFAULT_PLAYER preference
+    const videoIds: string[] = [];
+    for (const track of tracks) {
+      const videoId = track[DEFAULT_PLAYER];
+      if (videoId) {
+        videoIds.push(videoId);
+      }
+    }
+    if (videoIds.length === 0) {
+      toast.error('No playable tracks found');
+      setPlayerLoading(false);
+      return;
+    }
+    // Use the selected artist's metadata if available
+    if (selectedArtist) {
+      setPlayerTitle(selectedArtist.name);
+      setPlayerEntityName(selectedArtist.name);
+      const imgEarly = typeof selectedArtist.image === 'string' && selectedArtist.image.trim()
+        ? fixWikiImageURL(selectedArtist.image as string)
+        : undefined;
+      setPlayerArtworkUrl(imgEarly);
+    }
+    setPlayerVideoIds(videoIds);
+    setPlayerStartIndex(startIndex);
+    setPlayerOpen(true);
+    try {
+      // Player will handle loading
+      if (req === playRequest.current) {
+        setPlayerLoading(false);
+      }
+    } catch (e) {
+      if (req === playRequest.current) {
+        toast.error('Unable to play track');
+        setPlayerLoading(false);
+        setPlayerSource(undefined);
+        setPlayerOpen(false);
+      }
+    }
+  };
+
+  const onPlayGenreTrack = async (tracks: TopTrack[], startIndex: number) => {
+    if (!tracks || tracks.length === 0) {
+      toast.error('No tracks available');
+      return;
+    }
+    const req = ++playRequest.current;
+    setPlayerLoading(true);
+    setPlayerSource('genre');
+    // Extract video IDs based on DEFAULT_PLAYER preference
+    const videoIds: string[] = [];
+    for (const track of tracks) {
+      const videoId = track[DEFAULT_PLAYER];
+      if (videoId) {
+        videoIds.push(videoId);
+      }
+    }
+    if (videoIds.length === 0) {
+      toast.error('No playable tracks found');
+      setPlayerLoading(false);
+      return;
+    }
+    // Use the selected genre's metadata if available
+    if (selectedGenres.length > 0) {
+      const genre = selectedGenres[0];
+      setPlayerTitle(genre.name);
+      setPlayerEntityName(genre.name);
+      // Use artwork from first top artist with an image
+      const source = topArtists && topArtists.length ? topArtists : currentArtists;
+      const coverArtist = source.find(a => typeof a.image === 'string' && (a.image as string).trim());
+      const img = coverArtist ? fixWikiImageURL(coverArtist.image as string) : undefined;
+      setPlayerArtworkUrl(img);
+    }
+    setPlayerVideoIds(videoIds);
+    setPlayerStartIndex(startIndex);
+    setPlayerOpen(true);
+    try {
+      // Player will handle loading
+      if (req === playRequest.current) {
+        setPlayerLoading(false);
+      }
+    } catch (e) {
+      if (req === playRequest.current) {
+        toast.error('Unable to play track');
+        setPlayerLoading(false);
         setPlayerSource(undefined);
         setPlayerOpen(false);
       }
@@ -655,16 +813,19 @@ function App() {
 
   // Switch to artists graph and select the clicked artist
   const onTopArtistClick = (artist: Artist) => {
-    // Apply genre filter from current context
-    const currentGenre = genreInfoToShow || selectedGenres[0];
-    if (currentGenre) {
-      setArtistGenreFilter([currentGenre]);
-      setArtistFilterGenres([currentGenre]); // Set the new filter state
-      setSelectedGenres([currentGenre]);
-      setInitialGenreFilter(createInitialGenreFilterObject(currentGenre));
+    // Don't refetch genre if artist is already in node selection
+    if (!currentArtists.map(a => a.id).includes(artist.id)) {
+      // Apply genre filter from current context
+      const currentGenre = genreInfoToShow || selectedGenres[0];
+      if (currentGenre) {
+        setArtistGenreFilter([currentGenre]);
+        setArtistFilterGenres([currentGenre]); // Set the new filter state
+        setSelectedGenres([currentGenre]);
+        setInitialGenreFilter(createInitialGenreFilterObject(currentGenre));
+        setGraph('artists');
+      }
     }
 
-    setGraph('artists');
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setSelectedArtist(artist); // For graph focus/dimming
@@ -706,139 +867,37 @@ function App() {
 
   const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-
-    const matchesCurrentFilter =
-      artistGenreFilter.length === 0 ||
-      artist.genres.some((genreId) => artistGenreFilterIDs.includes(genreId));
-
-    if (artistGenreFilter.length && !matchesCurrentFilter) {
-      setArtistGenreFilter([]);
-      setArtistFilterGenres([]);
-      setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
-      setGenreInfoToShow(undefined);
-      setShowGenreCard(false);
-    } else if (showGenreCard) {
-      setShowGenreCard(false);
-    }
-
-    let nextArtistList =
-      graph === 'similarArtists'
-        ? (artists.length ? artists : currentArtists)
-        : currentArtists;
-
-    const artistAlreadyPresent = nextArtistList.some((a) => a.id === artist.id);
-    if (!artistAlreadyPresent) {
-      nextArtistList = [...nextArtistList, artist];
-    }
-
-    if (graph === 'similarArtists') {
-      if (currentArtistLinks !== artistLinks) {
-        setCurrentArtistLinks(artistLinks);
-      }
-      if (similarArtistAnchor) {
-        setSimilarArtistAnchor(undefined);
-      }
-    }
-
+    // const matchesCurrentFilter =
+    //   artistGenreFilter.length === 0 ||
+    //   artist.genres.some((genreId) => artistGenreFilterIDs.includes(genreId));
+    setSelectedArtist(artist);
     let shouldTriggerRefocus = opts?.forceRefocus === true;
-
-    if (graph !== 'artists') {
+    if (graph !== 'artists' && graph !== 'similarArtists') {
       setGraph('artists');
       shouldTriggerRefocus = true;
     }
-
-    if (graph === 'similarArtists' || !artistAlreadyPresent) {
-      if (currentArtists !== nextArtistList) {
-        setCurrentArtists(nextArtistList);
-        shouldTriggerRefocus = true;
-      }
-    }
-
     setSelectedArtistFromSearch(false);
-    setArtistPreviewStack([]);
-    setSelectedArtist((prev) => {
-      if (prev?.id === artist.id) {
-        if (shouldTriggerRefocus) {
-          return { ...prev };
-        }
-        return prev;
-      }
-      return artist;
-    });
-    setArtistInfoToShow(artist); // For drawer display
-    setShowArtistCard(true);
-
     if (shouldTriggerRefocus) {
       setAutoFocusGraph(false);
       setTimeout(() => setAutoFocusGraph(true), 16);
     } else {
       setAutoFocusGraph(true);
     }
-
     addRecentSelection(artist);
   }
 
   const focusGenreInCurrentView = (genre: Genre, opts?: { forceRefocus?: boolean }) => {
-    const fullGenre = genres.find((g) => g.id === genre.id) ?? genre;
-
-    let workingNodes = currentGenres?.nodes ?? [];
-    let workingLinks = currentGenres?.links ?? [];
     let shouldTriggerRefocus = opts?.forceRefocus === true || !currentGenres;
-    let nodesChanged = false;
-    let linksChanged = false;
-
-    if (workingNodes.length === 0 && genres.length > 0) {
-      workingNodes = genres;
-      workingLinks = filterLinksByClusterMode(genreClusterMode);
-      shouldTriggerRefocus = true;
-      nodesChanged = true;
-      linksChanged = true;
-    }
-
-    const nodeMap = new Map(workingNodes.map((node) => [node.id, node]));
-    if (!nodeMap.has(fullGenre.id)) {
-      nodeMap.set(fullGenre.id, fullGenre);
-      shouldTriggerRefocus = true;
-      nodesChanged = true;
-    }
-
-    const nextNodes = Array.from(nodeMap.values());
-
-    const existingLinkKeys = new Set(workingLinks.map((l) => `${l.source}|${l.target}|${l.linkType}`));
-    const allowedIds = new Set(nextNodes.map((n) => n.id));
-    const newLinks: NodeLink[] = [];
-
-    genreLinks.forEach((link) => {
-      if (!allowedIds.has(link.source) || !allowedIds.has(link.target)) return;
-      const key = `${link.source}|${link.target}|${link.linkType}`;
-      if (!existingLinkKeys.has(key)) {
-        existingLinkKeys.add(key);
-        newLinks.push(link);
-      }
-    });
-
-    if (newLinks.length) {
-      workingLinks = [...workingLinks, ...newLinks];
-      shouldTriggerRefocus = true;
-      linksChanged = true;
-    }
-
-    if (!currentGenres || nodesChanged || linksChanged) {
-      setCurrentGenres({ nodes: nextNodes, links: workingLinks });
-    }
-
     if (graph !== 'genres') {
       setGraph('genres');
       shouldTriggerRefocus = true;
     }
-
-    setGenreInfoToShow(fullGenre);
+    setGenreInfoToShow(genre);
     setShowGenreCard(true);
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
-    setSelectedGenres([fullGenre]);
+    setSelectedGenres([genre]);
     // Don't set initialGenreFilter here - focusing a genre is just for viewing, not filtering
-    addRecentSelection(fullGenre);
-
+    addRecentSelection(genre);
     if (shouldTriggerRefocus) {
       setAutoFocusGraph(false);
       setTimeout(() => setAutoFocusGraph(true), 16);
@@ -890,9 +949,7 @@ function App() {
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for find filter selections
       addRecentSelection(artist);
-      if (graph === 'similarArtists') {
-        setSelectedArtistNoGenre(artist);
-      } else if (graph !== 'artists') {
+      if (graph !== 'artists' && graph !== 'similarArtists') {
         setGraph('artists');
       }
       setIsFindFilterOpen(false);
@@ -929,6 +986,7 @@ function App() {
     deselectArtist();
     setSimilarArtistAnchor(undefined);
     setGenreClusterMode(DEFAULT_CLUSTER_MODE);
+    setCollectionMode(false);
   }
 
   const deselectGenre = () => {
@@ -948,13 +1006,13 @@ function App() {
     setSelectedArtist(undefined);
     setArtistInfoToShow(undefined);
     setShowArtistCard(false);
-    setSelectedArtistNoGenre(undefined);
     setArtistPreviewStack([]);
   }
 
   // Force the drawer to remount when restoring a previously focused artist without flashing the genre card
   const reopenArtistInfoCard = (artist: Artist, options?: { fromSearch?: boolean }) => {
     setArtistInfoToShow(artist);
+    setSelectedArtist(artist);
     setSelectedArtistFromSearch(!!options?.fromSearch);
     setArtistInfoDrawerVersion((prev) => prev + 1);
     setShowArtistCard(true);
@@ -990,8 +1048,8 @@ function App() {
         ? artistPreviewStack[artistPreviewStack.length - 1]
         : undefined;
     if (previousPreview) {
-      setArtistPreviewStack((prev) => prev.slice(0, -1));
       reopenArtistInfoCard(previousPreview, { fromSearch: true });
+      setArtistPreviewStack((prev) => prev.slice(0, -1));
       return;
     }
 
@@ -1017,73 +1075,14 @@ function App() {
       toast.error(`No similar artist data available for ${artistResult.name}`);
       return;
     }
-
-    // Fetch all similar artists using the search endpoint (genre-agnostic, forgiving matching)
-    try {
-      const similarArtistNames = artistResult.similar;
-
-      const url = serverUrl();
-
-      // Search for each similar artist using the search endpoint (same as Search component)
-      // This uses full-text search which handles name variations better than exact matching
-      const searchPromises = similarArtistNames.map(name =>
-        axios.get(`${url}/search/${encodeURIComponent(name)}`)
-          .then(response => ({ name, results: response.data }))
-          .catch(err => {
-            console.warn(`[createSimilarArtistGraph] Failed to search for "${name}":`, err);
-            return { name, results: [] };
-          })
-      );
-
-      const searchResults = await Promise.all(searchPromises);
-      console.log('[createSimilarArtistGraph] Search results:', searchResults);
-
-      // Extract artists from search results (filter out genres)
-      const foundArtistsMap = new Map<string, Artist>();
-
-      searchResults.forEach(({ name, results }) => {
-        // Find the first artist result (search returns both artists and genres)
-        const artistResult = results.find((item: Artist | Genre) =>
-          'tags' in item || 'similar' in item // Artists have these properties, genres don't
-        ) as Artist | undefined;
-
-        if (artistResult) {
-          console.log(`[createSimilarArtistGraph] Found "${name}" as "${artistResult.name}"`);
-          foundArtistsMap.set(artistResult.id, artistResult);
-        } else {
-          console.warn(`[createSimilarArtistGraph] Could not find artist for "${name}"`);
-        }
-      });
-
-      const similarArtistsData = Array.from(foundArtistsMap.values());
-      console.log(`[createSimilarArtistGraph] Found ${similarArtistsData.length} similar artists with full data in database`);
-
-      if (similarArtistsData.length === 0) {
-        console.warn(`[createSimilarArtistGraph] No similar artists found in database for ${artistResult.name}, but metadata lists: ${similarArtistNames.join(', ')}`);
-        return;
-      }
-
-      // Build graph with the selected artist + all fetched similar artists
-      const graphArtists = [artistResult, ...similarArtistsData];
-      const links = generateSimilarLinks(graphArtists);
-
-      setSelectedArtistFromSearch(false);
-      setArtistPreviewStack([]);
-      setSelectedArtist(artistResult);
-      setSelectedArtistNoGenre(artistResult);
-      setSimilarArtistAnchor(artistResult);
-      setCurrentArtists(graphArtists);
-      setCurrentArtistLinks(links);
-      setGraph('similarArtists');
-      setShowArtistCard(true);
-
-      const foundCount = similarArtistsData.length;
-      const totalCount = similarArtistNames.length;
-      if (foundCount < totalCount) {
-      } 
-    } catch (err) {
-    }
+    setCanCreateSimilarArtistGraph(true);
+    await fetchSimilarArtists(artistResult);
+    setSelectedArtistFromSearch(false);
+    setArtistPreviewStack([]);
+    setSelectedArtist(artistResult);
+    setSimilarArtistAnchor(artistResult);
   }
+
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
     setGenreClusterMode([...newMode]);
     if (currentGenres) {
@@ -1196,19 +1195,18 @@ function App() {
     }
   }
 
-  const getGenreRootsFromID = useCallback((genreID: string) => {
-    const genre = genres.find((g) => g.id === genreID);
+  const getGenreRootsFromID = (genreID: string) => {
+    const genre = genres ? genres.find((g) => g.id === genreID) : undefined;
     if (genre) {
       return genre.rootGenres;
     }
     return [];
-  }, [genres]);
+  }
 
   const onBadDataGenreSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
-    //TODO: use actual user ID when accounts are implemented
-    const userID = 'dev';
+    const user = userID ? userID : 'unregistered';
     const report: BadDataReport = {
-      userID,
+      userID: user,
       itemID,
       reason,
       type,
@@ -1229,10 +1227,9 @@ function App() {
   }
 
   const onBadDataArtistSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
-    //TODO: use actual user ID when accounts are implemented
-    const userID = 'dev';
+    const user = userID ? userID : 'unregistered';
     const report: BadDataReport = {
-      userID,
+      userID: user,
       itemID,
       reason,
       type,
@@ -1241,11 +1238,7 @@ function App() {
     }
     const success = await flagBadArtistData(report);
     if (success && !hasFlag) {
-      if (selectedArtistNoGenre) {
-        const updatedSelected = {...selectedArtistNoGenre, badDataFlag: true};
-        setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtistNoGenre.id), updatedSelected]);
-        setSelectedArtistNoGenre(updatedSelected);
-      } else if (selectedArtist) {
+      if (selectedArtist) {
         const updatedSelected = {...selectedArtist, badDataFlag: !selectedArtist.badDataFlag};
         setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtist.id), updatedSelected]);
         setSelectedArtist(updatedSelected);
@@ -1255,7 +1248,7 @@ function App() {
   }
 
   const getRootGenreFromTags = useCallback((tags: Tag[]) => {
-    if (tags && tags.length) {
+    if (tags && tags.length && genres) {
       const genreTags = tags.filter(t => genres.some((g) => g.name === t.name));
       if (genreTags.length > 0) {
         const bestTag = genreTags.sort((a, b) => b.count - a.count)[0];
@@ -1323,6 +1316,7 @@ function App() {
       // });
     } else {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+      //console.log('gf selection change: ' + selectedIDs.length)
       if (selectedIDs.length === 0) {
         // Clear artist filter - do NOT clear selectedGenres (viewing selection is independent)
         if (artistGenreFilter.length !== 0) {
@@ -1353,6 +1347,11 @@ function App() {
       }
     }
   }, [graph, isBeforeArtistLoad, selectedGenres, artistGenreFilter]);
+
+  const onDecadeSelectionChange = (selectedIDs: string[]) => {
+    setSelectedDecades(selectedIDs);
+    // TODO: Implement decade filtering logic
+  }
 
   const artistNodeCountSelection = (value: number) => {
     if (value <= artistNodeCount) {
@@ -1438,6 +1437,7 @@ function App() {
     };
   };
 
+  // TODO: create backend endpoint specifically for this; smaller artists don't show up if they're in big genres
   const focusArtistRelatedGenres = (artist: Artist) => {
     const genreIds = Array.from(new Set((artist.genres ?? []).filter(Boolean)));
 
@@ -1483,6 +1483,101 @@ function App() {
     setPendingArtistGenreGraph(artist); // Will trigger graph switch when artists load
   };
 
+  const onAddArtistButtonToggle = async (artistID?: string) => {
+    if (userID) {
+      if (!artistID) return;
+      if (likedArtists && isInCollection(artistID)) {
+        await unlikeArtist(artistID);
+      } else {
+        await likeArtist(artistID);
+        // Logic for alpha survey triggering
+        artistsAddedRef.current++;
+        if (localStorage.getItem('showAlphaSurvey') !== 'false' && artistsAddedRef.current >= ALPHA_SURVEY_ADDED_ARTISTS) {
+          showNotiToast('alpha-feedback');
+          localStorage.setItem('showAlphaSurvey', 'false');
+        }
+      }
+    } else {
+      const action: ContextAction = {type: 'addArtist', artistID};
+      localStorage.setItem('unregisteredAction', JSON.stringify(action));
+      window.dispatchEvent(new Event('auth:open'));
+    }
+  }
+
+  const isInCollection = (artistID?: string) => {
+    return artistID ? likedArtists.includes(artistID) : false;
+  }
+
+  // temporary functionality to just show liked artists if logged in
+  const onCollectionClick = async () => {
+    if (userID) {
+      setCollectionMode(true);
+      if (likedArtists.length) {
+        await fetchLikedArtists(likedArtists);
+        setGraph('artists');
+      } else {
+        toast.info("You haven't added any artists yet!");
+      }
+    } else {
+      const action: ContextAction = {type: 'viewCollection'};
+      localStorage.setItem('unregisteredAction', JSON.stringify(action));
+      window.dispatchEvent(new Event('auth:open'));
+    }
+  }
+
+  const onExploreClick = () => {
+    resetAppState();
+  }
+
+  const setDegrees = (value: number) => {
+    if (currentArtists && likedArtists && likedArtists.length) {
+      const degreeArtists = assignDegreesToArtists(currentArtists, likedArtists).filter(da => da.degree === 0 || (da.degree && da.degree <= value));
+      const artistSet = new Set(degreeArtists.map(a => a.id));
+      const newLinks = currentArtistLinks.filter(l => {
+        return artistSet.has(l.source) && artistSet.has(l.target);
+      })
+      setCurrentArtists(degreeArtists);
+      setCurrentArtistLinks(newLinks);
+    }
+  }
+
+  // Uses useNavigate to navigate to a path, accepts optional functions to run before and after navigation
+  const navigateAnd = (pathname: string, beforeFn?: () => void, afterFn?: () => void) => {
+    if (beforeFn) beforeFn();
+    navigate(pathname);
+    if (afterFn) afterFn();
+  }
+
+  // Does the previous action requested before logging in
+  const doContextAction = async () => {
+    const actionString = localStorage.getItem('unregisteredAction');
+    if (actionString && actionString.length) {
+      const action = JSON.parse(actionString) as ContextAction;
+      switch (action.type) {
+        case 'addArtist':
+          // Don't remove artist if already added
+          if (action.artistID && !isInCollection(action.artistID)) {
+            // If the app is reset (OAuth), select the artist with the similar artist graph
+            if (!selectedArtist) {
+              let artist = artists.find(a => a.id === action.artistID);
+              if (!artist) artist = await fetchSingleArtist(action.artistID);
+              if (artist) {
+                setGraph('similarArtists');
+                createSimilarArtistGraph(artist);
+              }
+            }
+            await onAddArtistButtonToggle(action.artistID);
+          }
+          break;
+        case 'viewCollection':
+          await onCollectionClick();
+          break;
+        default:
+      }
+    }
+    localStorage.removeItem('unregisteredAction');
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -1493,7 +1588,10 @@ function App() {
         graph={graph}
         onGraphChange={onTabChange}
         resetAppState={resetAppState}
-        accountMenuState={accountMenuState}
+        onCollectionClick={onCollectionClick}
+        onExploreClick={onExploreClick}
+        signedInUser={!!userID}
+        isCollectionMode={collectionMode}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -1559,6 +1657,7 @@ function App() {
                 { graph === 'artists' &&
                 <div className='flex flex-col items-start sm:flex-row gap-3'>
                    <GenresFilter
+                    //key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
                     genres={[...genres, singletonParentGenre]}
                     genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
                     graphType={graph}
@@ -1567,16 +1666,14 @@ function App() {
                     selectedGenreIds={artistGenreFilterIDs}
                    />
 
-                  <Button size='lg' variant='outline'
+                  {/* <Button size='lg' variant='outline'
                   onClick={() => toast('Opens a filter menu for Moods & Activities...')}
-                  >Mood & Activity
+                  >Moods & Activities
                     <ChevronDown />
-                  </Button>
-                  <Button size='lg' className='self-start' variant='outline'
-                  onClick={() => toast('Opens a filter menu for decades...')}
-                  >Decade
-                    <ChevronDown />
-                  </Button>
+                  </Button> */}
+                  <DecadesFilter
+                    onDecadeSelectionChange={onDecadeSelectionChange}
+                  />
                 </div>
                 }
                 <FindFilter
@@ -1617,6 +1714,7 @@ function App() {
                   computeArtistColor={getArtistColor}
                   autoFocus={autoFocusGraph}
                   show={(graph === "artists" || graph === "similarArtists") && !artistsError}
+                  //loading={graph === 'similarArtists' ? similarArtistsLoading : artistsLoading}
                   loading={artistsLoading}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
@@ -1636,7 +1734,7 @@ function App() {
             </div>
           {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
             <NodeLimiter
-                totalNodes={genres.length}
+                totalNodes={genres ? genres.length : 0}
                 nodeType={'genres'}
                 initialValue={genreNodeCount}
                 onChange={onGenreNodeCountChange}
@@ -1649,6 +1747,14 @@ function App() {
               onChange={(value) => artistNodeCountSelection(value)}
               show={showArtistNodeLimiter()}
             />
+            {/*For testing node degrees*/}
+            {/*<NodeLimiter*/}
+            {/*    totalNodes={6}*/}
+            {/*    nodeType={'collection'}*/}
+            {/*    initialValue={Infinity}*/}
+            {/*    onChange={(value) => setDegrees(value)}*/}
+            {/*    show={graph === 'artists' && collectionMode}*/}
+            {/*/>*/}
           </div>}
           {/* right controls */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
@@ -1705,8 +1811,9 @@ function App() {
                 getArtistColor={getArtistColor}
                 onPlayGenre={onPlayGenre}
                 onFocusInGenresView={focusGenreInCurrentView}
-                //playLoading={playerLoading && (!!genreInfoToShow ? playerLoadingKey === `genre:${genreInfoToShow.id}` : false)}
                 playLoading={isPlayerLoadingGenre()}
+                genreTracks={selectedGenres.length > 0 ? playerIDQueue.get(selectedGenres[0].id) : undefined}
+                onPlayTrack={onPlayGenreTrack}
               />
               <ArtistInfo
                 key={artistInfoDrawerVersion}
@@ -1728,9 +1835,12 @@ function App() {
                 onFocusInArtistsView={focusArtistInCurrentView}
                 onViewArtistGraph={focusArtistRelatedGenres}
                 onViewSimilarArtistGraph={createSimilarArtistGraph}
-                //playLoading={playerLoading && (!!selectedArtist ? playerLoadingKey === `artist:${selectedArtist.id}` : false)}
                 playLoading={isPlayerLoadingArtist()}
                 viewRelatedArtistsLoading={!!pendingArtistGenreGraph}
+                onArtistToggle={onAddArtistButtonToggle}
+                isInCollection={isInCollection(selectedArtist?.id)}
+                onPlayTrack={onPlayArtistTrack}
+                shouldShowChevron={showArtistGoTo}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
@@ -1780,12 +1890,43 @@ function App() {
             onLoadingChange={handlePlayerLoadingChange}
             headerPreferProvidedTitle={playerSource === 'genre'}
             onTitleClick={handlePlayerTitleClick}
+            startIndex={playerStartIndex}
           />
         </div>
       </AppSidebar>
-      <SettingsOverlay />
-      <AuthOverlay />
-      <FeedbackOverlay />
+      <SettingsOverlay
+        name={userName || ''}
+        email={userEmail || ''}
+        preferences={preferences || DEFAULT_PREFERENCES}
+        socialUser={isSocialUser || false}
+        onLogout={signOut}
+        onChangeEmail={changeEmail}
+        onChangePassword={changePassword}
+        onDeleteAccount={deleteUser}
+        onChangeName={updateUser}
+        onChangePreferences={updatePreferences}
+      />
+      <AuthOverlay
+          onSignUp={signUp}
+          onSignInSocial={signInSocial}
+          onSignIn={signIn}
+          onForgotPassword={forgotPassword}
+      />
+      <FeedbackOverlay
+        onSubmit={submitFeedback}
+        userID={userID}
+        userEmail={userEmail}
+      />
+      <ChangePasswordDialog
+          open={isResetPasswordOpen}
+          onOpenChange={setIsResetPasswordOpen}
+          onSubmitChange={changePassword}
+          onSubmitReset={resetPassword}
+          navigateOnReset={() => navigateAnd('/', undefined, () => window.dispatchEvent(
+              new CustomEvent("auth:open", {detail: { mode: "login" }}
+            )))}
+          forgot={true}
+      />
     </SidebarProvider>
   );
 }
