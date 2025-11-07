@@ -37,8 +37,12 @@ export const exportGraphAsImage = (
     // Get the actual background color from the body element
     // This will automatically match whatever CSS theme is applied
     const bodyStyles = window.getComputedStyle(document.body);
-    const backgroundColor = bodyStyles.backgroundColor ||
-      (options.theme === 'dark' ? '#0a0a0a' : '#ffffff'); // Fallback if needed
+    let backgroundColor = bodyStyles.backgroundColor;
+
+    // Check if background color is transparent or empty, use fallback
+    if (!backgroundColor || backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') {
+      backgroundColor = options.theme === 'dark' ? '#0a0a0a' : '#ffffff';
+    }
 
     // Fill background with the computed theme color
     ctx.fillStyle = backgroundColor;
