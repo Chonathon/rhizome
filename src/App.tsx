@@ -127,7 +127,6 @@ function App() {
     return storedDagMode ? JSON.parse(storedDagMode) : false;
   });
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
-  const [selectedArtistNoGenre, setSelectedArtistNoGenre] = useState<Artist | undefined>();
   const [similarArtistAnchor, setSimilarArtistAnchor] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -182,11 +181,13 @@ function App() {
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
   const [playerStartIndex, setPlayerStartIndex] = useState<number>(0);
+  // TODO: prob need to make playerIDQueue an array or update state differently as it sometimes is out of sync with the ui
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
   const [autoFocusGraph, setAutoFocusGraph] = useState<boolean>(true);
   const [collectionMode, setCollectionMode] = useState<boolean>(false);
   const [separationDegrees, setSeparationDegrees] = useState<number>(0);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState<boolean>(isOnPage('reset-password'));
+  const [showArtistGoTo, setShowArtistGoTo] = useState<boolean>(false);
   const {
     userID,
     userName,
@@ -375,39 +376,7 @@ function App() {
   }, []);
 
   // Sets current artists/links shown in the graph when artists are fetched from the DB
-  // useEffect(() => {
-  //   // Don't override if we're waiting for artist genre graph to be built
-  //   if (pendingArtistGenreGraph) {
-  //     return;
-  //   }
-  //
-  //   // Only manage currentArtists when graph is in 'artists' mode
-  //   // similarArtists mode manages its own filtered list and fetches directly from API
-  //   // if (graph !== 'artists') {
-  //   //   return;
-  //   // }
-  //
-  //   // Ensure the selected artist is always included in the results unless they were opened via search
-  //   if (selectedArtist && artists.length > 0) {
-  //     const artistExists = artists.some(a => a.id === selectedArtist.id);
-  //     if (!artistExists) {
-  //       if (selectedArtistFromSearch) {
-  //         console.log('[useEffect artists] Selected artist filtered out by current view; keeping graph results unchanged');
-  //       } else {
-  //         console.log('[useEffect artists] Adding missing artist to results');
-  //         // Add the selected artist to the results if it's not already there
-  //         setCurrentArtists([...artists, selectedArtist]);
-  //       }
-  //     }
-  //   }
-  // }, [selectedArtist, selectedArtistFromSearch, pendingArtistGenreGraph]);
-
-  // Sets current artists/links shown in the graph when artists are fetched from the DB
   useEffect(() => {
-    // Don't override if we're waiting for artist genre graph to be built
-    // if (pendingArtistGenreGraph) {
-    //   return;
-    // }
     setCurrentArtists(artists);
     setCurrentArtistLinks(artistLinks);
   }, [artists]);
@@ -456,6 +425,7 @@ function App() {
   }, [similarArtists]);
 
   // Switch to artist graph after genres' artists are loaded
+  // TODO: I suspect this causes "no genre selected" top 2000 artists to always be fetched, wasteful if clicking "All Artists"
   useEffect(() => {
     if (pendingArtistGenreGraph && artists.length > 0 && !artistsLoading) {
       console.log('[useEffect pendingArtistGenreGraph] Artists loaded, switching to artists graph');
@@ -463,6 +433,17 @@ function App() {
       setPendingArtistGenreGraph(undefined);
     }
   }, [pendingArtistGenreGraph, artists, artistsLoading]);
+
+  // Whether or not to show the chevron/focusing action on the artists info
+  useEffect(() => {
+    let show = false;
+    if (graph === 'similarArtists') {
+      show = !!artistInfoToShow && similarArtists.map(s => s.id).includes(artistInfoToShow.id);
+    } else {
+      show = !!artistInfoToShow && currentArtists.map(c => c.id).includes(artistInfoToShow.id);
+    }
+    setShowArtistGoTo(show);
+  }, [graph, artistInfoToShow, currentArtists, similarArtists]);
 
   // Add genre play IDs to the playerIDQueue on genre click
   const updateGenrePlayerIDs = async () => {
@@ -832,16 +813,19 @@ function App() {
 
   // Switch to artists graph and select the clicked artist
   const onTopArtistClick = (artist: Artist) => {
-    // Apply genre filter from current context
-    const currentGenre = genreInfoToShow || selectedGenres[0];
-    if (currentGenre) {
-      setArtistGenreFilter([currentGenre]);
-      setArtistFilterGenres([currentGenre]); // Set the new filter state
-      setSelectedGenres([currentGenre]);
-      setInitialGenreFilter(createInitialGenreFilterObject(currentGenre));
+    // Don't refetch genre if artist is already in node selection
+    if (!currentArtists.map(a => a.id).includes(artist.id)) {
+      // Apply genre filter from current context
+      const currentGenre = genreInfoToShow || selectedGenres[0];
+      if (currentGenre) {
+        setArtistGenreFilter([currentGenre]);
+        setArtistFilterGenres([currentGenre]); // Set the new filter state
+        setSelectedGenres([currentGenre]);
+        setInitialGenreFilter(createInitialGenreFilterObject(currentGenre));
+        setGraph('artists');
+      }
     }
 
-    setGraph('artists');
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setSelectedArtist(artist); // For graph focus/dimming
@@ -883,73 +867,22 @@ function App() {
 
   const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-
-    const matchesCurrentFilter =
-      artistGenreFilter.length === 0 ||
-      artist.genres.some((genreId) => artistGenreFilterIDs.includes(genreId));
-
-    if (showGenreCard) setShowGenreCard(false);
+    // const matchesCurrentFilter =
+    //   artistGenreFilter.length === 0 ||
+    //   artist.genres.some((genreId) => artistGenreFilterIDs.includes(genreId));
     setSelectedArtist(artist);
-
-    // Artist not in current custom genre filter
-    // if (artistGenreFilter.length && !matchesCurrentFilter) {
-    //
-    // }
-    //
-    // let nextArtistList =
-    //   graph === 'similarArtists'
-    //     ? (artists.length ? artists : currentArtists)
-    //     : currentArtists;
-    //
-    // const artistAlreadyPresent = nextArtistList.some((a) => a.id === artist.id);
-    // if (!artistAlreadyPresent) {
-    //   nextArtistList = [...nextArtistList, artist];
-    // }
-    //
-    // if (graph === 'similarArtists') {
-    //   if (currentArtistLinks !== artistLinks) {
-    //     setCurrentArtistLinks(artistLinks);
-    //   }
-    //   if (similarArtistAnchor) {
-    //     setSimilarArtistAnchor(undefined);
-    //   }
-    // }
-
     let shouldTriggerRefocus = opts?.forceRefocus === true;
-
-    if (graph !== 'artists') {
+    if (graph !== 'artists' && graph !== 'similarArtists') {
       setGraph('artists');
       shouldTriggerRefocus = true;
     }
-
-    // if (graph === 'similarArtists' || !artistAlreadyPresent) {
-    //   if (currentArtists !== nextArtistList) {
-    //     setCurrentArtists(nextArtistList);
-    //     shouldTriggerRefocus = true;
-    //   }
-    // }
-
     setSelectedArtistFromSearch(false);
-    // setArtistPreviewStack([]);
-    // setSelectedArtist((prev) => {
-    //   if (prev?.id === artist.id) {
-    //     if (shouldTriggerRefocus) {
-    //       return { ...prev };
-    //     }
-    //     return prev;
-    //   }
-    //   return artist;
-    // });
-    // setArtistInfoToShow(artist); // For drawer display
-    // setShowArtistCard(true);
-
     if (shouldTriggerRefocus) {
       setAutoFocusGraph(false);
       setTimeout(() => setAutoFocusGraph(true), 16);
     } else {
       setAutoFocusGraph(true);
     }
-
     addRecentSelection(artist);
   }
 
@@ -1016,9 +949,7 @@ function App() {
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for find filter selections
       addRecentSelection(artist);
-      if (graph === 'similarArtists') {
-        setSelectedArtistNoGenre(artist);
-      } else if (graph !== 'artists') {
+      if (graph !== 'artists' && graph !== 'similarArtists') {
         setGraph('artists');
       }
       setIsFindFilterOpen(false);
@@ -1075,13 +1006,13 @@ function App() {
     setSelectedArtist(undefined);
     setArtistInfoToShow(undefined);
     setShowArtistCard(false);
-    setSelectedArtistNoGenre(undefined);
     setArtistPreviewStack([]);
   }
 
   // Force the drawer to remount when restoring a previously focused artist without flashing the genre card
   const reopenArtistInfoCard = (artist: Artist, options?: { fromSearch?: boolean }) => {
     setArtistInfoToShow(artist);
+    setSelectedArtist(artist);
     setSelectedArtistFromSearch(!!options?.fromSearch);
     setArtistInfoDrawerVersion((prev) => prev + 1);
     setShowArtistCard(true);
@@ -1117,8 +1048,8 @@ function App() {
         ? artistPreviewStack[artistPreviewStack.length - 1]
         : undefined;
     if (previousPreview) {
-      setArtistPreviewStack((prev) => prev.slice(0, -1));
       reopenArtistInfoCard(previousPreview, { fromSearch: true });
+      setArtistPreviewStack((prev) => prev.slice(0, -1));
       return;
     }
 
@@ -1149,7 +1080,6 @@ function App() {
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setSelectedArtist(artistResult);
-    setSelectedArtistNoGenre(artistResult);
     setSimilarArtistAnchor(artistResult);
   }
 
@@ -1308,11 +1238,7 @@ function App() {
     }
     const success = await flagBadArtistData(report);
     if (success && !hasFlag) {
-      if (selectedArtistNoGenre) {
-        const updatedSelected = {...selectedArtistNoGenre, badDataFlag: true};
-        setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtistNoGenre.id), updatedSelected]);
-        setSelectedArtistNoGenre(updatedSelected);
-      } else if (selectedArtist) {
+      if (selectedArtist) {
         const updatedSelected = {...selectedArtist, badDataFlag: !selectedArtist.badDataFlag};
         setCurrentArtists([...currentArtists.filter(a => a.id !== selectedArtist.id), updatedSelected]);
         setSelectedArtist(updatedSelected);
@@ -1380,13 +1306,6 @@ function App() {
     return color;
   }, [getRootGenreFromTags, getGenreColorFromRoots, getGenreColorFromID, colorFallback]);
 
-  useEffect(() => {
-    console.log('artistGenreFilter: ', artistGenreFilter);
-  }, [artistGenreFilter]);
-  useEffect(() => {
-    console.log('artistFilterGenres: ', artistFilterGenres);
-  }, [artistFilterGenres]);
-
   const onGenreFilterSelectionChange = useCallback(async (selectedIDs: string[]) => {
     if (graph === 'genres') {
       // filters genres in genre mode; buggy
@@ -1397,7 +1316,7 @@ function App() {
       // });
     } else {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-      console.log('gf selection change: ' + selectedIDs.length)
+      //console.log('gf selection change: ' + selectedIDs.length)
       if (selectedIDs.length === 0) {
         // Clear artist filter - do NOT clear selectedGenres (viewing selection is independent)
         if (artistGenreFilter.length !== 0) {
@@ -1518,6 +1437,7 @@ function App() {
     };
   };
 
+  // TODO: create backend endpoint specifically for this; smaller artists don't show up if they're in big genres
   const focusArtistRelatedGenres = (artist: Artist) => {
     const genreIds = Array.from(new Set((artist.genres ?? []).filter(Boolean)));
 
@@ -1656,13 +1576,6 @@ function App() {
       }
     }
     localStorage.removeItem('unregisteredAction');
-  }
-
-  const showArtistGoTo = () => {
-    if (graph === 'similarArtists') {
-      return !!artistInfoToShow && similarArtists.includes(artistInfoToShow);
-    }
-    return !!(artistInfoToShow && currentArtists.includes(artistInfoToShow));
   }
 
   return (
@@ -1927,7 +1840,7 @@ function App() {
                 onArtistToggle={onAddArtistButtonToggle}
                 isInCollection={isInCollection(selectedArtist?.id)}
                 onPlayTrack={onPlayArtistTrack}
-                shouldShowChevron={showArtistGoTo()}
+                shouldShowChevron={showArtistGoTo}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

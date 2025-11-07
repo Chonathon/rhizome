@@ -58,7 +58,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
           data: artist,
         };
       });
-    }, [artists, computeArtistColor]);
+    }, [artists]);
 
     const graphLinks = useMemo<NodeLink[]>(() => {
       if (!artistLinks?.length) return [];
