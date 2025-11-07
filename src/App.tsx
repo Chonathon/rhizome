@@ -43,6 +43,7 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
+import SharePanel from './components/SharePanel';
 import NodeLimiter from './components/NodeLimiter'
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
@@ -1792,16 +1793,16 @@ function App() {
           {/* right controls */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               {/* <ModeToggle /> */}
-              <ClusteringPanel 
+              <ClusteringPanel
                 clusterMode={genreClusterMode[0]}
                 setClusterMode={onGenreClusterModeChange}
-                dagMode={dagMode} 
+                dagMode={dagMode}
                 setDagMode={setDagMode} />
               <DisplayPanel
                 genreArtistCountThreshold={genreSizeThreshold}
                 setGenreArtistCountThreshold={setGenreSizeThreshold}
-                onExport={handleExportGraph}
               />
+              <SharePanel onExport={handleExportGraph} />
               {/* Bottom positioned Zoomies */}
               <div className='pt-6 hidden sm:block'>
                 <ZoomButtons

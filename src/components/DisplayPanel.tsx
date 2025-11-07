@@ -3,16 +3,15 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "./ui/badge"
 import { Button } from "@/components/ui/button"
-import { SwatchBook, Download } from "lucide-react"
+import { SwatchBook } from "lucide-react"
 import { ResponsivePanel } from "@/components/ResponsivePanel"
 
 interface DisplayPanelProps {
     genreArtistCountThreshold: number;
     setGenreArtistCountThreshold: (count: number) => void;
-    onExport?: () => void;
 }
 
-export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtistCountThreshold, onExport }: DisplayPanelProps) {
+export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtistCountThreshold }: DisplayPanelProps) {
     const [nodeSize, setNodeSize] = useState(50)
     const [edgeThickness, setEdgeThickness] = useState(50)
     const [textFadeThreshold, setTextFadeThreshold] = useState(50)
@@ -129,20 +128,6 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                         />
                     </div>
                 </fieldset>
-
-                {/* Export Button */}
-                {onExport && (
-                    <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                        <Button
-                            onClick={onExport}
-                            variant="outline"
-                            className="w-full flex items-center justify-center gap-2"
-                        >
-                            <Download className="h-4 w-4" />
-                            Export as Image
-                        </Button>
-                    </div>
-                )}
             </div>
         </ResponsivePanel>
     )

@@ -25,7 +25,7 @@ export const exportGraphAsImage = (
     // Generate filename with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const graphType = options.graphType || 'graph';
-    const filename = options.filename || `${graphType}-export-${timestamp}.png`;
+    const filename = options.filename || `Rhizome ${graphType}-export-${timestamp}.png`;
 
     // Convert canvas to blob for better memory handling
     canvas.toBlob((blob) => {
