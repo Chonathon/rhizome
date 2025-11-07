@@ -6,6 +6,7 @@ export interface GraphExportOptions {
   filename?: string;
   graphType?: 'genre' | 'artist';
   theme?: 'light' | 'dark' | string;
+  scale?: number; // Resolution multiplier (1 = original, 2 = 2x, 3 = 3x, etc.)
 }
 
 /**
@@ -23,10 +24,13 @@ export const exportGraphAsImage = (
   }
 
   try {
-    // Create a temporary canvas with the same dimensions
+    // Get scale factor (default to 2 for higher quality exports)
+    const scale = options.scale ?? 2;
+
+    // Create a temporary canvas with scaled dimensions
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
+    tempCanvas.width = canvas.width * scale;
+    tempCanvas.height = canvas.height * scale;
     const ctx = tempCanvas.getContext('2d');
 
     if (!ctx) {
@@ -44,13 +48,15 @@ export const exportGraphAsImage = (
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-    // Draw the original canvas on top
+    // Scale the context and draw the original canvas
+    ctx.scale(scale, scale);
     ctx.drawImage(canvas, 0, 0);
 
-    // Generate filename with timestamp
+    // Generate filename with timestamp and scale info
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const graphType = options.graphType || 'graph';
-    const filename = options.filename || `Rhizome ${graphType}-export-${timestamp}.png`;
+    const scaleInfo = scale > 1 ? `-${scale}x` : '';
+    const filename = options.filename || `Rhizome ${graphType}-export${scaleInfo}-${timestamp}.png`;
 
     // Convert canvas to blob for better memory handling
     tempCanvas.toBlob((blob) => {
