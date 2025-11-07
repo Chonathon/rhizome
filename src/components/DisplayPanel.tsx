@@ -24,8 +24,9 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
       setIsRotating(true);
       setTimeout(() => {
         setIsRotating(false);
-      }, 200);
-    };
+      }, 200)
+    }
+    const labelStyles = "w-full text-left text-md font-medium text-foreground"
 
     return (
         <ResponsivePanel
@@ -39,23 +40,25 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
             side="left"
             headerTitle="Display Settings"
         >
-                <div className="flex items-center">
-                    <h2 className="text-lg w-full font-semibold leading-tight text-gray-900 dark:text-gray-100">{Display}</h2>
+                <div className="flex items-center pl-2 mb-1">
+                    <h2 className="text-lg w-full font-semibold leading-tight text-foreground">Display</h2>
                     <Button
-                              onClick={handleResetClick}
-                              variant="ghost" size="icon" className=" size-10">
-                                   <motion.div
-                     animate={ isRotating ? { rotate: -45 } : { rotate: 0 } }
-                     transition={{ type: "spring", stiffness: 300, damping: 12 }}
+                    onClick={handleResetClick}
+                    variant="ghost" size="icon" className=" size-10">
+                    <motion.div
+                        animate={ 
+                            isRotating 
+                            ? { rotate: -45 } : { rotate: 0 } }
+                            transition={{ type: "spring", stiffness: 600, damping: 12 }}
                                    >
-                     <RotateCcw size={24} />
-                                   </motion.div>
-                              </Button>
+                        <RotateCcw  />
+                    </motion.div>
+                    </Button>
                 </div>
-            <div className="flex flex-col gap-4 p-2 rounded-2xl  shadow-sm bg-accent dark:dark:bg-background">
+            <div className="flex flex-col gap-4 p-2 rounded-2xl  shadow-sm bg-accent dark:dark:bg-accent/50 border-accent border">
                 {/* Node Size */}
                 <div className="flex items-center justify-start gap-6">
-                    <label htmlFor="node-size" className="w-full text-left text-md font-medium text-gray-900 dark:text-gray-100">Node Size</label>
+                    <label htmlFor="node-size" className={labelStyles}>Node Size</label>
                     <div className="w-full flex items-center gap-2">
                         <Badge variant="outline" className="w-12 p-1 text-center">{nodeSize}</Badge>
                         <Slider
@@ -72,7 +75,24 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 </div>
                 {/* Edge Thickness */}
                 <div className="flex items-center justify-start gap-6">
-                    <label htmlFor="edge-thickness" className="w-full text-left text-md font-medium text-gray-900 dark:text-gray-100">Edge thickness</label>
+                    <label htmlFor="edge-thickness" className={labelStyles}>Edge thickness</label>
+                    <div className="w-full flex items-center gap-2">
+                        <Badge variant="outline" className="w-12 p-1 text-center">{edgeThickness}</Badge>
+                        <Slider
+                            id="edge-thickness-slider"
+                            aria-labelledby="edge-thickness"
+                            value={[edgeThickness]}
+                            onValueChange={([value]) => setEdgeThickness(value)}
+                            min={0}
+                            max={100}
+                            step={1}
+                            className="w-full"
+                        />
+                    </div>
+                </div>
+                {/* Edge Curvature */}
+                <div className="flex items-center justify-start gap-6">
+                    <label htmlFor="edge-thickness" className="w-full text-left text-md font-medium text-foregroun">Edge Curvature</label>
                     <div className="w-full flex items-center gap-2">
                         <Badge variant="outline" className="w-12 p-1 text-center">{edgeThickness}</Badge>
                         <Slider
@@ -89,7 +109,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 </div>
                 {/* Text Fade Threshold */}
                 <div className="flex items-center justify-start gap-6">
-                    <label htmlFor="text-fade-threshold" className="w-full text-left text-md font-medium text-gray-900 dark:text-gray-100">Text Fade Threshold</label>
+                    <label htmlFor="text-fade-threshold" className={labelStyles}>Text Fade Threshold</label>
                     <div className="w-full flex items-center gap-2">
                         <Badge variant="outline" className="w-12 p-1 text-center">{textFadeThreshold}</Badge>
                         <Slider
@@ -106,7 +126,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 </div>
                 {/* Genre Min Size */}
                 {/*<div className="flex items-center justify-start gap-6">*/}
-                {/*    <label htmlFor="genre-min-size" className="w-full text-left text-md font-medium text-gray-900 dark:text-gray-100">Genre Min Size</label>*/}
+                {/*    <label htmlFor="genre-min-size" className={labelStyles}>Genre Min Size</label>*/}
                 {/*    <div className="w-full flex items-center gap-2">*/}
                 {/*        <Badge variant="outline" className="w-12 p-1 text-center">{genreArtistCountThreshold}</Badge>*/}
                 {/*        <Slider*/}
@@ -124,7 +144,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 <fieldset className="flex flex-col gap-4">
                     <legend className="sr-only">Display options</legend>
                     <div className="flex items-center justify-between">
-                        <label htmlFor="show-labels" className="w-full text-left text-md font-medium text-gray-900 dark:text-gray-100">Show labels</label>
+                        <label htmlFor="show-labels" className={labelStyles}>Show labels</label>
                         <Switch
                             id="show-labels"
                             checked={showLabels}
