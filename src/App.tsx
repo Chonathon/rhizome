@@ -376,8 +376,8 @@ function App() {
     const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
     const canvas = ref?.getCanvas?.() ?? null;
     const graphType = graph === 'genres' ? 'genre' : 'artist';
-    exportGraphAsImage(canvas, { graphType });
-  }, [graph]);
+    exportGraphAsImage(canvas, { graphType, theme: resolvedTheme });
+  }, [graph, resolvedTheme]);
 
   // Restore standalone Escape handling (deselect)
   useEffect(() => {

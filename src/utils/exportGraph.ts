@@ -5,12 +5,13 @@
 export interface GraphExportOptions {
   filename?: string;
   graphType?: 'genre' | 'artist';
+  theme?: 'light' | 'dark' | string;
 }
 
 /**
- * Exports the graph canvas to a PNG file
+ * Exports the graph canvas to a PNG file with proper background color
  * @param canvas - The canvas element to export
- * @param options - Export options including filename and graph type
+ * @param options - Export options including filename, graph type, and theme
  */
 export const exportGraphAsImage = (
   canvas: HTMLCanvasElement | null,
@@ -22,13 +23,35 @@ export const exportGraphAsImage = (
   }
 
   try {
+    // Create a temporary canvas with the same dimensions
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const ctx = tempCanvas.getContext('2d');
+
+    if (!ctx) {
+      console.error('Failed to get canvas context');
+      return;
+    }
+
+    // Determine background color based on theme
+    const isDark = options.theme === 'dark';
+    const backgroundColor = isDark ? '#0a0a0a' : '#ffffff';
+
+    // Fill background with theme color
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+    // Draw the original canvas on top
+    ctx.drawImage(canvas, 0, 0);
+
     // Generate filename with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     const graphType = options.graphType || 'graph';
     const filename = options.filename || `Rhizome ${graphType}-export-${timestamp}.png`;
 
     // Convert canvas to blob for better memory handling
-    canvas.toBlob((blob) => {
+    tempCanvas.toBlob((blob) => {
       if (!blob) {
         console.error('Failed to create image blob');
         return;
