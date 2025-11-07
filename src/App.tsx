@@ -153,6 +153,15 @@ function App() {
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const [similarArtistAnchor, setSimilarArtistAnchor] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
+
+  // Display control states
+  const [nodeSize, setNodeSize] = useState(50);
+  const [linkThickness, setLinkThickness] = useState(50);
+  const [linkCurvature, setLinkCurvature] = useState(50);
+  const [textFadeThreshold, setTextFadeThreshold] = useState(50);
+  const [showLabels, setShowLabels] = useState(true);
+  const [labelSize, setLabelSize] = useState<'Small' | 'Default' | 'Large'>('Default');
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [isFindFilterOpen, setIsFindFilterOpen] = useState(false);
   const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>(DEFAULT_GENRE_LIMIT_TYPE);
@@ -1728,6 +1737,12 @@ function App() {
                   loading={genresLoading}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
+                  nodeSize={nodeSize}
+                  linkThickness={linkThickness}
+                  linkCurvature={linkCurvature}
+                  showLabels={showLabels}
+                  labelSize={labelSize}
+                  textFadeThreshold={textFadeThreshold}
                 />
                 <ArtistsForceGraph
                   ref={artistsGraphRef}
@@ -1742,6 +1757,12 @@ function App() {
                   loading={artistsLoading}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
+                  nodeSize={nodeSize}
+                  linkThickness={linkThickness}
+                  linkCurvature={linkCurvature}
+                  showLabels={showLabels}
+                  labelSize={labelSize}
+                  textFadeThreshold={textFadeThreshold}
                 />
 
             <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
@@ -1791,6 +1812,18 @@ function App() {
               <DisplayPanel
                 genreArtistCountThreshold={genreSizeThreshold}
                 setGenreArtistCountThreshold={setGenreSizeThreshold}
+                nodeSize={nodeSize}
+                setNodeSize={setNodeSize}
+                linkThickness={linkThickness}
+                setLinkThickness={setLinkThickness}
+                linkCurvature={linkCurvature}
+                setLinkCurvature={setLinkCurvature}
+                textFadeThreshold={textFadeThreshold}
+                setTextFadeThreshold={setTextFadeThreshold}
+                showLabels={showLabels}
+                setShowLabels={setShowLabels}
+                labelSize={labelSize}
+                setLabelSize={setLabelSize}
               />
               {/* Bottom positioned Zoomies */}
               <div className='pt-6 hidden sm:block'>

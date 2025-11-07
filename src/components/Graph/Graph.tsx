@@ -84,6 +84,13 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   renderNode?: NodeRenderer<T>;
   renderSelection?: SelectionRenderer<T>;
   renderLabel?: LabelRenderer<T>;
+  // Display controls
+  nodeSize?: number;
+  linkThickness?: number;
+  linkCurvature?: number;
+  showLabels?: boolean;
+  labelSize?: 'Small' | 'Default' | 'Large';
+  textFadeThreshold?: number;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -107,9 +114,9 @@ function defaultRenderSelection<T>(ctx: SelectionRenderContext<T>): void {
   canvas.restore();
 }
 
-function defaultRenderLabel<T>(ctx: LabelRenderContext<T>): void {
+function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE): void {
   const { ctx: canvas, label, x, y, radius, theme, labelAlpha } = ctx;
-  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, LABEL_FONT_SIZE);
+  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize);
 }
 
 const Graph = forwardRef(function GraphInner<
@@ -131,6 +138,12 @@ const Graph = forwardRef(function GraphInner<
     renderNode = defaultRenderNode,
     renderSelection = defaultRenderSelection,
     renderLabel = defaultRenderLabel,
+    nodeSize = 50,
+    linkThickness = 50,
+    linkCurvature = 50,
+    showLabels = true,
+    labelSize = 'Default',
+    textFadeThreshold = 50,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -141,6 +154,14 @@ const Graph = forwardRef(function GraphInner<
   const lastInitializedSignatureRef = useRef<string | undefined>(undefined);
   const shouldResetZoomRef = useRef(true);
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
+
+  // Convert display control values to usable ranges
+  const linkThicknessScale = 0.5 + (linkThickness / 100) * 1.5; // 0-100 → 0.5-2.0
+  const linkCurvatureValue = linkCurvature / 100; // 0-100 → 0.0-1.0
+  const labelFontSize = labelSize === 'Small' ? 10 : labelSize === 'Large' ? 16 : 12;
+  const fadeFactor = textFadeThreshold / 100; // 0-100 → 0.0-1.0
+  const labelFadeStart = 0.1 + fadeFactor * 0.4; // 0.1-0.5
+  const labelFadeEnd = 0.3 + fadeFactor * 1.0; // 0.3-1.3
 
   useImperativeHandle(
     ref,
@@ -355,14 +376,15 @@ const Graph = forwardRef(function GraphInner<
           return `${base ?? fallback}${selectedId ? (selected ? 'cc' : '30') : '80'}`;
         }}
         linkWidth={(link) => {
-          if (!selectedId) return 1;
+          if (!selectedId) return 1 * linkThicknessScale;
           const source =
             typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
           const target =
             typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
-          return source === selectedId || target === selectedId ? 2.5 : 0.6;
+          const baseWidth = source === selectedId || target === selectedId ? 2.5 : 0.6;
+          return baseWidth * linkThicknessScale;
         }}
-        linkCurvature={dagMode ? 0 : 0.5}
+        linkCurvature={dagMode ? 0 : linkCurvatureValue}
         onZoom={({ k }) => {
           zoomRef.current = k;
         }}
@@ -415,18 +437,25 @@ const Graph = forwardRef(function GraphInner<
           }
 
           // Calculate and render label
-          const k = zoomRef.current || 1;
-          let labelAlpha = labelAlphaForZoom(k, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END);
-          if (isSelected || isHovered) labelAlpha = 1;
-          else if (hasSelection && !isNeighbor) labelAlpha = Math.min(labelAlpha, 0.25);
+          if (showLabels) {
+            const k = zoomRef.current || 1;
+            let labelAlpha = labelAlphaForZoom(k, labelFadeStart, labelFadeEnd);
+            if (isSelected || isHovered) labelAlpha = 1;
+            else if (hasSelection && !isNeighbor) labelAlpha = Math.min(labelAlpha, 0.25);
 
-          const labelContext: LabelRenderContext<T> = {
-            ...renderContext,
-            label: node.label,
-            labelAlpha,
-            zoomLevel: k,
-          };
-          renderLabel(labelContext);
+            const labelContext: LabelRenderContext<T> = {
+              ...renderContext,
+              label: node.label,
+              labelAlpha,
+              zoomLevel: k,
+            };
+            // Pass fontSize if using default renderer
+            if (renderLabel === defaultRenderLabel) {
+              defaultRenderLabel(labelContext, labelFontSize);
+            } else {
+              renderLabel(labelContext);
+            }
+          }
         }}
         nodePointerAreaPaint={(node, color, ctx) => {
           ctx.fillStyle = color;

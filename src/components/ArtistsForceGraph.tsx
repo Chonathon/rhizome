@@ -16,6 +16,13 @@ interface ArtistsForceGraphProps {
   computeArtistColor: (artist: Artist) => string;
   width?: number;
   height?: number;
+  // Display controls
+  nodeSize?: number;
+  linkThickness?: number;
+  linkCurvature?: number;
+  showLabels?: boolean;
+  labelSize?: 'Small' | 'Default' | 'Large';
+  textFadeThreshold?: number;
 }
 
 const MIN_RADIUS = 6;
@@ -34,9 +41,17 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       computeArtistColor,
       width,
       height,
+      nodeSize = 50,
+      linkThickness,
+      linkCurvature,
+      showLabels,
+      labelSize,
+      textFadeThreshold,
     },
     ref,
   ) => {
+    // Convert nodeSize (0-100) to scale factor (0.5-2.0)
+    const nodeScaleFactor = 0.5 + (nodeSize / 100) * 1.5;
     const graphNodes = useMemo<SharedGraphNode<Artist>[]>(() => {
       if (!artists?.length) return [];
       const listenerValues = artists.map((artist) =>
@@ -49,7 +64,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       return artists.map((artist) => {
         const value = Math.log10(Math.max(1, artist.listeners || 1));
         const t = (value - min) / denom;
-        const radius = MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS);
+        const radius = (MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS)) * nodeScaleFactor;
         return {
           id: artist.id,
           label: artist.name,
@@ -58,7 +73,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
           data: artist,
         };
       });
-    }, [artists]);
+    }, [artists, nodeScaleFactor, computeArtistColor]);
 
     const graphLinks = useMemo<NodeLink[]>(() => {
       if (!artistLinks?.length) return [];
@@ -90,6 +105,11 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         selectedId={selectedArtistId}
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
+        linkThickness={linkThickness}
+        linkCurvature={linkCurvature}
+        showLabels={showLabels}
+        labelSize={labelSize}
+        textFadeThreshold={textFadeThreshold}
       />
     );
   },

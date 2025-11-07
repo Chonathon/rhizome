@@ -13,16 +13,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 interface DisplayPanelProps {
     genreArtistCountThreshold: number;
     setGenreArtistCountThreshold: (count: number) => void;
+    nodeSize: number;
+    setNodeSize: (size: number) => void;
+    linkThickness: number;
+    setLinkThickness: (thickness: number) => void;
+    linkCurvature: number;
+    setLinkCurvature: (curvature: number) => void;
+    textFadeThreshold: number;
+    setTextFadeThreshold: (threshold: number) => void;
+    showLabels: boolean;
+    setShowLabels: (show: boolean) => void;
+    labelSize: 'Small' | 'Default' | 'Large';
+    setLabelSize: (size: 'Small' | 'Default' | 'Large') => void;
 }
 
-export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtistCountThreshold }: DisplayPanelProps) {
-    const [nodeSize, setNodeSize] = useState(50)
-    const [linkThickness, setLinkThickness] = useState(50)
-    const [linkCurvature, setLinkCurvature] = useState(50)
-    const [textFadeThreshold, setTextFadeThreshold] = useState(50)
-    //const [genreSizeThreshold, setGenreSizeThreshold] = useState(genreArtistCountThreshold)
-    const [showLabels, setShowLabels] = useState(true)
-    const [labelSize, setLabelSize] = useState(14)
+export default function DisplayPanel({
+    genreArtistCountThreshold,
+    setGenreArtistCountThreshold,
+    nodeSize,
+    setNodeSize,
+    linkThickness,
+    setLinkThickness,
+    linkCurvature,
+    setLinkCurvature,
+    textFadeThreshold,
+    setTextFadeThreshold,
+    showLabels,
+    setShowLabels,
+    labelSize,
+    setLabelSize
+}: DisplayPanelProps) {
     // TODO: Reset logic for graph controls can be implemented here
     const [isRotating, setIsRotating] = useState(false);
     const handleResetClick = () => {
@@ -104,14 +124,14 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                     </div>
                     {/* Link Curvature */}
                     <div className="flex items-center justify-start gap-6">
-                        <label htmlFor="link-thickness" className={labelStyles}>Link Curvature</label>
+                        <label htmlFor="link-curvature" className={labelStyles}>Link Curvature</label>
                         <div className="w-full flex items-center gap-2">
-                            <Badge variant="outline" className={badgeStyles}>{linkThickness}</Badge>
+                            <Badge variant="outline" className={badgeStyles}>{linkCurvature}</Badge>
                             <Slider
                                 id="link-curvature-slider"
-                                aria-labelledby="link-thickness"
+                                aria-labelledby="link-curvature"
                                 value={[linkCurvature]}
-                                onValueChange={([value]) => setLinkThickness(value)}
+                                onValueChange={([value]) => setLinkCurvature(value)}
                                 min={0}
                                 max={100}
                                 step={1}
@@ -152,24 +172,16 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                         {showLabels &&
                         <>
                             <div className="flex items-center justify-start gap-6">
-                                <label htmlFor="show-labels" className={labelStyles}>Text Size</label>
-                                {/* <Input
-                                    id="show-labels"
-                                    type="number"
-                                    value={labelSize}
-                                    className="w-20"
-                                    onChange={(e) => setLabelSize(Number(e.target.value))}
-                                /> */}
-                                <Select value="Default">
+                                <label htmlFor="text-size" className={labelStyles}>Text Size</label>
+                                <Select value={labelSize} onValueChange={(value) => setLabelSize(value as 'Small' | 'Default' | 'Large')}>
                                     <SelectTrigger className="w-full">
-                                        <SelectValue placeholder={labelSize.toString()}  />
+                                        <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {["Small", "Default", "Large"].map((size) => (
                                             <SelectItem
                                                 key={size}
-                                                value={size.toString()}
-                                                onClick={() => setLabelSize(size)}>
+                                                value={size}>
                                                 {size}
                                             </SelectItem>
                                         ))}

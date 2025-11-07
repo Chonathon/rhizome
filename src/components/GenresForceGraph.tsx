@@ -17,6 +17,13 @@ interface GenresForceGraphProps {
   autoFocus?: boolean;
   width?: number;
   height?: number;
+  // Display controls
+  nodeSize?: number;
+  linkThickness?: number;
+  linkCurvature?: number;
+  showLabels?: boolean;
+  labelSize?: 'Small' | 'Default' | 'Large';
+  textFadeThreshold?: number;
 }
 
 const MIN_RADIUS = 6;
@@ -37,9 +44,17 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       autoFocus,
       width,
       height,
+      nodeSize = 50,
+      linkThickness,
+      linkCurvature,
+      showLabels,
+      labelSize,
+      textFadeThreshold,
     },
     ref,
   ) => {
+    // Convert nodeSize (0-100) to scale factor (0.5-2.0)
+    const nodeScaleFactor = 0.5 + (nodeSize / 100) * 1.5;
     const graphNodes = useMemo<SharedGraphNode<Genre>[]>(() => {
       const nodes = graphData?.nodes ?? [];
       if (!nodes.length) return [];
@@ -54,7 +69,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       return nodes.map((genre) => {
         const value = Math.log10(Math.max(1, genre.artistCount || 1));
         const t = (value - min) / denom;
-        const radius = MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS);
+        const radius = (MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS)) * nodeScaleFactor;
         return {
           id: genre.id,
           label: genre.name,
@@ -63,7 +78,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
           data: genre,
         };
       });
-    }, [graphData, colorMap]);
+    }, [graphData, colorMap, nodeScaleFactor]);
 
     const graphLinks = useMemo<NodeLink[]>(() => {
       const links = graphData?.links ?? [];
@@ -97,6 +112,11 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         dagMode={dag}
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
+        linkThickness={linkThickness}
+        linkCurvature={linkCurvature}
+        showLabels={showLabels}
+        labelSize={labelSize}
+        textFadeThreshold={textFadeThreshold}
       />
     );
   },
