@@ -34,11 +34,13 @@ export const exportGraphAsImage = (
       return;
     }
 
-    // Determine background color based on theme
-    const isDark = options.theme === 'dark';
-    const backgroundColor = isDark ? '#0a0a0a' : '#ffffff';
+    // Get the actual background color from the body element
+    // This will automatically match whatever CSS theme is applied
+    const bodyStyles = window.getComputedStyle(document.body);
+    const backgroundColor = bodyStyles.backgroundColor ||
+      (options.theme === 'dark' ? '#0a0a0a' : '#ffffff'); // Fallback if needed
 
-    // Fill background with theme color
+    // Fill background with the computed theme color
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
