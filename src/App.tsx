@@ -154,13 +154,23 @@ function App() {
   const [similarArtistAnchor, setSimilarArtistAnchor] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
 
-  // Display control states
+  // Display control states (defaults match main branch behavior)
   const [nodeSize, setNodeSize] = useState(50);
   const [linkThickness, setLinkThickness] = useState(50);
   const [linkCurvature, setLinkCurvature] = useState(50);
-  const [textFadeThreshold, setTextFadeThreshold] = useState(50);
+  const [textFadeThreshold, setTextFadeThreshold] = useState(0);
   const [showLabels, setShowLabels] = useState(true);
   const [labelSize, setLabelSize] = useState<'Small' | 'Default' | 'Large'>('Default');
+
+  // Reset display controls to defaults
+  const handleResetDisplayControls = useCallback(() => {
+    setNodeSize(50);
+    setLinkThickness(50);
+    setLinkCurvature(50);
+    setTextFadeThreshold(0);
+    setShowLabels(true);
+    setLabelSize('Default');
+  }, []);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [isFindFilterOpen, setIsFindFilterOpen] = useState(false);
@@ -1824,6 +1834,7 @@ function App() {
                 setShowLabels={setShowLabels}
                 labelSize={labelSize}
                 setLabelSize={setLabelSize}
+                onReset={handleResetDisplayControls}
               />
               {/* Bottom positioned Zoomies */}
               <div className='pt-6 hidden sm:block'>

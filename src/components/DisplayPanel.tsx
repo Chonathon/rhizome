@@ -25,6 +25,7 @@ interface DisplayPanelProps {
     setShowLabels: (show: boolean) => void;
     labelSize: 'Small' | 'Default' | 'Large';
     setLabelSize: (size: 'Small' | 'Default' | 'Large') => void;
+    onReset: () => void;
 }
 
 export default function DisplayPanel({
@@ -41,12 +42,13 @@ export default function DisplayPanel({
     showLabels,
     setShowLabels,
     labelSize,
-    setLabelSize
+    setLabelSize,
+    onReset
 }: DisplayPanelProps) {
-    // TODO: Reset logic for graph controls can be implemented here
     const [isRotating, setIsRotating] = useState(false);
     const handleResetClick = () => {
       setIsRotating(true);
+      onReset();
       setTimeout(() => {
         setIsRotating(false);
       }, 200)
