@@ -547,7 +547,7 @@ const ProfileSection = ({
                 </FieldContent>
                 <Switch
                   id="hover-cards"
-                  checked={preferences.enableGraphCards ?? true}
+                  checked={preferences.enableGraphCards ?? false}
                   onCheckedChange={(checked) => {
                     onPreferencesChange({
                       ...preferences,
