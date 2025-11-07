@@ -21,7 +21,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
     const [linkCurvature, setLinkCurvature] = useState(50)
     const [textFadeThreshold, setTextFadeThreshold] = useState(50)
     //const [genreSizeThreshold, setGenreSizeThreshold] = useState(genreArtistCountThreshold)
-    const [showLabels, setShowLabels] = useState(false)
+    const [showLabels, setShowLabels] = useState(true)
     const [labelSize, setLabelSize] = useState(14)
     // TODO: Reset logic for graph controls can be implemented here
     const [isRotating, setIsRotating] = useState(false);
@@ -66,7 +66,8 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 </div>
                 {/* content */}
             <div className="flex flex-col gap-3">
-                <div className={feildsetStyles}>
+                <fieldset  className={feildsetStyles}>
+                    <legend className="sr-only">Graph Options</legend>
                     {/* Node Size */}
                     <div className="flex items-center justify-start gap-6">
                         <label htmlFor="node-size" className={labelStyles}>Node Size</label>
@@ -136,7 +137,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                     {/*        />*/}
                     {/*    </div>*/}
                     {/*</div>*/}
-                </div>
+                </fieldset>
                     <fieldset className={feildsetStyles}>
                         <legend className="sr-only">Text options</legend>
                         <div className="flex items-center justify-start gap-6">
@@ -147,49 +148,52 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                                 onCheckedChange={setShowLabels}
                             />
                         </div>
-                        <legend className="sr-only">Text options</legend>
-                        <div className="flex items-center justify-start gap-6">
-                            <label htmlFor="show-labels" className={labelStyles}>Text Size</label>
-                            {/* <Input
-                                id="show-labels"
-                                type="number"
-                                value={labelSize}
-                                className="w-20"
-                                onChange={(e) => setLabelSize(Number(e.target.value))}
-                            /> */}
-                            <Select value="Default">
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder={labelSize.toString()}  />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {["Small", "Default", "Large"].map((size) => (
-                                        <SelectItem
-                                            key={size}
-                                            value={size.toString()}
-                                            onClick={() => setLabelSize(size)}>
-                                            {size}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                        
+                        {showLabels &&
+                        <>
+                            <div className="flex items-center justify-start gap-6">
+                                <label htmlFor="show-labels" className={labelStyles}>Text Size</label>
+                                {/* <Input
+                                    id="show-labels"
+                                    type="number"
+                                    value={labelSize}
+                                    className="w-20"
+                                    onChange={(e) => setLabelSize(Number(e.target.value))}
+                                /> */}
+                                <Select value="Default">
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder={labelSize.toString()}  />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {["Small", "Default", "Large"].map((size) => (
+                                            <SelectItem
+                                                key={size}
+                                                value={size.toString()}
+                                                onClick={() => setLabelSize(size)}>
+                                                {size}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {/* Text Fade Threshold */}
+                                                <div className="flex items-center justify-start gap-6">
+                            <label htmlFor="text-fade-threshold" className={labelStyles}>Label Fade Threshold</label>
+                            <div className="w-full flex items-center gap-2">
+                                <Badge variant="outline" className={badgeStyles}>{textFadeThreshold}</Badge>
+                                <Slider
+                                    id="text-fade-threshold-slider"
+                                    aria-labelledby="text-fade-threshold"
+                                    value={[textFadeThreshold]}
+                                    onValueChange={([value]) => setTextFadeThreshold(value)}
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    className="w-full"
+                                />
+                            </div>
                         </div>
-                        {/* Text Fade Threshold */}
-                    <div className="flex items-center justify-start gap-6">
-                        <label htmlFor="text-fade-threshold" className={labelStyles}>Label Fade Threshold</label>
-                        <div className="w-full flex items-center gap-2">
-                            <Badge variant="outline" className={badgeStyles}>{textFadeThreshold}</Badge>
-                            <Slider
-                                id="text-fade-threshold-slider"
-                                aria-labelledby="text-fade-threshold"
-                                value={[textFadeThreshold]}
-                                onValueChange={([value]) => setTextFadeThreshold(value)}
-                                min={0}
-                                max={100}
-                                step={1}
-                                className="w-full"
-                            />
-                        </div>
-                    </div>
+                    </>}
                     </fieldset>
             </div>
         </ResponsivePanel>
