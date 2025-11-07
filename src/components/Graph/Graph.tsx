@@ -155,8 +155,10 @@ const Graph = forwardRef(function GraphInner<
   const shouldResetZoomRef = useRef(true);
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
 
-  // Convert display control values to usable ranges
-  const linkThicknessScale = 0.5 + (linkThickness / 100) * 1.5; // 0-100 → 0.5-2.0
+  // Convert display control values to usable ranges (all centered at 50 = 1.0x)
+  const linkThicknessScale = linkThickness <= 50
+    ? 0.5 + (linkThickness / 50) * 0.5  // 0-50 → 0.5-1.0
+    : 1.0 + ((linkThickness - 50) / 50) * 1.0; // 50-100 → 1.0-2.0
   const linkCurvatureValue = linkCurvature / 100; // 0-100 → 0.0-1.0
   const labelFontSize = labelSize === 'Small' ? 10 : labelSize === 'Large' ? 16 : 12;
   // Map textFadeThreshold (0-100, center at 50) to fade scale factor

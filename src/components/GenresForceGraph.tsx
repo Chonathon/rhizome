@@ -53,8 +53,10 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
     },
     ref,
   ) => {
-    // Convert nodeSize (0-100) to scale factor (0.5-2.0)
-    const nodeScaleFactor = 0.5 + (nodeSize / 100) * 1.5;
+    // Convert nodeSize (0-100) to scale factor, centered at 50 = 1.0
+    const nodeScaleFactor = nodeSize <= 50
+      ? 0.5 + (nodeSize / 50) * 0.5  // 0-50 → 0.5-1.0
+      : 1.0 + ((nodeSize - 50) / 50) * 1.0; // 50-100 → 1.0-2.0
     const graphNodes = useMemo<SharedGraphNode<Genre>[]>(() => {
       const nodes = graphData?.nodes ?? [];
       if (!nodes.length) return [];
