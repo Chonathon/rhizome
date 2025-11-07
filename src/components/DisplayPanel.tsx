@@ -27,6 +27,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
       }, 200)
     }
     const labelStyles = "w-full text-left text-md font-medium text-foreground"
+    const badgeStyles = "w-12 p-1 text-center"
 
     return (
         <ResponsivePanel
@@ -60,7 +61,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 <div className="flex items-center justify-start gap-6">
                     <label htmlFor="node-size" className={labelStyles}>Node Size</label>
                     <div className="w-full flex items-center gap-2">
-                        <Badge variant="outline" className="w-12 p-1 text-center">{nodeSize}</Badge>
+                        <Badge variant="outline" className={badgeStyles}>{nodeSize}</Badge>
                         <Slider
                             id="node-size-slider"
                             aria-labelledby="node-size"
@@ -77,7 +78,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 <div className="flex items-center justify-start gap-6">
                     <label htmlFor="edge-thickness" className={labelStyles}>Edge thickness</label>
                     <div className="w-full flex items-center gap-2">
-                        <Badge variant="outline" className="w-12 p-1 text-center">{edgeThickness}</Badge>
+                        <Badge variant="outline" className={badgeStyles}>{edgeThickness}</Badge>
                         <Slider
                             id="edge-thickness-slider"
                             aria-labelledby="edge-thickness"
@@ -92,9 +93,9 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 </div>
                 {/* Edge Curvature */}
                 <div className="flex items-center justify-start gap-6">
-                    <label htmlFor="edge-thickness" className="w-full text-left text-md font-medium text-foregroun">Edge Curvature</label>
+                    <label htmlFor="edge-thickness" className={labelStyles}>Edge Curvature</label>
                     <div className="w-full flex items-center gap-2">
-                        <Badge variant="outline" className="w-12 p-1 text-center">{edgeThickness}</Badge>
+                        <Badge variant="outline" className={badgeStyles}>{edgeThickness}</Badge>
                         <Slider
                             id="edge-thickness-slider"
                             aria-labelledby="edge-thickness"
@@ -111,7 +112,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 <div className="flex items-center justify-start gap-6">
                     <label htmlFor="text-fade-threshold" className={labelStyles}>Text Fade Threshold</label>
                     <div className="w-full flex items-center gap-2">
-                        <Badge variant="outline" className="w-12 p-1 text-center">{textFadeThreshold}</Badge>
+                        <Badge variant="outline" className={badgeStyles}>{textFadeThreshold}</Badge>
                         <Slider
                             id="text-fade-threshold-slider"
                             aria-labelledby="text-fade-threshold"
@@ -128,7 +129,7 @@ export default function DisplayPanel({ genreArtistCountThreshold, setGenreArtist
                 {/*<div className="flex items-center justify-start gap-6">*/}
                 {/*    <label htmlFor="genre-min-size" className={labelStyles}>Genre Min Size</label>*/}
                 {/*    <div className="w-full flex items-center gap-2">*/}
-                {/*        <Badge variant="outline" className="w-12 p-1 text-center">{genreArtistCountThreshold}</Badge>*/}
+                {/*        <Badge variant="outline" className={badgeStyles}>{genreArtistCountThreshold}</Badge>*/}
                 {/*        <Slider*/}
                 {/*            id="genre-min-size-slider"*/}
                 {/*            aria-labelledby="genre-min-size"*/}
