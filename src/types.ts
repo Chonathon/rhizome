@@ -158,6 +158,7 @@ export interface GraphHandle {
   zoomOut: () => void;
   zoomTo: (k: number, ms?: number) => void;
   getZoom: () => number;
+  getCanvas: () => HTMLCanvasElement | null;
 }
 
 export interface FindOption {

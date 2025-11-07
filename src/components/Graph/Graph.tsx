@@ -135,6 +135,7 @@ const Graph = forwardRef(function GraphInner<
   ref: Ref<GraphHandle>,
 ) {
   const fgRef = useRef<ForceGraphMethods<PreparedNode<T>, L> | undefined>(undefined);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const zoomRef = useRef<number>(1);
   const { resolvedTheme } = useTheme();
   const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
@@ -160,6 +161,14 @@ const Graph = forwardRef(function GraphInner<
         fgRef.current?.zoom?.(target, ms);
       },
       getZoom: () => zoomRef.current || 1,
+      getCanvas: () => {
+        // Access the canvas element from the container div
+        if (containerRef.current) {
+          const canvas = containerRef.current.querySelector('canvas');
+          return canvas as HTMLCanvasElement | null;
+        }
+        return null;
+      },
     }),
     [],
   );
@@ -316,6 +325,7 @@ const Graph = forwardRef(function GraphInner<
 
   return (
     <div
+      ref={containerRef}
       className="flex-1 w-full relative"
       style={{
         height: height ?? "100%",
