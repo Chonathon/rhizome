@@ -7,6 +7,7 @@ import { CircleUserRound, Cable, HandHeart, Check, X } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
+import { Switch } from "@/components/ui/switch"
 import {
   Dialog,
   DialogContent,
@@ -536,6 +537,24 @@ const ProfileSection = ({
                     <SelectItem value="light">Light</SelectItem>
                   </SelectContent>
                 </Select>
+              </Field>
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldLabel htmlFor="hover-cards">Preview Cards</FieldLabel>
+                  <FieldDescription>
+                    Show preview cards when hovering over nodes
+                  </FieldDescription>
+                </FieldContent>
+                <Switch
+                  id="hover-cards"
+                  checked={preferences.enableGraphCards ?? false}
+                  onCheckedChange={(checked) => {
+                    onPreferencesChange({
+                      ...preferences,
+                      enableGraphCards: checked
+                    });
+                  }}
+                />
               </Field>
             </FieldGroup>
           </FieldSet>

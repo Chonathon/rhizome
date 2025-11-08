@@ -122,6 +122,7 @@ export type Theme = 'light' | 'dark' | 'system';
 export interface Preferences {
     theme?: Theme;
     player?: PlayerType;
+    enableGraphCards?: boolean;
 }
 
 export type Social = 'google' | 'spotify';

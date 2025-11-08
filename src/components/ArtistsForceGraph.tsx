@@ -9,6 +9,7 @@ interface ArtistsForceGraphProps {
   artists: Artist[];
   artistLinks: NodeLink[];
   onNodeClick: (artist: Artist) => void;
+  onNodeHover?: (artistId: string | null, screenPosition: { x: number; y: number } | null) => void;
   loading: boolean;
   show: boolean;
   selectedArtistId?: string;
@@ -27,6 +28,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       artists,
       artistLinks,
       onNodeClick,
+      onNodeHover,
       loading,
       show,
       selectedArtistId,
@@ -90,6 +92,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         selectedId={selectedArtistId}
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
+        onNodeHover={onNodeHover}
       />
     );
   },

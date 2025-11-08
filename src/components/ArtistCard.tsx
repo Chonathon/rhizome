@@ -1,5 +1,5 @@
 import {Artist} from '@/types'
-import {fixWikiImageURL, formatDate, formatNumber} from '@/lib/utils'
+import {fixWikiImageURL, formatDate, formatNumber, formatNumberCompact} from '@/lib/utils'
 import { useState } from "react"
 import GraphCard from "./GraphCard";
 import { Button } from './ui/button';
@@ -77,7 +77,7 @@ export function ArtistCard({
             {selectedArtist && selectedArtist.listeners && (
               <h3>
                 <span className="font-medium">Listeners:</span>{" "}
-                {formatNumber(selectedArtist.listeners)}
+                {formatNumberCompact(selectedArtist.listeners)}
               </h3>
             )}
             <h3>

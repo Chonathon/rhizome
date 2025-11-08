@@ -8,6 +8,7 @@ import { Genre, GenreClusterMode, GenreGraphData, NodeLink } from "@/types";
 interface GenresForceGraphProps {
   graphData?: GenreGraphData;
   onNodeClick: (genre: Genre) => void;
+  onNodeHover?: (genreId: string | null, screenPosition: { x: number; y: number } | null) => void;
   loading: boolean;
   show: boolean;
   dag: boolean;
@@ -27,6 +28,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
     {
       graphData,
       onNodeClick,
+      onNodeHover,
       loading,
       show,
       dag,
@@ -97,6 +99,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         dagMode={dag}
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
+        onNodeHover={onNodeHover}
       />
     );
   },
