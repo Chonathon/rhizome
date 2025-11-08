@@ -117,8 +117,13 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
             </SidebarGroupContent>
           </SidebarContent>
 
-          <SidebarContent className="mt-6 flex-1">
-            <button className="hover:bg-sidebar cursor-e-resize w-full h-full rounded-lg" onClick={toggleSidebar} />
+          <SidebarContent className="my-6 flex-1">
+            <button
+              type="button"
+              aria-label="Toggle sidebar"
+              onClick={toggleSidebar}
+              className="w-full h-full rounded-md !cursor-e-resize hover:bg-sidebar/30"
+            />
           </SidebarContent>
         </SidebarContent>
         <SidebarFooter className="mt-auto flex p-1 pb-3">
