@@ -179,9 +179,12 @@ const Graph = forwardRef(function GraphInner<
 
   const { labelFadeStart, labelFadeEnd } = useMemo(() => {
     // Map textFadeThreshold (0-100, center at 50) to fade scale factor
-    const fadeScale = textFadeThreshold <= 50
-      ? 0.5 + (textFadeThreshold / 50) * 0.5  // 0-50 → 0.5x-1.0x
-      : 1.0 + ((textFadeThreshold - 50) / 50) * 2.0; // 50-100 → 1.0x-3.0x
+    // Higher threshold = lower zoom values needed = can zoom out more and see text
+    // Invert the threshold so higher values give lower fade thresholds
+    const inverted = 100 - textFadeThreshold;
+    const fadeScale = inverted <= 50
+      ? 0.5 + (inverted / 50) * 0.5  // 0-50 → 0.5x-1.0x
+      : 1.0 + ((inverted - 50) / 50) * 2.0; // 50-100 → 1.0x-3.0x
     return {
       labelFadeStart: DEFAULT_LABEL_FADE_START * fadeScale,
       labelFadeEnd: DEFAULT_LABEL_FADE_END * fadeScale,
