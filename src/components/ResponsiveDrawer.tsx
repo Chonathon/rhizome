@@ -167,7 +167,7 @@ export function ResponsiveDrawer({
   const desktopSideOffset: React.CSSProperties | undefined = React.useMemo(() => {
     if (!isDesktop || !useDesktopOffset) return undefined;
     if (directionDesktop === "left") {
-      return { left: "calc(var(--sidebar-gap, 0px))" } as React.CSSProperties;
+      return { left: "calc(var(--sidebar-gap, 0px) + 12px)" } as React.CSSProperties;
     }
     return { right: "calc(var(--sidebar-gap, 0px))" } as React.CSSProperties;
   }, [isDesktop, useDesktopOffset, directionDesktop]);
