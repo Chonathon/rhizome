@@ -831,8 +831,8 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
       if (customEvent?.detail?.view) {
         setActiveView(customEvent.detail.view)
       } else {
-        // Default to Profile if no view specified
-        setActiveView("Profile")
+        // Default to General if no view specified
+        setActiveView("General")
       }
       setOpen(true)
     }
