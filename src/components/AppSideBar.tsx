@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React, { useCallback, useState } from "react"
-import { Icon, Undo2, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon, CircleEllipsis} from "lucide-react"
+import { Icon, Undo2, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Cog, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon, CircleEllipsis, UserCircle} from "lucide-react"
 import { TwoLines } from "./Icon"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
@@ -196,14 +196,14 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                             <DropdownMenuSeparator /> */}
                             {signedInUser ? (
                               <>
-                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
-                                  Profile
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'General' } }))}><Cog />
+                                  General
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Account' } }))}><UserCircle />
+                                  Account
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
                                   Connections
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
-                                  Settings
                                 </DropdownMenuItem>
                               </>
                             ) : (
