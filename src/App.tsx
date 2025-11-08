@@ -154,7 +154,7 @@ function App() {
   const [similarArtistAnchor, setSimilarArtistAnchor] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
 
-  // Display control states (defaults match main branch behavior)
+  // Default display control states
   const [nodeSize, setNodeSize] = useState(50);
   const [linkThickness, setLinkThickness] = useState(50);
   const [linkCurvature, setLinkCurvature] = useState(50);
