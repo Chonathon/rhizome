@@ -1714,6 +1714,7 @@ function App() {
         onExploreClick={onExploreClick}
         signedInUser={!!userID}
         isCollectionMode={collectionMode}
+        searchOpen={searchOpen}
       >
         <SidebarLogoTrigger />
         <Toaster />

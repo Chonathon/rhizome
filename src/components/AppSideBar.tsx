@@ -15,11 +15,11 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React, { useCallback, useState } from "react"
-import { Icon, Undo2, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon, CircleEllipsis} from "lucide-react"
-import { TwoLines } from "./Icon"
+import { Icon, Undo2, BadgeIcon, SidebarIcon, SearchIcon, Tag, MicVocal, Settings, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon, CircleEllipsis} from "lucide-react"
+import { TwoLines, SearchFilled, BookOpen, BookOpenFilled } from "./Icon"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
-import { AccountMenuState, Genre, GraphType } from "@/types"
+import { Genre, GraphType } from "@/types"
 import { Badge } from "./ui/badge"
 import RhizomeLogo from "@/components/RhizomeLogo"
 import { useSidebar } from "@/components/ui/sidebar"
@@ -59,9 +59,10 @@ interface AppSidebarProps {
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
   isCollectionMode: boolean;
+  searchOpen?: boolean;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, onExploreClick, isCollectionMode }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, onExploreClick, isCollectionMode, searchOpen }: AppSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { theme, setTheme } = useTheme()
   const { recentSelections } = useRecentSelections()
@@ -111,9 +112,11 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               <SidebarGroup>
                 <SidebarMenu className="gap-4">
                       <SidebarMenuItem className="">
-                        <SidebarMenuButton asChild tooltip="Search ⌘K" size="xl" >
+                        <SidebarMenuButton asChild tooltip="Search ⌘K" isActive={searchOpen} size="xl" >
                           <button onClick={() => setSearchOpen(true)}>
-                            <SearchIcon size={24}/>
+                            {searchOpen
+                            ? <SearchFilled className="shrink-0"/>
+                            : <SearchIcon className="shrink-0"/>}
                             <span className="truncate">Search</span>
                           {/* <Badge
                             className="text-xs text-muted-foreground"
@@ -126,7 +129,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                       <SidebarMenuItem>
                         <SidebarMenuButton asChild tooltip="Collection" size="xl" isActive={isCollectionMode}>
                           <button onClick={onCollectionClick}>
-                            <BookOpen />
+                            {isCollectionMode ? <BookOpenFilled /> : <BookOpen />}
                             <span className="truncate">Collection</span>
                           </button>
                         </SidebarMenuButton>
