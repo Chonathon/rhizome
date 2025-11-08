@@ -117,7 +117,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
             </SidebarGroupContent>
           </SidebarContent>
 
-          <SidebarContent className="my-6 flex-1">
+          <SidebarContent className="my-3 flex-1">
             <button
               type="button"
               aria-label="Toggle sidebar"
