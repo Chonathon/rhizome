@@ -1,6 +1,7 @@
 import {
   forwardRef,
   memo,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -363,6 +364,116 @@ const Graph = forwardRef(function GraphInner<
     return () => window.clearTimeout(timeout);
   }, [autoFocus, preparedData.nodes, selectedId, show]);
 
+  // Memoize all ForceGraph callbacks to prevent unnecessary re-renders
+  const linkColorCallback = useCallback((link: L) => {
+    const source =
+      typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
+    const target =
+      typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
+    const base = source ? colorById.get(String(source)) : undefined;
+    const fallback = resolvedTheme === "dark" ? "#ffffff" : "#000000";
+    const selected = !!selectedId && (source === selectedId || target === selectedId);
+    return `${base ?? fallback}${selectedId ? (selected ? 'cc' : '30') : '80'}`;
+  }, [colorById, selectedId, resolvedTheme]);
+
+  const linkWidthCallback = useCallback((link: L) => {
+    if (!selectedId) return 1 * linkThicknessScale;
+    const source =
+      typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
+    const target =
+      typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
+    const baseWidth = source === selectedId || target === selectedId ? 2.5 : 0.6;
+    return baseWidth * linkThicknessScale;
+  }, [selectedId, linkThicknessScale]);
+
+  const nodeCanvasObjectCallback = useCallback((node: PreparedNode<T>, ctx: CanvasRenderingContext2D) => {
+    const x = node.x ?? 0;
+    const y = node.y ?? 0;
+    const baseRadius = node.radius;
+    const radius = baseRadius * nodeScaleFactor; // Apply visual scaling
+    const accent = colorById.get(node.id) ?? defaultColor;
+    const isSelected = selectedId === node.id;
+    const isNeighbor = hasSelection ? selectedNeighbors?.has(node.id) ?? false : false;
+    const isHovered = hoveredId === node.id;
+
+    // Calculate node alpha
+    let alpha = 1;
+    if (hasSelection) {
+      alpha = isSelected ? 1 : isNeighbor ? 0.8 : 0.15;
+    } else if (isHovered) {
+      alpha = 0.8;
+    }
+
+    // Build render context
+    const renderContext: NodeRenderContext<T> = {
+      ctx,
+      node: node as SharedGraphNode<T>,
+      x,
+      y,
+      radius,
+      color: accent,
+      isSelected,
+      isNeighbor,
+      isHovered,
+      alpha,
+      theme: resolvedTheme as 'light' | 'dark' | undefined,
+    };
+
+    // Render node
+    renderNode(renderContext);
+
+    // Render selection ring if selected
+    if (isSelected) {
+      renderSelection(renderContext);
+    }
+
+    // Calculate and render label
+    if (showLabels) {
+      const k = zoomRef.current || 1;
+      let labelAlpha = labelAlphaForZoom(k, labelFadeStart, labelFadeEnd);
+      if (isSelected || isHovered) labelAlpha = 1;
+      else if (hasSelection && !isNeighbor) labelAlpha = Math.min(labelAlpha, 0.25);
+
+      const labelContext: LabelRenderContext<T> = {
+        ...renderContext,
+        label: node.label,
+        labelAlpha,
+        zoomLevel: k,
+      };
+      // Pass fontSize if using default renderer
+      if (renderLabel === defaultRenderLabel) {
+        defaultRenderLabel(labelContext, labelFontSize);
+      } else {
+        renderLabel(labelContext);
+      }
+    }
+  }, [
+    nodeScaleFactor,
+    colorById,
+    defaultColor,
+    selectedId,
+    hasSelection,
+    selectedNeighbors,
+    hoveredId,
+    renderNode,
+    renderSelection,
+    showLabels,
+    labelFadeStart,
+    labelFadeEnd,
+    renderLabel,
+    labelFontSize,
+    resolvedTheme,
+  ]);
+
+  const nodePointerAreaPaintCallback = useCallback((node: PreparedNode<T>, color: string, ctx: CanvasRenderingContext2D) => {
+    ctx.fillStyle = color;
+    const x = node.x ?? 0;
+    const y = node.y ?? 0;
+    ctx.beginPath();
+    ctx.arc(x, y, node.radius + 24, 0, 2 * Math.PI);
+    ctx.fill();
+  }, []);
+
   return (
     <div
       className="flex-1 w-full relative"
@@ -393,25 +504,8 @@ const Graph = forwardRef(function GraphInner<
         autoPauseRedraw={true}
         nodeColor={() => "rgba(0,0,0,0)"}
         nodeCanvasObjectMode={() => "replace"}
-        linkColor={(link) => {
-          const source =
-            typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
-          const target =
-            typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
-          const base = source ? colorById.get(String(source)) : undefined;
-          const fallback = resolvedTheme === "dark" ? "#ffffff" : "#000000";
-          const selected = !!selectedId && (source === selectedId || target === selectedId);
-          return `${base ?? fallback}${selectedId ? (selected ? 'cc' : '30') : '80'}`;
-        }}
-        linkWidth={(link) => {
-          if (!selectedId) return 1 * linkThicknessScale;
-          const source =
-            typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
-          const target =
-            typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
-          const baseWidth = source === selectedId || target === selectedId ? 2.5 : 0.6;
-          return baseWidth * linkThicknessScale;
-        }}
+        linkColor={linkColorCallback}
+        linkWidth={linkWidthCallback}
         linkCurvature={dagMode ? 0 : linkCurvatureValue}
         onZoom={({ k }) => {
           zoomRef.current = k;
@@ -424,76 +518,8 @@ const Graph = forwardRef(function GraphInner<
         onNodeClick={(node) => {
           onNodeClick?.((node as PreparedNode<T>).data);
         }}
-        nodeCanvasObject={(node, ctx) => {
-          const x = node.x ?? 0;
-          const y = node.y ?? 0;
-          const baseRadius = node.radius;
-          const radius = baseRadius * nodeScaleFactor; // Visual scaling applied here, not in data
-          const accent = colorById.get(node.id) ?? defaultColor;
-          const isSelected = selectedId === node.id;
-          const isNeighbor = hasSelection ? selectedNeighbors?.has(node.id) ?? false : false;
-          const isHovered = hoveredId === node.id;
-
-          // Calculate node alpha
-          let alpha = 1;
-          if (hasSelection) {
-            alpha = isSelected ? 1 : isNeighbor ? 0.8 : 0.15;
-          } else if (isHovered) {
-            alpha = 0.8;
-          }
-
-          // Build render context
-          const renderContext: NodeRenderContext<T> = {
-            ctx,
-            node: node as SharedGraphNode<T>,
-            x,
-            y,
-            radius,
-            color: accent,
-            isSelected,
-            isNeighbor,
-            isHovered,
-            alpha,
-            theme: resolvedTheme as 'light' | 'dark' | undefined,
-          };
-
-          // Render node
-          renderNode(renderContext);
-
-          // Render selection ring if selected
-          if (isSelected) {
-            renderSelection(renderContext);
-          }
-
-          // Calculate and render label
-          if (showLabels) {
-            const k = zoomRef.current || 1;
-            let labelAlpha = labelAlphaForZoom(k, labelFadeStart, labelFadeEnd);
-            if (isSelected || isHovered) labelAlpha = 1;
-            else if (hasSelection && !isNeighbor) labelAlpha = Math.min(labelAlpha, 0.25);
-
-            const labelContext: LabelRenderContext<T> = {
-              ...renderContext,
-              label: node.label,
-              labelAlpha,
-              zoomLevel: k,
-            };
-            // Pass fontSize if using default renderer
-            if (renderLabel === defaultRenderLabel) {
-              defaultRenderLabel(labelContext, labelFontSize);
-            } else {
-              renderLabel(labelContext);
-            }
-          }
-        }}
-        nodePointerAreaPaint={(node, color, ctx) => {
-          ctx.fillStyle = color;
-          const x = node.x ?? 0;
-          const y = node.y ?? 0;
-          ctx.beginPath();
-          ctx.arc(x, y, node.radius + 24, 0, 2 * Math.PI);
-          ctx.fill();
-        }}
+        nodeCanvasObject={nodeCanvasObjectCallback}
+        nodePointerAreaPaint={nodePointerAreaPaintCallback}
         nodeVal={(node) => node.radius}
       />
     </div>
