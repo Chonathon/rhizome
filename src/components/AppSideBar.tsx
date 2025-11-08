@@ -72,14 +72,14 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
   return (
     <>
       <Sidebar variant="sidebar" collapsible="icon">
-        <SidebarContent className="p-1">
+        <SidebarContent className="p-1 flex flex-col">
           <div className="w-full justify-center pt-2.5 pl-1 mb-6">
             <button onClick={resetAppState} className="group/logo">
               <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
             </button>
           </div>
 
-          <SidebarContent>
+          <SidebarContent className="flex-none">
             <SidebarGroupContent className="flex gap-4 flex-col">
               <SidebarGroup>
                 <SidebarMenu className="gap-4">
@@ -117,8 +117,8 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
             </SidebarGroupContent>
           </SidebarContent>
 
-          <SidebarContent className="mt-6">
-            <button className="bg-accent w-full h-full rounded-lg" onClick={toggleSidebar} />
+          <SidebarContent className="mt-6 flex-1">
+            <button className="hover:bg-sidebar w-full h-full rounded-lg" onClick={toggleSidebar} />
           </SidebarContent>
         </SidebarContent>
         <SidebarFooter className="mt-auto flex pb-3">
