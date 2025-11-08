@@ -118,17 +118,15 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
           </SidebarContent>
 
           <SidebarContent className="mt-6 flex-1">
-            <button className="hover:bg-sidebar w-full h-full rounded-lg" onClick={toggleSidebar} />
+            <button className="hover:bg-sidebar cursor-e-resize w-full h-full rounded-lg" onClick={toggleSidebar} />
           </SidebarContent>
         </SidebarContent>
-        <SidebarFooter className="mt-auto flex pb-3">
+        <SidebarFooter className="mt-auto flex p-1 pb-3">
           <SidebarMenu className="gap-4">
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size="xl" tooltip="More" asChild>
-                  <button type="button">
+                <SidebarMenuButton size="xl" tooltip="More">
                     <TwoLines />
-                  </button>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
 
