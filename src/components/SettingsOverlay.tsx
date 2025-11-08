@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CircleUserRound, Cable, HandHeart, Check, X } from "lucide-react"
+import { CircleUserRound, Cable, HandHeart, Check, X, Cog } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
@@ -51,7 +51,8 @@ import LastFMLogo from "@/assets/Last.fm Logo.svg"
 
 const data = {
   nav: [
-    { name: "Profile", icon: CircleUserRound },
+    { name: "General", icon: Cog },
+    { name: "Account", icon: CircleUserRound },
     { name: "Connections", icon: Cable },
     { name: "Support", icon: HandHeart },
   ],
@@ -417,38 +418,17 @@ const DeleteAccountDialog = ({
 
 // Profile Section Component
 const ProfileSection = ({
-  onChangeEmail,
-  onChangePassword,
-  onLogout,
-  onDeleteAccount,
   name,
-  email,
   onNameChange,
-  preferences,
-  onPreferencesChange,
-  isSocial,
   newName,
   setNewName,
 }: {
-  onChangeEmail: () => void;
-  onChangePassword: () => void;
-  onLogout: () => void;
-  onDeleteAccount: () => void;
   name: string;
-  email: string;
   onNameChange: (newName: string) => Promise<boolean>;
-  preferences: Preferences;
-  onPreferencesChange: (newPreferences: Preferences) => void;
-  isSocial: boolean;
   newName: string;
   setNewName: React.Dispatch<React.SetStateAction<string>>;
 }) => {
   const isDirty = newName !== name;
-  const { theme, setTheme } = useTheme()
-  const onThemeChange = (newTheme: Theme) => {
-    setTheme(newTheme);
-    onPreferencesChange({...preferences, theme: newTheme});
-  }
   const changeName = async () => {
     const success = await onNameChange(newName);
     if (success) {
@@ -458,7 +438,6 @@ const ProfileSection = ({
     }
   }
   return (
-  <>
     <SettingsSection>
       <form onSubmit={(e) => e.preventDefault()}>
         <FieldGroup>
@@ -470,7 +449,7 @@ const ProfileSection = ({
                 <FieldLabel htmlFor="Preferred Name">
                   Preferred Name
                 </FieldLabel>
-                
+
                   <motion.div layout className="flex  gap-2 items-center"
                     transition={{layout: {delay: isDirty ? 0 : 0.4, duration: .2}}}>
                       <Input
@@ -521,8 +500,37 @@ const ProfileSection = ({
                       )}
                     </AnimatePresence>
                   </motion.div>
-                
+
               </Field>
+            </FieldGroup>
+          </FieldSet>
+        </FieldGroup>
+      </form>
+    </SettingsSection>
+  )
+}
+
+// Preferences Section Component
+const PreferencesSection = ({
+  preferences,
+  onPreferencesChange,
+}: {
+  preferences: Preferences;
+  onPreferencesChange: (newPreferences: Preferences) => void;
+}) => {
+  const { theme, setTheme } = useTheme()
+  const onThemeChange = (newTheme: Theme) => {
+    setTheme(newTheme);
+    onPreferencesChange({...preferences, theme: newTheme});
+  }
+  return (
+    <SettingsSection>
+      <form onSubmit={(e) => e.preventDefault()}>
+        <FieldGroup>
+          <FieldSet>
+            <FieldLegend>Preferences</FieldLegend>
+            <FieldSeparator />
+            <FieldGroup>
               <Field orientation="responsive">
                 <FieldLabel htmlFor="theme">
                   Appearance
@@ -538,6 +546,30 @@ const ProfileSection = ({
                   </SelectContent>
                 </Select>
               </Field>
+            </FieldGroup>
+          </FieldSet>
+        </FieldGroup>
+      </form>
+    </SettingsSection>
+  )
+}
+
+// Experimental Features Section Component
+const ExperimentalFeaturesSection = ({
+  preferences,
+  onPreferencesChange,
+}: {
+  preferences: Preferences;
+  onPreferencesChange: (newPreferences: Preferences) => void;
+}) => {
+  return (
+    <SettingsSection>
+      <form onSubmit={(e) => e.preventDefault()}>
+        <FieldGroup>
+          <FieldSet>
+            <FieldLegend>Experimental Features</FieldLegend>
+            <FieldSeparator />
+            <FieldGroup>
               <Field orientation="horizontal">
                 <FieldContent>
                   <FieldLabel htmlFor="hover-cards">Preview Cards</FieldLabel>
@@ -561,7 +593,26 @@ const ProfileSection = ({
         </FieldGroup>
       </form>
     </SettingsSection>
+  )
+}
 
+// Account Section Component
+const AccountSection = ({
+  onChangeEmail,
+  onChangePassword,
+  onLogout,
+  onDeleteAccount,
+  email,
+  isSocial,
+}: {
+  onChangeEmail: () => void;
+  onChangePassword: () => void;
+  onLogout: () => void;
+  onDeleteAccount: () => void;
+  email: string;
+  isSocial: boolean;
+}) => {
+  return (
     <SettingsSection>
       <form>
         <FieldGroup>
@@ -637,7 +688,6 @@ const ProfileSection = ({
         </FieldGroup>
       </form>
     </SettingsSection>
-  </>
   )
 }
 
@@ -647,10 +697,10 @@ const ConnectionsSection = () => {
 
   const handleLastFmToggle = () => {
     if (isLastFmConnected) {
-      toast.info('Disconnected from Last.FM');
+      toast.info('Disconnected from Last.FM... Phew 😮‍💨');
       setIsLastFmConnected(false);
     } else {
-      toast.success('Connected to Last.FM');
+      toast.success('Connected to Last.FM... Whoops, this isn\'t implemented yet 🙃');
       setIsLastFmConnected(true);
       // TODO: Implement actual Last.FM OAuth flow
     }
@@ -764,7 +814,7 @@ interface SettingsOverlayProps {
 
 function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChangeEmail, onChangePassword, onDeleteAccount, onChangePreferences, onChangeName}: SettingsOverlayProps) {
   const [open, setOpen] = useState(false)
-  const [activeView, setActiveView] = useState("Profile")
+  const [activeView, setActiveView] = useState("General")
   const [newName, setNewName] = useState<string>(name)
   const isDirty = newName !== name
 
@@ -816,20 +866,32 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
 
   // View mapping
   const views: Record<string, React.ReactNode> = {
-    Profile: (
-      <ProfileSection
+    General: (
+      <>
+        <ProfileSection
+          name={name}
+          onNameChange={onChangeName}
+          newName={newName}
+          setNewName={setNewName}
+        />
+        <PreferencesSection
+          preferences={preferences}
+          onPreferencesChange={onChangePreferences}
+        />
+        <ExperimentalFeaturesSection
+          preferences={preferences}
+          onPreferencesChange={onChangePreferences}
+        />
+      </>
+    ),
+    Account: (
+      <AccountSection
         onChangeEmail={() => setChangeEmailOpen(true)}
         onChangePassword={() => setChangePasswordOpen(true)}
         onLogout={() => setLogoutOpen(true)}
         onDeleteAccount={() => setDeleteAccountOpen(true)}
-        name={name}
         email={email}
-        preferences={preferences}
-        onNameChange={onChangeName}
-        onPreferencesChange={onChangePreferences}
         isSocial={socialUser}
-        newName={newName}
-        setNewName={setNewName}
       />
     ),
     Connections: <ConnectionsSection />,
