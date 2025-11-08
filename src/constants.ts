@@ -14,7 +14,7 @@ export const DEFAULT_ARTIST_LIMIT_TYPE: ArtistNodeLimitType = 'listeners';
 export const DEFAULT_PLAYER: PlayerType = 'youtube';
 
 export const MAX_NODES = 2000;
-export const NODE_AMOUNT_PRESETS = [2000, 1000, 500, 200, 100, 50];
+export const NODE_AMOUNT_PRESETS = [5000, 3000, 2000, 1000, 500, 200, 100, 50];
 
 export const SERVER_PRODUCTION_URL = 'https://rhizome-server-production.up.railway.app';
 export const SERVER_DEVELOPMENT_URL = 'https://rhizome-server-development.up.railway.app';
@@ -75,7 +75,7 @@ export const UNREGISTERED_USER_ID = 'unregistered';
 export const MAX_YTID_QUEUE_SIZE = 200;
 
 export const DEFAULT_THEME: Theme = 'system';
-export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER, enableGraphCards: true};
+export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER, enableGraphCards: false};
 export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
 export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
 // Tailwind default color palette (lighter/less saturated variants)
