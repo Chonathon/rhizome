@@ -239,11 +239,11 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                              <SidebarMenuButton className="" size={"xl"} asChild>
+                              {/* <SidebarMenuButton className="" size={"xl"} asChild>
                                 <button onClick={() => toggleSidebar()}>
                                   <SidebarIcon size={20} />
                                 </button>
-                              </SidebarMenuButton>
+                              </SidebarMenuButton> */}
                           </SidebarMenu>
                         {/* <button className="p-2.5 -mr-1 -mb-.5 hover:bg-accent rounded-full" onClick={onClick}>
                           <Settings size={20}/>
