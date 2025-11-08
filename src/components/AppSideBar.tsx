@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/sidebar"
 import { Search } from "@/components/Search"
 import React, { useCallback, useState } from "react"
-import { Icon, Undo2, BadgeIcon, SidebarIcon, SearchIcon, Tag, MicVocal, Settings, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon, CircleEllipsis} from "lucide-react"
-import { TwoLines, SearchFilled, BookOpen, BookOpenFilled } from "./Icon"
+import { Icon, Undo2, BadgeIcon, SidebarIcon, Tag, MicVocal, Settings, CircleHelp, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon, CircleEllipsis} from "lucide-react"
+import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
 import { Genre, GraphType } from "@/types"
@@ -158,7 +158,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild isActive={!isCollectionMode} tooltip="Explore" size="xl">
                         <button onClick={onExploreClick}>
-                          <Telescope />
+                          {!isCollectionMode ? <TelescopeFilled/> : <Telescope />}
                           <span>Explore</span>
                         </button>
                       </SidebarMenuButton>
@@ -252,7 +252,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                           <CircleHelp size={20} />
                         </button> */}
                   </SidebarFooter>
-        <SidebarRail />
+        {/* <SidebarRail /> */}
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
       {/* Mobile toolbar */}
