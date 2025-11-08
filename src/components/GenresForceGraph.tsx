@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from "react";
+import { forwardRef, memo, useMemo } from "react";
 import Graph, {
   type GraphHandle,
   type SharedGraphNode,
@@ -44,7 +44,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       autoFocus,
       width,
       height,
-      nodeSize = 50,
+      nodeSize,
       linkThickness,
       linkCurvature,
       showLabels,
@@ -53,10 +53,6 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
     },
     ref,
   ) => {
-    // Convert nodeSize (0-100) to scale factor, centered at 50 = 1.0
-    const nodeScaleFactor = nodeSize <= 50
-      ? 0.5 + (nodeSize / 50) * 0.5  // 0-50 → 0.5-1.0
-      : 1.0 + ((nodeSize - 50) / 50) * 1.0; // 50-100 → 1.0-2.0
     const graphNodes = useMemo<SharedGraphNode<Genre>[]>(() => {
       const nodes = graphData?.nodes ?? [];
       if (!nodes.length) return [];
@@ -71,7 +67,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       return nodes.map((genre) => {
         const value = Math.log10(Math.max(1, genre.artistCount || 1));
         const t = (value - min) / denom;
-        const radius = (MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS)) * nodeScaleFactor;
+        const radius = MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS); // Base radius only, no scaling
         return {
           id: genre.id,
           label: genre.name,
@@ -80,7 +76,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
           data: genre,
         };
       });
-    }, [graphData, colorMap, nodeScaleFactor]);
+    }, [graphData, colorMap]);
 
     const graphLinks = useMemo<NodeLink[]>(() => {
       const links = graphData?.links ?? [];
@@ -114,6 +110,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         dagMode={dag}
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
+        nodeSize={nodeSize}
         linkThickness={linkThickness}
         linkCurvature={linkCurvature}
         showLabels={showLabels}
@@ -125,4 +122,4 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
 );
 
 export type { GraphHandle };
-export default GenresForceGraph;
+export default memo(GenresForceGraph);

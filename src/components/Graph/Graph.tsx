@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  memo,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -156,17 +157,36 @@ const Graph = forwardRef(function GraphInner<
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
 
   // Convert display control values to usable ranges (all centered at 50 = 1.0x)
-  const linkThicknessScale = linkThickness <= 50
-    ? 0.5 + (linkThickness / 50) * 0.5  // 0-50 → 0.5-1.0
-    : 1.0 + ((linkThickness - 50) / 50) * 1.0; // 50-100 → 1.0-2.0
-  const linkCurvatureValue = linkCurvature / 100; // 0-100 → 0.0-1.0
-  const labelFontSize = labelSize === 'Small' ? 10 : labelSize === 'Large' ? 16 : 12;
-  // Map textFadeThreshold (0-100, center at 50) to fade scale factor
-  const fadeScale = textFadeThreshold <= 50
-    ? 0.5 + (textFadeThreshold / 50) * 0.5  // 0-50 → 0.5x-1.0x
-    : 1.0 + ((textFadeThreshold - 50) / 50) * 2.0; // 50-100 → 1.0x-3.0x
-  const labelFadeStart = DEFAULT_LABEL_FADE_START * fadeScale;
-  const labelFadeEnd = DEFAULT_LABEL_FADE_END * fadeScale;
+  const nodeScaleFactor = useMemo(() => {
+    return nodeSize <= 50
+      ? 0.5 + (nodeSize / 50) * 0.5  // 0-50 → 0.5-1.0
+      : 1.0 + ((nodeSize - 50) / 50) * 1.0; // 50-100 → 1.0-2.0
+  }, [nodeSize]);
+
+  const linkThicknessScale = useMemo(() => {
+    return linkThickness <= 50
+      ? 0.5 + (linkThickness / 50) * 0.5  // 0-50 → 0.5-1.0
+      : 1.0 + ((linkThickness - 50) / 50) * 1.0; // 50-100 → 1.0-2.0
+  }, [linkThickness]);
+
+  const linkCurvatureValue = useMemo(() => {
+    return linkCurvature / 100; // 0-100 → 0.0-1.0
+  }, [linkCurvature]);
+
+  const labelFontSize = useMemo(() => {
+    return labelSize === 'Small' ? 10 : labelSize === 'Large' ? 16 : 12;
+  }, [labelSize]);
+
+  const { labelFadeStart, labelFadeEnd } = useMemo(() => {
+    // Map textFadeThreshold (0-100, center at 50) to fade scale factor
+    const fadeScale = textFadeThreshold <= 50
+      ? 0.5 + (textFadeThreshold / 50) * 0.5  // 0-50 → 0.5x-1.0x
+      : 1.0 + ((textFadeThreshold - 50) / 50) * 2.0; // 50-100 → 1.0x-3.0x
+    return {
+      labelFadeStart: DEFAULT_LABEL_FADE_START * fadeScale,
+      labelFadeEnd: DEFAULT_LABEL_FADE_END * fadeScale,
+    };
+  }, [textFadeThreshold]);
 
   useImperativeHandle(
     ref,
@@ -404,7 +424,8 @@ const Graph = forwardRef(function GraphInner<
         nodeCanvasObject={(node, ctx) => {
           const x = node.x ?? 0;
           const y = node.y ?? 0;
-          const radius = node.radius;
+          const baseRadius = node.radius;
+          const radius = baseRadius * nodeScaleFactor; // Visual scaling applied here, not in data
           const accent = colorById.get(node.id) ?? defaultColor;
           const isSelected = selectedId === node.id;
           const isNeighbor = hasSelection ? selectedNeighbors?.has(node.id) ?? false : false;
@@ -476,4 +497,4 @@ const Graph = forwardRef(function GraphInner<
   );
 });
 
-export default Graph;
+export default memo(Graph) as typeof Graph;

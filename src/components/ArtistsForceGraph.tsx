@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from "react";
+import { forwardRef, memo, useMemo } from "react";
 import Graph, {
   type GraphHandle,
   type SharedGraphNode,
@@ -41,7 +41,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       computeArtistColor,
       width,
       height,
-      nodeSize = 50,
+      nodeSize,
       linkThickness,
       linkCurvature,
       showLabels,
@@ -50,10 +50,6 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
     },
     ref,
   ) => {
-    // Convert nodeSize (0-100) to scale factor, centered at 50 = 1.0
-    const nodeScaleFactor = nodeSize <= 50
-      ? 0.5 + (nodeSize / 50) * 0.5  // 0-50 → 0.5-1.0
-      : 1.0 + ((nodeSize - 50) / 50) * 1.0; // 50-100 → 1.0-2.0
     const graphNodes = useMemo<SharedGraphNode<Artist>[]>(() => {
       if (!artists?.length) return [];
       const listenerValues = artists.map((artist) =>
@@ -66,7 +62,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       return artists.map((artist) => {
         const value = Math.log10(Math.max(1, artist.listeners || 1));
         const t = (value - min) / denom;
-        const radius = (MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS)) * nodeScaleFactor;
+        const radius = MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS); // Base radius only, no scaling
         return {
           id: artist.id,
           label: artist.name,
@@ -75,7 +71,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
           data: artist,
         };
       });
-    }, [artists, nodeScaleFactor, computeArtistColor]);
+    }, [artists, computeArtistColor]);
 
     const graphLinks = useMemo<NodeLink[]>(() => {
       if (!artistLinks?.length) return [];
@@ -107,6 +103,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         selectedId={selectedArtistId}
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
+        nodeSize={nodeSize}
         linkThickness={linkThickness}
         linkCurvature={linkCurvature}
         showLabels={showLabels}
@@ -118,4 +115,4 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
 );
 
 export type { GraphHandle };
-export default ArtistsForceGraph;
+export default memo(ArtistsForceGraph);

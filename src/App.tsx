@@ -811,7 +811,7 @@ function App() {
     return genres.find((g) => g.id === id)?.name;
   }
 
-  const onGenreNodeClick = (genre: Genre) => {
+  const onGenreNodeClick = useCallback((genre: Genre) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
     // Don't set initialGenreFilter here - clicking a genre is just for viewing, not filtering
     setSelectedGenres([genre]);
@@ -820,7 +820,7 @@ function App() {
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
     setAutoFocusGraph(true); // Enable auto-focus for node clicks
     addRecentSelection(genre);
-  }
+  }, [isBeforeArtistLoad, addRecentSelection]);
 
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
   const onShowAllArtists = (genre: Genre) => {
@@ -881,7 +881,7 @@ function App() {
     setRestoreGenreCardOnArtistDismiss(true);
   }
 
-  const onArtistNodeClick = (artist: Artist) => {
+  const onArtistNodeClick = useCallback((artist: Artist) => {
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setRestoreGenreCardOnArtistDismiss(false); // Direct node click, don't restore genre card
@@ -906,7 +906,7 @@ function App() {
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
     }
-  }
+  }, [graph, artistFilterGenres.length, addRecentSelection]);
 
   const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
