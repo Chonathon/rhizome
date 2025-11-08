@@ -25,6 +25,10 @@ interface DisplayPanelProps {
     setShowLabels: (show: boolean) => void;
     labelSize: 'Small' | 'Default' | 'Large';
     setLabelSize: (size: 'Small' | 'Default' | 'Large') => void;
+    showNodes: boolean;
+    setShowNodes: (show: boolean) => void;
+    showLinks: boolean;
+    setShowLinks: (show: boolean) => void;
     onReset: () => void;
 }
 
@@ -43,6 +47,10 @@ export default function DisplayPanel({
     setShowLabels,
     labelSize,
     setLabelSize,
+    showNodes,
+    setShowNodes,
+    showLinks,
+    setShowLinks,
     onReset
 }: DisplayPanelProps) {
     const [isRotating, setIsRotating] = useState(false);
@@ -88,77 +96,90 @@ export default function DisplayPanel({
                 </div>
                 {/* content */}
             <div className="flex flex-col gap-3">
-                <fieldset  className={feildsetStyles}>
-                    <legend className="sr-only">Graph Options</legend>
-                    {/* Node Size */}
+                {/* Node Options */}
+                <fieldset className={feildsetStyles}>
+                    <legend className="sr-only">Node Options</legend>
+                    {/* Show Nodes Toggle */}
                     <div className="flex items-center justify-start gap-6">
-                        <label htmlFor="node-size" className={labelStyles}>Node Size</label>
-                        <div className="w-full flex items-center gap-2">
-                            <Badge variant="outline" className={badgeStyles}>{nodeSize}</Badge>
-                            <Slider
-                                id="node-size-slider"
-                                aria-labelledby="node-size"
-                                value={[nodeSize]}
-                                onValueChange={([value]) => setNodeSize(value)}
-                                min={0}
-                                max={100}
-                                step={1}
-                                className="w-full"
-                            />
-                        </div>
+                        <label htmlFor="show-nodes" className={labelStyles}>Show Nodes</label>
+                        <Switch
+                            id="show-nodes"
+                            checked={showNodes}
+                            onCheckedChange={setShowNodes}
+                        />
                     </div>
-                    {/* Link Thickness */}
+
+                    {showNodes && (
+                        <div className="flex items-center justify-start gap-6">
+                            <label htmlFor="node-size" className={labelStyles}>Node Size</label>
+                            <div className="w-full flex items-center gap-2">
+                                <Badge variant="outline" className={badgeStyles}>{nodeSize}</Badge>
+                                <Slider
+                                    id="node-size-slider"
+                                    aria-labelledby="node-size"
+                                    value={[nodeSize]}
+                                    onValueChange={([value]) => setNodeSize(value)}
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+                    )}
+                </fieldset>
+
+                {/* Link Options */}
+                <fieldset className={feildsetStyles}>
+                    <legend className="sr-only">Link Options</legend>
+                    {/* Show Links Toggle */}
                     <div className="flex items-center justify-start gap-6">
-                        <label htmlFor="link-thickness" className={labelStyles}>Link Thickness</label>
-                        <div className="w-full flex items-center gap-2">
-                            <Badge variant="outline" className={badgeStyles}>{linkThickness}</Badge>
-                            <Slider
-                                id="link-thickness-slider"
-                                aria-labelledby="link-thickness"
-                                value={[linkThickness]}
-                                onValueChange={([value]) => setLinkThickness(value)}
-                                min={0}
-                                max={100}
-                                step={1}
-                                className="w-full"
-                            />
-                        </div>
+                        <label htmlFor="show-links" className={labelStyles}>Show Links</label>
+                        <Switch
+                            id="show-links"
+                            checked={showLinks}
+                            onCheckedChange={setShowLinks}
+                        />
                     </div>
-                    {/* Link Curvature */}
-                    <div className="flex items-center justify-start gap-6">
-                        <label htmlFor="link-curvature" className={labelStyles}>Link Curvature</label>
-                        <div className="w-full flex items-center gap-2">
-                            <Badge variant="outline" className={badgeStyles}>{linkCurvature}</Badge>
-                            <Slider
-                                id="link-curvature-slider"
-                                aria-labelledby="link-curvature"
-                                value={[linkCurvature]}
-                                onValueChange={([value]) => setLinkCurvature(value)}
-                                min={0}
-                                max={100}
-                                step={1}
-                                className="w-full"
-                            />
-                        </div>
-                    </div>
-                    
-                    {/* Genre Min Size */}
-                    {/*<div className="flex items-center justify-start gap-6">*/}
-                    {/*    <label htmlFor="genre-min-size" className={labelStyles}>Genre Min Size</label>*/}
-                    {/*    <div className="w-full flex items-center gap-2">*/}
-                    {/*        <Badge variant="outline" className={badgeStyles}>{genreArtistCountThreshold}</Badge>*/}
-                    {/*        <Slider*/}
-                    {/*            id="genre-min-size-slider"*/}
-                    {/*            aria-labelledby="genre-min-size"*/}
-                    {/*            value={[genreArtistCountThreshold]}*/}
-                    {/*            onValueChange={([value]) => setGenreArtistCountThreshold(value)}*/}
-                    {/*            min={0}*/}
-                    {/*            max={120}*/}
-                    {/*            step={1}*/}
-                    {/*            className="w-full"*/}
-                    {/*        />*/}
-                    {/*    </div>*/}
-                    {/*</div>*/}
+
+                    {showLinks && (
+                        <>
+                            {/* Link Thickness */}
+                            <div className="flex items-center justify-start gap-6">
+                                <label htmlFor="link-thickness" className={labelStyles}>Link Thickness</label>
+                                <div className="w-full flex items-center gap-2">
+                                    <Badge variant="outline" className={badgeStyles}>{linkThickness}</Badge>
+                                    <Slider
+                                        id="link-thickness-slider"
+                                        aria-labelledby="link-thickness"
+                                        value={[linkThickness]}
+                                        onValueChange={([value]) => setLinkThickness(value)}
+                                        min={0}
+                                        max={100}
+                                        step={1}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                            {/* Link Curvature */}
+                            <div className="flex items-center justify-start gap-6">
+                                <label htmlFor="link-curvature" className={labelStyles}>Link Curvature</label>
+                                <div className="w-full flex items-center gap-2">
+                                    <Badge variant="outline" className={badgeStyles}>{linkCurvature}</Badge>
+                                    <Slider
+                                        id="link-curvature-slider"
+                                        aria-labelledby="link-curvature"
+                                        value={[linkCurvature]}
+                                        onValueChange={([value]) => setLinkCurvature(value)}
+                                        min={0}
+                                        max={100}
+                                        step={1}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </fieldset>
                     <fieldset className={feildsetStyles}>
                         <legend className="sr-only">Text options</legend>
@@ -173,23 +194,6 @@ export default function DisplayPanel({
                         
                         {showLabels &&
                         <>
-                            <div className="flex items-center justify-start gap-6">
-                                <label htmlFor="text-size" className={labelStyles}>Text Size</label>
-                                <Select value={labelSize} onValueChange={(value) => setLabelSize(value as 'Small' | 'Default' | 'Large')}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {["Small", "Default", "Large"].map((size) => (
-                                            <SelectItem
-                                                key={size}
-                                                value={size}>
-                                                {size}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
                             {/* Text Fade Threshold */}
                                                 <div className="flex items-center justify-start gap-6">
                             <label htmlFor="text-fade-threshold" className={labelStyles}>Label Fade Threshold</label>
@@ -207,6 +211,23 @@ export default function DisplayPanel({
                                 />
                             </div>
                         </div>
+                            <div className="flex items-center justify-start gap-6">
+                                <label htmlFor="text-size" className={labelStyles}>Text Size</label>
+                                <Select value={labelSize} onValueChange={(value) => setLabelSize(value as 'Small' | 'Default' | 'Large')}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {["Small", "Default", "Large"].map((size) => (
+                                            <SelectItem
+                                                key={size}
+                                                value={size}>
+                                                {size}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                     </>}
                     </fieldset>
             </div>

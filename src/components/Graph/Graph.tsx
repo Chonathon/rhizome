@@ -93,6 +93,8 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   showLabels?: boolean;
   labelSize?: 'Small' | 'Default' | 'Large';
   textFadeThreshold?: number;
+  showNodes?: boolean;
+  showLinks?: boolean;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -116,9 +118,9 @@ function defaultRenderSelection<T>(ctx: SelectionRenderContext<T>): void {
   canvas.restore();
 }
 
-function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE): void {
+function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE, customColor?: string): void {
   const { ctx: canvas, label, x, y, radius, theme, labelAlpha } = ctx;
-  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize);
+  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize, 0, customColor);
 }
 
 const Graph = forwardRef(function GraphInner<
@@ -146,16 +148,26 @@ const Graph = forwardRef(function GraphInner<
     showLabels = true,
     labelSize = 'Default',
     textFadeThreshold = 50,
+    showNodes = true,
+    showLinks = true,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
   const fgRef = useRef<ForceGraphMethods<PreparedNode<T>, L> | undefined>(undefined);
   const zoomRef = useRef<number>(1);
+  const showNodesRef = useRef<boolean>(showNodes);
+  const showLinksRef = useRef<boolean>(showLinks);
   const { resolvedTheme } = useTheme();
   const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
   const lastInitializedSignatureRef = useRef<string | undefined>(undefined);
   const shouldResetZoomRef = useRef(true);
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
+
+  // Update refs when showNodes/showLinks change
+  useEffect(() => {
+    showNodesRef.current = showNodes;
+    showLinksRef.current = showLinks;
+  }, [showNodes, showLinks]);
 
   // Convert display control values to usable ranges (all centered at 50 = 1.0x)
   const nodeScaleFactor = useMemo(() => {
@@ -366,6 +378,7 @@ const Graph = forwardRef(function GraphInner<
 
   // Memoize all ForceGraph callbacks to prevent unnecessary re-renders
   const linkColorCallback = useCallback((link: L) => {
+    if (!showLinksRef.current) return 'rgba(0,0,0,0)';
     const source =
       typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
     const target =
@@ -377,6 +390,7 @@ const Graph = forwardRef(function GraphInner<
   }, [colorById, selectedId, resolvedTheme]);
 
   const linkWidthCallback = useCallback((link: L) => {
+    if (!showLinksRef.current) return 0;
     if (!selectedId) return 1 * linkThicknessScale;
     const source =
       typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
@@ -419,12 +433,14 @@ const Graph = forwardRef(function GraphInner<
       theme: resolvedTheme as 'light' | 'dark' | undefined,
     };
 
-    // Render node
-    renderNode(renderContext);
+    // Render node and selection ring if showNodes is true
+    if (showNodesRef.current) {
+      renderNode(renderContext);
 
-    // Render selection ring if selected
-    if (isSelected) {
-      renderSelection(renderContext);
+      // Render selection ring if selected
+      if (isSelected) {
+        renderSelection(renderContext);
+      }
     }
 
     // Calculate and render label
@@ -442,7 +458,9 @@ const Graph = forwardRef(function GraphInner<
       };
       // Pass fontSize if using default renderer
       if (renderLabel === defaultRenderLabel) {
-        defaultRenderLabel(labelContext, labelFontSize);
+        // When nodes are hidden, use node color for labels
+        const labelColor = !showNodesRef.current ? accent : undefined;
+        defaultRenderLabel(labelContext, labelFontSize, labelColor);
       } else {
         renderLabel(labelContext);
       }

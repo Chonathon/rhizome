@@ -24,6 +24,8 @@ interface GenresForceGraphProps {
   showLabels?: boolean;
   labelSize?: 'Small' | 'Default' | 'Large';
   textFadeThreshold?: number;
+  showNodes?: boolean;
+  showLinks?: boolean;
 }
 
 const MIN_RADIUS = 6;
@@ -50,6 +52,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       showLabels,
       labelSize,
       textFadeThreshold,
+      showNodes,
+      showLinks,
     },
     ref,
   ) => {
@@ -116,6 +120,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         showLabels={showLabels}
         labelSize={labelSize}
         textFadeThreshold={textFadeThreshold}
+        showNodes={showNodes}
+        showLinks={showLinks}
       />
     );
   },

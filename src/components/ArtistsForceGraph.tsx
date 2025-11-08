@@ -23,6 +23,8 @@ interface ArtistsForceGraphProps {
   showLabels?: boolean;
   labelSize?: 'Small' | 'Default' | 'Large';
   textFadeThreshold?: number;
+  showNodes?: boolean;
+  showLinks?: boolean;
 }
 
 const MIN_RADIUS = 6;
@@ -47,6 +49,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       showLabels,
       labelSize,
       textFadeThreshold,
+      showNodes,
+      showLinks,
     },
     ref,
   ) => {
@@ -109,6 +113,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         showLabels={showLabels}
         labelSize={labelSize}
         textFadeThreshold={textFadeThreshold}
+        showNodes={showNodes}
+        showLinks={showLinks}
       />
     );
   },

@@ -161,6 +161,8 @@ function App() {
   const [textFadeThreshold, setTextFadeThreshold] = useState(50);
   const [showLabels, setShowLabels] = useState(true);
   const [labelSize, setLabelSize] = useState<'Small' | 'Default' | 'Large'>('Default');
+  const [showNodes, setShowNodes] = useState(true);
+  const [showLinks, setShowLinks] = useState(true);
 
   // Reset display controls to defaults
   const handleResetDisplayControls = useCallback(() => {
@@ -170,6 +172,8 @@ function App() {
     setTextFadeThreshold(50);
     setShowLabels(true);
     setLabelSize('Default');
+    setShowNodes(true);
+    setShowLinks(true);
   }, []);
 
   const [searchOpen, setSearchOpen] = useState(false);
@@ -1753,6 +1757,8 @@ function App() {
                   showLabels={showLabels}
                   labelSize={labelSize}
                   textFadeThreshold={textFadeThreshold}
+                  showNodes={showNodes}
+                  showLinks={showLinks}
                 />
                 <ArtistsForceGraph
                   ref={artistsGraphRef}
@@ -1773,6 +1779,8 @@ function App() {
                   showLabels={showLabels}
                   labelSize={labelSize}
                   textFadeThreshold={textFadeThreshold}
+                  showNodes={showNodes}
+                  showLinks={showLinks}
                 />
 
             <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
@@ -1834,6 +1842,10 @@ function App() {
                 setShowLabels={setShowLabels}
                 labelSize={labelSize}
                 setLabelSize={setLabelSize}
+                showNodes={showNodes}
+                setShowNodes={setShowNodes}
+                showLinks={showLinks}
+                setShowLinks={setShowLinks}
                 onReset={handleResetDisplayControls}
               />
               {/* Bottom positioned Zoomies */}
