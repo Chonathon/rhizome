@@ -84,7 +84,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               <SidebarGroup>
                 <SidebarMenu className="gap-4">
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Search ⌘K" isActive={searchOpen} size="xl" >
+                    <SidebarMenuButton asChild tooltip="Search ⌘K" size="xl" >
                       <button onClick={() => setSearchOpen(true)}>
                         <SearchIcon className="shrink-0" />
                         <span className="truncate">Search</span>
