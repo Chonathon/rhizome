@@ -832,15 +832,13 @@ function App() {
   }
 
   const getArtistImageByName = (name: string) => {
-    // Search in all loaded artists, not just current graph
-    const a = artists.find((x) => x.name === name);
+    const a = currentArtists.find((x) => x.name === name);
     const raw = a?.image as string | undefined;
     return raw ? fixWikiImageURL(raw) : undefined;
   }
 
   const getArtistByName = (name: string) => {
-    // Search in all loaded artists, not just current graph
-    return artists.find((a) => a.name === name);
+    return currentArtists.find((a) => a.name === name);
   }
 
   const getGenreNameById = (id: string) => {
