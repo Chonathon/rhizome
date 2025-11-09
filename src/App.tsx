@@ -64,7 +64,12 @@ import {
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
-  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, ALPHA_SURVEY_TIME_MS, DEFAULT_PREFERENCES, ALPHA_SURVEY_ADDED_ARTISTS
+  MAX_YTID_QUEUE_SIZE,
+  DEFAULT_PLAYER,
+  ALPHA_SURVEY_TIME_MS,
+  DEFAULT_PREFERENCES,
+  ALPHA_SURVEY_ADDED_ARTISTS,
+  NODE_AMOUNT_PRESETS
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -1475,8 +1480,11 @@ function App() {
     // TODO: Implement decade filtering logic
   }
 
+  // Just filter the current nodes if selection is less than the current node count
   const artistNodeCountSelection = (value: number) => {
-    if (value <= artistNodeCount) {
+    if (value === artistNodeCount) return;
+    setArtistNodeCount(value);
+    if (value < artistNodeCount) {
       if (artists && artists.length) {
         const filteredArtists = [...artists]
             .sort((a: Artist, b: Artist) => b[artistNodeLimitType] - a[artistNodeLimitType])
@@ -1488,8 +1496,6 @@ function App() {
         setCurrentArtists(filteredArtists);
         setCurrentArtistLinks(filteredLinks);
       }
-    } else {
-      setArtistNodeCount(value);
     }
   }
 
@@ -1900,19 +1906,23 @@ function App() {
               />
             </div>
           {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
+            {/*Genre Node Limiter*/}
             <NodeLimiter
-                totalNodes={genres ? genres.length : 0}
-                nodeType={'genres'}
-                initialValue={genreNodeCount}
-                onChange={onGenreNodeCountChange}
-                show={showGenreNodeLimiter()}
+              totalNodes={genres ? genres.length : 0}
+              nodeType={'genres'}
+              initialValue={genreNodeCount}
+              onChange={onGenreNodeCountChange}
+              show={showGenreNodeLimiter()}
+              nodeAmountPresets={NODE_AMOUNT_PRESETS}
             />
+            {/*Artist Node Limiter*/}
             <NodeLimiter
               totalNodes={totalArtistsInDB}
               nodeType={'artists'}
               initialValue={currentArtists.length}
-              onChange={(value) => artistNodeCountSelection(value)}
+              onChange={artistNodeCountSelection}
               show={showArtistNodeLimiter()}
+              nodeAmountPresets={NODE_AMOUNT_PRESETS}
             />
             {/*For testing node degrees*/}
             {/*<NodeLimiter*/}

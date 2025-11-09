@@ -15,23 +15,28 @@ interface NodeLimiterProps {
   totalNodes: number;
   nodeType: string;
   show: boolean;
+  nodeAmountPresets: number[];
 }
 
-export default function NodeLimiter({ initialValue, onChange, totalNodes, nodeType, show }: NodeLimiterProps) {
+export default function NodeLimiter({ initialValue, onChange, totalNodes, nodeType, show, nodeAmountPresets }: NodeLimiterProps) {
     const [value, setValue] = useState<number>(initialValue);
-    const [presets, setPresets] = useState<number[]>(NODE_AMOUNT_PRESETS);
+    const [presets, setPresets] = useState<number[]>(nodeAmountPresets);
+
+    // Only trigger onChange when node amount is manually selected
     const onValueChange = (newValue: number) => {
         setValue(newValue);
         onChange(newValue);
     }
 
+    // Don't allow selecting of node presets greater than the total amount of nodes
     useEffect(() => {
         if (totalNodes) {
             if (nodeType === "collection") setPresets(Array.from({length: 20}, (x, i) => i));
-            else setPresets(NODE_AMOUNT_PRESETS.filter(p => p < totalNodes));
+            else setPresets(nodeAmountPresets.filter(p => p < totalNodes));
         }
     }, [totalNodes]);
 
+    // Set value without triggering onChange
     useEffect(() => {
         setValue(initialValue);
     }, [initialValue]);
