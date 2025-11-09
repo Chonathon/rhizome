@@ -9,13 +9,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import React, { useCallback, useState } from "react"
-import { SidebarIcon, SearchIcon, BookOpen, Cog, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon, } from "lucide-react"
-import { TwoLines } from "./Icon"
-import { Button } from "./ui/button"
-import { useRecentSelections } from "@/hooks/useRecentSelections"
+import React, { useCallback } from "react"
+import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine } from "lucide-react"
+import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
 import { Genre, GraphType } from "@/types"
-import { Badge } from "./ui/badge"
 import RhizomeLogo from "@/components/RhizomeLogo"
 import { useSidebar } from "@/components/ui/sidebar"
 import MobileAppBar from "@/components/MobileAppBar"
