@@ -131,7 +131,8 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
           {isCollapsed && <SidebarContent className="my-3 flex-1">
             <button
               type="button"
-              aria-label="Toggle sidebar"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               onClick={toggleSidebar}
               className="w-full h-full rounded-md !cursor-e-resize hover:bg-sidebar/30"
             />
@@ -201,9 +202,9 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {!isCollapsed && <SidebarMenuButton asChild tooltip={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} size="xl"
+            {!isCollapsed && <SidebarMenuButton asChild tooltip="Collapse sidebar" size="xl"
             className="w-auto">
-              <button onClick={toggleSidebar} className="">
+              <button onClick={toggleSidebar}>
                 <ArrowLeftToLine />
               </button>
             </SidebarMenuButton>}
