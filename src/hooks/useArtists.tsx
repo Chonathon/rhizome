@@ -23,7 +23,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         resetArtistsError();
         if (!initial) {
             setArtistsLoading(true);
-            console.log(`fetching ${amount} artists...`);
+            // console.log(`fetching ${amount} artists...`);
             try {
                 const selectedSize = genreIDs.length;
                 if (selectedSize === 0) {
