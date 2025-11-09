@@ -1855,44 +1855,45 @@ function App() {
                   height={viewport.height || undefined}
                 />
 
-                {/* Genre hover preview */}
-                {hoveredGenreData && hoveredGenre && graph === 'genres' && !showGenreCard && (
-                  <GenrePreview
-                    genre={hoveredGenreData.genre}
-                    topArtists={hoveredGenreData.topArtists}
-                    genreColorMap={genreColorMap}
-                    onNavigate={(genre) => onGenreNodeClick(genre)}
-                    onAllArtists={(genre) => onShowAllArtists(genre)}
-                    onPlay={onPlayGenre}
-                    playLoading={playerLoading}
-                    position={hoveredGenre.position}
-                    visible={true}
-                    previewModeActive={previewModeActive}
-                    onShow={handlePreviewShown}
-                  />
-                )}
+          {/* Genre hover preview */}
+          {preferences?.enableGraphCards && hoveredGenreData && hoveredGenre && graph === 'genres' && !showGenreCard && (
+              <GenrePreview
+                  genre={hoveredGenreData.genre}
+                  topArtists={hoveredGenreData.topArtists}
+                  genreColorMap={genreColorMap}
+                  onNavigate={(genre) => onGenreNodeClick(genre)}
+                  onAllArtists={(genre) => onShowAllArtists(genre)}
+                  onPlay={onPlayGenre}
+                  playLoading={playerLoading}
+                  position={hoveredGenre.position}
+                  visible={true}
+                  previewModeActive={previewModeActive}
+                  onShow={handlePreviewShown}
+              />
+          )}
 
-                {/* Artist hover preview */}
-                {hoveredArtistData && hoveredArtist && (graph === 'artists' || graph === 'similarArtists') && !showArtistCard && (
+          {/* Artist hover preview */}
+          {preferences?.enableGraphCards && hoveredArtistData && hoveredArtist
+              && (graph === 'artists' || graph === 'similarArtists') && !showArtistCard && (
                   <ArtistPreview
-                    artist={hoveredArtistData}
-                    genreColorMap={genreColorMap}
-                    getGenreNameById={getGenreNameById}
-                    onNavigate={(artist) => onArtistNodeClick(artist)}
-                    onPlay={onPlayArtist}
-                    onToggle={onAddArtistButtonToggle}
-                    playLoading={playerLoading}
-                    isInCollection={isInCollection(hoveredArtistData.id)}
-                    position={hoveredArtist.position}
-                    visible={true}
-                    getArtistImageByName={getArtistImageByName}
-                    getArtistByName={getArtistByName}
-                    setArtistFromName={setArtistFromName}
-                    getArtistColor={getArtistColor}
-                    previewModeActive={previewModeActive}
-                    onShow={handlePreviewShown}
+                      artist={hoveredArtistData}
+                      genreColorMap={genreColorMap}
+                      getGenreNameById={getGenreNameById}
+                      onNavigate={(artist) => onArtistNodeClick(artist)}
+                      onPlay={onPlayArtist}
+                      onToggle={onAddArtistButtonToggle}
+                      playLoading={playerLoading}
+                      isInCollection={isInCollection(hoveredArtistData.id)}
+                      position={hoveredArtist.position}
+                      visible={true}
+                      getArtistImageByName={getArtistImageByName}
+                      getArtistByName={getArtistByName}
+                      setArtistFromName={setArtistFromName}
+                      getArtistColor={getArtistColor}
+                      previewModeActive={previewModeActive}
+                      onShow={handlePreviewShown}
                   />
-                )}
+              )}
 
             <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
               <ZoomButtons
