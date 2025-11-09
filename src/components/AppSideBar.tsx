@@ -13,13 +13,12 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { Search } from "@/components/Search"
 import React, { useCallback, useState } from "react"
-import { Icon, Undo2, BadgeIcon, SidebarIcon, SearchIcon, BookOpen, Tag, MicVocal, Settings, CircleHelp, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon, CircleEllipsis} from "lucide-react"
+import { SidebarIcon, SearchIcon, BookOpen, Cog, Telescope, CircleUserRound, Cable, HandHeart, MessageSquare, SunMoon, } from "lucide-react"
 import { TwoLines } from "./Icon"
 import { Button } from "./ui/button"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
-import { AccountMenuState, Genre, GraphType } from "@/types"
+import { Genre, GraphType } from "@/types"
 import { Badge } from "./ui/badge"
 import RhizomeLogo from "@/components/RhizomeLogo"
 import { useSidebar } from "@/components/ui/sidebar"
@@ -196,14 +195,14 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                             <DropdownMenuSeparator /> */}
                             {signedInUser ? (
                               <>
-                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
-                                  Profile
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'General' } }))}><Cog />
+                                  General
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Account' } }))}><CircleUserRound />
+                                  Account
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
                                   Connections
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
-                                  Settings
                                 </DropdownMenuItem>
                               </>
                             ) : (
