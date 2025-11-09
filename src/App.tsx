@@ -953,6 +953,7 @@ function App() {
       }
     }
 
+    setGraph('artists');
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setSelectedArtist(artist); // For graph focus/dimming
