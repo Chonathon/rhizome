@@ -74,17 +74,17 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
   return (
     <>
       <Sidebar variant="sidebar" collapsible="icon">
-        <SidebarContent className={`p-1 backdrop-blur-sm flex flex-col`}>
-          <div className="w-full justify-center pt-2.5 pl-1 mb-6">
+        <SidebarContent className={`${isCollapsed ? "" : "backdrop-blur-sm"} p-1 flex flex-col`}>
+          <div className={`${isCollapsed ? "justify-center" : "flex items-center justify-between" } w-full pt-2.5 pl-1 mb-6`}>
             <button onClick={resetAppState} className="group/logo">
               <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
             </button>
-            {/* <SidebarMenuButton>
-              <button onClick={toggleSidebar} className="mt-3 ml-1.5 flex items-center gap-2 text-sm text-muted-foreground hover:text-primary">
-                <ArrowLeftToLine className="h-4 w-4" />
-                <span className="truncate">Back to Genres</span>
+            {/* {!isCollapsed && <SidebarMenuButton asChild tooltip={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} size="xl"
+            className="w-auto">
+              <button onClick={toggleSidebar} className="">
+                <ArrowLeftToLine />
               </button>
-            </SidebarMenuButton> */}
+            </SidebarMenuButton>} */}
           </div>
 
           <SidebarContent className="flex-none">
@@ -125,17 +125,17 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
             </SidebarGroupContent>
           </SidebarContent>
 
-          <SidebarContent className="my-3 flex-1">
+          {isCollapsed && <SidebarContent className="my-3 flex-1">
             <button
               type="button"
               aria-label="Toggle sidebar"
               onClick={toggleSidebar}
               className="w-full h-full rounded-md !cursor-e-resize hover:bg-sidebar/30"
             />
-          </SidebarContent>
+          </SidebarContent>}
         </SidebarContent>
         <SidebarFooter className="mt-auto flex p-1 pb-3">
-          <SidebarMenu className="gap-4">
+          <SidebarMenu className={"gap-4" + (isCollapsed ? "mx-auto" : "justify-between w-full flex-row flex")}>
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="xl" tooltip="More">
@@ -198,6 +198,12 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            {!isCollapsed && <SidebarMenuButton asChild tooltip={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} size="xl"
+            className="w-auto">
+              <button onClick={toggleSidebar} className="">
+                <ArrowLeftToLine />
+              </button>
+            </SidebarMenuButton>}
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
