@@ -579,7 +579,7 @@ const ExperimentalFeaturesSection = ({
                 </FieldContent>
                 <Switch
                   id="hover-cards"
-                  checked={preferences.enableGraphCards ?? false}
+                  checked={preferences.enableGraphCards}
                   onCheckedChange={(checked) => {
                     onPreferencesChange({
                       ...preferences,
