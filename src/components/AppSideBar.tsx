@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import React, { useCallback } from "react"
-import { Settings, CircleUserRound, Cable, HandHeart, SunMoon } from "lucide-react"
+import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine } from "lucide-react"
 import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
 import { Genre, GraphType } from "@/types"
 import RhizomeLogo from "@/components/RhizomeLogo"
@@ -51,7 +51,9 @@ interface AppSidebarProps {
 
 export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, onExploreClick, isCollectionMode, searchOpen }: AppSidebarProps) {
   const { setTheme } = useTheme()
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, state } = useSidebar()
+
+  const isCollapsed = state === "collapsed"
 
   const handleSignUp = useCallback(() => {
     if (onSignUpClick) {
@@ -77,6 +79,12 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
             <button onClick={resetAppState} className="group/logo">
               <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
             </button>
+            {/* <SidebarMenuButton>
+              <button onClick={toggleSidebar} className="mt-3 ml-1.5 flex items-center gap-2 text-sm text-muted-foreground hover:text-primary">
+                <ArrowLeftToLine className="h-4 w-4" />
+                <span className="truncate">Back to Genres</span>
+              </button>
+            </SidebarMenuButton> */}
           </div>
 
           <SidebarContent className="flex-none">
