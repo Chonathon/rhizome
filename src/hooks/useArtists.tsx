@@ -23,7 +23,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         resetArtistsError();
         if (!initial) {
             setArtistsLoading(true);
-            //console.log('fetching....')
+            // console.log(`fetching ${amount} artists...`);
             try {
                 const selectedSize = genreIDs.length;
                 if (selectedSize === 0) {
@@ -38,7 +38,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
                     setArtists(response.data.artists);
                     setArtistLinks(response.data.links);
                     setTotalArtistsInDB(
-                        response.data.count > DEFAULT_NODE_COUNT && artistCount === DEFAULT_NODE_COUNT
+                        response.data.count > amount
                             ? response.data.count
                             : artistCount
                     );
@@ -88,7 +88,14 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
 
     useEffect(() => {
         fetchArtists();
-    }, [genreIDs, filter, amount, initial]);
+    }, [genreIDs, filter, initial]);
+
+    // Only refetch if change in amount is more than current amount of artists
+    useEffect(() => {
+        if (amount > artists.length) {
+            fetchArtists();
+        }
+    }, [amount]);
 
     const flagBadArtistData = async (report: BadDataReport) => {
         resetArtistsDataFlagError();
