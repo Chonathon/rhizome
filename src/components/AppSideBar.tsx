@@ -75,7 +75,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
     <>
       <Sidebar variant="sidebar" collapsible="icon">
         <SidebarContent className={`${isCollapsed ? "" : "backdrop-blur-sm"} p-1 flex flex-col`}>
-          <div className={`${isCollapsed ? "justify-center" : "flex items-center justify-between" } w-full pt-2.5 pl-1 mb-6`}>
+          <div className={`${isCollapsed ? "" : " items-center justify-between" } flex w-full pt-2.5 pl-1 mb-6`}>
             <button onClick={resetAppState} className="group/logo">
               <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
             </button>
@@ -124,7 +124,10 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               </SidebarGroup>
             </SidebarGroupContent>
           </SidebarContent>
-
+          {/* 
+          * Toggle Button when collapsed
+          * Fills remaining space between content and footer
+          */}
           {isCollapsed && <SidebarContent className="my-3 flex-1">
             <button
               type="button"
