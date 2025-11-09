@@ -138,10 +138,10 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
           </SidebarContent>}
         </SidebarContent>
         <SidebarFooter className="mt-auto flex p-1 pb-3">
-          <SidebarMenu className={"gap-4" + (isCollapsed ? "mx-auto" : "justify-between w-full flex-row flex")}>
+          <SidebarMenu className={isCollapsed ? "mx-auto gap-4" : "flex w-full flex-row justify-between gap-4"}>
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size="xl" tooltip="More">
+                <SidebarMenuButton size="xl" className="self-start w-auto" tooltip="More">
                     <TwoLines />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
