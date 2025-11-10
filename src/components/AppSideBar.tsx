@@ -103,7 +103,8 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Collection" size="xl" isActive={isCollectionMode}>
                       <button onClick={onCollectionClick}>
-                        {isCollectionMode ? <BookOpenFilled /> : <BookOpen />}
+                        <BookOpen />
+                        {/* {isCollectionMode ? <BookOpenFilled /> : <BookOpen />} */}
                         <span className="truncate">Collection</span>
                       </button>
                     </SidebarMenuButton>
@@ -115,7 +116,8 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={!isCollectionMode} tooltip="Explore" size="xl">
                       <button onClick={onExploreClick}>
-                        {!isCollectionMode ? <TelescopeFilled /> : <Telescope />}
+                        <Telescope />
+                        {/* {!isCollectionMode ? <TelescopeFilled /> : <Telescope />} */}
                         <span>Explore</span>
                       </button>
                     </SidebarMenuButton>

@@ -1,7 +1,8 @@
 import React, { useState } from "react"
-import { BookOpen, Search as SearchIcon, Telescope, CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown } from "lucide-react"
+import {  CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown } from "lucide-react"
 import { TwoLines } from "./Icon"
 import { Button } from "@/components/ui/button"
+import { Search as SearchIcon, BookOpen, Telescope } from "./Icon"
 import {
   DropdownMenu,
   DropdownMenuContent,
