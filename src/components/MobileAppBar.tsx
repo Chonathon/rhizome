@@ -1,7 +1,8 @@
 import React, { useState } from "react"
-import { BookOpen, Search as SearchIcon, Telescope, CircleUserRound, Cable, Cog, HandHeart, SunMoon, ChevronDown } from "lucide-react"
+import {  CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown } from "lucide-react"
 import { TwoLines } from "./Icon"
 import { Button } from "@/components/ui/button"
+import { Search as SearchIcon, BookOpen, Telescope } from "./Icon"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -150,16 +151,17 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
       <DropdownMenuContent side="top" align="end">
         {signedInUser ? (
           <>
-            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'General' } }))}><Cog />
-              General
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Account' } }))}><CircleUserRound />
-              Account
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
+              Profile
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
               Connections
             </DropdownMenuItem>
-        </>
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
         ) : (
           <>
             <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} className="" />

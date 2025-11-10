@@ -1719,6 +1719,7 @@ function App() {
         onExploreClick={onExploreClick}
         signedInUser={!!userID}
         isCollectionMode={collectionMode}
+        searchOpen={searchOpen}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -1726,7 +1727,7 @@ function App() {
           <Gradient />
           <motion.div
             className={
-              "fixed top-0 left-0 z-70 pt-2 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
+              "fixed top-0 left-0 z-70 pt-3 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
             }
             style={{
               left: "var(--sidebar-gap)",
