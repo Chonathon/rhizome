@@ -206,7 +206,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
             </DropdownMenu>
             {!isCollapsed && <SidebarMenuButton asChild tooltip="Collapse sidebar" size="xl"
             className="w-auto">
-              <button onClick={toggleSidebar}>
+              <button className="!cursor-w-resize" onClick={toggleSidebar}>
                 <ArrowLeftToLine />
               </button>
             </SidebarMenuButton>}
