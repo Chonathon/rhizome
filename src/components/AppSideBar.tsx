@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import React, { useCallback } from "react"
-import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine } from "lucide-react"
+import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog } from "lucide-react"
 import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
 import { Genre, GraphType } from "@/types"
 import RhizomeLogo from "@/components/RhizomeLogo"
@@ -152,58 +152,46 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
               <DropdownMenuContent side="right" align="end">
                 {signedInUser ? (
                   <>
-                    <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}>
-                      <CircleUserRound />
-                      Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}>
-                      <Cable />
-                      Connections
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}>
-                      <Settings />
-                      Settings
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <>
-                    <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} />
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <span className="aria-hidden">
-                      <SunMoon className="mr-2 text-muted-foreground h-4 w-4" />
-                    </span>
-                    Appearance
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem onSelect={(e) => {
-                  e.preventDefault();
-                  window.open('https://ko-fi.com/rhizomefyi', '_blank');
-                }}>
-                  <img src={KofiLogo} alt="Ko-fi Logo" className="size-4" />
-                  Support Rhizome
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}>
-                  <HandHeart />
-                  Feedback & Requests
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'General' } }))}><Cog />
+                                  General
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Account' } }))}><CircleUserRound />
+                                  Account
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
+                                  Connections
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <>
+                                <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} />
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
+                            <DropdownMenuSub>
+                            <DropdownMenuSubTrigger><span className="aria-hidden">
+                              <SunMoon className="mr-2 text-muted-foreground h-4 w-4" />
+                            </span>  Appearance</DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={(e) => {
+                              e.preventDefault();
+                              window.open('https://ko-fi.com/rhizomefyi', '_blank');
+                            }}><img src={KofiLogo} alt="Ko-fi Logo" className="size-4"/>
+                              Support Rhizome
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.dispatchEvent(new Event('feedback:open'))}><HandHeart />
+                              Feedback & Requests
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
             {!isCollapsed && <SidebarMenuButton asChild tooltip="Collapse sidebar" size="xl"
             className="w-auto">
               <button className="!cursor-w-resize" onClick={toggleSidebar}>
