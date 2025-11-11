@@ -146,8 +146,10 @@ function App() {
   const [artistInfoDrawerVersion, setArtistInfoDrawerVersion] = useState(0);
   const [artistInfoToShow, setArtistInfoToShow] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
-  const [hoveredGenre, setHoveredGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
-  const [hoveredArtist, setHoveredArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [cursorHoveredGenre, setCursorHoveredGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [cursorHoveredArtist, setCursorHoveredArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [previewGenre, setPreviewGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [previewArtist, setPreviewArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
   const [previewModeActive, setPreviewModeActive] = useState(false);
   const previewModeTimeoutRef = useRef<number | null>(null);
   const [genreInfoToShow, setGenreInfoToShow] = useState<Genre | undefined>(undefined);
@@ -257,9 +259,9 @@ function App() {
 
   // Get hovered artist data for preview
   const hoveredArtistData = useMemo(() => {
-    if (!hoveredArtist) return null;
-    return currentArtists.find((a) => a.id === hoveredArtist.id) || null;
-  }, [hoveredArtist, currentArtists]);
+    if (!previewArtist) return null;
+    return currentArtists.find((a) => a.id === previewArtist.id) || null;
+  }, [previewArtist, currentArtists]);
 
   // Track window size and pass to ForceGraph for reliable resizing
   useEffect(() => {
@@ -373,8 +375,8 @@ function App() {
     }
   }, [findPanelDisabled, isFindFilterOpen]);
 
-  // Global hotkeys (+, -, /)
-  useHotkeys({
+  // Global hotkeys (+, -, /) and command key tracking
+  const { isCommandHeld } = useHotkeys({
     onZoomIn: () => {
       const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
       ref?.zoomIn?.();
@@ -852,6 +854,26 @@ function App() {
     setTopArtistsGenreId(genreID);
   };
 
+  // Update preview states based on cursor hover + command key
+  useEffect(() => {
+    if (isCommandHeld && cursorHoveredGenre && (preferences?.enableGraphCards) && !showGenreCard && !showArtistCard) {
+      setPreviewGenre(cursorHoveredGenre);
+      if (cursorHoveredGenre.id) {
+        fetchGenreTopArtists(cursorHoveredGenre.id);
+      }
+    } else {
+      setPreviewGenre(null);
+    }
+  }, [isCommandHeld, cursorHoveredGenre, preferences?.enableGraphCards, showGenreCard, showArtistCard]);
+
+  useEffect(() => {
+    if (isCommandHeld && cursorHoveredArtist && (preferences?.enableGraphCards)) {
+      setPreviewArtist(cursorHoveredArtist);
+    } else {
+      setPreviewArtist(null);
+    }
+  }, [isCommandHeld, cursorHoveredArtist, preferences?.enableGraphCards]);
+
   // Activate preview mode when a card is shown
   const handlePreviewShown = () => {
     setPreviewModeActive(true);
@@ -867,31 +889,26 @@ function App() {
     }, 1000);
   };
 
-  // Handle genre hover - set hovered genre and fetch top artists
+  // Handle genre hover - track cursor hover state
   const handleGenreHover = (id: string | null, position: { x: number; y: number } | null) => {
-    // Only set hover if feature is enabled
-    if ((preferences?.enableGraphCards) && !showGenreCard && !showArtistCard) {
-      setHoveredGenre(id && position ? { id, position } : null);
-      if (id) {
-        fetchGenreTopArtists(id);
-      }
-    }
+    // Always track what's being hovered, regardless of command key
+    setCursorHoveredGenre(id && position ? { id, position } : null);
   };
 
   // Get hovered genre data for preview
   const hoveredGenreData = useMemo(() => {
-    if (!hoveredGenre || !currentGenres) return null;
-    const genre = currentGenres.nodes.find((g) => g.id === hoveredGenre.id);
+    if (!previewGenre || !currentGenres) return null;
+    const genre = currentGenres.nodes.find((g) => g.id === previewGenre.id);
     if (!genre) return null;
 
-    // If the hovered genre is the selected genre, use the loaded topArtists data
+    // If the preview genre is the selected genre, use the loaded topArtists data
     // Otherwise, use cached artist data (fetched on hover)
     const isSelectedGenre = selectedGenres.some(g => g.id === genre.id);
     const cachedArtists = genreTopArtistsCache.get(genre.id) || [];
     const artists = isSelectedGenre ? topArtists : cachedArtists;
 
     return { genre, topArtists: artists };
-  }, [hoveredGenre, currentGenres, selectedGenres, topArtists, genreTopArtistsCache]);
+  }, [previewGenre, currentGenres, selectedGenres, topArtists, genreTopArtistsCache]);
 
   const onGenreNodeClick = (genre: Genre) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
@@ -1840,9 +1857,8 @@ function App() {
                   artistLinks={currentArtistLinks}
                   onNodeClick={onArtistNodeClick}
                   onNodeHover={(id, position) => {
-                      if (preferences?.enableGraphCards) {
-                          setHoveredArtist(id && position ? { id, position } : null);
-                      }
+                      // Always track what's being hovered, regardless of command key
+                      setCursorHoveredArtist(id && position ? { id, position } : null);
                   }}
                   selectedArtistId={selectedArtist?.id}
                   computeArtistColor={getArtistColor}
@@ -1855,7 +1871,7 @@ function App() {
                 />
 
           {/* Genre hover preview */}
-          {preferences?.enableGraphCards && hoveredGenreData && hoveredGenre && graph === 'genres' && !showGenreCard && (
+          {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && !showGenreCard && (
               <GenrePreview
                   genre={hoveredGenreData.genre}
                   topArtists={hoveredGenreData.topArtists}
@@ -1864,7 +1880,7 @@ function App() {
                   onAllArtists={(genre) => onShowAllArtists(genre)}
                   onPlay={onPlayGenre}
                   playLoading={playerLoading}
-                  position={hoveredGenre.position}
+                  position={previewGenre.position}
                   visible={true}
                   previewModeActive={previewModeActive}
                   onShow={handlePreviewShown}
@@ -1872,7 +1888,7 @@ function App() {
           )}
 
           {/* Artist hover preview */}
-          {preferences?.enableGraphCards && hoveredArtistData && hoveredArtist
+          {preferences?.enableGraphCards && hoveredArtistData && previewArtist
               && (graph === 'artists' || graph === 'similarArtists') && !showArtistCard && (
                   <ArtistPreview
                       artist={hoveredArtistData}
@@ -1883,7 +1899,7 @@ function App() {
                       onToggle={onAddArtistButtonToggle}
                       playLoading={playerLoading}
                       isInCollection={isInCollection(hoveredArtistData.id)}
-                      position={hoveredArtist.position}
+                      position={previewArtist.position}
                       visible={true}
                       getArtistImageByName={getArtistImageByName}
                       getArtistByName={getArtistByName}

@@ -1,10 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export type UseZoomHotkeysOptions = {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onOpenFind?: () => void;
   enabled?: boolean;
+};
+
+export type UseHotkeysReturn = {
+  isCommandHeld: boolean;
 };
 
 function isEditableTarget(el: EventTarget | null) {
@@ -14,11 +18,19 @@ function isEditableTarget(el: EventTarget | null) {
   return tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable === true;
 }
 
-export default function useHotkeys(opts: UseZoomHotkeysOptions, deps: any[] = []) {
+export default function useHotkeys(opts: UseZoomHotkeysOptions, deps: any[] = []): UseHotkeysReturn {
   const { onZoomIn, onZoomOut, onOpenFind, enabled = true } = opts;
+  const [isCommandHeld, setIsCommandHeld] = useState(false);
+
   useEffect(() => {
     if (!enabled) return;
-    const handler = (e: KeyboardEvent) => {
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Track command/ctrl key state
+      if (e.metaKey || e.ctrlKey) {
+        setIsCommandHeld(true);
+      }
+
       if (isEditableTarget(e.target)) return;
 
       // Avoid clashing with browser zoom
@@ -43,8 +55,29 @@ export default function useHotkeys(opts: UseZoomHotkeysOptions, deps: any[] = []
         return;
       }
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Meta' || e.key === 'Control') {
+        setIsCommandHeld(false);
+      }
+    };
+
+    // Handle focus loss - reset state when window loses focus
+    const handleBlur = () => {
+      setIsCommandHeld(false);
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
+
+  return { isCommandHeld };
 }
