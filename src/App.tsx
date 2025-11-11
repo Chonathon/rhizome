@@ -134,6 +134,14 @@ function App() {
     return selectedGenres.map(genre => genre.id);
   }, [selectedGenres]);
   const [selectedDecades, setSelectedDecades] = useState<string[]>([]);
+  // Unified collection filter state for all filter types
+  const [collectionFilters, setCollectionFilters] = useState<{
+    genres: string[];
+    decades: string[];
+  }>({
+    genres: [],
+    decades: [],
+  });
   const artistFilterGenreIDs = useMemo(() => {
     return artistFilterGenres.map(genre => genre.id);
   }, [artistFilterGenres]);
@@ -427,11 +435,45 @@ function App() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
+  // Unified filtered artists computation - applies all active collection filters
+  const filteredCollectionArtists = useMemo(() => {
+    if (!collectionMode) {
+      return { artists, links: artistLinks };
+    }
+
+    let filtered = artists;
+
+    // Apply genre filter (if any genres selected)
+    if (collectionFilters.genres.length > 0) {
+      filtered = filtered.filter(artist =>
+        artist.genres.some(genreId => collectionFilters.genres.includes(genreId))
+      );
+    }
+
+    // Apply decade filter (if any decades selected)
+    // TODO: Implement when decade data is available on artists
+    // if (collectionFilters.decades.length > 0) {
+    //   filtered = filtered.filter(artist => {
+    //     const decade = getArtistDecade(artist);
+    //     return collectionFilters.decades.includes(decade);
+    //   });
+    // }
+
+    // Filter links to only include connections between filtered artists
+    const filteredArtistIds = new Set(filtered.map(a => a.id));
+    const filteredLinks = artistLinks.filter(link =>
+      filteredArtistIds.has(link.source) && filteredArtistIds.has(link.target)
+    );
+
+    return { artists: filtered, links: filteredLinks };
+  }, [collectionMode, artists, artistLinks, collectionFilters]);
+
   // Sets current artists/links shown in the graph when artists are fetched from the DB
+  // In collection mode, uses filtered artists based on active filters
   useEffect(() => {
-    setCurrentArtists(artists);
-    setCurrentArtistLinks(artistLinks);
-  }, [artists]);
+    setCurrentArtists(filteredCollectionArtists.artists);
+    setCurrentArtistLinks(filteredCollectionArtists.links);
+  }, [filteredCollectionArtists]);
 
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
@@ -442,6 +484,25 @@ function App() {
     }
     return null;
   }, [graph, selectedGenres, selectedArtist]);
+
+  // Compute genres available in the collection (only includes genres from liked artists)
+  const collectionGenres = useMemo(() => {
+    if (!collectionMode || !artists.length) return genres;
+
+    // Extract unique genre IDs from all liked artists (use 'artists' not 'currentArtists' to avoid loops)
+    const genreIdsInCollection = new Set<string>();
+    artists.forEach(artist => {
+      artist.genres.forEach(genreId => genreIdsInCollection.add(genreId));
+    });
+
+    // Filter genres list to only include genres present in collection
+    return genres.filter(genre => genreIdsInCollection.has(genre.id));
+  }, [collectionMode, artists, genres]);
+
+  // Memoize the full genre list with singleton parent for collection mode
+  const collectionGenresWithParent = useMemo(() => {
+    return [...collectionGenres, singletonParentGenre];
+  }, [collectionGenres, singletonParentGenre]);
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
@@ -1113,6 +1174,8 @@ function App() {
     setSimilarArtistAnchor(undefined);
     setGenreClusterMode(DEFAULT_CLUSTER_MODE);
     setCollectionMode(false);
+    // Clear collection mode filters when exiting to explore mode
+    setCollectionFilters({ genres: [], decades: [] });
   }
 
   const deselectGenre = () => {
@@ -1479,6 +1542,14 @@ function App() {
     // TODO: Implement decade filtering logic
   }
 
+  // Generic collection filter handler - works for any filter type
+  const onCollectionFilterChange = useCallback((filterType: 'genres' | 'decades', selectedIDs: string[]) => {
+    setCollectionFilters(prev => ({
+      ...prev,
+      [filterType]: selectedIDs,
+    }));
+  }, []);
+
   // Just filter the current nodes if selection is less than the current node count
   const artistNodeCountSelection = (value: number) => {
     if (value === artistNodeCount) return;
@@ -1639,6 +1710,10 @@ function App() {
   const onCollectionClick = async () => {
     if (userID) {
       setCollectionMode(true);
+      // Clear explore mode filters when entering collection mode
+      setArtistGenreFilter([]);
+      setArtistFilterGenres([]);
+      setSelectedDecades([]);
       if (likedArtists.length) {
         await fetchLikedArtists(likedArtists);
         setGraph('artists');
@@ -1806,7 +1881,36 @@ function App() {
                 )}
               </AnimatePresence>
               <AnimatePresence initial={false} mode="popLayout">
-                {graph === 'artists' && (
+                {collectionMode && graph === 'artists' && (
+                  <motion.div
+                    key="collection-filters"
+                    layout
+                    initial={{ opacity: 0, y: -8, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ overflow: "hidden" }}
+                    className='flex flex-col items-start sm:flex-row gap-3'
+                  >
+                    <GenresFilter
+                      genres={collectionGenresWithParent}
+                      genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
+                      graphType={graph}
+                      onGenreSelectionChange={(ids) => onCollectionFilterChange('genres', ids)}
+                      initialSelection={{ genre: undefined, isRoot: false, parents: {} }}
+                      selectedGenreIds={collectionFilters.genres}
+                    />
+                    {/* TODO: Add DecadesFilter when ready
+                    <DecadesFilter
+                      onDecadeSelectionChange={(ids) => onCollectionFilterChange('decades', ids)}
+                      selectedDecadeIds={collectionFilters.decades}
+                    />
+                    */}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <AnimatePresence initial={false} mode="popLayout">
+                {!collectionMode && graph === 'artists' && (
                   <motion.div
                     key="artist-filters"
                     layout
