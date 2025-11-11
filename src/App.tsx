@@ -435,8 +435,8 @@ function App() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // Unified filtered artists computation - applies all active collection filters
-  const filteredCollectionArtists = useMemo(() => {
+  // Computes the artists/links to display - applies collection filters when in collection mode
+  const displayedArtistsData = useMemo(() => {
     if (!collectionMode) {
       return { artists, links: artistLinks };
     }
@@ -468,12 +468,11 @@ function App() {
     return { artists: filtered, links: filteredLinks };
   }, [collectionMode, artists, artistLinks, collectionFilters]);
 
-  // Sets current artists/links shown in the graph when artists are fetched from the DB
-  // In collection mode, uses filtered artists based on active filters
+  // Sets current artists/links shown in the graph
   useEffect(() => {
-    setCurrentArtists(filteredCollectionArtists.artists);
-    setCurrentArtistLinks(filteredCollectionArtists.links);
-  }, [filteredCollectionArtists]);
+    setCurrentArtists(displayedArtistsData.artists);
+    setCurrentArtistLinks(displayedArtistsData.links);
+  }, [displayedArtistsData]);
 
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
