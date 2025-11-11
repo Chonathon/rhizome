@@ -42,6 +42,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
@@ -547,7 +549,41 @@ const PreferencesSection = ({
                 </Select>
               </Field>
             </FieldGroup>
+            <FieldGroup>
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldLabel htmlFor="hover-cards">Preview Cards</FieldLabel>
+                  <FieldDescription>
+                    Show preview cards when hovering over nodes
+                  </FieldDescription>
+                </FieldContent>
+                <Select value="Select a reason">
+              <SelectTrigger>
+                <SelectValue placeholder="Select a reason" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel className="sr-only">Select</SelectLabel>
+                  
+                    <SelectItem key="modifier" value="While holding CMD/Ctrl">While holding CMD/Ctrl</SelectItem>
+                    <SelectItem key="delay" value="After a short delay">After a short delay</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+                {/* <Switch
+                  id="hover-cards"
+                  checked={preferences.enableGraphCards}
+                  onCheckedChange={(checked) => {
+                    onPreferencesChange({
+                      ...preferences,
+                      enableGraphCards: checked
+                    });
+                  }}
+                /> */}
+              </Field>
+            </FieldGroup>
           </FieldSet>
+          
         </FieldGroup>
       </form>
     </SettingsSection>
