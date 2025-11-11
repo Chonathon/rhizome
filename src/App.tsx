@@ -1725,85 +1725,114 @@ function App() {
         <Toaster />
         <div className="fixed inset-0 z-0 overflow-hidden no-scrollbar">
           <Gradient />
-          <motion.div
-            className={
-              "fixed top-0 left-0 z-70 pt-3 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
-            }
-            style={{
-              left: "var(--sidebar-gap)",
-            }}
-          >
-            {/* <Header
-            selectedGenre={selectedGenres[0]?.name}
-            selectedArtist={selectedArtist}
-            graph={graph}
-            toggleListView={() => {}}
-            showListView={false}
-            hideArtistCard={() => setShowArtistCard(false)}
-            content={
-              graph === 'artists' &&
-                <div className='flex mr-[var(--sidebar-gap)] flex-col w-full justify-center sm:flex-row gap-3'>
-                   <GenresFilter
-                    genres={[...genres, singletonParentGenre]}
-                    genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
-                    graphType={graph}
-                    onGenreSelectionChange={onGenreFilterSelectionChange}
-                    initialSelection={initialGenreFilter}
-                    selectedGenreIds={selectedGenreIDs}
-                   />
-
-                  <Button size='default' variant='outline'>Mood & Activity
-                    <ChevronDown />
-                  </Button>
-                  <Button size='default' className='self-start' variant='outline'>Decade
-                    <ChevronDown />
-                  </Button>
-                </div>
-                }
-            /> */}
-            {!collectionMode && <Tabs
-                value={graph === 'similarArtists' ? 'artists' : graph}
-                onValueChange={(val) => onTabChange(val as GraphType)}>
-                  <TabsList>
-                      <TabsTrigger value="genres">Genres</TabsTrigger>
-                    <TabsTrigger value="artists">Artists</TabsTrigger>
-                  </TabsList>
-                </Tabs>}
-
-                {graph === 'similarArtists' && similarArtistAnchor && (
-                  <Button
-                    size='lg'
-                    variant='outline'
-                    onClick={() => onTabChange('artists')}
-                    className="gap-2"
+          <AnimatePresence>
+            <motion.div
+              layout
+              transition={{ layout: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } }}
+              className={
+                "fixed top-0 left-0 z-70 pt-3 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
+              }
+              style={{ left: "var(--sidebar-gap)" }}
+            >
+              {/* <Header
+              selectedGenre={selectedGenres[0]?.name}
+              selectedArtist={selectedArtist}
+              graph={graph}
+              toggleListView={() => {}}
+              showListView={false}
+              hideArtistCard={() => setShowArtistCard(false)}
+              content={
+                graph === 'artists' &&
+                  <div className='flex mr-[var(--sidebar-gap)] flex-col w-full justify-center sm:flex-row gap-3'>
+                     <GenresFilter
+                      genres={[...genres, singletonParentGenre]}
+                      genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
+                      graphType={graph}
+                      onGenreSelectionChange={onGenreFilterSelectionChange}
+                      initialSelection={initialGenreFilter}
+                      selectedGenreIds={selectedGenreIDs}
+                     />
+                    <Button size='default' variant='outline'>Mood & Activity
+                      <ChevronDown />
+                    </Button>
+                    <Button size='default' className='self-start' variant='outline'>Decade
+                      <ChevronDown />
+                    </Button>
+                  </div>
+                  }
+              /> */}
+              <AnimatePresence initial={false} mode="popLayout">
+                {!collectionMode && (
+                  <motion.div
+                    key="tabs"
+                    layout
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    Similar artists: {similarArtistAnchor.name}
-                    <X className="h-4 w-4" />
-                  </Button>
+                    <Tabs
+                      value={graph === 'similarArtists' ? 'artists' : graph}
+                      onValueChange={(val) => onTabChange(val as GraphType)}>
+                        <TabsList>
+                          <TabsTrigger value="genres">Genres</TabsTrigger>
+                          <TabsTrigger value="artists">Artists</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                  </motion.div>
                 )}
-
-                { graph === 'artists' &&
-                <div className='flex flex-col items-start sm:flex-row gap-3'>
-                   <GenresFilter
-                    //key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
-                    genres={[...genres, singletonParentGenre]}
-                    genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
-                    graphType={graph}
-                    onGenreSelectionChange={onGenreFilterSelectionChange}
-                    initialSelection={initialGenreFilter}
-                    selectedGenreIds={artistGenreFilterIDs}
-                   />
-
-                  {/* <Button size='lg' variant='outline'
-                  onClick={() => toast('Opens a filter menu for Moods & Activities...')}
-                  >Moods & Activities
-                    <ChevronDown />
-                  </Button> */}
-                  <DecadesFilter
-                    onDecadeSelectionChange={onDecadeSelectionChange}
-                  />
-                </div>
-                }
+              </AnimatePresence>
+              <AnimatePresence initial={false} mode="popLayout">
+                {graph === 'similarArtists' && similarArtistAnchor && (
+                  <motion.div
+                    key="similar-banner"
+                    layout
+                    initial={{ opacity: 0, y: -8, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <Button
+                      size='lg'
+                      variant='outline'
+                      onClick={() => onTabChange('artists')}
+                      className="gap-2"
+                    >
+                      Similar artists: {similarArtistAnchor.name}
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <AnimatePresence initial={false} mode="popLayout">
+                {graph === 'artists' && (
+                  <motion.div
+                    key="artist-filters"
+                    layout
+                    initial={{ opacity: 0, y: -8, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ overflow: "hidden" }}
+                    className='flex flex-col items-start sm:flex-row gap-3'
+                  >
+                    <GenresFilter
+                      //key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
+                      genres={[...genres, singletonParentGenre]}
+                      genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
+                      graphType={graph}
+                      onGenreSelectionChange={onGenreFilterSelectionChange}
+                      initialSelection={initialGenreFilter}
+                      selectedGenreIds={artistGenreFilterIDs}
+                    />
+                    <DecadesFilter
+                      onDecadeSelectionChange={onDecadeSelectionChange}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <motion.div layout>
                 <FindFilter
                   items={findOptions}
                   onSelect={handleFindSelect}
@@ -1818,7 +1847,9 @@ function App() {
                     setIsFindFilterOpen(open);
                   }}
                 />
+              </motion.div>
           </motion.div>
+          </AnimatePresence>
                 <GenresForceGraph
                   ref={genresGraphRef}
                   graphData={currentGenres}
