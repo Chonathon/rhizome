@@ -218,6 +218,7 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
             </DropdownMenuItem>
           </div>
         </div>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={(e) => {
           e.preventDefault();
           window.open('https://ko-fi.com/rhizomefyi', '_blank');
