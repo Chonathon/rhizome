@@ -1902,7 +1902,7 @@ function App() {
                   playLoading={playerLoading}
                   position={previewGenre.position}
                   visible={true}
-                  previewModeActive={previewModeActive}
+                  previewModeActive={preferences?.previewTrigger === 'modifier' ? true : previewModeActive}
                   onShow={handlePreviewShown}
               />
           )}
@@ -1925,7 +1925,7 @@ function App() {
                       getArtistByName={getArtistByName}
                       setArtistFromName={setArtistFromName}
                       getArtistColor={getArtistColor}
-                      previewModeActive={previewModeActive}
+                      previewModeActive={preferences?.previewTrigger === 'modifier' ? true : previewModeActive}
                       onShow={handlePreviewShown}
                   />
               )}
