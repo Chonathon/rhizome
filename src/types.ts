@@ -118,11 +118,13 @@ export interface TopTrackPlayIDs {
 export type PlayerType = 'youtube' | 'spotify' | 'apple';
 
 export type Theme = 'light' | 'dark' | 'system';
+export type PreviewTrigger = 'modifier' | 'delay';
 
 export interface Preferences {
     theme?: Theme;
     player?: PlayerType;
     enableGraphCards?: boolean;
+    previewTrigger?: PreviewTrigger;
 }
 
 export type Social = 'google' | 'spotify';

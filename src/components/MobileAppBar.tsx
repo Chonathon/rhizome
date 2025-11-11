@@ -1,8 +1,7 @@
 import React, { useState } from "react"
-import {  CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown } from "lucide-react"
-import { TwoLines } from "./Icon"
+import {  CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown, Cog } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Search as SearchIcon, BookOpen, Telescope } from "./Icon"
+import { Search as SearchIcon, BookOpen, Telescope, TwoLines } from "./Icon"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -151,17 +150,16 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
       <DropdownMenuContent side="top" align="end">
         {signedInUser ? (
           <>
-            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
-              Profile
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'General' } }))}><Cog />
+              General
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Account' } }))}><CircleUserRound />
+              Account
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
               Connections
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </>
+        </>
         ) : (
           <>
             <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} className="" />
@@ -220,6 +218,7 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
             </DropdownMenuItem>
           </div>
         </div>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={(e) => {
           e.preventDefault();
           window.open('https://ko-fi.com/rhizomefyi', '_blank');
