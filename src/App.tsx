@@ -1761,14 +1761,14 @@ function App() {
                 </div>
                 }
             /> */}
-            <Tabs
+            {!collectionMode && <Tabs
                 value={graph === 'similarArtists' ? 'artists' : graph}
                 onValueChange={(val) => onTabChange(val as GraphType)}>
                   <TabsList>
                       <TabsTrigger value="genres">Genres</TabsTrigger>
                     <TabsTrigger value="artists">Artists</TabsTrigger>
                   </TabsList>
-                </Tabs>
+                </Tabs>}
 
                 {graph === 'similarArtists' && similarArtistAnchor && (
                   <Button
