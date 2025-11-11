@@ -410,7 +410,7 @@ export default function GenresFilter({
                   </CommandItem>
                   <CollapsibleContent>
                     <div className={query ? "" : "pl-8"}>
-                      {parentChildMap.get(genre.id).map((child) => {
+                      {(parentChildMap.get(genre.id) || []).map((child) => {
                         if (!child) return null;
                         const childChecked = isChildSelected(genre, child.id);
                         return (
