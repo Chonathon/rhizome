@@ -4,7 +4,6 @@ import { useMemo } from 'react'
 import { Button } from './ui/button'
 import { CirclePlay, ArrowRight, Loader2, SquareArrowUp } from 'lucide-react'
 import GraphCard from './GraphCard'
-import { useIsMobile } from '@/hooks/use-mobile'
 
 interface GenrePreviewProps {
   genre: Genre
@@ -44,9 +43,7 @@ export function GenrePreview({
     [topArtists]
   )
 
-  const isMobile = useIsMobile()
-
-  if (!visible || isMobile) return null
+  if (!visible) return null
 
   return (
     <div

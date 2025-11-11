@@ -6,7 +6,6 @@ import { CirclePlay, ArrowRight, SquarePlus, Loader2, Check } from 'lucide-react
 import GenreBadge from '@/components/GenreBadge'
 import GraphCard from './GraphCard'
 import ArtistBadge from './ArtistBadge'
-import { useIsMobile } from '@/hooks/use-mobile'
 
 interface ArtistPreviewProps {
   artist: Artist
@@ -66,9 +65,7 @@ export function ArtistPreview({
     [artist?.similar]
   )
 
-  const isMobile = useIsMobile()
-
-  if (!visible || isMobile) return null
+  if (!visible) return null
 
   return (
     <div

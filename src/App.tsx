@@ -1865,7 +1865,7 @@ function App() {
                   onPlay={onPlayGenre}
                   playLoading={playerLoading}
                   position={hoveredGenre.position}
-                  visible={true}
+                  visible={!isMobile}
                   previewModeActive={previewModeActive}
                   onShow={handlePreviewShown}
               />
@@ -1884,7 +1884,7 @@ function App() {
                       playLoading={playerLoading}
                       isInCollection={isInCollection(hoveredArtistData.id)}
                       position={hoveredArtist.position}
-                      visible={true}
+                      visible={!isMobile}
                       getArtistImageByName={getArtistImageByName}
                       getArtistByName={getArtistByName}
                       setArtistFromName={setArtistFromName}
