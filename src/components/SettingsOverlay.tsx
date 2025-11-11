@@ -7,7 +7,6 @@ import { CircleUserRound, Cable, HandHeart, Check, X, Cog } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
-import { Switch } from "@/components/ui/switch"
 import {
   Dialog,
   DialogContent,
@@ -47,7 +46,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import {Preferences, Theme} from "@/types";
+import {Preferences, PreviewTrigger, Theme} from "@/types";
 import KofiLogo from "@/assets/kofi_symbol.svg"
 import LastFMLogo from "@/assets/Last.fm Logo.svg"
 
@@ -552,34 +551,32 @@ const PreferencesSection = ({
             <FieldGroup>
               <Field orientation="horizontal">
                 <FieldContent>
-                  <FieldLabel htmlFor="hover-cards">Preview Cards</FieldLabel>
+                  <FieldLabel htmlFor="preview-cards">Preview Cards</FieldLabel>
                   <FieldDescription>
                     Show preview cards when hovering over nodes
                   </FieldDescription>
                 </FieldContent>
-                <Select value="Select a reason">
-              <SelectTrigger>
-                <SelectValue placeholder="Select a reason" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel className="sr-only">Select</SelectLabel>
-                  
-                    <SelectItem key="modifier" value="While holding CMD/Ctrl">While holding CMD/Ctrl</SelectItem>
-                    <SelectItem key="delay" value="After a short delay">After a short delay</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-                {/* <Switch
-                  id="hover-cards"
-                  checked={preferences.enableGraphCards}
-                  onCheckedChange={(checked) => {
+                <Select
+                  value={preferences.previewTrigger || 'modifier'}
+                  onValueChange={(value: PreviewTrigger) => {
                     onPreferencesChange({
                       ...preferences,
-                      enableGraphCards: checked
+                      previewTrigger: value,
+                      enableGraphCards: true // Enable cards when selecting a trigger
                     });
                   }}
-                /> */}
+                >
+                  <SelectTrigger id="preview-cards">
+                    <SelectValue placeholder="Select trigger" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel className="sr-only">Preview Trigger</SelectLabel>
+                      <SelectItem value="modifier">While holding CMD/Ctrl</SelectItem>
+                      <SelectItem value="delay">After a short delay</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </Field>
             </FieldGroup>
           </FieldSet>
@@ -591,46 +588,46 @@ const PreferencesSection = ({
 }
 
 // Experimental Features Section Component
-const ExperimentalFeaturesSection = ({
-  preferences,
-  onPreferencesChange,
-}: {
-  preferences: Preferences;
-  onPreferencesChange: (newPreferences: Preferences) => void;
-}) => {
-  return (
-    <SettingsSection>
-      <form onSubmit={(e) => e.preventDefault()}>
-        <FieldGroup>
-          <FieldSet>
-            <FieldLegend>Experimental Features</FieldLegend>
-            <FieldSeparator />
-            <FieldGroup>
-              <Field orientation="horizontal">
-                <FieldContent>
-                  <FieldLabel htmlFor="hover-cards">Preview Cards</FieldLabel>
-                  <FieldDescription>
-                    Show preview cards when hovering over nodes
-                  </FieldDescription>
-                </FieldContent>
-                <Switch
-                  id="hover-cards"
-                  checked={preferences.enableGraphCards}
-                  onCheckedChange={(checked) => {
-                    onPreferencesChange({
-                      ...preferences,
-                      enableGraphCards: checked
-                    });
-                  }}
-                />
-              </Field>
-            </FieldGroup>
-          </FieldSet>
-        </FieldGroup>
-      </form>
-    </SettingsSection>
-  )
-}
+// const ExperimentalFeaturesSection = ({
+//   preferences,
+//   onPreferencesChange,
+// }: {
+//   preferences: Preferences;
+//   onPreferencesChange: (newPreferences: Preferences) => void;
+// }) => {
+//   return (
+//     <SettingsSection>
+//       <form onSubmit={(e) => e.preventDefault()}>
+//         <FieldGroup>
+//           <FieldSet>
+//             <FieldLegend>Experimental Features</FieldLegend>
+//             <FieldSeparator />
+//             <FieldGroup>
+//               <Field orientation="horizontal">
+//                 <FieldContent>
+//                   <FieldLabel htmlFor="hover-cards">Preview Cards</FieldLabel>
+//                   <FieldDescription>
+//                     Show preview cards when hovering over nodes
+//                   </FieldDescription>
+//                 </FieldContent>
+//                 <Switch
+//                   id="hover-cards"
+//                   checked={preferences.enableGraphCards}
+//                   onCheckedChange={(checked) => {
+//                     onPreferencesChange({
+//                       ...preferences,
+//                       enableGraphCards: checked
+//                     });
+//                   }}
+//                 />
+//               </Field>
+//             </FieldGroup>
+//           </FieldSet>
+//         </FieldGroup>
+//       </form>
+//     </SettingsSection>
+//   )
+// }
 
 // Account Section Component
 const AccountSection = ({
@@ -914,10 +911,10 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
           preferences={preferences}
           onPreferencesChange={onChangePreferences}
         />
-        <ExperimentalFeaturesSection
+        {/* <ExperimentalFeaturesSection
           preferences={preferences}
           onPreferencesChange={onChangePreferences}
-        />
+        /> */}
       </>
     ),
     Account: (

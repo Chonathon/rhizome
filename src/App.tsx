@@ -854,9 +854,19 @@ function App() {
     setTopArtistsGenreId(genreID);
   };
 
-  // Update preview states based on cursor hover + command key
+  // Update preview states based on cursor hover + command key or delay
   useEffect(() => {
-    if (isCommandHeld && cursorHoveredGenre && (preferences?.enableGraphCards) && !showGenreCard && !showArtistCard) {
+    const triggerMode = preferences?.previewTrigger || 'modifier';
+    const shouldShowPreview = preferences?.enableGraphCards && !showGenreCard && !showArtistCard;
+
+    if (!shouldShowPreview || !cursorHoveredGenre) {
+      setPreviewGenre(null);
+      return;
+    }
+
+    // If trigger mode is 'delay', show immediately (GraphCard handles the delay)
+    // If trigger mode is 'modifier', only show when command key is held
+    if (triggerMode === 'delay' || (triggerMode === 'modifier' && isCommandHeld)) {
       setPreviewGenre(cursorHoveredGenre);
       if (cursorHoveredGenre.id) {
         fetchGenreTopArtists(cursorHoveredGenre.id);
@@ -864,15 +874,25 @@ function App() {
     } else {
       setPreviewGenre(null);
     }
-  }, [isCommandHeld, cursorHoveredGenre, preferences?.enableGraphCards, showGenreCard, showArtistCard]);
+  }, [isCommandHeld, cursorHoveredGenre, preferences?.enableGraphCards, preferences?.previewTrigger, showGenreCard, showArtistCard]);
 
   useEffect(() => {
-    if (isCommandHeld && cursorHoveredArtist && (preferences?.enableGraphCards)) {
+    const triggerMode = preferences?.previewTrigger || 'modifier';
+    const shouldShowPreview = preferences?.enableGraphCards;
+
+    if (!shouldShowPreview || !cursorHoveredArtist) {
+      setPreviewArtist(null);
+      return;
+    }
+
+    // If trigger mode is 'delay', show immediately (GraphCard handles the delay)
+    // If trigger mode is 'modifier', only show when command key is held
+    if (triggerMode === 'delay' || (triggerMode === 'modifier' && isCommandHeld)) {
       setPreviewArtist(cursorHoveredArtist);
     } else {
       setPreviewArtist(null);
     }
-  }, [isCommandHeld, cursorHoveredArtist, preferences?.enableGraphCards]);
+  }, [isCommandHeld, cursorHoveredArtist, preferences?.enableGraphCards, preferences?.previewTrigger]);
 
   // Activate preview mode when a card is shown
   const handlePreviewShown = () => {
