@@ -562,7 +562,7 @@ const PreferencesSection = ({
                     onPreferencesChange({
                       ...preferences,
                       previewTrigger: value,
-                      enableGraphCards: true // Enable cards when selecting a trigger
+                      enableGraphCards: true
                     });
                   }}
                 >
@@ -572,7 +572,7 @@ const PreferencesSection = ({
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel className="sr-only">Preview Trigger</SelectLabel>
-                      <SelectItem value="modifier">While holding CMD/Ctrl</SelectItem>
+                      <SelectItem value="modifier">While holding CMD or CTRL</SelectItem>
                       <SelectItem value="delay">After a short delay</SelectItem>
                     </SelectGroup>
                   </SelectContent>
