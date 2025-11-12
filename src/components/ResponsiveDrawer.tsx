@@ -56,6 +56,11 @@ export interface ResponsiveDrawerProps {
    * switching between different items (e.g., different artists or genres).
    */
   contentKey?: string | number;
+  /**
+   * When this value changes, the drawer will expand to the middle snap position.
+   * Useful for triggering expansion from external actions (e.g., header button clicks).
+   */
+  expandToMiddleTrigger?: number;
 }
 
 /**
@@ -83,6 +88,7 @@ export function ResponsiveDrawer({
   minimizeOnCanvasTouch = false,
   onCanvasDragStart,
   contentKey,
+  expandToMiddleTrigger,
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
   const { state: sidebarState } = useSidebar();
@@ -123,6 +129,15 @@ export function ResponsiveDrawer({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentKey, isDesktop, open]);
+
+  // Expand to middle snap when triggered externally (e.g., header button click)
+  useEffect(() => {
+    if (!isDesktop && open && expandToMiddleTrigger !== undefined) {
+      const middleSnapIndex = snapPoints.length >= 2 ? 1 : 0;
+      setActiveSnap(snapPoints[middleSnapIndex] ?? 0.9);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandToMiddleTrigger, isDesktop, open]);
 
   // Track whether the scroll container is at the very top to gate dragging.
   React.useEffect(() => {
@@ -191,7 +206,11 @@ export function ResponsiveDrawer({
   };
 
   const minimizeToFirstSnap = () => {
-    if (isDesktop || !minimizeOnCanvasTouch) return;
+    if (isDesktop || !minimizeOnCanvasTouch) {
+      console.log('[ResponsiveDrawer] minimizeToFirstSnap returning early, isDesktop:', isDesktop, 'minimizeOnCanvasTouch:', minimizeOnCanvasTouch);
+      return;
+    }
+    console.log('[ResponsiveDrawer] Setting activeSnap to:', snapPoints[0]);
     setActiveSnap(snapPoints[0]);
   };
 
@@ -209,16 +228,26 @@ export function ResponsiveDrawer({
       const card = cardRef.current;
       if (card && !card.contains(e.target as Node)) {
         canvasDragStartRef.current = { x: e.clientX, y: e.clientY };
+        console.log('[ResponsiveDrawer] Canvas pointer down detected');
       }
     };
 
     const handlePointerMove = (e: PointerEvent) => {
       if (canvasDragStartRef.current) {
-        // Notify parent immediately (e.g., to undim the graph)
-        canvasDragStartRef.current = null;
-        onCanvasDragStart?.();
-        // Then minimize drawer (mobile only)
-        minimizeToFirstSnap();
+        // Check if user actually dragged (moved at least 5px)
+        const dx = Math.abs(e.clientX - canvasDragStartRef.current.x);
+        const dy = Math.abs(e.clientY - canvasDragStartRef.current.y);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance >= 5) {
+          console.log('[ResponsiveDrawer] Canvas drag detected, distance:', distance);
+          // Notify parent immediately (e.g., to undim the graph)
+          canvasDragStartRef.current = null;
+          onCanvasDragStart?.();
+          // Then minimize drawer (mobile only)
+          console.log('[ResponsiveDrawer] Calling minimizeToFirstSnap, isDesktop:', isDesktop, 'minimizeOnCanvasTouch:', minimizeOnCanvasTouch);
+          minimizeToFirstSnap();
+        }
       }
     };
 

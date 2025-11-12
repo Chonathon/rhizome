@@ -167,6 +167,8 @@ function App() {
   const [isArtistDrawerAtMinSnap, setIsArtistDrawerAtMinSnap] = useState(false);
   const [isUserDraggingGenreCanvas, setIsUserDraggingGenreCanvas] = useState(false);
   const [isUserDraggingArtistCanvas, setIsUserDraggingArtistCanvas] = useState(false);
+  const [genreDrawerExpandTrigger, setGenreDrawerExpandTrigger] = useState(0);
+  const [artistDrawerExpandTrigger, setArtistDrawerExpandTrigger] = useState(0);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
@@ -997,6 +999,7 @@ function App() {
   const onGenreNodeClick = (genre: Genre) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
     setIsUserDraggingGenreCanvas(false); // Re-enable dimming when selecting a new node
+    setGenreDrawerExpandTrigger(prev => prev + 1); // Expand drawer to middle position
     // Don't set initialGenreFilter here - clicking a genre is just for viewing, not filtering
     setSelectedGenres([genre]);
     setGenreInfoToShow(genre);
@@ -1074,8 +1077,19 @@ function App() {
     setIsUserDraggingArtistCanvas(true);
   };
 
+  const handleGenreHeaderRefocus = () => {
+    setIsUserDraggingGenreCanvas(false);
+    setGenreDrawerExpandTrigger(prev => prev + 1);
+  };
+
+  const handleArtistHeaderRefocus = () => {
+    setIsUserDraggingArtistCanvas(false);
+    setArtistDrawerExpandTrigger(prev => prev + 1);
+  };
+
   const onArtistNodeClick = (artist: Artist) => {
     setIsUserDraggingArtistCanvas(false); // Re-enable dimming when selecting a new node
+    setArtistDrawerExpandTrigger(prev => prev + 1); // Expand drawer to middle position
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setRestoreGenreCardOnArtistDismiss(false); // Direct node click, don't restore genre card
@@ -2181,6 +2195,8 @@ function App() {
                 onPlayTrack={onPlayGenreTrack}
                 onDrawerSnapChange={setIsGenreDrawerAtMinSnap}
                 onCanvasDragStart={handleGenreCanvasDragStart}
+                onHeaderRefocus={handleGenreHeaderRefocus}
+                expandToMiddleTrigger={genreDrawerExpandTrigger}
               />
               <ArtistInfo
                 key={artistInfoDrawerVersion}
@@ -2210,6 +2226,8 @@ function App() {
                 shouldShowChevron={showArtistGoTo}
                 onDrawerSnapChange={setIsArtistDrawerAtMinSnap}
                 onCanvasDragStart={handleArtistCanvasDragStart}
+                onHeaderRefocus={handleArtistHeaderRefocus}
+                expandToMiddleTrigger={artistDrawerExpandTrigger}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}

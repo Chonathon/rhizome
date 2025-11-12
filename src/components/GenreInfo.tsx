@@ -47,6 +47,8 @@ interface GenreInfoProps {
   onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
   onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
   onCanvasDragStart?: () => void;
+  onHeaderRefocus?: () => void;
+  expandToMiddleTrigger?: number;
 }
 
 export function GenreInfo({
@@ -72,6 +74,8 @@ export function GenreInfo({
     onPlayTrack,
     onDrawerSnapChange,
     onCanvasDragStart,
+    onHeaderRefocus,
+    expandToMiddleTrigger,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(false)
@@ -222,10 +226,14 @@ export function GenreInfo({
       minimizeOnCanvasTouch={true}
       onCanvasDragStart={onCanvasDragStart}
       contentKey={selectedGenre?.id}
+      expandToMiddleTrigger={expandToMiddleTrigger}
       headerTitle={
         selectedGenre && onFocusInGenresView ? (
           <button
-            onClick={() => onFocusInGenresView(selectedGenre, { forceRefocus: true })}
+            onClick={() => {
+              onFocusInGenresView(selectedGenre, { forceRefocus: true });
+              onHeaderRefocus?.();
+            }}
             className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-block"
             title={selectedGenre ? `Go to ${selectedGenre.name}` : "Go to genre"}
           >
