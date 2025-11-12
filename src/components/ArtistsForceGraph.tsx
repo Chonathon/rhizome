@@ -17,6 +17,7 @@ interface ArtistsForceGraphProps {
   computeArtistColor: (artist: Artist) => string;
   width?: number;
   height?: number;
+  disableDimming?: boolean;
 }
 
 const MIN_RADIUS = 6;
@@ -36,6 +37,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       computeArtistColor,
       width,
       height,
+      disableDimming,
     },
     ref,
   ) => {
@@ -93,6 +95,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
         onNodeHover={onNodeHover}
+        disableDimming={disableDimming}
       />
     );
   },

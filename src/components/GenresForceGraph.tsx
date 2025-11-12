@@ -18,6 +18,7 @@ interface GenresForceGraphProps {
   autoFocus?: boolean;
   width?: number;
   height?: number;
+  disableDimming?: boolean;
 }
 
 const MIN_RADIUS = 6;
@@ -39,6 +40,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       autoFocus,
       width,
       height,
+      disableDimming,
     },
     ref,
   ) => {
@@ -100,6 +102,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
         onNodeHover={onNodeHover}
+        disableDimming={disableDimming}
       />
     );
   },

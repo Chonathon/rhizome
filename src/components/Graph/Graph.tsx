@@ -84,6 +84,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   renderNode?: NodeRenderer<T>;
   renderSelection?: SelectionRenderer<T>;
   renderLabel?: LabelRenderer<T>;
+  disableDimming?: boolean;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -131,6 +132,7 @@ const Graph = forwardRef(function GraphInner<
     renderNode = defaultRenderNode,
     renderSelection = defaultRenderSelection,
     renderLabel = defaultRenderLabel,
+    disableDimming = false,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -422,7 +424,9 @@ const Graph = forwardRef(function GraphInner<
 
           // Calculate node alpha
           let alpha = 1;
-          if (hasSelection) {
+          if (disableDimming) {
+            alpha = 1;
+          } else if (hasSelection) {
             alpha = isSelected ? 1 : isNeighbor ? 0.8 : 0.15;
           } else if (isHovered) {
             alpha = 0.8;

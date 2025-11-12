@@ -49,6 +49,8 @@ interface ArtistInfoProps {
   onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
   viewRelatedArtistsLoading?: boolean;
   shouldShowChevron?: boolean;
+  onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
+  onCanvasDragStart?: () => void;
 }
 
 export function ArtistInfo({
@@ -76,6 +78,8 @@ export function ArtistInfo({
   onPlayTrack,
   viewRelatedArtistsLoading,
   shouldShowChevron,
+  onDrawerSnapChange,
+  onCanvasDragStart,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -144,7 +148,10 @@ export function ArtistInfo({
       show={!!(show && selectedArtist)}
       onDismiss={onDismiss}
       bodyClassName=""
-      // snapPoints={[0.28, 0.9]}
+      snapPoints={[0.08, 0.50, 0.9]}
+      minimizeOnCanvasTouch={true}
+      onCanvasDragStart={onCanvasDragStart}
+      contentKey={selectedArtist?.id}
       headerTitle={
         selectedArtist && onFocusInArtistsView && shouldShowChevron ? (
           <button
@@ -168,6 +175,11 @@ export function ArtistInfo({
       }
     >
       {({ isDesktop, isAtMaxSnap, isAtMinSnap }) => {
+        // Notify parent of snap state changes for dimming control
+        useEffect(() => {
+          onDrawerSnapChange?.(!isDesktop && isAtMinSnap);
+        }, [isAtMinSnap, isDesktop]);
+
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
         return (
           <>
