@@ -2187,7 +2187,7 @@ function App() {
                 playLoading={isPlayerLoadingArtist()}
                 viewRelatedArtistsLoading={!!pendingArtistGenreGraph}
                 onArtistToggle={onAddArtistButtonToggle}
-                isInCollection={isInCollection(selectedArtist?.id)}
+                isInCollection={isInCollection(artistInfoToShow?.id)}
                 onPlayTrack={onPlayArtistTrack}
                 shouldShowChevron={showArtistGoTo}
               />

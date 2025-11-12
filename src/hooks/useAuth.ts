@@ -42,7 +42,9 @@ const useAuth = () => {
     const likeArtist = async (artistID: string) => {
         if (userID && !likedArtists.includes(artistID)) {
             const success = await likeArtistUser(userID, artistID);
-            if (success) setLikedArtists([...likedArtists, artistID]);
+            if (success) {
+                setLikedArtists([...likedArtists, artistID]);
+            }
         }
     }
 
