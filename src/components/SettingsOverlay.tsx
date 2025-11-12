@@ -897,7 +897,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
     // If not dirty, allow default behavior (close dialog)
   }
 
-  // View mapping
+  // Main: View mapping
   const views: Record<string, React.ReactNode> = {
     General: (
       <>
@@ -945,7 +945,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
-          className="overflow-hidden bg-card max-h-160 p-0 pt-0 sm:pl-3 md:max-w-[700px] lg:max-w-[800px]"
+          className="overflow-hidden bg-card max-h-[calc(100dvh-3rem)] p-0 pt-0 sm:pl-3 sm:max-h-160 md:max-w-[700px] lg:max-w-[800px]"
           onEscapeKeyDown={handleEscapeKeyDown}
         >
           
