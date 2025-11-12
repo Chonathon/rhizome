@@ -389,6 +389,8 @@ const Graph = forwardRef(function GraphInner<
           const base = source ? colorById.get(String(source)) : undefined;
           const fallback = resolvedTheme === "dark" ? "#ffffff" : "#000000";
           const selected = !!selectedId && (source === selectedId || target === selectedId);
+          // When dimming is disabled, always show full opacity
+          if (disableDimming) return `${base ?? fallback}80`;
           return `${base ?? fallback}${selectedId ? (selected ? 'cc' : '30') : '80'}`;
         }}
         linkWidth={(link) => {
@@ -458,8 +460,13 @@ const Graph = forwardRef(function GraphInner<
           // Calculate and render label
           const k = zoomRef.current || 1;
           let labelAlpha = labelAlphaForZoom(k, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END);
-          if (isSelected || isHovered) labelAlpha = 1;
-          else if (hasSelection && !isNeighbor) labelAlpha = Math.min(labelAlpha, 0.25);
+          if (disableDimming) {
+            labelAlpha = labelAlpha; // Keep zoom-based alpha, don't dim for selection
+          } else if (isSelected || isHovered) {
+            labelAlpha = 1;
+          } else if (hasSelection && !isNeighbor) {
+            labelAlpha = Math.min(labelAlpha, 0.25);
+          }
 
           const labelContext: LabelRenderContext<T> = {
             ...renderContext,
