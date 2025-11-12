@@ -414,6 +414,7 @@ export function ArtistInfo({
                         const genreColor = artistObj ? getArtistColor(artistObj) : undefined;
 
                         return (
+                          // TODO: Provide navigation options for artists not in view
                           <ArtistBadge
                             key={name}
                             name={name}
