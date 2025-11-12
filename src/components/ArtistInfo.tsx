@@ -419,7 +419,13 @@ export function ArtistInfo({
                             name={name}
                             imageUrl={isInView ? img : undefined}
                             genreColor={genreColor}
-                            onClick={() => setArtistFromName(name)}
+                            onClick={() => {
+                              if (isInView) {
+                                setArtistFromName(name);
+                              } else {
+                                toast.info(`${name} is not in the current view.`);
+                              }
+                            }}
                             title={!isInView ? `${name} is not in the current view` : `Go to ${name}`}
                             icon={!isInView ? EyeOff : undefined}
                           />
