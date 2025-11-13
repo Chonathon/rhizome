@@ -39,8 +39,7 @@ export interface ResponsiveDrawerProps {
   scrollContainerSelector?: string;
   /**
    * When enabled, dragging outside the drawer while at middle snap will minimize it to the
-   * first (smallest) snap point, allowing the user to interact with content underneath (like
-   * a graph or map) while simultaneously minimizing the drawer. Similar to Google Maps behavior.
+   * first (smallest) snap point, allowing the user to interact with the graph while simultaneously minimizing the drawer. Similar to Google Maps behavior.
    * Mobile only.
    * @default false
    */
