@@ -258,7 +258,7 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="bg-sidebar border-r group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:border-0 group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-3xl group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
+          className="bg-background backdrop-blur-[2px] border-r group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:backdrop-blur-none group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-3xl group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
         >
           {children}
         </div>
