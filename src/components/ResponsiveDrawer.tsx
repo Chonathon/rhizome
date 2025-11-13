@@ -37,6 +37,29 @@ export interface ResponsiveDrawerProps {
    * @default '[data-drawer-scroll]'
    */
   scrollContainerSelector?: string;
+  /**
+   * When enabled, dragging outside the drawer while at middle snap will minimize it to the
+   * first (smallest) snap point, allowing the user to interact with the graph while simultaneously minimizing the drawer. Similar to Google Maps behavior.
+   * Mobile only.
+   * @default false
+   */
+  minimizeOnCanvasTouch?: boolean;
+  /**
+   * Called when user starts dragging outside the drawer (on the canvas/graph).
+   * Useful for triggering immediate UI changes like undimming the graph.
+   */
+  onCanvasDragStart?: () => void;
+  /**
+   * A key that identifies the current content. When this changes, the drawer will
+   * reset to the default middle snap position. Useful for resetting position when
+   * switching between different items (e.g., different artists or genres).
+   */
+  contentKey?: string | number;
+  /**
+   * When this value changes, the drawer will expand to the middle snap position.
+   * Useful for triggering expansion from external actions (e.g., header button clicks).
+   */
+  expandToMiddleTrigger?: number;
 }
 
 /**
@@ -50,7 +73,7 @@ export function ResponsiveDrawer({
   contentClassName,
   bodyClassName,
   directionDesktop = "left",
-  snapPoints = [0.50, 0.9],
+  snapPoints = [0.08, 0.50, 0.9],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 768px)",
   showMobileHandle = false,
@@ -61,15 +84,22 @@ export function ResponsiveDrawer({
   headerSubtitle,
   lockDragToHandleWhenScrolled = true,
   scrollContainerSelector = '[data-drawer-scroll]',
+  minimizeOnCanvasTouch = false,
+  onCanvasDragStart,
+  contentKey,
+  expandToMiddleTrigger,
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
   const { state: sidebarState } = useSidebar();
   const [open, setOpen] = useState(false);
-  const [activeSnap, setActiveSnap] = useState<number | string | null>(snapPoints[0] ?? 0.9);
+  // Default to middle snap point (index 1) if available, otherwise first snap point
+  const defaultSnapIndex = snapPoints.length >= 2 ? 1 : 0;
+  const [activeSnap, setActiveSnap] = useState<number | string | null>(snapPoints[defaultSnapIndex] ?? 0.9);
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const cardRef = React.useRef<HTMLDivElement | null>(null);
   const scrollElRef = React.useRef<HTMLElement | null>(null);
   const closeTimerRef = React.useRef<number | null>(null);
+  const canvasDragStartRef = React.useRef<{ x: number; y: number } | null>(null);
 
   // keep open state in sync with `show`
   useEffect(() => {
@@ -82,12 +112,31 @@ export function ResponsiveDrawer({
 
   // Ensure consistent snap height when resizing to mobile while open
   useEffect(() => {
-    // Reset to the first snap only when transitioning to mobile or opening,
+    // Reset to the middle snap when transitioning to mobile or opening,
     // not on every render when parents pass a new snapPoints array literal.
     if (!isDesktop && open) {
-      setActiveSnap(snapPoints[0] ?? 0.9);
+      const middleSnapIndex = snapPoints.length >= 2 ? 1 : 0;
+      setActiveSnap(snapPoints[middleSnapIndex] ?? 0.9);
     }
   }, [isDesktop, open]);
+
+  // Reset to middle snap when content changes (e.g., switching between different artists/genres)
+  useEffect(() => {
+    if (!isDesktop && open && contentKey !== undefined) {
+      const middleSnapIndex = snapPoints.length >= 2 ? 1 : 0;
+      setActiveSnap(snapPoints[middleSnapIndex] ?? 0.9);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentKey, isDesktop, open]);
+
+  // Expand to middle snap when triggered externally (e.g., header button click)
+  useEffect(() => {
+    if (!isDesktop && open && expandToMiddleTrigger !== undefined) {
+      const middleSnapIndex = snapPoints.length >= 2 ? 1 : 0;
+      setActiveSnap(snapPoints[middleSnapIndex] ?? 0.9);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandToMiddleTrigger, isDesktop, open]);
 
   // Track whether the scroll container is at the very top to gate dragging.
   React.useEffect(() => {
@@ -141,14 +190,12 @@ export function ResponsiveDrawer({
   }, [activeSnap, snapPoints]);
 
   const isAtMaxSnap = useMemo(() => {
-    if (isDesktop) return true;
     return activeSnapIndex === snapPoints.length - 1;
-  }, [activeSnapIndex, isDesktop, snapPoints.length]);
+  }, [activeSnapIndex, snapPoints.length]);
 
   const isAtMinSnap = useMemo(() => {
-    if (isDesktop) return true;
     return activeSnapIndex === 0;
-  }, [activeSnapIndex, isDesktop]);
+  }, [activeSnapIndex]);
 
   const cycleSnap = () => {
     if (isDesktop || !clickToCycleSnap) return;
@@ -156,6 +203,69 @@ export function ResponsiveDrawer({
     const nextIdx = idx === snapPoints.length - 1 ? 0 : Math.max(0, idx + 1);
     setActiveSnap(snapPoints[nextIdx] ?? snapPoints[0]);
   };
+
+  const minimizeToFirstSnap = () => {
+    if (isDesktop || !minimizeOnCanvasTouch) {
+      console.log('[ResponsiveDrawer] minimizeToFirstSnap returning early, isDesktop:', isDesktop, 'minimizeOnCanvasTouch:', minimizeOnCanvasTouch);
+      return;
+    }
+    console.log('[ResponsiveDrawer] Setting activeSnap to:', snapPoints[0]);
+    setActiveSnap(snapPoints[0]);
+  };
+
+  // Detect canvas/graph drags to minimize drawer (when not already at min snap)
+  useEffect(() => {
+    // Early return if feature is disabled
+    if (!minimizeOnCanvasTouch) return;
+
+    // On mobile: skip if already at minimum snap (no need for listeners)
+    // On desktop: always listen (no snap behavior, need to trigger undimming)
+    if (!isDesktop && isAtMinSnap) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      // Check if the target is outside the drawer card
+      const card = cardRef.current;
+      if (card && !card.contains(e.target as Node)) {
+        canvasDragStartRef.current = { x: e.clientX, y: e.clientY };
+        console.log('[ResponsiveDrawer] Canvas pointer down detected');
+      }
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (canvasDragStartRef.current) {
+        // Check if user actually dragged (moved at least 5px)
+        const dx = Math.abs(e.clientX - canvasDragStartRef.current.x);
+        const dy = Math.abs(e.clientY - canvasDragStartRef.current.y);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance >= 5) {
+          console.log('[ResponsiveDrawer] Canvas drag detected, distance:', distance);
+          // Notify parent immediately (e.g., to undim the graph)
+          canvasDragStartRef.current = null;
+          onCanvasDragStart?.();
+          // Then minimize drawer (mobile only)
+          console.log('[ResponsiveDrawer] Calling minimizeToFirstSnap, isDesktop:', isDesktop, 'minimizeOnCanvasTouch:', minimizeOnCanvasTouch);
+          minimizeToFirstSnap();
+        }
+      }
+    };
+
+    const handlePointerUp = () => {
+      canvasDragStartRef.current = null;
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerUp);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerUp);
+    };
+  }, [minimizeOnCanvasTouch, isAtMinSnap, onCanvasDragStart, isDesktop]);
 
   if (!show) return null;
 
@@ -167,9 +277,9 @@ export function ResponsiveDrawer({
   const desktopSideOffset: React.CSSProperties | undefined = React.useMemo(() => {
     if (!isDesktop || !useDesktopOffset) return undefined;
     if (directionDesktop === "left") {
-      return { left: "calc(var(--sidebar-gap, 0px) + 12px)" } as React.CSSProperties;
+      return { left: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
     }
-    return { right: "calc(var(--sidebar-gap, 0px))" } as React.CSSProperties;
+    return { right: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
   }, [isDesktop, useDesktopOffset, directionDesktop]);
 
   // Prevent overlay from covering the sidebar region on desktop

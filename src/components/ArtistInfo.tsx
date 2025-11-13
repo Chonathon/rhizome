@@ -49,6 +49,10 @@ interface ArtistInfoProps {
   onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
   viewRelatedArtistsLoading?: boolean;
   shouldShowChevron?: boolean;
+  onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
+  onCanvasDragStart?: () => void;
+  onHeaderRefocus?: () => void;
+  expandToMiddleTrigger?: number;
 }
 
 export function ArtistInfo({
@@ -76,6 +80,10 @@ export function ArtistInfo({
   onPlayTrack,
   viewRelatedArtistsLoading,
   shouldShowChevron,
+  onDrawerSnapChange,
+  onCanvasDragStart,
+  onHeaderRefocus,
+  expandToMiddleTrigger,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -144,11 +152,18 @@ export function ArtistInfo({
       show={!!(show && selectedArtist)}
       onDismiss={onDismiss}
       bodyClassName=""
-      // snapPoints={[0.28, 0.9]}
+      snapPoints={[0.08, 0.50, 0.9]}
+      minimizeOnCanvasTouch={true}
+      onCanvasDragStart={onCanvasDragStart}
+      contentKey={selectedArtist?.id}
+      expandToMiddleTrigger={expandToMiddleTrigger}
       headerTitle={
         selectedArtist && onFocusInArtistsView && shouldShowChevron ? (
           <button
-            onClick={() => onFocusInArtistsView(selectedArtist, { forceRefocus: true })}
+            onClick={() => {
+              onFocusInArtistsView(selectedArtist, { forceRefocus: true });
+              onHeaderRefocus?.();
+            }}
             className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-block"
             title={selectedArtist ? `Go to ${selectedArtist.name}` : "Go to artist"}
           >
@@ -168,6 +183,11 @@ export function ArtistInfo({
       }
     >
       {({ isDesktop, isAtMaxSnap, isAtMinSnap }) => {
+        // Notify parent of snap state changes for dimming control
+        useEffect(() => {
+          onDrawerSnapChange?.(!isDesktop && isAtMinSnap);
+        }, [isAtMinSnap, isDesktop]);
+
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
         return (
           <>

@@ -45,6 +45,10 @@ interface GenreInfoProps {
   onFocusInGenresView?: (genre: Genre, options?: { forceRefocus?: boolean }) => void;
   genreTracks?: TopTrack[];
   onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
+  onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
+  onCanvasDragStart?: () => void;
+  onHeaderRefocus?: () => void;
+  expandToMiddleTrigger?: number;
 }
 
 export function GenreInfo({
@@ -68,6 +72,10 @@ export function GenreInfo({
     onFocusInGenresView,
     genreTracks,
     onPlayTrack,
+    onDrawerSnapChange,
+    onCanvasDragStart,
+    onHeaderRefocus,
+    expandToMiddleTrigger,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(false)
@@ -214,11 +222,18 @@ export function GenreInfo({
       show={!!(show && selectedGenre)}
       onDismiss={onDismiss}
       bodyClassName=""
-      // snapPoints={[0.28, 0.9]}
+      snapPoints={[0.08, 0.50, 0.9]}
+      minimizeOnCanvasTouch={true}
+      onCanvasDragStart={onCanvasDragStart}
+      contentKey={selectedGenre?.id}
+      expandToMiddleTrigger={expandToMiddleTrigger}
       headerTitle={
         selectedGenre && onFocusInGenresView ? (
           <button
-            onClick={() => onFocusInGenresView(selectedGenre, { forceRefocus: true })}
+            onClick={() => {
+              onFocusInGenresView(selectedGenre, { forceRefocus: true });
+              onHeaderRefocus?.();
+            }}
             className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-block"
             title={selectedGenre ? `Go to ${selectedGenre.name}` : "Go to genre"}
           >
@@ -238,6 +253,11 @@ export function GenreInfo({
       }
     >
       {({ isDesktop, isAtMaxSnap, isAtMinSnap }) => {
+        // Notify parent of snap state changes for dimming control
+        useEffect(() => {
+          onDrawerSnapChange?.(!isDesktop && isAtMinSnap);
+        }, [isAtMinSnap, isDesktop]);
+
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
         return (
           <>

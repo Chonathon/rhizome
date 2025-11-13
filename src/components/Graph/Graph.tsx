@@ -84,6 +84,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   renderNode?: NodeRenderer<T>;
   renderSelection?: SelectionRenderer<T>;
   renderLabel?: LabelRenderer<T>;
+  disableDimming?: boolean;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -131,6 +132,7 @@ const Graph = forwardRef(function GraphInner<
     renderNode = defaultRenderNode,
     renderSelection = defaultRenderSelection,
     renderLabel = defaultRenderLabel,
+    disableDimming = false,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -142,6 +144,12 @@ const Graph = forwardRef(function GraphInner<
   const lastInitializedSignatureRef = useRef<string | undefined>(undefined);
   const shouldResetZoomRef = useRef(true);
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
+
+  // Dimming transition state (0 = fully dimmed/normal, 1 = fully undimmed)
+  const dimmingTransitionRef = useRef<number>(disableDimming ? 1 : 0);
+  const targetDimmingRef = useRef<number>(disableDimming ? 1 : 0);
+  const animationFrameRef = useRef<number | null>(null);
+  const lastFrameTimeRef = useRef<number>(performance.now());
 
   useImperativeHandle(
     ref,
@@ -232,6 +240,56 @@ const Graph = forwardRef(function GraphInner<
       shouldResetZoomRef.current = true;
     }
   }, [preparedData]);
+
+  // Smooth transition for dimming state changes
+  useEffect(() => {
+    const target = disableDimming ? 1 : 0;
+    targetDimmingRef.current = target;
+
+    // Start animation loop if not already running
+    if (animationFrameRef.current === null) {
+      lastFrameTimeRef.current = performance.now();
+
+      // Resume graph rendering during transition (doesn't affect physics)
+      fgRef.current?.resumeAnimation?.();
+
+      const animate = () => {
+        const now = performance.now();
+        const deltaTime = (now - lastFrameTimeRef.current) / 1000; // Convert to seconds
+        lastFrameTimeRef.current = now;
+
+        const current = dimmingTransitionRef.current;
+        const target = targetDimmingRef.current;
+        const diff = target - current;
+
+        // Stop if converged (within 0.01)
+        if (Math.abs(diff) < 0.01) {
+          dimmingTransitionRef.current = target;
+          animationFrameRef.current = null;
+          // Graph will auto-pause due to autoPauseRedraw
+          return;
+        }
+
+        // Linear interpolation with speed factor (transition over ~300ms)
+        const speed = 3.5; // Higher = faster transition
+        const step = diff * speed * deltaTime;
+        dimmingTransitionRef.current = current + step;
+
+        // Continue animation (graph render loop handles the actual redraw)
+        animationFrameRef.current = requestAnimationFrame(animate);
+      };
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [disableDimming]);
 
   useEffect(() => {
     // Pause instead of unmounting so the physics state survives hidden periods.
@@ -387,7 +445,17 @@ const Graph = forwardRef(function GraphInner<
           const base = source ? colorById.get(String(source)) : undefined;
           const fallback = resolvedTheme === "dark" ? "#ffffff" : "#000000";
           const selected = !!selectedId && (source === selectedId || target === selectedId);
-          return `${base ?? fallback}${selectedId ? (selected ? 'cc' : '30') : '80'}`;
+
+          // Calculate base opacity (what it would be with normal dimming)
+          const baseOpacity = selectedId ? (selected ? 0xcc : 0x30) : 0x80;
+          const undimmedOpacity = 0x80;
+
+          // Interpolate between base and undimmed opacity
+          const transition = dimmingTransitionRef.current;
+          const opacity = Math.round(baseOpacity * (1 - transition) + undimmedOpacity * transition);
+          const opacityHex = opacity.toString(16).padStart(2, '0');
+
+          return `${base ?? fallback}${opacityHex}`;
         }}
         linkWidth={(link) => {
           if (!selectedId) return 1;
@@ -420,13 +488,18 @@ const Graph = forwardRef(function GraphInner<
           const isNeighbor = hasSelection ? selectedNeighbors?.has(node.id) ?? false : false;
           const isHovered = hoveredId === node.id;
 
-          // Calculate node alpha
-          let alpha = 1;
+          // Calculate node alpha with smooth transition
+          let baseAlpha = 1;
           if (hasSelection) {
-            alpha = isSelected ? 1 : isNeighbor ? 0.8 : 0.15;
+            baseAlpha = isSelected ? 1 : isNeighbor ? 0.8 : 0.15;
           } else if (isHovered) {
-            alpha = 0.8;
+            baseAlpha = 0.8;
           }
+
+          // Interpolate between normal dimming and fully undimmed
+          // dimmingTransition: 0 = normal dimming, 1 = fully undimmed
+          const transition = dimmingTransitionRef.current;
+          const alpha = baseAlpha * (1 - transition) + 1.0 * transition;
 
           // Build render context
           const renderContext: NodeRenderContext<T> = {
@@ -451,11 +524,21 @@ const Graph = forwardRef(function GraphInner<
             renderSelection(renderContext);
           }
 
-          // Calculate and render label
+          // Calculate and render label with smooth transition
           const k = zoomRef.current || 1;
-          let labelAlpha = labelAlphaForZoom(k, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END);
-          if (isSelected || isHovered) labelAlpha = 1;
-          else if (hasSelection && !isNeighbor) labelAlpha = Math.min(labelAlpha, 0.25);
+          const zoomBasedAlpha = labelAlphaForZoom(k, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END);
+
+          // Calculate base label alpha (what it would be without dimming override)
+          let baseLabelAlpha = zoomBasedAlpha;
+          if (isSelected || isHovered) {
+            baseLabelAlpha = 1;
+          } else if (hasSelection && !isNeighbor) {
+            baseLabelAlpha = Math.min(zoomBasedAlpha, 0.25);
+          }
+
+          // When transitioning to undimmed state, interpolate toward zoom-based alpha only
+          // (we don't want to boost labels to full brightness, just remove selection dimming)
+          const labelAlpha = baseLabelAlpha * (1 - transition) + zoomBasedAlpha * transition;
 
           const labelContext: LabelRenderContext<T> = {
             ...renderContext,
