@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -395,41 +395,44 @@ export function ArtistInfo({
                 {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
                   <div className="flex flex-col gap-2">
                     {onViewSimilarArtistGraph && selectedArtist ? (
-                    <button
-                    className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
-                    onClick={() => onViewSimilarArtistGraph(selectedArtist)}
-                    title={`Explore artists similar to ${selectedArtist.name}`}>
-                      <span className="text-md font-semibold">Similar Artists</span><ChevronRight className="shrink-0 text-muted-foreground size-5"/></button>
+                      <button
+                        className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
+                        onClick={() => onViewSimilarArtistGraph(selectedArtist)}
+                        title={`Explore artists similar to ${selectedArtist.name}`}
+                      >
+                        <span className="text-md font-semibold">Similar Artists</span>
+                        <ChevronRight className="shrink-0 text-muted-foreground size-5"/>
+                      </button>
                     ) : (
                       <span className="text-md font-semibold">Similar Artists</span>
                     )}
                     <div className="flex flex-wrap items-center gap-1.5">
                       {similarFilter(selectedArtist.similar).map((name) => {
-                        const img = getArtistImageByName?.(name);
                         const artistObj = getArtistByName?.(name);
+                        const isInView = !!artistObj;
+                        const img = getArtistImageByName?.(name);
                         const genreColor = artistObj ? getArtistColor(artistObj) : undefined;
+
                         return (
+                          // TODO: Provide navigation options for artists not in view
                           <ArtistBadge
                             key={name}
                             name={name}
-                            imageUrl={img}
+                            imageUrl={isInView ? img : undefined}
                             genreColor={genreColor}
-                            onClick={() => setArtistFromName(name)}
-                            title={`Go to ${name}`}
+                            onClick={() => {
+                              if (isInView) {
+                                setArtistFromName(name);
+                              } else {
+                                toast.info(`${name} is not in the current view.`);
+                              }
+                            }}
+                            title={!isInView ? `${name} is not in the current view` : `Go to ${name}`}
+                            icon={!isInView ? EyeOff : undefined}
                           />
                         );
                       })}
                     </div>
-                    {/* {onViewSimilarArtistGraph && selectedArtist && (
-                      <Button
-                        size={isDesktop ? "lg" : "xl"}
-                        variant="secondary"
-                        className={isDesktop ? "w-fit mt-2" : "w-full mt-3"}
-                        onClick={() => onViewSimilarArtistGraph(selectedArtist)}
-                      >
-                        View Similar Artists
-                      </Button>
-                    )} */}
                   </div>
                 )}
 

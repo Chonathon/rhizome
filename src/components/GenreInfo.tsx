@@ -83,7 +83,7 @@ export function GenreInfo({
     const items = nodes.slice(0, limitRelated)
     return (
       <div className="flex flex-col items-start gap-2">
-        <span className="text-md font-medium text-muted-foreground">{label}:</span>
+        <span className="text-sm font-semibold leading-tight text-muted-foreground">{label}</span>
         <div className='flex items-center gap-1.5 flex-wrap'>
           {items.map((node, i) => {
             const genreColor = genreColorMap?.get(node.id);
@@ -536,7 +536,7 @@ export function GenreInfo({
               {/* Related */}
               {genreError && <p>Can’t find {selectedGenre?.name} 🤔</p>}
               {!genreError && (
-                <div className='flex flex-col gap-3'>
+                <div className='flex flex-col gap-2'>
                   <text className='text-md font-semibold'>Relationships</text>
                   <>
                     {relatedLine('Subgenre of', selectedGenre?.subgenre_of)}
