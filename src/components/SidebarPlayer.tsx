@@ -326,53 +326,61 @@ export default function SidebarPlayer({
   // Minimal thumbnail mode (desktop + sidebar collapsed)
   if (isMinimalMode) {
     return (
-      <motion.div
-        key="player-minimal"
-        className="w-full flex justify-center pb-2"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-      >
-        <div
-          className="relative w-12 h-12 rounded-md overflow-hidden cursor-pointer bg-muted/20 group shadow-lg"
-          onClick={onArtworkClick}
-          title={isPlaying ? 'Pause' : 'Play'}
-          aria-busy={loading || !ready}
+      <>
+        {/* Hidden YouTube player - always mounted so it can play */}
+        <div className="hidden">
+          <div ref={containerRef} style={{ width: '100%', height: videoHeight }} />
+        </div>
+
+        {/* Visible thumbnail UI */}
+        <motion.div
+          key="player-minimal"
+          className="w-full flex justify-center pb-2"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 26 }}
         >
-          {displayArtwork ? (
-            <>
-              <img
-                src={displayArtwork}
-                alt={(title || 'Track') + ' artwork'}
-                className={`w-full h-full object-cover ${!ready || loading ? 'animate-pulse' : ''}`}
-                loading="lazy"
-              />
+          <div
+            className="relative w-12 h-12 rounded-md overflow-hidden cursor-pointer bg-muted/20 group shadow-lg"
+            onClick={onArtworkClick}
+            title={isPlaying ? 'Pause' : 'Play'}
+            aria-busy={loading || !ready}
+          >
+            {displayArtwork ? (
+              <>
+                <img
+                  src={displayArtwork}
+                  alt={(title || 'Track') + ' artwork'}
+                  className={`w-full h-full object-cover ${!ready || loading ? 'animate-pulse' : ''}`}
+                  loading="lazy"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-opacity group-hover:opacity-100 group-hover:bg-black/40"
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
+                  onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                >
+                  {isPlaying ? <Pause size={20} className="text-white"/> : <Play size={20} className="text-white"/>}
+                </button>
+              </>
+            ) : (
               <button
                 type="button"
-                className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-opacity group-hover:opacity-100 group-hover:bg-black/40"
+                className="absolute inset-0 grid place-items-center bg-muted/10"
                 aria-label={isPlaying ? 'Pause' : 'Play'}
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
               >
-                {isPlaying ? <Pause size={20} className="text-white"/> : <Play size={20} className="text-white"/>}
+                {loading || !ready ? (
+                  <RhizomeLogo className="h-6 w-6 text-muted-foreground" animated />
+                ) : (
+                  isPlaying ? <Pause size={20} className="text-muted-foreground"/> : <Play size={20} className="text-muted-foreground"/>
+                )}
               </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              className="absolute inset-0 grid place-items-center bg-muted/10"
-              aria-label={isPlaying ? 'Pause' : 'Play'}
-              onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-            >
-              {loading || !ready ? (
-                <RhizomeLogo className="h-6 w-6 text-muted-foreground" animated />
-              ) : (
-                isPlaying ? <Pause size={20} className="text-muted-foreground"/> : <Play size={20} className="text-muted-foreground"/>
-              )}
-            </button>
-          )}
-        </div>
-      </motion.div>
+            )}
+          </div>
+        </motion.div>
+      </>
     );
   }
 
