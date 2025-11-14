@@ -176,13 +176,6 @@ export default function SidebarPlayer({
   useEffect(() => {
     if (!open || !videoIds || videoIds.length === 0) return;
 
-    // Ensure container is in the right place before mounting
-    const targetWrapper = isMobileMode ? mobileWrapperRef.current : desktopWrapperRef.current;
-    if (!targetWrapper) {
-      console.warn('[SidebarPlayer] Wrapper ref not ready, delaying mount');
-      return;
-    }
-
     setReady(false);
     setIsPlaying(false);
     setCurrentTime(0);
@@ -193,7 +186,7 @@ export default function SidebarPlayer({
         playerRef.current = null;
       }
     };
-  }, [open, videoIds, mountPlayer, isMobileMode, mobileWrapperRef.current, desktopWrapperRef.current]);
+  }, [open, videoIds, mountPlayer]);
 
   // Move YouTube container to the correct wrapper based on display mode
   useEffect(() => {
@@ -358,8 +351,6 @@ export default function SidebarPlayer({
     }
     togglePlay();
   };
-
-  console.log('[SidebarPlayer] Debug:', { open, isDesktop, isMobileMode, isFullDesktopMode, isMinimalMode });
 
   if (!open) return null;
 
