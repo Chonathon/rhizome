@@ -91,6 +91,11 @@ export default function SidebarPlayer({
     return undefined;
   }, [artworkUrl]);
 
+  const headerDisplay = useMemo(() => {
+    if (headerPreferProvidedTitle && title) return title;
+    return videoTitle || title || 'Player';
+  }, [headerPreferProvidedTitle, title, videoTitle]);
+
   // Display modes (must be defined early for use in effects)
   const isMinimalMode = isDesktop && sidebarCollapsed;
   const isMobileMode = !isDesktop;
@@ -103,8 +108,11 @@ export default function SidebarPlayer({
     if (!containerRef.current || !open) return;
     const YT = await loadYTApi();
     // Clean existing
-    if (playerRef.current && playerRef.current.destroy) {
-      try { playerRef.current.destroy(); } catch {}
+    if (playerRef.current) {
+      try { playerRef.current.stopVideo?.(); } catch {}
+      if (playerRef.current.destroy) {
+        try { playerRef.current.destroy(); } catch {}
+      }
       playerRef.current = null;
     }
     const elementId = `yt-frame-${Math.random().toString(36).slice(2)}`;
@@ -187,6 +195,15 @@ export default function SidebarPlayer({
       }
     };
   }, [open, videoIds, mountPlayer]);
+
+  // Reset derived state when a new playlist arrives
+  useEffect(() => {
+    if (!videoIds || videoIds.length === 0) return;
+    setCurrentIndex(startIndex);
+    if (!headerPreferProvidedTitle) {
+      setVideoTitle("");
+    }
+  }, [videoIds, startIndex, headerPreferProvidedTitle]);
 
   // Move YouTube container to the correct wrapper based on display mode
   useEffect(() => {
@@ -558,29 +575,23 @@ export default function SidebarPlayer({
       <div className="group rounded-xl border border-sidebar-border bg-popover shadow-lg overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 pl-2">
-          {(() => {
-            const headerDisplay = videoTitle || title || 'Player';
-            const headerLoading = loading || !ready || !currentVideoId;
-            return (
-              <div className="min-w-0 flex-1 h-10 items-center flex max-w-full">
-                {headerLoading ? (
-                  <div className="w-full pr-2">
-                    <Skeleton className="h-4 w-4/5" />
-                  </div>
-                ) : onTitleClick ? (
-                  <span
-                    onClick={onTitleClick}
-                    title={headerDisplay}
-                    className="block w-full text-left text-sm font-medium truncate cursor-pointer hover:underline"
-                  >
-                    {headerDisplay}
-                  </span>
-                ) : (
-                  <div className="w-full text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
-                )}
+          <div className="min-w-0 flex-1 h-10 items-center flex max-w-full">
+            {(loading || !ready || !currentVideoId) ? (
+              <div className="w-full pr-2">
+                <Skeleton className="h-4 w-4/5" />
               </div>
-            );
-          })()}
+            ) : onTitleClick ? (
+              <span
+                onClick={onTitleClick}
+                title={headerDisplay}
+                className="block w-full text-left text-sm font-medium truncate cursor-pointer hover:underline"
+              >
+                {headerDisplay}
+              </span>
+            ) : (
+              <div className="w-full text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
+            )}
+          </div>
           <div className="flex items-center gap-[1px] shrink-0">
             <Button variant="ghost" size="icon" onClick={() => setPlayerCollapsed((v) => !v)} title={playerCollapsed ? 'Expand' : 'Minimize'}>
               {playerCollapsed ? <ChevronsUp /> : <ChevronsDown />}
@@ -654,7 +665,7 @@ export default function SidebarPlayer({
                     {title}
                   </button>
                 ) : (
-                  <span className="text-sm font-medium text-foreground">{title || 'Player'}</span>
+                  <span className="text-sm font-medium text-foreground">{headerDisplay}</span>
                 )}
               </div>
               <Progress
