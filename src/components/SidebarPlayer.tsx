@@ -403,7 +403,7 @@ export default function SidebarPlayer({
       <motion.div
         key="player-mobile"
         className={`fixed max-w-[400px] z-[60] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] ${isMobileMode ? '' : 'hidden'}`}
-        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        initial={{ opacity: 0, y: 12, scale: 0.98, bottom: '1rem' }}
         animate={{
           opacity: 1,
           y: 0,
