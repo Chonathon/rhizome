@@ -91,7 +91,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const { setTheme } = useTheme()
   const { toggleSidebar, state } = useSidebar()
-  const isDesktop = useMediaQuery("(min-width: 1200px)")
+  const isDesktop = useMediaQuery("(min-width: 768px)")
 
   const isCollapsed = state === "collapsed"
 

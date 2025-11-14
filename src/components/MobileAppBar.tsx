@@ -38,7 +38,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
     style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div
         className="pointer-events-auto rounded-full w-fit
-         border border-border bg-sidebar backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
+         border border-border  backdrop-blur-md shadow-md items-center flex "
         
       >
         <div className="w-fit grid grid-cols-1">
@@ -51,7 +51,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
       </div>
       <div
         className="pointer-events-auto rounded-full w-fit
-         border border-border bg-sidebar backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
+         border border-border backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
         
       >
         <div className="w-fit grid grid-cols-3">
