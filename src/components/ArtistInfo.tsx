@@ -22,6 +22,7 @@ import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
 import { AddButton } from "./AddButton";
 import { Separator } from "@radix-ui/react-separator";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 
 interface ArtistInfoProps {
@@ -87,6 +88,7 @@ export function ArtistInfo({
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1200px)");
 
   const artistReasons = useMemo(
@@ -207,12 +209,18 @@ export function ArtistInfo({
                 }`}
               >
                 {imageUrl ? (
-                  <img
-                    src={imageUrl}
-                    alt={selectedArtist?.name ?? "Artist image"}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                  <button
+                    onClick={() => setLightboxOpen(true)}
+                    className="w-full h-full cursor-zoom-in focus:outline-none group"
+                    title="Click to enlarge"
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={selectedArtist?.name ?? "Artist image"}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  </button>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
                     <span className="text-4xl font-semibold">{initial}</span>
@@ -395,12 +403,18 @@ export function ArtistInfo({
                 {!isDesktop && (
                   <div className="w-full overflow-hidden border-y border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none">
                     {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={selectedArtist?.name ?? "Artist image"}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
+                      <button
+                        onClick={() => setLightboxOpen(true)}
+                        className="w-full h-full cursor-zoom-in focus:outline-none"
+                        title="Tap to enlarge"
+                      >
+                        <img
+                          src={imageUrl}
+                          alt={selectedArtist?.name ?? "Artist image"}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </button>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
                         <span className="text-4xl font-semibold">{initial}</span>
@@ -543,6 +557,16 @@ export function ArtistInfo({
                 description="Please let us know what information about this artist seems incorrect. Select a reason and provide any extra details if you'd like."
                 onSubmit={(reason, details) => onSubmitBadData(reason, details)}
               />
+
+              {/* Image Lightbox */}
+              {imageUrl && (
+                <ImageLightbox
+                  src={imageUrl}
+                  alt={selectedArtist?.name ?? "Artist image"}
+                  open={lightboxOpen}
+                  onOpenChange={setLightboxOpen}
+                />
+              )}
               </div>
             </div>
           </>
