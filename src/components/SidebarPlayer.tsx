@@ -327,8 +327,8 @@ export default function SidebarPlayer({
   if (isMinimalMode) {
     return (
       <>
-        {/* Hidden YouTube player - always mounted so it can play */}
-        <div className="hidden">
+        {/* YouTube player - keep mounted and "visible" for YouTube API but position off-screen */}
+        <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none" aria-hidden="true">
           <div ref={containerRef} style={{ width: '100%', height: videoHeight }} />
         </div>
 
@@ -416,7 +416,7 @@ export default function SidebarPlayer({
                     <span
                       onClick={onTitleClick}
                       title={headerDisplay}
-                      className="block w-full text-left sm:text-sm text-md font-medium truncate"
+                      className="block w-full text-left sm:text-sm text-md font-medium truncate cursor-pointer hover:underline"
                     >
                       {headerDisplay}
                     </span>
