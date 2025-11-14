@@ -36,7 +36,7 @@ const buttonContainerStyles = "bg-sidebar pointer-events-auto rounded-full h-ful
 export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, isCollectionMode }: MobileAppBarProps) {
   return (
     <div
-  className="w-[calc(100%-2rem)] pointer-events-none fixed left-1/2 -translate-x-1/2 inset-x-8 bottom-3 z-50 md:hidden flex gap-3 place-items-center "
+  className="w-[calc(100%-2rem)] max-w-[400px] pointer-events-none fixed left-1/2 -translate-x-1/2 inset-x-8 bottom-3 z-50 md:hidden flex gap-3 place-items-center "
   style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
 >
       

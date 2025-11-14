@@ -80,8 +80,8 @@ export default function SidebarPlayer({
   const intervalRef = useRef<number | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  // Track mobile app bar position
-  const [mobileTop, setMobileTop] = useState<number | null>(null);
+  // Track if info drawer is open on mobile
+  const [infoDrawerOpen, setInfoDrawerOpen] = useState(false);
 
   const hasPlaylist = videoIds && videoIds.length > 1;
   const currentVideoId = videoIds?.[currentIndex] || videoIds?.[0];
@@ -238,10 +238,10 @@ export default function SidebarPlayer({
     };
   }, [open]);
 
-  // Track mobile position (above MobileAppBar and ResponsiveDrawer)
+  // Track if info drawer (bottom drawer) is open on mobile
   useEffect(() => {
     if (!open || isDesktop) {
-      setMobileTop(null);
+      setInfoDrawerOpen(false);
       return;
     }
 
@@ -256,7 +256,7 @@ export default function SidebarPlayer({
 
     const compute = () => {
       try {
-        // Check for bottom drawer first
+        // Check for bottom drawer (GenreInfo/ArtistInfo)
         const drawerNodes = Array.from(
           document.querySelectorAll(
             '[data-slot="drawer-content"][data-vaul-drawer-direction="bottom"]'
@@ -265,29 +265,12 @@ export default function SidebarPlayer({
 
         if (drawerNodes && drawerNodes.length > 0) {
           const openNode = [...drawerNodes].reverse().find((n) => n.getAttribute('data-state') !== 'closed');
-          if (openNode) {
-            const rect = openNode.getBoundingClientRect();
-            const playerH = wrapperRef.current?.offsetHeight ?? 0;
-            const offset = 8;
-            const top = Math.max(8, rect.top - playerH - offset);
-            setMobileTop(top);
-            return;
-          }
-        }
-
-        // No drawer open - position above MobileAppBar
-        const appBar = document.querySelector('[class*="MobileAppBar"], .md\\:hidden.fixed.bottom-3') as HTMLElement;
-        if (appBar) {
-          const rect = appBar.getBoundingClientRect();
-          const playerH = wrapperRef.current?.offsetHeight ?? 0;
-          const gap = 12;
-          const top = rect.top - playerH - gap;
-          setMobileTop(top);
+          setInfoDrawerOpen(!!openNode);
         } else {
-          setMobileTop(null);
+          setInfoDrawerOpen(false);
         }
       } catch {
-        setMobileTop(null);
+        setInfoDrawerOpen(false);
       }
     };
 
@@ -350,6 +333,18 @@ export default function SidebarPlayer({
       return;
     }
     togglePlay();
+  };
+
+  const onPlayerBodyClick = (e: React.MouseEvent) => {
+    // On mobile, tapping the player body should expand it when collapsed
+    // Don't expand if clicking on buttons or other interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('a')) {
+      return;
+    }
+    if (!isDesktop && playerCollapsed) {
+      setPlayerCollapsed(false);
+    }
   };
 
   if (!open) return null;
@@ -420,56 +415,38 @@ export default function SidebarPlayer({
       {/* Mobile mode (floating above MobileAppBar) */}
       <motion.div
         key="player-mobile"
-        className={`fixed z-[50] w-[calc(100%-2rem)] left-4 ${isMobileMode ? '' : 'hidden'}`}
-        style={{
-          top: mobileTop != null ? mobileTop : 'auto',
-          bottom: mobileTop != null ? 'auto' : '64px',
-        }}
+        className={`fixed max-w-[400px] z-[60] left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] ${isMobileMode ? '' : 'hidden'}`}
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
+        animate={{
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          bottom: infoDrawerOpen ? '0.75rem' : '5.5rem'
+        }}
         exit={{ opacity: 0, y: 12, scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 300, damping: 26, mass: 0.6 }}
         ref={wrapperRef}
         aria-hidden={!isMobileMode}
       >
-        <div className="group rounded-xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
-          {/* Header */}
-          <div className={`${playerCollapsed ? 'sm:hidden flex group-hover:flex' : 'flex'} items-center justify-between gap-2 pl-2`}>
-            {(() => {
-              const headerDisplay = videoTitle || title || 'Player';
-              const headerLoading = loading || !ready || !currentVideoId;
-              return (
-                <div className="min-w-0 flex-1 h-10 items-center flex max-w-full">
-                  {headerLoading ? (
-                    <div className="w-full pr-2">
-                      <Skeleton className="h-4 w-4/5" />
-                    </div>
-                  ) : onTitleClick ? (
-                    <span
-                      onClick={onTitleClick}
-                      title={headerDisplay}
-                      className="block w-full text-left sm:text-sm text-md font-medium truncate cursor-pointer hover:underline"
-                    >
-                      {headerDisplay}
-                    </span>
-                  ) : (
-                    <div className="w-full text-md sm:text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
-                  )}
-                </div>
-              );
-            })()}
-            <div className="sm:group-hover:flex sm:hidden flex items-center gap-[1px] shrink-0">
-              <Button variant="ghost" size="icon" onClick={() => setPlayerCollapsed((v) => !v)} title={playerCollapsed ? 'Expand' : 'Minimize'}>
+        <div
+          className={`group p-2 border border-sidebar-border bg-popover shadow-xl overflow-hidden ${playerCollapsed ? 'cursor-pointer rounded-full' : 'rounded-2xl'}`}
+          onClick={onPlayerBodyClick}
+        >
+          {/* Header (collapse/close buttons) - shown above player when expanded */}
+          <div className={`${playerCollapsed ? 'hidden' : 'flex'} absolute right-0 -top-12 items-center justify-between gap-2`}>
+            <div className="flex items-center gap-4 shrink-0">
+              <Button variant="outline" size="icon" onClick={() => setPlayerCollapsed((v) => !v)} title={playerCollapsed ? 'Expand' : 'Minimize'}>
                 {playerCollapsed ? <ChevronsUp /> : <ChevronsDown />}
               </Button>
-              <Button variant="ghost" size="icon" onClick={onClose} title="Close">
+              <Button variant="outline" size="icon" onClick={onClose} title="Close">
                 <X size={18}/>
               </Button>
             </div>
           </div>
+
           {/* Video */}
           <motion.div
-            className="relative w-full bg-black overflow-hidden"
+            className="relative w-full rounded-lg bg-black overflow-hidden mb-2"
             initial={false}
             animate={{ height: playerCollapsed ? 0 : videoHeight, opacity: playerCollapsed ? 0 : 1 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
@@ -482,11 +459,13 @@ export default function SidebarPlayer({
               </div>
             )}
           </motion.div>
+
           {/* Controls */}
-          <div className="pl-2 flex items-center gap-2">
-            <div className="w-full flex items-center gap-2">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              {/* Artwork with play/pause */}
               <div
-                className="relative w-6 h-6 flex-none rounded-sm overflow-hidden cursor-pointer bg-muted/20"
+                className="relative w-10 h-10 flex-none rounded-md overflow-hidden cursor-pointer bg-muted/20"
                 onClick={onArtworkClick}
                 title={isPlaying ? 'Pause' : 'Play'}
                 aria-busy={loading || !ready}
@@ -505,7 +484,7 @@ export default function SidebarPlayer({
                       aria-label={isPlaying ? 'Pause' : 'Play'}
                       onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                     >
-                      {isPlaying ? <Pause size={16} className="text-white"/> : <Play size={16} className="text-white"/>}
+                      {isPlaying ? <Pause size={18} className="text-white"/> : <Play size={18} className="text-white"/>}
                     </button>
                   </>
                 ) : (
@@ -515,44 +494,57 @@ export default function SidebarPlayer({
                     aria-label={isPlaying ? 'Pause' : 'Play'}
                     onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                   >
-                    {isPlaying ? <Pause size={16} className="text-muted-foreground"/> : <Play size={16} className="text-muted-foreground"/>}
+                    {isPlaying ? <Pause size={18} className="text-muted-foreground"/> : <Play size={18} className="text-muted-foreground"/>}
                   </button>
                 )}
               </div>
-              <div className="flex flex-col w-full">
-                <div className="flex items-center gap-1 mb-0.5 min-w-0 overflow-hidden">
-                  {onTitleClick && title ? (
-                    <button
-                      type="button"
-                      onClick={onTitleClick}
-                      title={title}
-                      className={`text-left flex-1 leading-4 sm:leading-normal text-md sm:text-sm font-medium text-foreground hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
-                    >
-                      {title}
-                    </button>
-                  ) : (
-                    <span className="text-md sm:text-sm font-medium text-foreground">{title || 'Player'}</span>
-                  )}
-                </div>
-                <Progress
-                  value={percent}
-                  className="sm:group-hover:h-2"
-                  onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
-                  onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
-                />
+
+              {/* Track info */}
+              <div className="flex flex-col min-w-0 flex-1">
+                <button
+                  type="button"
+                  onClick={onTitleClick}
+                  title={videoTitle}
+                  className={`block text-left min-w-0 truncate leading-tight text-sm font-medium text-foreground hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
+                >
+                  {videoTitle || 'Loading...'}
+                </button>
+                <span className="text-muted-foreground min-w-0 truncate leading-tight text-sm">{title || ''}</span>
+              </div>
+
+              {/* Play controls */}
+              <div className="flex gap-1 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={togglePlay}
+                  title={isPlaying ? 'Pause' : 'Play'}
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
+                >
+                  {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={next}
+                  disabled={!hasPlaylist}
+                  title="Next"
+                  aria-label="Next"
+                >
+                  <SkipForward size={20} />
+                </Button>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="shrink-0"
-              onClick={next}
-              disabled={!hasPlaylist}
-              title="Next"
-              aria-label="Next"
-            >
-              <SkipForward size={18} />
-            </Button>
+
+            {/* Progress bar - only show when expanded */}
+            {!playerCollapsed && (
+              <Progress
+                value={percent}
+                className="h-1"
+                onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
+                onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
+              />
+            )}
           </div>
         </div>
       </motion.div>
