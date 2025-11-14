@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward } from "lucide-react";
+import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward, Music2 } from "lucide-react";
 import { appendYoutubeWatchURL } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { AnimatePresence, motion } from "framer-motion";
@@ -83,6 +83,10 @@ export default function SidebarPlayer({
 
   // Track if bottom drawer is expanded beyond minimum snap on mobile
   const [drawerExpanded, setDrawerExpanded] = useState(false);
+
+  // Track floating musical notes for minimal mode
+  const [floatingNotes, setFloatingNotes] = useState<{ id: number; offset: number }[]>([]);
+  const [minimalPlayerHovered, setMinimalPlayerHovered] = useState(false);
 
   const hasPlaylist = videoIds && videoIds.length > 1;
   const currentVideoId = videoIds?.[currentIndex] || videoIds?.[0];
@@ -279,6 +283,33 @@ export default function SidebarPlayer({
     };
   }, [open, isDesktop]);
 
+  // Spawn floating musical notes in minimal mode when hovered
+  useEffect(() => {
+    if (!isMinimalMode || !minimalPlayerHovered) {
+      setFloatingNotes([]);
+      return;
+    }
+
+    let noteId = 0;
+    const spawnInterval = setInterval(() => {
+      const newNote = {
+        id: noteId++,
+        offset: Math.random() * 30 - 15 // Random horizontal offset -15px to +15px
+      };
+      setFloatingNotes((prev) => [...prev, newNote]);
+
+      // Remove note after animation completes
+      setTimeout(() => {
+        setFloatingNotes((prev) => prev.filter((n) => n.id !== newNote.id));
+      }, 2000); // Match animation duration
+    }, 800); // Spawn a note every 800ms
+
+    return () => {
+      clearInterval(spawnInterval);
+      setFloatingNotes([]);
+    };
+  }, [isMinimalMode, minimalPlayerHovered]);
+
   const percent = useMemo(() => {
     if (!duration || duration <= 0) return 0;
     return Math.min(100, Math.max(0, (currentTime / duration) * 100));
@@ -351,20 +382,48 @@ export default function SidebarPlayer({
         <div ref={containerRef} className="w-full" style={{ height: videoHeight }} />
       </div>
 
-      {/* 
-      * Minimal thumbnail mode (desktop + sidebar collapsed) 
+      {/*
+      * Minimal thumbnail mode (desktop + sidebar collapsed)
       */}
       {isMinimalMode && (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <motion.div
               key="player-minimal"
-              className="w-full flex justify-center pb-2"
+              className="w-full flex justify-center pb-2 relative"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+              onMouseEnter={() => setMinimalPlayerHovered(true)}
+              onMouseLeave={() => setMinimalPlayerHovered(false)}
             >
+              {/* Floating musical notes */}
+              <AnimatePresence>
+                {floatingNotes.map((note) => (
+                  <motion.div
+                    key={note.id}
+                    className="absolute pointer-events-none"
+                    style={{ left: `calc(50% + ${note.offset}px)` }}
+                    initial={{ opacity: 0, y: 0, scale: 0.5 }}
+                    animate={{
+                      opacity: [0, 1, 1, 0],
+                      y: -60,
+                      scale: [0.5, 1, 1, 0.8],
+                      rotate: [0, 10, -10, 0]
+                    }}
+                    exit={{ opacity: 0 }}
+                    transition={{
+                      duration: 2,
+                      ease: "easeOut",
+                      times: [0, 0.2, 0.8, 1]
+                    }}
+                  >
+                    <Music2 size={16} className="text-primary/60" />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
               <div
                 className="relative w-12 h-12 rounded-md overflow-hidden cursor-pointer bg-muted/20 group shadow-lg"
                 onClick={onArtworkClick}
