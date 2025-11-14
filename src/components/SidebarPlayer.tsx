@@ -415,7 +415,7 @@ export default function SidebarPlayer({
       {/* Mobile mode (floating above MobileAppBar) */}
       <motion.div
         key="player-mobile"
-        className={`fixed max-w-[400px] z-[60] left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] ${isMobileMode ? '' : 'hidden'}`}
+        className={`fixed max-w-[400px] z-[60] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] ${isMobileMode ? '' : 'hidden'}`}
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{
           opacity: 1,
@@ -429,7 +429,7 @@ export default function SidebarPlayer({
         aria-hidden={!isMobileMode}
       >
         <div
-          className={`group p-2 border border-sidebar-border bg-popover shadow-xl overflow-hidden ${playerCollapsed ? 'cursor-pointer rounded-full' : 'rounded-2xl'}`}
+          className={`group p-2 border bg-popover shadow-xs overflow-hidden ${playerCollapsed ? 'cursor-pointer rounded-full' : 'rounded-3xl'}`}
           onClick={onPlayerBodyClick}
         >
           {/* Header (collapse/close buttons) - shown above player when expanded */}
@@ -446,7 +446,7 @@ export default function SidebarPlayer({
 
           {/* Video */}
           <motion.div
-            className="relative w-full rounded-lg bg-black overflow-hidden mb-2"
+            className={`relative w-full rounded-2xl bg-black overflow-hidden  ${playerCollapsed ? '' : 'mb-2'}`}
             initial={false}
             animate={{ height: playerCollapsed ? 0 : videoHeight, opacity: playerCollapsed ? 0 : 1 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
@@ -461,7 +461,7 @@ export default function SidebarPlayer({
           </motion.div>
 
           {/* Controls */}
-          <div className="flex flex-col gap-1">
+          <div className="pl-2 flex flex-col gap-1">
             <div className="flex items-center gap-2">
               {/* Artwork with play/pause */}
               <div
@@ -500,21 +500,25 @@ export default function SidebarPlayer({
               </div>
 
               {/* Track info */}
-              <div className="flex flex-col min-w-0 flex-1">
-                <button
+              <div className="flex flex-col leading-tight truncate min-w-0 flex-1 text-sm font-medium text-foreground">
+                {playerCollapsed 
+                ? <button
                   type="button"
                   onClick={onTitleClick}
                   title={videoTitle}
-                  className={`block text-left min-w-0 truncate leading-tight text-sm font-medium text-foreground hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
+                  className={`block text-left min-w-0   hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
                 >
                   {videoTitle || 'Loading...'}
                 </button>
+                :
+                <span className="text-foreground">{videoTitle || 'Loading...'}</span>
+                }
                 <span className="text-muted-foreground min-w-0 truncate leading-tight text-sm">{title || ''}</span>
               </div>
 
               {/* Play controls */}
               <div className="flex gap-1 shrink-0">
-                <Button
+                {/* <Button
                   variant="ghost"
                   size="icon"
                   onClick={togglePlay}
@@ -522,7 +526,7 @@ export default function SidebarPlayer({
                   aria-label={isPlaying ? 'Pause' : 'Play'}
                 >
                   {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-                </Button>
+                </Button> */}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -533,6 +537,9 @@ export default function SidebarPlayer({
                 >
                   <SkipForward size={20} />
                 </Button>
+                {/* <Button variant="outline" size="icon" onClick={onClose} title="Close">
+                <X size={18}/>
+              </Button> */}
               </div>
             </div>
 
