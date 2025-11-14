@@ -536,7 +536,7 @@ export default function SidebarPlayer({
               </div>
 
               {/* Play controls */}
-              <div className="flex gap-1 shrink-0">
+              <div className="flex gap-2 shrink-0">
                 {/* <Button
                   variant="ghost"
                   size="icon"
@@ -556,9 +556,9 @@ export default function SidebarPlayer({
                 >
                   <SkipForward size={20} />
                 </Button>
-                {playerCollapsed && <Button variant="outline" size="icon" onClick={onClose} title="Close">
+                {/* {playerCollapsed && <Button variant="ghost" size="icon" onClick={onClose} title="Close">
                 <X size={18}/>
-              </Button>}
+              </Button>} */}
               </div>
             </div>
 

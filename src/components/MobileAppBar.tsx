@@ -55,7 +55,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
             label="Explore"
             active={!isCollectionMode}
             onClick={resetAppState}
-            icon={<Telescope className="size-6" />}
+            icon={<Telescope className="size-7" />}
           />
           <MoreMenu signedInUser={signedInUser} onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />
         </div>
@@ -69,7 +69,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
           <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
-            icon={<SearchIcon className="size-6 " />}
+            icon={<SearchIcon className="size-7 " />}
           />
         </div>
       </div>
@@ -132,7 +132,7 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
     >
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="xl" className={ButtonStyles}>
-          <TwoLines className="size-6" />
+          <TwoLines className="size-7" />
           {/* <span className="text-[10px] leading-tight">More</span> */}
         </Button>
       </DropdownMenuTrigger>
