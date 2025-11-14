@@ -215,6 +215,14 @@ export function ResponsiveDrawer({
       });
       window.dispatchEvent(event);
     }
+
+    // When drawer closes on mobile, notify with snapIndex -1 to indicate closed
+    if (!isDesktop && !open) {
+      const event = new CustomEvent('responsiveDrawerSnapChange', {
+        detail: { snapIndex: -1, snapPoints }
+      });
+      window.dispatchEvent(event);
+    }
   }, [activeSnapIndex, isDesktop, open, onSnapChange, snapPoints]);
 
   const cycleSnap = () => {

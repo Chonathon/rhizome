@@ -249,7 +249,7 @@ export default function SidebarPlayer({
       const customEvent = event as CustomEvent<{ snapIndex: number; snapPoints: number[] }>;
       const { snapIndex } = customEvent.detail;
 
-      // snapIndex 0 = min snap (8%), 1+ = middle/max snaps (50%/90%)
+      // snapIndex -1 = drawer closed, 0 = min snap (8%), 1+ = middle/max snaps (50%/90%)
       const isExpanded = snapIndex > 0;
       console.log('[SidebarPlayer] Drawer snap changed:', snapIndex, 'Expanded:', isExpanded);
       setDrawerExpanded(isExpanded);
@@ -526,9 +526,9 @@ export default function SidebarPlayer({
                 >
                   <SkipForward size={20} />
                 </Button>
-                {/* <Button variant="outline" size="icon" onClick={onClose} title="Close">
+                {playerCollapsed && <Button variant="outline" size="icon" onClick={onClose} title="Close">
                 <X size={18}/>
-              </Button> */}
+              </Button>}
               </div>
             </div>
 
