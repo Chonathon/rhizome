@@ -268,7 +268,6 @@ export default function SidebarPlayer({
 
       // snapIndex -1 = drawer closed, 0 = min snap (8%), 1+ = middle/max snaps (50%/90%)
       const isExpanded = snapIndex > 0;
-      console.log('[SidebarPlayer] Drawer snap changed:', snapIndex, 'Expanded:', isExpanded);
       setDrawerExpanded(isExpanded);
     };
 
@@ -351,7 +350,9 @@ export default function SidebarPlayer({
         <div ref={containerRef} className="w-full" style={{ height: videoHeight }} />
       </div>
 
-      {/* Minimal thumbnail mode (desktop + sidebar collapsed) */}
+      {/* 
+      * Minimal thumbnail mode (desktop + sidebar collapsed) 
+      */}
       {isMinimalMode && (
         <motion.div
           key="player-minimal"
@@ -402,7 +403,9 @@ export default function SidebarPlayer({
         </motion.div>
       )}
 
-      {/* Mobile mode backdrop - only show when player is expanded */}
+      {/* 
+      * Mobile mode backdrop - only show when player is expanded 
+      */}
       {isMobileMode && !playerCollapsed && (
         <motion.div
           key="player-backdrop"
@@ -416,7 +419,9 @@ export default function SidebarPlayer({
         />
       )}
 
-      {/* Mobile mode (floating above MobileAppBar) */}
+      {/* 
+      Mobile mode (floating above MobileAppBar) 
+      */}
       <motion.div
         key="player-mobile"
         className={`fixed max-w-[400px] z-[60] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] ${isMobileMode ? '' : 'hidden'}`}
@@ -562,7 +567,9 @@ export default function SidebarPlayer({
         </div>
       </motion.div>
 
-      {/* Full desktop mode (sidebar expanded) */}
+      {/* 
+      * Full desktop mode (sidebar expanded) 
+      */}
       <motion.div
         key="player-desktop"
         className={`w-full px-1 mb-2 ${isFullDesktopMode ? '' : 'hidden'}`}
@@ -583,16 +590,17 @@ export default function SidebarPlayer({
             ) : onTitleClick ? (
               <span
                 onClick={onTitleClick}
-                title={headerDisplay}
+                title={videoTitle || 'Loading...'}
                 className="block w-full text-left text-sm font-medium truncate cursor-pointer hover:underline"
               >
-                {headerDisplay}
+                {videoTitle || 'Loading...'}
+                {/* {headerDisplay} */}
               </span>
             ) : (
               <div className="w-full text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
             )}
           </div>
-          <div className="flex items-center gap-[1px] shrink-0">
+          <div className="group-hover:flex hidden items-center gap-[1px] shrink-0">
             <Button variant="ghost" size="icon" onClick={() => setPlayerCollapsed((v) => !v)} title={playerCollapsed ? 'Expand' : 'Minimize'}>
               {playerCollapsed ? <ChevronsUp /> : <ChevronsDown />}
             </Button>
