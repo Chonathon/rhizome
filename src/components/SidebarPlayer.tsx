@@ -355,7 +355,7 @@ export default function SidebarPlayer({
       * Minimal thumbnail mode (desktop + sidebar collapsed) 
       */}
       {isMinimalMode && (
-        <Tooltip>
+        <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <motion.div
               key="player-minimal"
