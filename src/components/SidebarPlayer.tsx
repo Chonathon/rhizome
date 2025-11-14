@@ -80,8 +80,8 @@ export default function SidebarPlayer({
   const intervalRef = useRef<number | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  // Track if info drawer is open on mobile
-  const [infoDrawerOpen, setInfoDrawerOpen] = useState(false);
+  // Track if bottom drawer is expanded beyond minimum snap on mobile
+  const [drawerExpanded, setDrawerExpanded] = useState(false);
 
   const hasPlaylist = videoIds && videoIds.length > 1;
   const currentVideoId = videoIds?.[currentIndex] || videoIds?.[0];
@@ -238,62 +238,27 @@ export default function SidebarPlayer({
     };
   }, [open]);
 
-  // Track if info drawer (bottom drawer) is open on mobile
+  // Listen to ResponsiveDrawer snap changes on mobile
   useEffect(() => {
     if (!open || isDesktop) {
-      setInfoDrawerOpen(false);
+      setDrawerExpanded(false);
       return;
     }
 
-    let rafId: number | null = null;
-    const schedule = () => {
-      if (rafId != null) return;
-      rafId = window.requestAnimationFrame(() => {
-        rafId = null;
-        compute();
-      });
+    const handleSnapChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ snapIndex: number; snapPoints: number[] }>;
+      const { snapIndex } = customEvent.detail;
+
+      // snapIndex 0 = min snap (8%), 1+ = middle/max snaps (50%/90%)
+      const isExpanded = snapIndex > 0;
+      console.log('[SidebarPlayer] Drawer snap changed:', snapIndex, 'Expanded:', isExpanded);
+      setDrawerExpanded(isExpanded);
     };
 
-    const compute = () => {
-      try {
-        // Check for bottom drawer (GenreInfo/ArtistInfo)
-        const drawerNodes = Array.from(
-          document.querySelectorAll(
-            '[data-slot="drawer-content"][data-vaul-drawer-direction="bottom"]'
-          )
-        ) as HTMLElement[];
-
-        if (drawerNodes && drawerNodes.length > 0) {
-          const openNode = [...drawerNodes].reverse().find((n) => n.getAttribute('data-state') !== 'closed');
-          setInfoDrawerOpen(!!openNode);
-        } else {
-          setInfoDrawerOpen(false);
-        }
-      } catch {
-        setInfoDrawerOpen(false);
-      }
-    };
-
-    compute();
-
-    const onResize = () => schedule();
-    window.addEventListener('resize', onResize);
-
-    const observer = new MutationObserver(() => schedule());
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['style', 'data-state']
-    });
+    window.addEventListener('responsiveDrawerSnapChange', handleSnapChange);
 
     return () => {
-      window.removeEventListener('resize', onResize);
-      observer.disconnect();
-      if (rafId != null) {
-        window.cancelAnimationFrame(rafId);
-        rafId = null;
-      }
+      window.removeEventListener('responsiveDrawerSnapChange', handleSnapChange);
     };
   }, [open, isDesktop]);
 
@@ -345,6 +310,13 @@ export default function SidebarPlayer({
     if (!isDesktop && playerCollapsed) {
       setPlayerCollapsed(false);
     }
+  };
+
+  // Calculate bottom position based on drawer state
+  const calculateBottomPosition = () => {
+    // Drawer closed or at minimum snap → 5.5rem above app bar
+    // Drawer expanded (middle/max snap) → 0.75rem above drawer
+    return drawerExpanded ? '0.75rem' : '5rem';
   };
 
   if (!open) return null;
@@ -436,7 +408,7 @@ export default function SidebarPlayer({
           opacity: 1,
           y: 0,
           scale: 1,
-          bottom: infoDrawerOpen ? '0.75rem' : '5.5rem'
+          bottom: calculateBottomPosition()
         }}
         exit={{ opacity: 0, y: 12, scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 300, damping: 26, mass: 0.6 }}
@@ -450,10 +422,10 @@ export default function SidebarPlayer({
           {/* Header (collapse/close buttons) - shown above player when expanded */}
           <div className={`${playerCollapsed ? 'hidden' : 'flex'} absolute right-0 -top-12 items-center justify-between gap-2`}>
             <div className="flex items-center gap-4 shrink-0">
-              <Button variant="outline" size="icon" onClick={() => setPlayerCollapsed((v) => !v)} title={playerCollapsed ? 'Expand' : 'Minimize'}>
+              <Button variant="secondary" size="icon" onClick={() => setPlayerCollapsed((v) => !v)} title={playerCollapsed ? 'Expand' : 'Minimize'}>
                 {playerCollapsed ? <ChevronsUp /> : <ChevronsDown />}
               </Button>
-              <Button variant="outline" size="icon" onClick={onClose} title="Close">
+              <Button variant="secondary" size="icon" onClick={onClose} title="Close">
                 <X size={18}/>
               </Button>
             </div>

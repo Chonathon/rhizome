@@ -60,6 +60,11 @@ export interface ResponsiveDrawerProps {
    * Useful for triggering expansion from external actions (e.g., header button clicks).
    */
   expandToMiddleTrigger?: number;
+  /**
+   * Called when the active snap point changes (mobile only).
+   * Receives the index of the current snap point (0 = min, 1 = middle, 2 = max for default snaps).
+   */
+  onSnapChange?: (snapIndex: number) => void;
 }
 
 /**
@@ -88,6 +93,7 @@ export function ResponsiveDrawer({
   onCanvasDragStart,
   contentKey,
   expandToMiddleTrigger,
+  onSnapChange,
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
   const { state: sidebarState } = useSidebar();
@@ -196,6 +202,20 @@ export function ResponsiveDrawer({
   const isAtMinSnap = useMemo(() => {
     return activeSnapIndex === 0;
   }, [activeSnapIndex]);
+
+  // Notify parent when snap changes (mobile only)
+  useEffect(() => {
+    if (!isDesktop && open && activeSnapIndex >= 0) {
+      // Call the callback if provided
+      onSnapChange?.(activeSnapIndex);
+
+      // Also dispatch a global event for components that need to react to drawer snaps
+      const event = new CustomEvent('responsiveDrawerSnapChange', {
+        detail: { snapIndex: activeSnapIndex, snapPoints }
+      });
+      window.dispatchEvent(event);
+    }
+  }, [activeSnapIndex, isDesktop, open, onSnapChange, snapPoints]);
 
   const cycleSnap = () => {
     if (isDesktop || !clickToCycleSnap) return;
