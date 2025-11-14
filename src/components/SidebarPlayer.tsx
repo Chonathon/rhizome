@@ -564,7 +564,7 @@ export default function SidebarPlayer({
             {!playerCollapsed && (
               <Progress
                 value={percent}
-                className="h-1"
+                className="h-2 my-2"
                 onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
                 onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
               />
