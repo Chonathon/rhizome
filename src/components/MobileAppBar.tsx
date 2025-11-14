@@ -1,7 +1,7 @@
 import React, { useState } from "react"
-import {  CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown, Cog } from "lucide-react"
+import { BookOpen, Search as SearchIcon, Telescope, CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown } from "lucide-react"
+import { TwoLines } from "./Icon"
 import { Button } from "@/components/ui/button"
-import { Search as SearchIcon, BookOpen, Telescope, TwoLines } from "./Icon"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,28 +33,29 @@ type MobileAppBarProps = {
  * Styled to match the existing glassy/rounded aesthetic.
  */
 export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, isCollectionMode }: MobileAppBarProps) {
+  const buttonContainerStyles = " pointer-events-auto rounded-full h-full border backdrop-blur-sm flex items-center justify-center"
   return (
-    <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-3 z-50 md:hidden"
-    style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <div
+  className="w-[calc(100%-4rem)] max-w-[400px] pointer-events-none fixed left-1/2 -translate-x-1/2 inset-x-8 bottom-3 z-50 md:hidden flex gap-3 place-items-center "
+  style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+>
       <div
-        className="pointer-events-auto rounded-full w-fit
-         border border-border  backdrop-blur-md shadow-md items-center flex "
+        className={`${buttonContainerStyles} min-w-[64px]`}
         
       >
-        <div className="w-fit grid grid-cols-1">
+        <div className="p-1 w-fit grid grid-cols-1 h-auto place-items-center">
           <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
-            icon={<SearchIcon className="size-6" />}
+            icon={<SearchIcon className="size-6 " />}
           />
         </div>
       </div>
       <div
-        className="pointer-events-auto rounded-full w-fit
-         border border-border backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
+        className={`w-full ${buttonContainerStyles}`}
         
       >
-        <div className="w-fit grid grid-cols-3">
+        <div className="p-1 w-full grid grid-cols-3 place-items-center">
           {/* <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
@@ -72,18 +73,6 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
             onClick={resetAppState}
             icon={<Telescope className="size-6" />}
           />
-          {/* <ToolbarButton
-            label="Genres"
-            active={graph === "genres"}
-            onClick={() => onGraphChange("genres")}
-            icon={<Tag className="size-6" />}
-          /> */}
-          {/* <ToolbarButton
-            label="Artists"
-            active={graph === "artists" || graph === "similarArtists"}
-            onClick={() => onGraphChange("artists")}
-            icon={<Mic className="size-6" />}
-          /> */}
           <MoreMenu signedInUser={signedInUser} onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />
         </div>
       </div>
@@ -107,7 +96,10 @@ function ToolbarButton({
       variant="ghost"
       size="xl"
       onClick={onClick}
-      className={`font-regular max-w-[56px] rounded-full ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
+      className={cn(
+        "w-full rounded-full py-2 text-muted-foreground",
+        active ? "text-foreground font-semibold" : "text-muted-foreground"
+      )}
     >
       {icon}
       {/* <span className="text-[10px] leading-tight">{label}</span> */}
@@ -142,7 +134,7 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
       }}
     >
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="xl" className="w-full rounded-full py-4 text-muted-foreground">
+        <Button variant="ghost" size="xl" className="w-full rounded-full py-3 text-muted-foreground">
           <TwoLines className="size-6" />
           {/* <span className="text-[10px] leading-tight">More</span> */}
         </Button>
@@ -150,16 +142,17 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
       <DropdownMenuContent side="top" align="end">
         {signedInUser ? (
           <>
-            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'General' } }))}><Cog />
-              General
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Account' } }))}><CircleUserRound />
-              Account
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
+              Profile
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
               Connections
             </DropdownMenuItem>
-        </>
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
         ) : (
           <>
             <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} className="" />
@@ -218,7 +211,6 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
             </DropdownMenuItem>
           </div>
         </div>
-        <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={(e) => {
           e.preventDefault();
           window.open('https://ko-fi.com/rhizomefyi', '_blank');
