@@ -531,7 +531,7 @@ export default function SidebarPlayer({
   return (
     <motion.div
       key="player-desktop"
-      className="w-full mb-2"
+      className="w-full px-1 mb-2"
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
