@@ -26,41 +26,25 @@ type MobileAppBarProps = {
   onCollectionClick: () => void;
   isCollectionMode: boolean;
 }
-const ButtonStyles = "w-full rounded-full py-2.5 text-muted-foreground"
+const ButtonStyles = "w-full rounded-full py-3 max-w-[80px] text-muted-foreground"
+const buttonContainerStyles = "bg-sidebar pointer-events-auto rounded-full h-full border border-accent inset-shadow-white shadow-xs backdrop-blur-[2px] flex items-center justify-center"
 /**
  * Floating bottom app bar for small screens.
  * Provides quick access to Search, Collection, Genres, Artists, and a More menu.
  * Styled to match the existing glassy/rounded aesthetic.
  */
 export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, isCollectionMode }: MobileAppBarProps) {
-  const buttonContainerStyles = " pointer-events-auto rounded-full h-full border backdrop-blur-sm flex items-center justify-center"
   return (
     <div
   className="w-[calc(100%-4rem)] max-w-[400px] pointer-events-none fixed left-1/2 -translate-x-1/2 inset-x-8 bottom-3 z-50 md:hidden flex gap-3 place-items-center "
   style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
 >
-      <div
-        className={`${buttonContainerStyles}`}
-        
-      >
-        <div className=" p-1 w-fit grid grid-cols-1 h-auto place-items-center">
-          <ToolbarButton
-            label="Search"
-            onClick={onOpenSearch}
-            icon={<SearchIcon className="size-6 " />}
-          />
-        </div>
-      </div>
+      
       <div
         className={`w-full ${buttonContainerStyles}`}
         
       >
         <div className="p-1 w-full grid grid-cols-3 place-items-center">
-          {/* <ToolbarButton
-            label="Search"
-            onClick={onOpenSearch}
-            icon={<SearchIcon className="size-6" />}
-          /> */}
           <ToolbarButton
             label="Collection"
             onClick={onCollectionClick}
@@ -74,6 +58,19 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
             icon={<Telescope className="size-6" />}
           />
           <MoreMenu signedInUser={signedInUser} onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />
+        </div>
+      </div>
+      {/* Search */}
+      <div
+        className={`${buttonContainerStyles} shrink-0`}
+        
+      >
+        <div className=" p-1 w-fit grid grid-cols-1 h-auto place-items-center">
+          <ToolbarButton
+            label="Search"
+            onClick={onOpenSearch}
+            icon={<SearchIcon className="size-6 " />}
+          />
         </div>
       </div>
     </div>
@@ -98,7 +95,7 @@ function ToolbarButton({
       onClick={onClick}
       className={cn(
         ButtonStyles,
-        active ? "bg-accent text-foreground font-semibold" : "text-muted-foreground"
+        active ? "text-foreground font-semibold" : "text-muted-foreground"
       )}
     >
       {icon}
