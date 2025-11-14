@@ -66,7 +66,10 @@ export default function SidebarPlayer({
   isDesktop
 }: SidebarPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const offscreenWrapperRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
+  const mobileWrapperRef = useRef<HTMLDivElement | null>(null);
+  const desktopWrapperRef = useRef<HTMLDivElement | null>(null);
   const [ready, setReady] = useState(false);
   const [playerCollapsed, setPlayerCollapsed] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -87,6 +90,14 @@ export default function SidebarPlayer({
     if (artworkUrl && artworkUrl.trim().length > 0) return artworkUrl;
     return undefined;
   }, [artworkUrl]);
+
+  // Display modes (must be defined early for use in effects)
+  const isMinimalMode = isDesktop && sidebarCollapsed;
+  const isMobileMode = !isDesktop;
+  const isFullDesktopMode = isDesktop && !sidebarCollapsed;
+
+  // Approx video height for different widths with 16:9 aspect ratio
+  const videoHeight = isFullDesktopMode ? (208 * 9 / 16) : (240 * 9 / 16);
 
   const mountPlayer = useCallback(async () => {
     if (!containerRef.current || !open) return;
@@ -175,6 +186,33 @@ export default function SidebarPlayer({
       }
     };
   }, [open, videoIds, mountPlayer]);
+
+  // Move YouTube container to the correct wrapper based on display mode
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const moveTo = (target: HTMLDivElement | null) => {
+      if (!target || !containerRef.current) return;
+      if (target.contains(containerRef.current)) return;
+      target.appendChild(containerRef.current);
+    };
+
+    if (isMobileMode) {
+      if (mobileWrapperRef.current) {
+        moveTo(mobileWrapperRef.current);
+      } else {
+        moveTo(offscreenWrapperRef.current);
+      }
+      return;
+    }
+
+    // Default to the desktop wrapper (even when the sidebar is collapsed)
+    if (desktopWrapperRef.current) {
+      moveTo(desktopWrapperRef.current);
+    } else {
+      moveTo(offscreenWrapperRef.current);
+    }
+  }, [isMobileMode, ready]);
 
   // Progress polling
   useEffect(() => {
@@ -313,26 +351,22 @@ export default function SidebarPlayer({
     togglePlay();
   };
 
-  // Display modes
-  const isMinimalMode = isDesktop && sidebarCollapsed;
-  const isMobileMode = !isDesktop;
-  const isFullDesktopMode = isDesktop && !sidebarCollapsed;
-
-  // Approx video height for different widths with 16:9 aspect ratio
-  const videoHeight = isFullDesktopMode ? (208 * 9 / 16) : (240 * 9 / 16);
-
   if (!open) return null;
 
-  // Minimal thumbnail mode (desktop + sidebar collapsed)
-  if (isMinimalMode) {
-    return (
-      <>
-        {/* YouTube player - keep mounted and "visible" for YouTube API but position off-screen */}
-        <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none" aria-hidden="true">
-          <div ref={containerRef} style={{ width: '100%', height: videoHeight }} />
-        </div>
+  return (
+    <>
+      {/* YouTube iframe container - ALWAYS mounted off-screen to prevent player destruction */}
+      {/* YouTube API requires iframe to be "visible" (not display:none) so we position it off-screen */}
+      <div
+        className="fixed -left-[9999px] -top-[9999px] pointer-events-none"
+        aria-hidden="true"
+        ref={offscreenWrapperRef}
+      >
+        <div ref={containerRef} style={{ width: 240, height: videoHeight }} />
+      </div>
 
-        {/* Visible thumbnail UI */}
+      {/* Minimal thumbnail mode (desktop + sidebar collapsed) */}
+      {isMinimalMode && (
         <motion.div
           key="player-minimal"
           className="w-full flex justify-center pb-2"
@@ -380,16 +414,12 @@ export default function SidebarPlayer({
             )}
           </div>
         </motion.div>
-      </>
-    );
-  }
+      )}
 
-  // Mobile mode (floating above MobileAppBar)
-  if (isMobileMode) {
-    return (
+      {/* Mobile mode (floating above MobileAppBar) */}
       <motion.div
         key="player-mobile"
-        className="fixed z-[50] w-[240px] left-4"
+        className={`fixed z-[50] w-[240px] left-4 ${isMobileMode ? '' : 'hidden'}`}
         style={{
           top: mobileTop != null ? mobileTop : 'auto',
           bottom: mobileTop != null ? 'auto' : '64px',
@@ -399,6 +429,7 @@ export default function SidebarPlayer({
         exit={{ opacity: 0, y: 12, scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 300, damping: 26, mass: 0.6 }}
         ref={wrapperRef}
+        aria-hidden={!isMobileMode}
       >
         <div className="group rounded-xl border border-sidebar-border bg-popover shadow-xl overflow-hidden">
           {/* Header */}
@@ -443,7 +474,7 @@ export default function SidebarPlayer({
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             aria-busy={loading || !ready || !currentVideoId}
           >
-            <div ref={containerRef} className="w-full" style={{ height: videoHeight }} />
+            <div ref={mobileWrapperRef} className="w-full" style={{ height: videoHeight }} />
             {(loading || !ready || !currentVideoId) && (
               <div className="absolute inset-0 grid place-items-center">
                 <RhizomeLogo className="h-10 w-10 text-muted-foreground" title="Loading" animated />
@@ -524,19 +555,17 @@ export default function SidebarPlayer({
           </div>
         </div>
       </motion.div>
-    );
-  }
 
-  // Full desktop mode (sidebar expanded)
-  return (
-    <motion.div
-      key="player-desktop"
-      className="w-full px-1 mb-2"
-      initial={{ opacity: 0, y: -12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-    >
+      {/* Full desktop mode (sidebar expanded) */}
+      <motion.div
+        key="player-desktop"
+        className={`w-full px-1 mb-2 ${isFullDesktopMode ? '' : 'hidden'}`}
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+        aria-hidden={!isFullDesktopMode}
+      >
       <div className="group rounded-xl border border-sidebar-border bg-popover shadow-lg overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 pl-2">
@@ -580,7 +609,7 @@ export default function SidebarPlayer({
           transition={{ type: 'spring', stiffness: 300, damping: 26 }}
           aria-busy={loading || !ready || !currentVideoId}
         >
-          <div ref={containerRef} className="w-full" style={{ height: videoHeight }} />
+          <div ref={desktopWrapperRef} className="w-full" style={{ height: videoHeight }} />
           {(loading || !ready || !currentVideoId) && (
             <div className="absolute inset-0 grid place-items-center">
               <RhizomeLogo className="h-10 w-10 text-muted-foreground" title="Loading" animated />
@@ -660,6 +689,7 @@ export default function SidebarPlayer({
           </Button>
         </div>
       </div>
-    </motion.div>
+      </motion.div>
+    </>
   );
 }
