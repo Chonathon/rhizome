@@ -26,7 +26,7 @@ type MobileAppBarProps = {
   onCollectionClick: () => void;
   isCollectionMode: boolean;
 }
-
+const ButtonStyles = "w-full rounded-full py-2.5 text-muted-foreground"
 /**
  * Floating bottom app bar for small screens.
  * Provides quick access to Search, Collection, Genres, Artists, and a More menu.
@@ -40,10 +40,10 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
   style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
 >
       <div
-        className={`${buttonContainerStyles} min-w-[64px]`}
+        className={`${buttonContainerStyles}`}
         
       >
-        <div className="p-1 w-fit grid grid-cols-1 h-auto place-items-center">
+        <div className=" p-1 w-fit grid grid-cols-1 h-auto place-items-center">
           <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
@@ -97,8 +97,8 @@ function ToolbarButton({
       size="xl"
       onClick={onClick}
       className={cn(
-        "w-full rounded-full py-2 text-muted-foreground",
-        active ? "text-foreground font-semibold" : "text-muted-foreground"
+        ButtonStyles,
+        active ? "bg-accent text-foreground font-semibold" : "text-muted-foreground"
       )}
     >
       {icon}
@@ -134,7 +134,7 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
       }}
     >
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="xl" className="w-full rounded-full py-3 text-muted-foreground">
+        <Button variant="ghost" size="xl" className={ButtonStyles}>
           <TwoLines className="size-6" />
           {/* <span className="text-[10px] leading-tight">More</span> */}
         </Button>
