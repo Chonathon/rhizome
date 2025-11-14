@@ -420,7 +420,7 @@ export default function SidebarPlayer({
       {/* Mobile mode (floating above MobileAppBar) */}
       <motion.div
         key="player-mobile"
-        className={`fixed z-[50] w-[240px] left-4 ${isMobileMode ? '' : 'hidden'}`}
+        className={`fixed z-[50] w-[calc(100%-2rem)] left-4 ${isMobileMode ? '' : 'hidden'}`}
         style={{
           top: mobileTop != null ? mobileTop : 'auto',
           bottom: mobileTop != null ? 'auto' : '64px',
