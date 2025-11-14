@@ -17,7 +17,15 @@ export interface ResponsiveDrawerProps {
   contentClassName?: string;
   bodyClassName?: string;
   directionDesktop?: Extract<DrawerDirection, "left" | "right">;
+  /**
+   * Fractional snap points for mobile/coarse-pointer devices (default bottom-sheet behavior).
+   */
   snapPoints?: number[];
+  /**
+   * Alternate snap points for fine-pointer devices that still render the sheet (e.g., desktop browser emulating mobile).
+   * Helps keep the drawer from flying too high on tall viewports.
+   */
+  desktopSnapPoints?: number[];
   clickToCycleSnap?: boolean;
   desktopQuery?: string;
   showMobileHandle?: boolean;
@@ -78,7 +86,8 @@ export function ResponsiveDrawer({
   contentClassName,
   bodyClassName,
   directionDesktop = "left",
-  snapPoints = [0.11, 0.50, 0.9],
+  snapPoints: mobileSnapPoints = [0.11, 0.50, 0.9],
+  desktopSnapPoints = [0.08, 0.40, 0.75],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 768px)",
   showMobileHandle = false,
@@ -96,6 +105,12 @@ export function ResponsiveDrawer({
   onSnapChange,
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
+  // Detect pointer type so we can keep snap targets lower on tall desktop browsers.
+  const hasCoarsePointer = useMediaQuery("(pointer: coarse)");
+  const snapPoints = useMemo(
+    () => (hasCoarsePointer ? mobileSnapPoints : desktopSnapPoints),
+    [hasCoarsePointer, mobileSnapPoints, desktopSnapPoints],
+  );
   const { state: sidebarState } = useSidebar();
   const [open, setOpen] = useState(false);
   // Default to middle snap point (index 1) if available, otherwise first snap point
