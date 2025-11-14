@@ -86,7 +86,10 @@ export default function SidebarPlayer({
 
   // Track floating musical notes for minimal mode
   const [floatingNotes, setFloatingNotes] = useState<{ id: number; offset: number }[]>([]);
-  const [minimalPlayerHovered, setMinimalPlayerHovered] = useState(false);
+  const [notesActive, setNotesActive] = useState(false);
+  const notesTimeoutRef = useRef<number | null>(null);
+  const prevMinimalModeRef = useRef<boolean>(false);
+  const prevPlayingRef = useRef<boolean>(false);
 
   const hasPlaylist = videoIds && videoIds.length > 1;
   const currentVideoId = videoIds?.[currentIndex] || videoIds?.[0];
@@ -283,9 +286,53 @@ export default function SidebarPlayer({
     };
   }, [open, isDesktop]);
 
-  // Spawn floating musical notes in minimal mode when hovered
+  // Helper function to activate notes for 5 seconds
+  const activateNotesForDuration = useCallback(() => {
+    // Clear any existing timeout
+    if (notesTimeoutRef.current) {
+      window.clearTimeout(notesTimeoutRef.current);
+    }
+
+    // Activate notes
+    setNotesActive(true);
+
+    // Deactivate after 5 seconds
+    notesTimeoutRef.current = window.setTimeout(() => {
+      setNotesActive(false);
+    }, 5000);
+  }, []);
+
+  // Activate notes when entering minimal mode with music playing, or when music starts in minimal mode
   useEffect(() => {
-    if (!isMinimalMode || !minimalPlayerHovered) {
+    const wasMinimalMode = prevMinimalModeRef.current;
+    const wasPlaying = prevPlayingRef.current;
+
+    // Update refs for next render
+    prevMinimalModeRef.current = isMinimalMode;
+    prevPlayingRef.current = isPlaying;
+
+    // Don't activate on initial mount, only on state changes
+    if (wasMinimalMode === false && wasPlaying === false) {
+      // This is likely the first render, skip
+      return;
+    }
+
+    // Trigger notes when:
+    // 1. Entering minimal mode while already playing
+    // 2. Starting playback while in minimal mode
+    if (isMinimalMode && isPlaying) {
+      const justEnteredMinimalMode = !wasMinimalMode && isMinimalMode;
+      const justStartedPlaying = !wasPlaying && isPlaying;
+
+      if (justEnteredMinimalMode || justStartedPlaying) {
+        activateNotesForDuration();
+      }
+    }
+  }, [isMinimalMode, isPlaying, activateNotesForDuration]);
+
+  // Spawn floating musical notes when active
+  useEffect(() => {
+    if (!isMinimalMode || !notesActive) {
       setFloatingNotes([]);
       return;
     }
@@ -308,7 +355,16 @@ export default function SidebarPlayer({
       clearInterval(spawnInterval);
       setFloatingNotes([]);
     };
-  }, [isMinimalMode, minimalPlayerHovered]);
+  }, [isMinimalMode, notesActive]);
+
+  // Cleanup notes timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (notesTimeoutRef.current) {
+        window.clearTimeout(notesTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const percent = useMemo(() => {
     if (!duration || duration <= 0) return 0;
@@ -395,8 +451,7 @@ export default function SidebarPlayer({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-              onMouseEnter={() => setMinimalPlayerHovered(true)}
-              onMouseLeave={() => setMinimalPlayerHovered(false)}
+              onMouseEnter={activateNotesForDuration}
             >
               {/* Floating musical notes */}
               <AnimatePresence>
