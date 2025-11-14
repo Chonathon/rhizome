@@ -413,6 +413,20 @@ export default function SidebarPlayer({
         </motion.div>
       )}
 
+      {/* Mobile mode backdrop - only show when player is expanded */}
+      {isMobileMode && !playerCollapsed && (
+        <motion.div
+          key="player-backdrop"
+          className="fixed inset-0 bg-overlay backdrop-blur-sm z-[59]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={() => setPlayerCollapsed(true)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Mobile mode (floating above MobileAppBar) */}
       <motion.div
         key="player-mobile"
