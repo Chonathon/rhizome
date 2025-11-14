@@ -357,8 +357,9 @@ export default function SidebarPlayer({
         className="fixed -left-[9999px] -top-[9999px] pointer-events-none"
         aria-hidden="true"
         ref={offscreenWrapperRef}
+        style={{ width: isMobileMode ? '375px' : '240px' }}
       >
-        <div ref={containerRef} style={{ width: 240, height: videoHeight }} />
+        <div ref={containerRef} className="w-full" style={{ height: videoHeight }} />
       </div>
 
       {/* Minimal thumbnail mode (desktop + sidebar collapsed) */}
@@ -446,7 +447,7 @@ export default function SidebarPlayer({
 
           {/* Video */}
           <motion.div
-            className={`relative w-full rounded-2xl bg-black overflow-hidden  ${playerCollapsed ? '' : 'mb-2'}`}
+            className={`relative w-full rounded-2xl bg-black overflow-hidden ${playerCollapsed ? '' : 'mb-2'}`}
             initial={false}
             animate={{ height: playerCollapsed ? 0 : videoHeight, opacity: playerCollapsed ? 0 : 1 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
@@ -504,7 +505,7 @@ export default function SidebarPlayer({
                 {playerCollapsed 
                 ? <button
                   type="button"
-                  onClick={onTitleClick}
+                  onClick={(e) => {e.stopPropagation(); onTitleClick}}
                   title={videoTitle}
                   className={`block text-left min-w-0   hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
                 >
