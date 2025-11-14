@@ -24,7 +24,7 @@ import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
 import GenrePreview from './components/GenrePreview';
 import ArtistPreview from './components/ArtistPreview';
-import Player from "@/components/Player";
+// import Player from "@/components/Player"; // Now using SidebarPlayer instead
 import { Search } from './components/Search';
 import FindFilter from "@/components/FindFilter";
 import {
@@ -1859,6 +1859,16 @@ function App() {
         signedInUser={!!userID}
         isCollectionMode={collectionMode}
         searchOpen={searchOpen}
+        playerOpen={playerOpen}
+        onPlayerOpenChange={setPlayerOpen}
+        playerVideoIds={playerVideoIds}
+        playerTitle={playerTitle}
+        playerArtworkUrl={playerArtworkUrl}
+        playerLoading={playerLoading}
+        onPlayerLoadingChange={handlePlayerLoadingChange}
+        playerHeaderPreferProvidedTitle={playerSource === 'genre'}
+        onPlayerTitleClick={handlePlayerTitleClick}
+        playerStartIndex={playerStartIndex}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -2265,7 +2275,8 @@ function App() {
               </div>
             </motion.div>
           </AnimatePresence>
-          <Player
+          {/* Player has been moved to AppSidebar component */}
+          {/* <Player
             open={playerOpen}
             onOpenChange={setPlayerOpen}
             videoIds={playerVideoIds}
@@ -2278,7 +2289,7 @@ function App() {
             headerPreferProvidedTitle={playerSource === 'genre'}
             onTitleClick={handlePlayerTitleClick}
             startIndex={playerStartIndex}
-          />
+          /> */}
         </div>
       </AppSidebar>
       <SettingsOverlay
