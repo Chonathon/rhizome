@@ -36,10 +36,23 @@ const buttonContainerStyles = "bg-sidebar pointer-events-auto rounded-full h-ful
 export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, isCollectionMode }: MobileAppBarProps) {
   return (
     <div
-  className="w-[calc(100%-2rem)] max-w-[400px] pointer-events-none fixed left-1/2 -translate-x-1/2 inset-x-8 bottom-3 z-50 md:hidden flex gap-3 place-items-center "
+  className="w-[calc(100%-2rem)] max-w-[360px] pointer-events-none fixed left-1/2 -translate-x-1/2 inset-x-8 bottom-3 z-50 md:hidden flex gap-3 place-items-center "
   style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
 >
-      
+  {/* Search */}
+      <div
+        className={`${buttonContainerStyles} shrink-0`}
+        
+      >
+        <div className=" p-1 w-fit grid grid-cols-1 h-auto place-items-center">
+          <ToolbarButton
+            label="Search"
+            onClick={onOpenSearch}
+            className=""
+            icon={<SearchIcon className="size-6 " />}
+          />
+        </div>
+      </div>     
       <div
         className={`w-full ${buttonContainerStyles}`}
         
@@ -55,24 +68,12 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
             label="Explore"
             active={!isCollectionMode}
             onClick={resetAppState}
-            icon={<Telescope className="size-7" />}
+            icon={<Telescope className="size-6" />}
           />
           <MoreMenu signedInUser={signedInUser} onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />
         </div>
       </div>
-      {/* Search */}
-      <div
-        className={`${buttonContainerStyles} shrink-0`}
-        
-      >
-        <div className=" p-1 w-fit grid grid-cols-1 h-auto place-items-center">
-          <ToolbarButton
-            label="Search"
-            onClick={onOpenSearch}
-            icon={<SearchIcon className="size-7 " />}
-          />
-        </div>
-      </div>
+     
     </div>
   )
 }
@@ -82,11 +83,13 @@ function ToolbarButton({
   icon,
   onClick,
   active,
+  className,
 }: {
   label: string
   icon: React.ReactNode
   onClick: () => void
   active?: boolean
+  className?: string
 }) {
   return (
     <Button
@@ -95,7 +98,8 @@ function ToolbarButton({
       onClick={onClick}
       className={cn(
         ButtonStyles,
-        active ? "text-foreground font-semibold" : "text-muted-foreground"
+        active ? "text-foreground font-semibold" : "text-muted-foreground",
+        className
       )}
     >
       {icon}
@@ -132,7 +136,7 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
     >
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="xl" className={ButtonStyles}>
-          <TwoLines className="size-7" />
+          <TwoLines className="size-6" />
           {/* <span className="text-[10px] leading-tight">More</span> */}
         </Button>
       </DropdownMenuTrigger>
