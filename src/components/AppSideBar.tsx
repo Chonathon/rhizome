@@ -180,22 +180,6 @@ export function AppSidebar({
             />
           </SidebarContent>}
         </SidebarContent>
-        {/* Player - positioned above footer */}
-        <SidebarPlayer
-          open={playerOpen}
-          onOpenChange={onPlayerOpenChange}
-          videoIds={playerVideoIds}
-          title={playerTitle}
-          autoplay
-          artworkUrl={playerArtworkUrl}
-          loading={playerLoading}
-          onLoadingChange={onPlayerLoadingChange}
-          headerPreferProvidedTitle={playerHeaderPreferProvidedTitle}
-          onTitleClick={onPlayerTitleClick}
-          startIndex={playerStartIndex}
-          sidebarCollapsed={isCollapsed}
-          isDesktop={isDesktop}
-        />
         <SidebarFooter className="mt-auto flex p-1 pb-3">
           <SidebarMenu className={isCollapsed ? "mx-auto gap-4" : "flex w-full flex-row justify-between gap-4"}>
             <DropdownMenu modal={false}>
@@ -257,6 +241,23 @@ export function AppSidebar({
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
+
+      {/* Player - rendered outside Sidebar so it works on mobile */}
+      <SidebarPlayer
+        open={playerOpen}
+        onOpenChange={onPlayerOpenChange}
+        videoIds={playerVideoIds}
+        title={playerTitle}
+        autoplay
+        artworkUrl={playerArtworkUrl}
+        loading={playerLoading}
+        onLoadingChange={onPlayerLoadingChange}
+        headerPreferProvidedTitle={playerHeaderPreferProvidedTitle}
+        onTitleClick={onPlayerTitleClick}
+        startIndex={playerStartIndex}
+        sidebarCollapsed={isCollapsed}
+        isDesktop={isDesktop}
+      />
 
       <SidebarInset>{children}</SidebarInset>
 
