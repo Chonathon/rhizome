@@ -97,7 +97,7 @@ export default function SidebarPlayer({
   const isFullDesktopMode = isDesktop && !sidebarCollapsed;
 
   // Approx video height for different widths with 16:9 aspect ratio
-  const videoHeight = isFullDesktopMode ? (208 * 9 / 16) : (240 * 9 / 16);
+  const videoHeight = isFullDesktopMode ? (208 * 9 / 16) : (375 * 9 / 16);
 
   const mountPlayer = useCallback(async () => {
     if (!containerRef.current || !open) return;
@@ -502,17 +502,19 @@ export default function SidebarPlayer({
 
               {/* Track info */}
               <div className="flex flex-col leading-tight truncate min-w-0 flex-1 text-sm font-medium text-foreground">
-                {playerCollapsed 
-                ? <button
-                  type="button"
-                  onClick={(e) => {e.stopPropagation(); onTitleClick}}
-                  title={videoTitle}
-                  className={`block text-left min-w-0   hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
-                >
-                  {videoTitle || 'Loading...'}
-                </button>
+                {playerCollapsed
+                ? <div className="block text-left min-w-0 truncate">
+                    <span className="text-foreground">{videoTitle || 'Loading...'}</span>
+                  </div>
                 :
-                <span className="text-foreground">{videoTitle || 'Loading...'}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {e.stopPropagation(); onTitleClick?.()}}
+                  title={videoTitle}
+                  className={`block text-left min-w-0 truncate hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
+                >
+                  <span className="text-foreground">{videoTitle || 'Loading...'}</span>
+                </button>
                 }
                 <span className="text-muted-foreground min-w-0 truncate leading-tight text-sm">{title || ''}</span>
               </div>
