@@ -24,7 +24,7 @@ import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
 import GenrePreview from './components/GenrePreview';
 import ArtistPreview from './components/ArtistPreview';
-import Player from "@/components/Player";
+// import Player from "@/components/Player"; // Now using SidebarPlayer instead
 import { Search } from './components/Search';
 import FindFilter from "@/components/FindFilter";
 import {
@@ -522,11 +522,12 @@ function App() {
 
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
+    if (topArtistsLoading) return;
     if (topArtistsGenreId && topArtists.length) {
       setGenreTopArtistsCache(prev => new Map(prev).set(topArtistsGenreId, topArtists));
     }
     updateGenrePlayerIDs();
-  }, [topArtists, topArtistsGenreId]);
+  }, [topArtists, topArtistsGenreId, topArtistsLoading]);
 
   // Sets the genre ID for which to fetch top artists
   useEffect(() => {
@@ -590,34 +591,35 @@ function App() {
   // Add genre play IDs to the playerIDQueue on genre click
   const updateGenrePlayerIDs = async () => {
     const queueGenreID = topArtistsGenreId;
-    if (topArtists && topArtists.length && queueGenreID && !playerIDQueue.has(queueGenreID)) {
-      const genreTracks: TopTrack[] = [];
-      for (const artist of topArtists) {
-        if (!artist.noTopTracks) {
-          if (artist.topTracks) {
-            for (const track of artist.topTracks) {
+    if (!queueGenreID) return;
+    if (topArtistsLoading) return;
+    if (!topArtists || topArtists.length === 0) return;
+    const genreTracks: TopTrack[] = [];
+    for (const artist of topArtists) {
+      if (!artist.noTopTracks) {
+        if (artist.topTracks) {
+          for (const track of artist.topTracks) {
+            if (track[DEFAULT_PLAYER]) {
+              genreTracks.push(track);
+              break;
+            }
+          }
+        } else {
+          // Shouldn't reach this (every genre top artist has been pre-fetched) but fetches tracks just in case
+          console.log(`${artist.name} might have tracks, fetching from web...`);
+          const artistTopTracks = await fetchArtistTopTracks(artist.id, artist.name);
+          if (artistTopTracks) {
+            for (const track of artistTopTracks) {
               if (track[DEFAULT_PLAYER]) {
                 genreTracks.push(track);
                 break;
               }
             }
-          } else {
-            // Shouldn't reach this (every genre top artist has been pre-fetched) but fetches tracks just in case
-            console.log(`${artist.name} might have tracks, fetching from web...`);
-            const artistTopTracks = await fetchArtistTopTracks(artist.id, artist.name);
-            if (artistTopTracks) {
-              for (const track of artistTopTracks) {
-                if (track[DEFAULT_PLAYER]) {
-                  genreTracks.push(track);
-                  break;
-                }
-              }
-            }
           }
         }
       }
-      playerIDQueue.set(queueGenreID, genreTracks);
     }
+    playerIDQueue.set(queueGenreID, genreTracks);
   }
 
   // Add artist play IDs to the playerIDQueue on genre click
@@ -1859,6 +1861,16 @@ function App() {
         signedInUser={!!userID}
         isCollectionMode={collectionMode}
         searchOpen={searchOpen}
+        playerOpen={playerOpen}
+        onPlayerOpenChange={setPlayerOpen}
+        playerVideoIds={playerVideoIds}
+        playerTitle={playerTitle}
+        playerArtworkUrl={playerArtworkUrl}
+        playerLoading={playerLoading}
+        onPlayerLoadingChange={handlePlayerLoadingChange}
+        playerHeaderPreferProvidedTitle={playerSource === 'genre'}
+        onPlayerTitleClick={handlePlayerTitleClick}
+        playerStartIndex={playerStartIndex}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -2191,7 +2203,7 @@ function App() {
                 onPlayGenre={onPlayGenre}
                 onFocusInGenresView={focusGenreInCurrentView}
                 playLoading={isPlayerLoadingGenre()}
-                genreTracks={selectedGenres.length > 0 ? playerIDQueue.get(selectedGenres[0].id) : undefined}
+                genreTracks={genreInfoToShow ? playerIDQueue.get(genreInfoToShow.id) : undefined}
                 onPlayTrack={onPlayGenreTrack}
                 onDrawerSnapChange={setIsGenreDrawerAtMinSnap}
                 onCanvasDragStart={handleGenreCanvasDragStart}
@@ -2265,7 +2277,8 @@ function App() {
               </div>
             </motion.div>
           </AnimatePresence>
-          <Player
+          {/* Player has been moved to AppSidebar component */}
+          {/* <Player
             open={playerOpen}
             onOpenChange={setPlayerOpen}
             videoIds={playerVideoIds}
@@ -2278,7 +2291,7 @@ function App() {
             headerPreferProvidedTitle={playerSource === 'genre'}
             onTitleClick={handlePlayerTitleClick}
             startIndex={playerStartIndex}
-          />
+          /> */}
         </div>
       </AppSidebar>
       <SettingsOverlay
