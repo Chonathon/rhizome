@@ -11,7 +11,7 @@ interface ImageLightboxProps {
 export function ImageLightbox({ src, alt, open, onOpenChange }: ImageLightboxProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-transparent max-w-[95vw] py-6 shadow-none px-0 max-h-[95vh] border-0 ">
+      <DialogContent className="bg-transparent w-fit max-w-[95vw] py-6 shadow-none px-0 max-h-[95vh] border-0 ">
         {/* <button
           onClick={() => onOpenChange(false)}
           className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
