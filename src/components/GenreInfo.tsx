@@ -21,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 
 
@@ -80,6 +81,8 @@ export function GenreInfo({
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(false)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null)
 
 
   const onDismiss = () => {
@@ -289,12 +292,15 @@ export function GenreInfo({
                             "col-span-1 row-span-1", // 2: bottom-right
                           ][i] || "col-span-1 row-span-1"
                           return (
-                            <div key={artist.id} className={`${spanClasses} relative overflow-hidden rounded-md`}>
+                            <div key={artist.id} className={`${spanClasses} relative overflow-hidden rounded-md group`}>
                               <button
                                 type="button"
-                                onClick={() => onTopArtistClick?.(artist)}
-                                title={artist.name}
-                                className="group block w-full h-full focus:outline-none"
+                                onClick={() => {
+                                  setLightboxImage({ src: fixWikiImageURL(artist.image as string), alt: artist.name });
+                                  setLightboxOpen(true);
+                                }}
+                                title="Click to enlarge"
+                                className="block w-full h-full focus:outline-none cursor-zoom-in"
                               >
                                 <img
                                   src={fixWikiImageURL(artist.image as string)}
@@ -303,7 +309,13 @@ export function GenreInfo({
                                   loading="lazy"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
-                                <span className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm">{artist.name}</span>
+                              </button>
+                              <button
+                                onClick={() => onTopArtistClick?.(artist)}
+                                title={`Go to ${artist.name}`}
+                                className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm hover:underline z-10"
+                              >
+                                {artist.name}
                               </button>
                             </div>
                           )
@@ -472,12 +484,15 @@ export function GenreInfo({
                                 "col-span-1 row-span-1",
                               ][i] || "col-span-1 row-span-1"
                               return (
-                                <div key={artist.id} className={`${spanClasses} relative overflow-hidden rounded-md`}>
+                                <div key={artist.id} className={`${spanClasses} relative overflow-hidden rounded-md group`}>
                                   <button
                                     type="button"
-                                    onClick={() => onTopArtistClick?.(artist)}
-                                    title={artist.name}
-                                    className="group block w-full h-full focus:outline-none"
+                                    onClick={() => {
+                                      setLightboxImage({ src: artist.image as string, alt: artist.name });
+                                      setLightboxOpen(true);
+                                    }}
+                                    title="Tap to enlarge"
+                                    className="block w-full h-full focus:outline-none cursor-zoom-in"
                                   >
                                     <img
                                       src={(artist.image as string)}
@@ -486,7 +501,13 @@ export function GenreInfo({
                                       loading="lazy"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
-                                    <span className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm">{artist.name}</span>
+                                  </button>
+                                  <button
+                                    onClick={() => onTopArtistClick?.(artist)}
+                                    title={`Go to ${artist.name}`}
+                                    className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm hover:underline z-10"
+                                  >
+                                    {artist.name}
                                   </button>
                                 </div>
                               )
@@ -610,9 +631,19 @@ export function GenreInfo({
                 open={reportDialogOpen}
                 onOpenChange={setReportDialogOpen}
                 reasons={genreReasons}
-                description="Please let us know what information about this genre seems incorrect. Select a reason and provide any extra details if you’d like."
+                description="Please let us know what information about this genre seems incorrect. Select a reason and provide any extra details if you'd like."
                 onSubmit={(reason, details) => onSubmitBadData(reason, details)}
               />
+
+              {/* Image Lightbox */}
+              {lightboxImage && (
+                <ImageLightbox
+                  src={lightboxImage.src}
+                  alt={lightboxImage.alt}
+                  open={lightboxOpen}
+                  onOpenChange={setLightboxOpen}
+                />
+              )}
             </div>
           </div>
           </>
