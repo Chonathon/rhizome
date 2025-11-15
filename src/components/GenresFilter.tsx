@@ -24,6 +24,7 @@ import {
 import {isRootGenre, getParentChildrenMap} from "@/lib/utils";
 import { PARENT_FIELD_MAP, CHILD_FIELD_MAP } from "@/constants";
 import {g} from "framer-motion/m";
+import { BadgeIndicator } from "@/components/BadgeIndicator";
 
 // Props control available genres, clustering mode, and external selection callbacks.
 export default function GenresFilter({
@@ -33,6 +34,7 @@ export default function GenresFilter({
   onGenreSelectionChange,
   initialSelection,
   selectedGenreIds = [],
+  genreColorMap,
 }: {
   genres?: Genre[];
   genreClusterModes: GenreClusterMode[];
@@ -40,6 +42,7 @@ export default function GenresFilter({
   onGenreSelectionChange: (selectedIDs: string[]) => void;
   initialSelection: InitialGenreFilter;
   selectedGenreIds?: string[];
+  genreColorMap?: Map<string, string>;
 }) {
   // Compute the set of top-level genres based on the current cluster modes.
   const topLevelGenres = useMemo(() => {
@@ -124,6 +127,21 @@ export default function GenresFilter({
       [parent.id]: !prev[parent.id]
     }));
   };
+
+  // Debug logging
+  useEffect(() => {
+    if (topLevelGenres.length > 0) {
+      console.log('[GenresFilter Debug]');
+      console.log('  genreColorMap size:', genreColorMap?.size);
+      console.log('  topLevelGenres count:', topLevelGenres.length);
+      if (topLevelGenres.length > 0 && genreColorMap && genreColorMap.size > 0) {
+        const firstGenre = topLevelGenres[0];
+        console.log('  first genre:', { id: firstGenre.id, name: firstGenre.name });
+        console.log('  first genre color from map:', genreColorMap.get(firstGenre.id));
+        console.log('  sample colorMap keys:', Array.from(genreColorMap.keys()).slice(0, 5));
+      }
+    }
+  }, [topLevelGenres, genreColorMap]);
 
   useEffect(() => {
     const q = query.trim().toLowerCase();
@@ -352,6 +370,7 @@ export default function GenresFilter({
                   className="flex items-center gap-2"
                 >
                   <Check className="opacity-100" />
+                  <BadgeIndicator type="genre" name={genre.name} color={genreColorMap?.get(genre.id)} />
                   <span>{genre.name}</span>
                 </CommandItem>
               ))}
@@ -363,6 +382,7 @@ export default function GenresFilter({
                   className="flex items-center gap-2"
                 >
                   <Check className="opacity-100" />
+                  <BadgeIndicator type="genre" name={child.name} color={genreColorMap?.get(child.id)} />
                   <span>{child.name}</span>
                 </CommandItem>
               ))}
@@ -392,6 +412,7 @@ export default function GenresFilter({
                       {state === "checked" && <Check className="opacity-100" />}
                       {state === "indeterminate" && <Minus className="opacity-100" />}
                       {state === "unchecked" && <Check className="hidden" />}
+                      <BadgeIndicator type="genre" name={genre.name} color={genreColorMap?.get(genre.id)} />
                       <span>{genre.name}</span>
                     </div>
                     {query ? "" : <CollapsibleTrigger asChild>
@@ -421,6 +442,7 @@ export default function GenresFilter({
                             className={`flex items-center gap-2 `}
                           >
                             <Check className={childChecked ? "" : "hidden"} />
+                            <BadgeIndicator type="genre" name={child.name} color={genreColorMap?.get(child.id)} />
                             <span>{child.name}</span>
                           </CommandItem>
                         );

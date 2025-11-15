@@ -516,9 +516,15 @@ function App() {
     if (genres) {
       const nodeCount = genres.length;
       onGenreNodeCountChange(nodeCount);
-      setGenreColorMap(buildGenreColorMap(genres, genreRoots));
+      const colorMap = buildGenreColorMap(genres, genreRoots);
+      console.log('[App Debug] Building genreColorMap');
+      console.log('  genres.length:', genres.length);
+      console.log('  genreRoots:', genreRoots);
+      console.log('  colorMap.size:', colorMap.size);
+      console.log('  first 5 colorMap entries:', Array.from(colorMap.entries()).slice(0, 5));
+      setGenreColorMap(colorMap);
     }
-  }, [genres, genreLinks]);
+  }, [genres, genreLinks, genreRoots]);
 
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
@@ -1890,6 +1896,7 @@ function App() {
                       onGenreSelectionChange={onGenreFilterSelectionChange}
                       initialSelection={initialGenreFilter}
                       selectedGenreIds={selectedGenreIDs}
+                      genreColorMap={genreColorMap}
                      />
                     <Button size='default' variant='outline'>Mood & Activity
                       <ChevronDown />
@@ -1963,6 +1970,7 @@ function App() {
                       onGenreSelectionChange={(ids) => onCollectionFilterChange('genres', ids)}
                       initialSelection={{ genre: undefined, isRoot: false, parents: {} }}
                       selectedGenreIds={collectionFilters.genres}
+                      genreColorMap={genreColorMap}
                     />
                     {/* TODO: Add DecadesFilter when ready
                     <DecadesFilter
@@ -1993,6 +2001,7 @@ function App() {
                       onGenreSelectionChange={onGenreFilterSelectionChange}
                       initialSelection={initialGenreFilter}
                       selectedGenreIds={artistGenreFilterIDs}
+                      genreColorMap={genreColorMap}
                     />
                     <DecadesFilter
                       onDecadeSelectionChange={onDecadeSelectionChange}
