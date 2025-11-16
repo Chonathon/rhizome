@@ -170,3 +170,20 @@ export interface FindOption {
     entityType: 'artist' | 'genre';
     subtitle?: string;
 }
+
+export interface Scene {
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+    graphType: GraphType;
+    filters: {
+        genres: string[];
+        decades: string[];
+    };
+}
+
+export interface ActiveScenesPerMode {
+    explore: string | null;
+    collection: string | null;
+}

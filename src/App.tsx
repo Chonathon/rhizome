@@ -1,6 +1,6 @@
 import './App.css'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, Settings, X, Layers, Plus } from 'lucide-react'
+import { ChevronDown, Divide, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -13,7 +13,7 @@ import {
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
   GraphType, InitialGenreFilter,
-  NodeLink, Tag, TopTrack,
+  NodeLink, Tag, TopTrack, Scene,
 } from "@/types";
 import { Header } from "@/components/Header"
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,6 +52,8 @@ import { AppSidebar } from "@/components/AppSideBar"
 import { GenreInfo } from './components/GenreInfo';
 import GenresFilter from './components/GenresFilter';
 import DecadesFilter from './components/DecadesFilter';
+import ScenesFilter from './components/ScenesFilter';
+import { useScenes } from './hooks/useScenes';
 import {useTheme} from "next-themes";
 import {
   DEFAULT_DARK_NODE_COLOR,
@@ -272,6 +274,32 @@ function App() {
   const navigate = useNavigate();
 
   const artistsAddedRef = useRef(0);
+
+  // Scenes hook for saving/loading filter configurations
+  // Determine current mode and filters based on collectionMode state
+  const currentMode = collectionMode ? 'collection' : 'explore';
+  const currentSceneFilters = collectionMode
+    ? collectionFilters
+    : { genres: artistGenreFilterIDs, decades: selectedDecades };
+
+  const {
+    scenes,
+    activeSceneId,
+    activeScene,
+    saveScene,
+    updateScene,
+    deleteScene,
+    loadScene,
+    deactivateScene,
+    hasUnsavedChanges,
+  } = useScenes(currentMode, currentSceneFilters, graph);
+
+  // Create genre lookup map for displaying genre names in scenes
+  const genreLookup = useMemo(() => {
+    const map = new Map<string, Genre>();
+    genres.forEach((genre) => map.set(genre.id, genre));
+    return map;
+  }, [genres]);
 
   // Get hovered artist data for preview
   const hoveredArtistData = useMemo(() => {
@@ -1616,6 +1644,74 @@ function App() {
     }));
   }, []);
 
+  // Scene handlers
+  const handleLoadScene = useCallback((scene: Scene) => {
+    const loadedScene = loadScene(scene.id);
+    if (!loadedScene) return;
+
+    // Apply scene filters based on current mode
+    if (collectionMode) {
+      setCollectionFilters({
+        genres: loadedScene.filters.genres,
+        decades: loadedScene.filters.decades,
+      });
+    } else {
+      // Explore mode - set artist genre filter
+      if (loadedScene.filters.genres.length > 0) {
+        setArtistGenreFilter(loadedScene.filters.genres.map(id => ({ id } as Genre)));
+        setArtistFilterGenres(loadedScene.filters.genres.map(id => ({ id } as Genre)));
+        if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+      } else {
+        setArtistGenreFilter([]);
+        setArtistFilterGenres([]);
+      }
+      setSelectedDecades(loadedScene.filters.decades);
+    }
+
+    toast.success(`Loaded scene: ${loadedScene.name}`);
+  }, [loadScene, collectionMode, isBeforeArtistLoad]);
+
+  const handleSaveScene = useCallback(async (name: string) => {
+    try {
+      const scene = await saveScene(name);
+      toast.success(`Scene saved: ${scene.name}`);
+    } catch (error) {
+      toast.error('Failed to save scene');
+      console.error('Failed to save scene:', error);
+    }
+  }, [saveScene]);
+
+  const handleUpdateScene = useCallback(async (sceneId: string, name: string, updateFilters?: boolean) => {
+    try {
+      await updateScene(sceneId, { name, updateFilters });
+      toast.success('Scene updated');
+    } catch (error) {
+      toast.error('Failed to update scene');
+      console.error('Failed to update scene:', error);
+    }
+  }, [updateScene]);
+
+  const handleDeleteScene = useCallback(async (sceneId: string) => {
+    try {
+      await deleteScene(sceneId);
+      toast.success('Scene deleted');
+    } catch (error) {
+      toast.error('Failed to delete scene');
+      console.error('Failed to delete scene:', error);
+    }
+  }, [deleteScene]);
+
+  const handleAuthRequired = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'signup' } }));
+  }, []);
+
+  // Auto-deactivate scene when filters are manually changed
+  useEffect(() => {
+    if (activeScene && hasUnsavedChanges()) {
+      deactivateScene();
+    }
+  }, [currentSceneFilters, activeScene, hasUnsavedChanges, deactivateScene]);
+
   // Just filter the current nodes if selection is less than the current node count
   const artistNodeCountSelection = (value: number) => {
     if (value === artistNodeCount) return;
@@ -2005,24 +2101,22 @@ function App() {
               {/* separator */}
               <div className="bg-border w-full h-[2px] md:w-[1px] self-center md:h-6 shrink-0" />
               <motion.div className='flex gap-3' layout>
-                {/* <ButtonGroup>
-                <Button className='!pr-3 ' size='lg' variant='outline' >
-                      <Layers />
-                      <span className='sr-only'>Scenes</span>
-                      Scene
-                    </Button>
-                <Button className='!pl-2.5 !pr-2.5' size='lg' variant='outline' >
-                      <Plus />
-                      <span className='sr-only'>Add Scene</span>
-                    </Button>
-                  
-
-                </ButtonGroup> */}
-                 <Button className='!pr-3 ' size='lg' variant='outline' >
-                      <Layers />
-                      <span className='sr-only'>Scenes</span>
-                      Scene
-                    </Button>
+                <ScenesFilter
+                  scenes={scenes}
+                  activeSceneId={activeSceneId}
+                  currentFilters={currentSceneFilters}
+                  genreLookup={genreLookup}
+                  graphType={graph}
+                  mode={currentMode}
+                  isAuthenticated={!!userID}
+                  onLoadScene={handleLoadScene}
+                  onDeactivateScene={deactivateScene}
+                  onSaveScene={handleSaveScene}
+                  onUpdateScene={handleUpdateScene}
+                  onDeleteScene={handleDeleteScene}
+                  onAuthRequired={handleAuthRequired}
+                  hasUnsavedChanges={hasUnsavedChanges()}
+                />
                 <FindFilter
                   items={findOptions}
                   onSelect={handleFindSelect}
