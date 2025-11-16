@@ -1,6 +1,6 @@
 import './App.css'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, Settings, X } from 'lucide-react'
+import { ChevronDown, Divide, Settings, X, Layers, Plus } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -85,6 +85,8 @@ import SettingsOverlay, {ChangePasswordDialog} from '@/components/SettingsOverla
 import {submitFeedback} from "@/apis/feedbackApi";
 import {useNavigate} from "react-router";
 import { exportGraphAsImage } from "@/utils/exportGraph";
+import { ButtonGroup } from './components/ui/button-group';
+import { SplitButton, SplitButtonAction } from './components/ui/split-button';
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -2000,7 +2002,27 @@ function App() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <motion.div layout>
+              {/* separator */}
+              <div className="bg-border w-full h-[2px] md:w-[1px] self-center md:h-6 shrink-0" />
+              <motion.div className='flex gap-3' layout>
+                {/* <ButtonGroup>
+                <Button className='!pr-3 ' size='lg' variant='outline' >
+                      <Layers />
+                      <span className='sr-only'>Scenes</span>
+                      Scene
+                    </Button>
+                <Button className='!pl-2.5 !pr-2.5' size='lg' variant='outline' >
+                      <Plus />
+                      <span className='sr-only'>Add Scene</span>
+                    </Button>
+                  
+
+                </ButtonGroup> */}
+                 <Button className='!pr-3 ' size='lg' variant='outline' >
+                      <Layers />
+                      <span className='sr-only'>Scenes</span>
+                      Scene
+                    </Button>
                 <FindFilter
                   items={findOptions}
                   onSelect={handleFindSelect}

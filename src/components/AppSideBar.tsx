@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import React, { useCallback } from "react"
-import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog } from "lucide-react"
+import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog, Layers } from "lucide-react"
 import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
 import { Genre, GraphType } from "@/types"
 import RhizomeLogo from "@/components/RhizomeLogo"
