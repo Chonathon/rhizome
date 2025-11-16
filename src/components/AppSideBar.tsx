@@ -42,14 +42,16 @@ interface AppSidebarProps {
   resetAppState: () => void;
   onCollectionClick: () => void;
   onExploreClick: () => void;
+  onScenesClick: () => void;
   signedInUser: boolean;
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
   isCollectionMode: boolean;
   searchOpen?: boolean;
+  scenesCount?: number;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, onExploreClick, isCollectionMode, searchOpen }: AppSidebarProps) {
+export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, onExploreClick, onScenesClick, isCollectionMode, searchOpen, scenesCount }: AppSidebarProps) {
   const { setTheme } = useTheme()
   const { toggleSidebar, state } = useSidebar()
 
@@ -119,6 +121,20 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                         <Telescope />
                         {/* {!isCollectionMode ? <TelescopeFilled /> : <Telescope />} */}
                         <span>Explore</span>
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Scenes" size="xl">
+                      <button onClick={onScenesClick}>
+                        <Layers />
+                        <span>Scenes</span>
+                        {scenesCount !== undefined && scenesCount > 0 && (
+                          <span className="ml-auto text-xs text-muted-foreground">
+                            {scenesCount}
+                          </span>
+                        )}
                       </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

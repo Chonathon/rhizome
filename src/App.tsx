@@ -52,7 +52,7 @@ import { AppSidebar } from "@/components/AppSideBar"
 import { GenreInfo } from './components/GenreInfo';
 import GenresFilter from './components/GenresFilter';
 import DecadesFilter from './components/DecadesFilter';
-import ScenesFilter from './components/ScenesFilter';
+import ScenesDrawer from './components/ScenesDrawer';
 import { useScenes } from './hooks/useScenes';
 import {useTheme} from "next-themes";
 import {
@@ -275,12 +275,8 @@ function App() {
 
   const artistsAddedRef = useRef(0);
 
-  // Scenes hook for saving/loading filter configurations
-  // Determine current mode and filters based on collectionMode state
-  const currentMode = collectionMode ? 'collection' : 'explore';
-  const currentSceneFilters = collectionMode
-    ? collectionFilters
-    : { genres: artistGenreFilterIDs, decades: selectedDecades };
+  // Scenes hook for saving/loading filter configurations (explore mode only)
+  const exploreFilters = { genres: artistGenreFilterIDs, decades: selectedDecades };
 
   const {
     scenes,
@@ -292,7 +288,10 @@ function App() {
     loadScene,
     deactivateScene,
     hasUnsavedChanges,
-  } = useScenes(currentMode, currentSceneFilters, graph);
+  } = useScenes(exploreFilters, graph);
+
+  // Scenes drawer state
+  const [scenesDrawerOpen, setScenesDrawerOpen] = useState(false);
 
   // Create genre lookup map for displaying genre names in scenes
   const genreLookup = useMemo(() => {
@@ -1649,24 +1648,24 @@ function App() {
     const loadedScene = loadScene(scene.id);
     if (!loadedScene) return;
 
-    // Apply scene filters based on current mode
+    // Always switch to explore mode first
     if (collectionMode) {
-      setCollectionFilters({
-        genres: loadedScene.filters.genres,
-        decades: loadedScene.filters.decades,
-      });
-    } else {
-      // Explore mode - set artist genre filter
-      if (loadedScene.filters.genres.length > 0) {
-        setArtistGenreFilter(loadedScene.filters.genres.map(id => ({ id } as Genre)));
-        setArtistFilterGenres(loadedScene.filters.genres.map(id => ({ id } as Genre)));
-        if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-      } else {
-        setArtistGenreFilter([]);
-        setArtistFilterGenres([]);
-      }
-      setSelectedDecades(loadedScene.filters.decades);
+      setCollectionMode(false);
     }
+
+    // Apply scene filters to explore mode
+    if (loadedScene.filters.genres.length > 0) {
+      setArtistGenreFilter(loadedScene.filters.genres.map(id => ({ id } as Genre)));
+      setArtistFilterGenres(loadedScene.filters.genres.map(id => ({ id } as Genre)));
+      if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+    } else {
+      setArtistGenreFilter([]);
+      setArtistFilterGenres([]);
+    }
+    setSelectedDecades(loadedScene.filters.decades);
+
+    // Close drawer
+    setScenesDrawerOpen(false);
 
     toast.success(`Loaded scene: ${loadedScene.name}`);
   }, [loadScene, collectionMode, isBeforeArtistLoad]);
@@ -1710,7 +1709,7 @@ function App() {
     if (activeScene && hasUnsavedChanges()) {
       deactivateScene();
     }
-  }, [currentSceneFilters, activeScene, hasUnsavedChanges, deactivateScene]);
+  }, [exploreFilters, activeScene, hasUnsavedChanges, deactivateScene]);
 
   // Just filter the current nodes if selection is less than the current node count
   const artistNodeCountSelection = (value: number) => {
@@ -1954,9 +1953,11 @@ function App() {
         resetAppState={resetAppState}
         onCollectionClick={onCollectionClick}
         onExploreClick={onExploreClick}
+        onScenesClick={() => setScenesDrawerOpen(true)}
         signedInUser={!!userID}
         isCollectionMode={collectionMode}
         searchOpen={searchOpen}
+        scenesCount={scenes.length}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -2101,22 +2102,6 @@ function App() {
               {/* separator */}
               <div className="bg-border w-full h-[2px] md:w-[1px] self-center md:h-6 shrink-0" />
               <motion.div className='flex gap-3' layout>
-                <ScenesFilter
-                  scenes={scenes}
-                  activeSceneId={activeSceneId}
-                  currentFilters={currentSceneFilters}
-                  genreLookup={genreLookup}
-                  graphType={graph}
-                  mode={currentMode}
-                  isAuthenticated={!!userID}
-                  onLoadScene={handleLoadScene}
-                  onDeactivateScene={deactivateScene}
-                  onSaveScene={handleSaveScene}
-                  onUpdateScene={handleUpdateScene}
-                  onDeleteScene={handleDeleteScene}
-                  onAuthRequired={handleAuthRequired}
-                  hasUnsavedChanges={hasUnsavedChanges()}
-                />
                 <FindFilter
                   items={findOptions}
                   onSelect={handleFindSelect}
@@ -2397,6 +2382,22 @@ function App() {
           />
         </div>
       </AppSidebar>
+      <ScenesDrawer
+        open={scenesDrawerOpen}
+        onOpenChange={setScenesDrawerOpen}
+        scenes={scenes}
+        activeSceneId={activeSceneId}
+        currentFilters={exploreFilters}
+        genreLookup={genreLookup}
+        graphType={graph}
+        isAuthenticated={!!userID}
+        onLoadScene={handleLoadScene}
+        onSaveScene={handleSaveScene}
+        onUpdateScene={handleUpdateScene}
+        onDeleteScene={handleDeleteScene}
+        onAuthRequired={handleAuthRequired}
+        hasUnsavedChanges={hasUnsavedChanges()}
+      />
       <SettingsOverlay
         name={userName || ''}
         email={userEmail || ''}

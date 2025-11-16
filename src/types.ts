@@ -182,8 +182,3 @@ export interface Scene {
         decades: string[];
     };
 }
-
-export interface ActiveScenesPerMode {
-    explore: string | null;
-    collection: string | null;
-}

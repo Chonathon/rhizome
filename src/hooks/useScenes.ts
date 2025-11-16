@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Scene, ActiveScenesPerMode, GraphType } from '@/types';
+import { Scene, GraphType } from '@/types';
 
 const SCENES_STORAGE_KEY = 'userScenes';
-const ACTIVE_SCENES_STORAGE_KEY = 'activeScenesPerMode';
-
-type Mode = 'explore' | 'collection';
+const ACTIVE_SCENE_STORAGE_KEY = 'activeSceneId';
 
 interface CurrentFilters {
   genres: string[];
@@ -28,15 +26,6 @@ const isScene = (value: unknown): value is Scene => {
   );
 };
 
-const isActiveScenesPerMode = (value: unknown): value is ActiveScenesPerMode => {
-  if (!value || typeof value !== 'object') return false;
-  const active = value as ActiveScenesPerMode;
-  return (
-    (active.explore === null || typeof active.explore === 'string') &&
-    (active.collection === null || typeof active.collection === 'string')
-  );
-};
-
 // Parse helpers
 const parseStoredScenes = (raw: string | null): Scene[] => {
   if (!raw) return [];
@@ -50,15 +39,14 @@ const parseStoredScenes = (raw: string | null): Scene[] => {
   }
 };
 
-const parseActiveScenesPerMode = (raw: string | null): ActiveScenesPerMode => {
-  if (!raw) return { explore: null, collection: null };
+const parseActiveSceneId = (raw: string | null): string | null => {
+  if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
-    if (isActiveScenesPerMode(parsed)) return parsed;
-    return { explore: null, collection: null };
+    return typeof parsed === 'string' ? parsed : null;
   } catch (error) {
-    console.error('Failed to parse active scenes from localStorage', error);
-    return { explore: null, collection: null };
+    console.error('Failed to parse active scene ID from localStorage', error);
+    return null;
   }
 };
 
@@ -76,16 +64,15 @@ const filtersEqual = (a: CurrentFilters, b: CurrentFilters): boolean => {
 
 /**
  * Hook for managing saved filter scenes with localStorage persistence.
- * Scenes are universal across modes, but active scene state is tracked per mode.
+ * Scenes capture filter state and can be loaded to restore those filters.
+ * Only one scene can be active at a time (for explore mode).
  *
- * @param currentMode - Current mode ('explore' | 'collection')
  * @param currentFilters - Current filter state (genres, decades)
  * @param currentGraphType - Current graph type
  *
  * @returns Scene management functions and state
  */
 export function useScenes(
-  currentMode: Mode,
   currentFilters: CurrentFilters,
   currentGraphType: GraphType
 ) {
@@ -94,9 +81,9 @@ export function useScenes(
     return parseStoredScenes(localStorage.getItem(SCENES_STORAGE_KEY));
   });
 
-  const [activeScenesPerMode, setActiveScenesPerMode] = useState<ActiveScenesPerMode>(() => {
-    if (typeof window === 'undefined') return { explore: null, collection: null };
-    return parseActiveScenesPerMode(localStorage.getItem(ACTIVE_SCENES_STORAGE_KEY));
+  const [activeSceneId, setActiveSceneId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return parseActiveSceneId(localStorage.getItem(ACTIVE_SCENE_STORAGE_KEY));
   });
 
   // Sync scenes to localStorage
@@ -109,15 +96,15 @@ export function useScenes(
     }
   }, [scenes]);
 
-  // Sync active scenes to localStorage
+  // Sync active scene to localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem(ACTIVE_SCENES_STORAGE_KEY, JSON.stringify(activeScenesPerMode));
+      localStorage.setItem(ACTIVE_SCENE_STORAGE_KEY, JSON.stringify(activeSceneId));
     } catch (error) {
-      console.error('Failed to save active scenes to localStorage', error);
+      console.error('Failed to save active scene to localStorage', error);
     }
-  }, [activeScenesPerMode]);
+  }, [activeSceneId]);
 
   // Cross-tab sync for scenes
   useEffect(() => {
@@ -125,16 +112,13 @@ export function useScenes(
     const handleStorage = (event: StorageEvent) => {
       if (event.key === SCENES_STORAGE_KEY) {
         setScenes(parseStoredScenes(event.newValue));
-      } else if (event.key === ACTIVE_SCENES_STORAGE_KEY) {
-        setActiveScenesPerMode(parseActiveScenesPerMode(event.newValue));
+      } else if (event.key === ACTIVE_SCENE_STORAGE_KEY) {
+        setActiveSceneId(parseActiveSceneId(event.newValue));
       }
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
-
-  // Get active scene ID for current mode
-  const activeSceneId = activeScenesPerMode[currentMode];
 
   // Get active scene object
   const activeScene = scenes.find((s) => s.id === activeSceneId) || null;
@@ -156,15 +140,12 @@ export function useScenes(
 
       setScenes((prev) => [...prev, newScene]);
 
-      // Set as active for current mode
-      setActiveScenesPerMode((prev) => ({
-        ...prev,
-        [currentMode]: newScene.id,
-      }));
+      // Set as active scene
+      setActiveSceneId(newScene.id);
 
       return newScene;
     },
-    [currentMode, currentFilters, currentGraphType]
+    [currentFilters, currentGraphType]
   );
 
   // Update an existing scene
@@ -199,37 +180,28 @@ export function useScenes(
   const deleteScene = useCallback(async (sceneId: string): Promise<void> => {
     setScenes((prev) => prev.filter((scene) => scene.id !== sceneId));
 
-    // If this was the active scene in any mode, deactivate it
-    setActiveScenesPerMode((prev) => ({
-      explore: prev.explore === sceneId ? null : prev.explore,
-      collection: prev.collection === sceneId ? null : prev.collection,
-    }));
+    // If this was the active scene, deactivate it
+    setActiveSceneId((prev) => (prev === sceneId ? null : prev));
   }, []);
 
-  // Load a scene (apply its filters and set as active for current mode)
+  // Load a scene (apply its filters and set as active)
   const loadScene = useCallback(
     (sceneId: string): Scene | null => {
       const scene = scenes.find((s) => s.id === sceneId);
       if (!scene) return null;
 
-      // Set as active for current mode
-      setActiveScenesPerMode((prev) => ({
-        ...prev,
-        [currentMode]: sceneId,
-      }));
+      // Set as active scene
+      setActiveSceneId(sceneId);
 
       return scene;
     },
-    [scenes, currentMode]
+    [scenes]
   );
 
-  // Deactivate scene for current mode
+  // Deactivate the current scene
   const deactivateScene = useCallback(() => {
-    setActiveScenesPerMode((prev) => ({
-      ...prev,
-      [currentMode]: null,
-    }));
-  }, [currentMode]);
+    setActiveSceneId(null);
+  }, []);
 
   // Check if current filters match the active scene
   const hasUnsavedChanges = useCallback((): boolean => {
