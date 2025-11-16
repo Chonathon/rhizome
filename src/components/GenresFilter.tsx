@@ -128,21 +128,7 @@ export default function GenresFilter({
     }));
   };
 
-  // Debug logging
-  useEffect(() => {
-    if (topLevelGenres.length > 0) {
-      console.log('[GenresFilter Debug]');
-      console.log('  genreColorMap size:', genreColorMap?.size);
-      console.log('  topLevelGenres count:', topLevelGenres.length);
-      if (topLevelGenres.length > 0 && genreColorMap && genreColorMap.size > 0) {
-        const firstGenre = topLevelGenres[0];
-        console.log('  first genre:', { id: firstGenre.id, name: firstGenre.name });
-        console.log('  first genre color from map:', genreColorMap.get(firstGenre.id));
-        console.log('  sample colorMap keys:', Array.from(genreColorMap.keys()).slice(0, 5));
-      }
-    }
-  }, [topLevelGenres, genreColorMap]);
-
+  // When the search query changes, update open states accordingly.
   useEffect(() => {
     const q = query.trim().toLowerCase();
     childrenSearchResults.current = [];
