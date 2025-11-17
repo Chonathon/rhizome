@@ -15,6 +15,7 @@ import { useTheme } from "next-themes"
 import { useMediaQuery } from "react-responsive";
 import useSearch from "@/hooks/useSearch";
 import {SEARCH_DEBOUNCE_MS} from "@/constants";
+import { Kbd } from "./ui/kbd"
 
 interface SearchProps {
   onGenreSelect: (genre: Genre) => void;
@@ -28,6 +29,12 @@ interface SearchProps {
   setOpen: (open: boolean) => void;
   genreColorMap?: Map<string, string>;
   getArtistColor?: (artist: Artist) => string;
+  onArtistPlay?: (artist: Artist) => void;
+  onGenrePlay?: (genre: Genre) => void;
+  onArtistGoTo?: (artist: Artist) => void;
+  onGenreGoTo?: (genre: Genre) => void;
+  onArtistViewSimilar?: (artist: Artist) => void;
+  onGenreViewSimilar?: (genre: Genre) => void;
 }
 
 export function Search({
@@ -41,6 +48,12 @@ export function Search({
   setOpen,
   genreColorMap,
   getArtistColor,
+  onArtistPlay,
+  onGenrePlay,
+  onArtistGoTo,
+  onGenreGoTo,
+  onArtistViewSimilar,
+  onGenreViewSimilar,
 }: SearchProps) {
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [open, setOpen] = useState<boolean>(false);
@@ -123,7 +136,77 @@ export function Search({
     addRecentSelection(selection);
     setOpen(false);
   }
+
   const { theme, setTheme } = useTheme()
+
+  // Create a map for quick lookup of items by their value (id)
+  const itemsById = useMemo(() => {
+    const map = new Map<string, BasicNode>();
+    recentSelections.forEach(item => map.set(item.id, item));
+    filteredSearchableItems.forEach(item => map.set(item.id, item));
+    return map;
+  }, [recentSelections, filteredSearchableItems]);
+
+  // Intercept keyboard events in capture phase before cmdk processes them
+  const handleKeyDownCapture = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Enter') return;
+
+    const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+    const isAlt = e.altKey;
+    const isShift = e.shiftKey;
+
+    // Only handle modified Enter keys
+    if (!isCmdOrCtrl && !isAlt && !isShift) return;
+
+    // Prevent cmdk from handling this event
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Find the currently selected item in the DOM (cmdk adds data-selected="true")
+    const selectedElement = document.querySelector('[cmdk-item][data-selected="true"]');
+    if (!selectedElement) return;
+
+    // Get the value attribute (which is the item ID)
+    const selectedValue = selectedElement.getAttribute('data-value');
+    if (!selectedValue) return;
+
+    // Look up the item by ID
+    const selectedItem = itemsById.get(selectedValue);
+    if (!selectedItem) return;
+
+    const isGenreItem = isGenre(selectedItem);
+
+    // Cmd/Ctrl + Enter: Go To
+    if (isCmdOrCtrl && !isAlt && !isShift) {
+      if (isGenreItem && onGenreGoTo) {
+        onGenreGoTo(selectedItem as Genre);
+      } else if (!isGenreItem && onArtistGoTo) {
+        onArtistGoTo(selectedItem as Artist);
+      }
+      addRecentSelection(selectedItem);
+      setOpen(false);
+    }
+    // Alt + Enter: View Similar
+    else if (isAlt && !isCmdOrCtrl && !isShift) {
+      if (isGenreItem && onGenreViewSimilar) {
+        onGenreViewSimilar(selectedItem as Genre);
+      } else if (!isGenreItem && onArtistViewSimilar) {
+        onArtistViewSimilar(selectedItem as Artist);
+      }
+      addRecentSelection(selectedItem);
+      setOpen(false);
+    }
+    // Shift + Enter: Play
+    else if (isShift && !isCmdOrCtrl && !isAlt) {
+      if (isGenreItem && onGenrePlay) {
+        onGenrePlay(selectedItem as Genre);
+      } else if (!isGenreItem && onArtistPlay) {
+        onArtistPlay(selectedItem as Artist);
+      }
+      addRecentSelection(selectedItem);
+      setOpen(false);
+    }
+  };
 
   return (
     <>
@@ -165,6 +248,7 @@ export function Search({
           onOpenChange={setOpen}
           className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full"
       >
+        <div onKeyDownCapture={handleKeyDownCapture} className="flex flex-col h-full">
         <CommandInput
             placeholder="Search..."
             value={inputValue}
@@ -183,6 +267,7 @@ export function Search({
                 return (
                   <CommandItem
                     key={selection.id}
+                    value={selection.id}
                     onSelect={() => onItemSelect(selection)}
                     className="flex items-center justify-between gap-2"
                   >
@@ -235,6 +320,7 @@ export function Search({
                   return (
                     <CommandItem
                         key={`${item.id}-${i}`}
+                        value={item.id}
                         onSelect={() => onItemSelect(item)}
                         className="flex items-center justify-between gap-2"
                     >
@@ -255,6 +341,18 @@ export function Search({
               </CommandGroup>
           )}
         </CommandList>
+        {!isMobile && <div className="w-full justify-end p-3 flex gap-3 bg-background border-t">
+            <span className="text-xs font-medium text-muted-foreground">Preview <Kbd>⏎</Kbd>
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">Go To <Kbd>⌘⏎</Kbd>
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">View Similar <Kbd>⌥⏎</Kbd>
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">Play <Kbd>⇧⏎</Kbd>
+            </span>
+
+        </div>}
+        </div>
       </CommandDialog>
     </>
   )

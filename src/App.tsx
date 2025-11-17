@@ -2259,6 +2259,12 @@ function App() {
                     setOpen={setSearchOpen}
                     genreColorMap={genreColorMap}
                     getArtistColor={getArtistColor}
+                    onArtistPlay={onPlayArtist}
+                    onGenrePlay={onPlayGenre}
+                    onArtistGoTo={focusArtistInCurrentView}
+                    onGenreGoTo={focusGenreInCurrentView}
+                    onArtistViewSimilar={createSimilarArtistGraph}
+                    onGenreViewSimilar={focusGenreInCurrentView}
                   />
 
                 </motion.div>
