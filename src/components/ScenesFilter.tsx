@@ -126,7 +126,7 @@ export default function ScenesFilter({
             <span className={hasActiveScene ? '' : 'sr-only'}>
               {buttonText}
             </span>
-            {hasActiveScene ? (
+            {/* {hasActiveScene ? (
               <Button
                 asChild
                 size="icon"
@@ -148,9 +148,9 @@ export default function ScenesFilter({
                   <X className="h-4 w-4" />
                 </span>
               </Button>
-            ) : (
+            ) : ( */}
               <ChevronDown />
-            )}
+            {/* )} */}
           </Button>
         }
         className="p-0 overflow-hidden"
