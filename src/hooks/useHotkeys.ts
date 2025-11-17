@@ -9,6 +9,7 @@ export type UseZoomHotkeysOptions = {
 
 export type UseHotkeysReturn = {
   isCommandHeld: boolean;
+  isOptionHeld: boolean;
 };
 
 function isEditableTarget(el: EventTarget | null) {
@@ -21,6 +22,7 @@ function isEditableTarget(el: EventTarget | null) {
 export default function useHotkeys(opts: UseZoomHotkeysOptions, deps: any[] = []): UseHotkeysReturn {
   const { onZoomIn, onZoomOut, onOpenFind, enabled = true } = opts;
   const [isCommandHeld, setIsCommandHeld] = useState(false);
+  const [isOptionHeld, setIsOptionHeld] = useState(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -29,6 +31,10 @@ export default function useHotkeys(opts: UseZoomHotkeysOptions, deps: any[] = []
       // Track command/ctrl key state
       if (e.metaKey || e.ctrlKey) {
         setIsCommandHeld(true);
+      }
+      // Track option/alt key state
+      if (e.altKey) {
+        setIsOptionHeld(true);
       }
 
       if (isEditableTarget(e.target)) return;
@@ -60,11 +66,15 @@ export default function useHotkeys(opts: UseZoomHotkeysOptions, deps: any[] = []
       if (e.key === 'Meta' || e.key === 'Control') {
         setIsCommandHeld(false);
       }
+      if (e.key === 'Alt') {
+        setIsOptionHeld(false);
+      }
     };
 
     // Handle focus loss - reset state when window loses focus
     const handleBlur = () => {
       setIsCommandHeld(false);
+      setIsOptionHeld(false);
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -79,5 +89,5 @@ export default function useHotkeys(opts: UseZoomHotkeysOptions, deps: any[] = []
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
-  return { isCommandHeld };
+  return { isCommandHeld, isOptionHeld };
 }
