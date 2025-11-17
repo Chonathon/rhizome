@@ -2101,7 +2101,7 @@ function App() {
               {/* separator */}
               <div className="bg-border w-full h-[2px] md:w-[1px] self-center md:h-6 shrink-0" />
               <motion.div className='flex gap-3' layout>
-                <ScenesFilter
+                {graph !== 'genres' && <ScenesFilter
                   scenes={scenes}
                   activeSceneId={activeSceneId}
                   currentFilters={currentSceneFilters}
@@ -2116,7 +2116,7 @@ function App() {
                   onDeleteScene={handleDeleteScene}
                   onAuthRequired={handleAuthRequired}
                   hasUnsavedChanges={hasUnsavedChanges()}
-                />
+                />}
                 <FindFilter
                   items={findOptions}
                   onSelect={handleFindSelect}
