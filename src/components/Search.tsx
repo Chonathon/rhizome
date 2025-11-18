@@ -3,7 +3,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { Badge } from "@/components/ui/badge"
 import { BadgeIndicator } from "@/components/BadgeIndicator"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
-import { X, Search as SearchIcon } from "lucide-react"
+import { X, Search as SearchIcon, CirclePlay } from "lucide-react"
 import { motion } from "framer-motion";
 import { isGenre } from "@/lib/utils"
 import { Artist, BasicNode, Genre, GraphType } from "@/types";
@@ -59,6 +59,8 @@ export function Search({
   // const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");
   const [query, setQuery] = useState("");
+  const [shiftHeld, setShiftHeld] = useState(false);
+  const [selectedValue, setSelectedValue] = useState<string>("");
   const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
   const { searchResults, searchLoading, searchError } = useSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -72,6 +74,28 @@ export function Search({
       return () => clearTimeout(timeout);
     }
   }, [inputValue, SEARCH_DEBOUNCE_MS]);
+
+  // Track shift key state
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        setShiftHeld(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        setShiftHeld(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
 
   // Filter the searchable items. This is problematic with bands of the same name, for now it just uses the first one in the results
@@ -247,6 +271,8 @@ export function Search({
           open={open}
           onOpenChange={setOpen}
           shouldFilter={false}
+          value={selectedValue}
+          onValueChange={setSelectedValue}
           className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full"
       >
         <div onKeyDownCapture={handleKeyDownCapture} className="flex flex-col h-full">
@@ -273,13 +299,17 @@ export function Search({
                         className="flex items-center justify-between gap-2"
                     >
                       <div className="flex min-w-0 items-center gap-2">
-                        <BadgeIndicator
-                          type={meta.type}
-                          name={item.name}
-                          color={meta.color}
-                          imageUrl={meta.imageUrl}
-                          className={cn('flex-shrink-0', isGenreItem ? 'size-2' : undefined)}
-                        />
+                        {shiftHeld && selectedValue === item.id ? (
+                          <CirclePlay className="size-4 flex-shrink-0" />
+                        ) : (
+                          <BadgeIndicator
+                            type={meta.type}
+                            name={item.name}
+                            color={meta.color}
+                            imageUrl={meta.imageUrl}
+                            className={cn('flex-shrink-0', isGenreItem ? 'size-2' : undefined)}
+                          />
+                        )}
                         <span className="truncate">{item.name}</span>
                       </div>
                       <Badge variant="secondary">{meta.type}</Badge>
@@ -303,15 +333,19 @@ export function Search({
                     className="flex items-center justify-between gap-2"
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
-                        <BadgeIndicator
-                          type={meta.type}
-                          name={selection.name}
-                          color={meta.color}
-                          imageUrl={meta.imageUrl}
-                          className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
-                        />
-                      </div>
+                      {shiftHeld && selectedValue === selection.id ? (
+                        <CirclePlay className="size-4 flex-shrink-0" />
+                      ) : (
+                        <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
+                          <BadgeIndicator
+                            type={meta.type}
+                            name={selection.name}
+                            color={meta.color}
+                            imageUrl={meta.imageUrl}
+                            className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
+                          />
+                        </div>
+                      )}
                       <span className="truncate">{selection.name}</span>
                     </div>
                     <Button
