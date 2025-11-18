@@ -259,7 +259,7 @@ export function Search({
         <CommandList className="max-h-none flex-1 overflow-y-auto">
           {searchLoading && <Loading />}
           <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>
-          {inputValue && (
+          {inputValue && searchResults.length > 0 && (
               <CommandGroup heading="Search Results">
                 {filteredSearchableItems.map((item, i) => {
                   const meta = getIndicatorMeta(item);
@@ -345,6 +345,7 @@ export function Search({
           )}
        
         </CommandList>
+        {/* Shortcut Legend */}
         {!isMobile && <div className="w-full justify-end p-3 flex gap-3 bg-background border-t">
             <span className="text-xs font-medium text-muted-foreground">Preview <Kbd>⏎</Kbd>
             </span>
