@@ -60,6 +60,8 @@ export function Search({
   const [inputValue, setInputValue] = useState<string>("");
   const [query, setQuery] = useState("");
   const [shiftHeld, setShiftHeld] = useState(false);
+  const [cmdCtrlHeld, setCmdCtrlHeld] = useState(false);
+  const [altHeld, setAltHeld] = useState(false);
   const [selectedValue, setSelectedValue] = useState<string>("");
   const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
   const { searchResults, searchLoading, searchError } = useSearch(query);
@@ -75,16 +77,28 @@ export function Search({
     }
   }, [inputValue, SEARCH_DEBOUNCE_MS]);
 
-  // Track shift key state
+  // Track modifier key states
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Shift') {
         setShiftHeld(true);
       }
+      if (e.key === 'Meta' || e.key === 'Control') {
+        setCmdCtrlHeld(true);
+      }
+      if (e.key === 'Alt') {
+        setAltHeld(true);
+      }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Shift') {
         setShiftHeld(false);
+      }
+      if (e.key === 'Meta' || e.key === 'Control') {
+        setCmdCtrlHeld(false);
+      }
+      if (e.key === 'Alt') {
+        setAltHeld(false);
       }
     };
 
@@ -160,6 +174,23 @@ export function Search({
     addRecentSelection(selection);
     setOpen(false);
   }
+
+  const getActionHint = (item: BasicNode, isSelected: boolean) => {
+    if (!isSelected) return null;
+
+    const isGenreItem = isGenre(item);
+
+    // Only show one hint at a time, prioritize in order: Cmd/Ctrl, Alt, Shift
+    if (cmdCtrlHeld && !altHeld && !shiftHeld) {
+      return isGenreItem ? `Go to ${item.name}` : 'Explore Related Genres';
+    } else if (altHeld && !cmdCtrlHeld && !shiftHeld) {
+      return 'View Similar';
+    } else if (shiftHeld && !cmdCtrlHeld && !altHeld) {
+      return `Play ${item.name}`;
+    }
+
+    return null;
+  };
 
   const { theme, setTheme } = useTheme()
 
@@ -312,7 +343,14 @@ export function Search({
                         )}
                         <span className="truncate">{item.name}</span>
                       </div>
-                      <Badge variant="secondary">{meta.type}</Badge>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {getActionHint(item, selectedValue === item.id) && (
+                          <span className="text-xs text-muted-foreground">
+                            {getActionHint(item, selectedValue === item.id)}
+                          </span>
+                        )}
+                        <Badge variant="secondary">{meta.type}</Badge>
+                      </div>
                     </CommandItem>
                   );
                 })}
@@ -348,17 +386,24 @@ export function Search({
                       )}
                       <span className="truncate">{selection.name}</span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeRecentSelection(selection.id);
-                      }}
-                      className="-m-2"
-                    >
-                      <X />
-                    </Button>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {getActionHint(selection, selectedValue === selection.id) && (
+                        <span className="text-xs text-muted-foreground">
+                          {getActionHint(selection, selectedValue === selection.id)}
+                        </span>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeRecentSelection(selection.id);
+                        }}
+                        className="-m-2"
+                      >
+                        <X />
+                      </Button>
+                    </div>
                   </CommandItem>
                 );
               })}
