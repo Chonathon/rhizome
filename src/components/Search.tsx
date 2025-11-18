@@ -84,7 +84,7 @@ export function Search({
       return true;
     }
     )},
-      [genres, searchResults, currentArtists]
+      [genres, searchResults, currentArtists, inputValue]
   );
 
   const isArtistWithDetail = (node: BasicNode): node is Artist => {
@@ -246,6 +246,7 @@ export function Search({
             : filteredSearchableItems.length}
           open={open}
           onOpenChange={setOpen}
+          shouldFilter={false}
           className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full"
       >
         <div onKeyDownCapture={handleKeyDownCapture} className="flex flex-col h-full">
@@ -258,7 +259,37 @@ export function Search({
         <CommandList className="max-h-none flex-1 overflow-y-auto">
           {searchLoading && <Loading />}
           <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>
-          {recentSelections.length > 0 && (
+          {inputValue && (
+              <CommandGroup heading="Search Results">
+                {filteredSearchableItems.map((item, i) => {
+                  const meta = getIndicatorMeta(item);
+                  const isGenreItem = meta.type === 'genre';
+
+                  return (
+                    <CommandItem
+                        key={`${item.id}-${i}`}
+                        value={item.id}
+                        onSelect={() => onItemSelect(item)}
+                        className="flex items-center justify-between gap-2"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <BadgeIndicator
+                          type={meta.type}
+                          name={item.name}
+                          color={meta.color}
+                          imageUrl={meta.imageUrl}
+                          className={cn('flex-shrink-0', isGenreItem ? 'size-2' : undefined)}
+                        />
+                        <span className="truncate">{item.name}</span>
+                      </div>
+                      <Badge variant="secondary">{meta.type}</Badge>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+          )}
+
+          {!inputValue && recentSelections.length > 0 && (
             <CommandGroup heading="Recent Selections">
               {recentSelections.map((selection) => {
                 const meta = getIndicatorMeta(selection);
@@ -299,6 +330,7 @@ export function Search({
               })}
             </CommandGroup>
           )}
+          {!inputValue && (
           <CommandGroup heading="Actions">
             <CommandItem
               key={"toggle-theme"}
@@ -310,36 +342,8 @@ export function Search({
               {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
             </CommandItem>
           </CommandGroup>
-          {/* {recentSelections.length > 0 && <CommandSeparator />} */}
-          {inputValue && (
-              <CommandGroup heading="All Results">
-                {filteredSearchableItems.map((item, i) => {
-                  const meta = getIndicatorMeta(item);
-                  const isGenreItem = meta.type === 'genre';
-
-                  return (
-                    <CommandItem
-                        key={`${item.id}-${i}`}
-                        value={item.id}
-                        onSelect={() => onItemSelect(item)}
-                        className="flex items-center justify-between gap-2"
-                    >
-                      <div className="flex min-w-0 items-center gap-2">
-                        <BadgeIndicator
-                          type={meta.type}
-                          name={item.name}
-                          color={meta.color}
-                          imageUrl={meta.imageUrl}
-                          className={cn('flex-shrink-0', isGenreItem ? 'size-2' : undefined)}
-                        />
-                        <span className="truncate">{item.name}</span>
-                      </div>
-                      <Badge variant="secondary">{meta.type}</Badge>
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
           )}
+       
         </CommandList>
         {!isMobile && <div className="w-full justify-end p-3 flex gap-3 bg-background border-t">
             <span className="text-xs font-medium text-muted-foreground">Preview <Kbd>⏎</Kbd>
