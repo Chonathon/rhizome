@@ -2261,10 +2261,25 @@ function App() {
                     getArtistColor={getArtistColor}
                     onArtistPlay={onPlayArtist}
                     onGenrePlay={onPlayGenre}
-                    onArtistGoTo={focusArtistInCurrentView}
-                    onGenreGoTo={focusGenreInCurrentView}
-                    onArtistViewSimilar={createSimilarArtistGraph}
-                    onGenreViewSimilar={focusGenreInCurrentView}
+                    onArtistGoTo={(artist) => {
+                      // For artists: Explore Related Genres (since artist might not be in current view)
+                      focusArtistRelatedGenres(artist);
+                      setArtistInfoToShow(artist);
+                      setShowArtistCard(true);
+                    }}
+                    onGenreGoTo={(genre) => {
+                      // For genres: Go To (switches to genres view and focuses the genre)
+                      focusGenreInCurrentView(genre, { forceRefocus: true });
+                    }}
+                    onArtistViewSimilar={async (artist) => {
+                      await createSimilarArtistGraph(artist);
+                      setArtistInfoToShow(artist);
+                      setShowArtistCard(true);
+                    }}
+                    onGenreViewSimilar={(genre) => {
+                      // For genres: View Similar also navigates to genres view
+                      focusGenreInCurrentView(genre, { forceRefocus: true });
+                    }}
                   />
 
                 </motion.div>

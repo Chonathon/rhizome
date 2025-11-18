@@ -348,7 +348,7 @@ export function Search({
         {!isMobile && <div className="w-full justify-end p-3 flex gap-3 bg-background border-t">
             <span className="text-xs font-medium text-muted-foreground">Preview <Kbd>⏎</Kbd>
             </span>
-            <span className="text-xs font-medium text-muted-foreground">Go To <Kbd>⌘⏎</Kbd>
+            <span className="text-xs font-medium text-muted-foreground">Go To / Explore Related Genres <Kbd>⌘⏎</Kbd>
             </span>
             <span className="text-xs font-medium text-muted-foreground">View Similar <Kbd>⌥⏎</Kbd>
             </span>
