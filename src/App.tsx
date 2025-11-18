@@ -517,11 +517,11 @@ function App() {
       const nodeCount = genres.length;
       onGenreNodeCountChange(nodeCount);
       const colorMap = buildGenreColorMap(genres, genreRoots);
-      console.log('[App Debug] Building genreColorMap');
-      console.log('  genres.length:', genres.length);
-      console.log('  genreRoots:', genreRoots);
-      console.log('  colorMap.size:', colorMap.size);
-      console.log('  first 5 colorMap entries:', Array.from(colorMap.entries()).slice(0, 5));
+      // console.log('[App Debug] Building genreColorMap');
+      // console.log('  genres.length:', genres.length);
+      // console.log('  genreRoots:', genreRoots);
+      // console.log('  colorMap.size:', colorMap.size);
+      // console.log('  first 5 colorMap entries:', Array.from(colorMap.entries()).slice(0, 5));
       setGenreColorMap(colorMap);
     }
   }, [genres, genreLinks, genreRoots]);
