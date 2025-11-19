@@ -82,7 +82,7 @@ export function GenreInfo({
   const [desktopExpanded, setDesktopExpanded] = useState(false)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null)
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string; artist: Artist } | null>(null)
 
 
   const onDismiss = () => {
@@ -296,7 +296,7 @@ export function GenreInfo({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setLightboxImage({ src: fixWikiImageURL(artist.image as string), alt: artist.name });
+                                  setLightboxImage({ src: fixWikiImageURL(artist.image as string), alt: artist.name, artist });
                                   setLightboxOpen(true);
                                 }}
                                 title="Click to enlarge"
@@ -488,7 +488,7 @@ export function GenreInfo({
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      setLightboxImage({ src: artist.image as string, alt: artist.name });
+                                      setLightboxImage({ src: artist.image as string, alt: artist.name, artist });
                                       setLightboxOpen(true);
                                     }}
                                     title="Tap to enlarge"
@@ -642,6 +642,21 @@ export function GenreInfo({
                   alt={lightboxImage.alt}
                   open={lightboxOpen}
                   onOpenChange={setLightboxOpen}
+                  link={
+                    onTopArtistClick ? (
+                      <ArtistBadge
+                        name={lightboxImage.artist.name}
+                        imageUrl={fixWikiImageURL(lightboxImage.artist.image as string)}
+                        genreColor={getArtistColor(lightboxImage.artist)}
+                        onClick={() => {
+                          onTopArtistClick(lightboxImage.artist);
+                          setLightboxOpen(false);
+                        }}
+                        variant='secondary'
+                        title={`Go to ${lightboxImage.artist.name}`}
+                      />
+                    ) : undefined
+                  }
                 />
               )}
             </div>

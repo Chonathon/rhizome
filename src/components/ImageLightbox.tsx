@@ -28,7 +28,7 @@ export function ImageLightbox({ src, alt, open, onOpenChange, link }: ImageLight
             onClick={(e) => e.stopPropagation()}
           />
         </div>
-          <div className="h-full w-full flex justify-end items-end bg-white ">{link}</div>
+          <div className="w-full flex  justify-center">{link}</div>
       </DialogContent>
     </Dialog>
   );

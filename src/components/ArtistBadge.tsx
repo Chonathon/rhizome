@@ -10,6 +10,7 @@ interface ArtistBadgeProps {
   genreColor?: string;
   title?: string;
   icon?: LucideIcon;
+  variant?: "outline" | "default" | "secondary" | "destructive";
 }
 
 export default function ArtistBadge({
@@ -19,9 +20,10 @@ export default function ArtistBadge({
   genreColor,
   title,
   icon,
+  variant = "outline",
 }: ArtistBadgeProps) {
   return (
-    <Badge asChild variant="outline" title={title ?? `Go to ${name}`}>
+    <Badge asChild variant={variant} title={title ?? `Go to ${name}`}>
       <Button
         variant="ghost"
         size="sm"
