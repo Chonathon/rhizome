@@ -501,13 +501,13 @@ export function GenreInfo({
                                       loading="lazy"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
-                                  </button>
-                                  <button
-                                    onClick={() => onTopArtistClick?.(artist)}
-                                    title={`Go to ${artist.name}`}
-                                    className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm hover:underline z-10"
+                                  <span
+                                    // onClick={() => onTopArtistClick?.(artist)}
+                                    // title={`Go to ${artist.name}`}
+                                    className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm z-10"
                                   >
                                     {artist.name}
+                                  </span>
                                   </button>
                                 </div>
                               )
