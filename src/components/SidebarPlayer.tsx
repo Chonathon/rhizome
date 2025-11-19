@@ -252,6 +252,10 @@ export default function SidebarPlayer({
       if (typeof d === 'number') setDuration(d);
       const idx = playerRef.current?.getPlaylistIndex?.();
       if (typeof idx === 'number') setCurrentIndex(idx);
+      // Also sync isPlaying state with actual player state
+      const playerState = playerRef.current.getPlayerState?.();
+      const actuallyPlaying = playerState === 1 || playerState === 3;
+      setIsPlaying(actuallyPlaying);
       try {
         const data = playerRef.current?.getVideoData?.();
         if (data && typeof data.title === 'string') setVideoTitle(data.title);
@@ -373,8 +377,17 @@ export default function SidebarPlayer({
 
   const togglePlay = () => {
     if (!playerRef.current) return;
-    if (isPlaying) playerRef.current.pauseVideo?.();
-    else playerRef.current.playVideo?.();
+    // Check actual player state to handle cases where React state hasn't synced yet
+    const playerState = playerRef.current.getPlayerState?.();
+    // playerState: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued)
+    const actuallyPlaying = playerState === 1 || playerState === 3;
+    if (actuallyPlaying) {
+      playerRef.current.pauseVideo?.();
+      setIsPlaying(false);
+    } else {
+      playerRef.current.playVideo?.();
+      setIsPlaying(true);
+    }
   };
 
   const next = () => {
