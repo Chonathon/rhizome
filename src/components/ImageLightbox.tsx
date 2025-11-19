@@ -12,7 +12,7 @@ interface ImageLightboxProps {
 export function ImageLightbox({ src, alt, open, onOpenChange, link }: ImageLightboxProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-transparent w-fit max-w-[95vw] py-6 shadow-none px-0 max-h-[95vh] border-0 ">
+      <DialogContent className="bg-transparent w-full md:w-fit max-w-[95vw] py-6 shadow-none px-0 max-h-[95vh] border-0 ">
         {/* <button
           onClick={() => onOpenChange(false)}
           className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -20,7 +20,7 @@ export function ImageLightbox({ src, alt, open, onOpenChange, link }: ImageLight
         >
           <X className="h-6 w-6 text-white" />
         </button> */}
-        <div className="flex items-center justify-center w-full h-full p-4">
+        <div className="flex items-center justify-center w-full h-full p-2 md:p-4">
           <img
             src={src}
             alt={alt}
@@ -28,7 +28,7 @@ export function ImageLightbox({ src, alt, open, onOpenChange, link }: ImageLight
             onClick={(e) => e.stopPropagation()}
           />
         </div>
-          <div className="w-full flex  justify-center">{link}</div>
+          <div className="flex justify-center">{link}</div>
       </DialogContent>
     </Dialog>
   );

@@ -652,7 +652,7 @@ export function GenreInfo({
                           onTopArtistClick(lightboxImage.artist);
                           setLightboxOpen(false);
                         }}
-                        variant='secondary'
+                        variant='outline'
                         title={`Go to ${lightboxImage.artist.name}`}
                       />
                     ) : undefined
