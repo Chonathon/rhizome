@@ -6,9 +6,10 @@ interface ImageLightboxProps {
   alt: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  link: React.ReactNode;
 }
 
-export function ImageLightbox({ src, alt, open, onOpenChange }: ImageLightboxProps) {
+export function ImageLightbox({ src, alt, open, onOpenChange, link }: ImageLightboxProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-transparent w-fit max-w-[95vw] py-6 shadow-none px-0 max-h-[95vh] border-0 ">
@@ -27,6 +28,7 @@ export function ImageLightbox({ src, alt, open, onOpenChange }: ImageLightboxPro
             onClick={(e) => e.stopPropagation()}
           />
         </div>
+          <div className="h-full w-full flex justify-end items-end bg-white ">{link}</div>
       </DialogContent>
     </Dialog>
   );

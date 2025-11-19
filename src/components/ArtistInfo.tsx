@@ -565,6 +565,7 @@ export function ArtistInfo({
                   alt={selectedArtist?.name ?? "Artist image"}
                   open={lightboxOpen}
                   onOpenChange={setLightboxOpen}
+                  link={<div><a href={imageUrl} target="_blank" rel="noopener noreferrer" className="underline">Open image in new tab</a></div>}
                 />
               )}
               </div>
