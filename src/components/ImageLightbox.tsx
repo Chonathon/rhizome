@@ -6,7 +6,7 @@ interface ImageLightboxProps {
   alt: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  link: React.ReactNode;
+  link?: React.ReactNode;
 }
 
 export function ImageLightbox({ src, alt, open, onOpenChange, link }: ImageLightboxProps) {
