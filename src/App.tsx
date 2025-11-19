@@ -158,6 +158,7 @@ function App() {
   const [cursorHoveredArtist, setCursorHoveredArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
   const [previewGenre, setPreviewGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
   const [previewArtist, setPreviewArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [optionHoverSelectedId, setOptionHoverSelectedId] = useState<string | null>(null);
   const [previewModeActive, setPreviewModeActive] = useState(false);
   const previewModeTimeoutRef = useRef<number | null>(null);
   const [genreInfoToShow, setGenreInfoToShow] = useState<Genre | undefined>(undefined);
@@ -390,7 +391,7 @@ function App() {
   }, [findPanelDisabled, isFindFilterOpen]);
 
   // Global hotkeys (+, -, /) and command key tracking
-  const { isCommandHeld } = useHotkeys({
+  const { isCommandHeld, isOptionHeld } = useHotkeys({
     onZoomIn: () => {
       const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
       ref?.zoomIn?.();
@@ -965,6 +966,17 @@ function App() {
       setPreviewArtist(null);
     }
   }, [isCommandHeld, cursorHoveredArtist, preferences?.enableGraphCards, preferences?.previewTrigger]);
+
+  // Option + hover: temporarily select hovered node to show its connections
+  useEffect(() => {
+    if (isOptionHeld && cursorHoveredArtist) {
+      setOptionHoverSelectedId(cursorHoveredArtist.id);
+    } else if (isOptionHeld && cursorHoveredGenre) {
+      setOptionHoverSelectedId(cursorHoveredGenre.id);
+    } else {
+      setOptionHoverSelectedId(null);
+    }
+  }, [isOptionHeld, cursorHoveredArtist, cursorHoveredGenre]);
 
   // Activate preview mode when a card is shown
   const handlePreviewShown = () => {
@@ -2033,6 +2045,7 @@ function App() {
                   onNodeClick={onGenreNodeClick}
                   onNodeHover={handleGenreHover}
                   selectedGenreId={selectedGenres[0]?.id}
+                  hoverSelectedId={optionHoverSelectedId}
                   colorMap={genreColorMap}
                   dag={dagMode}
                   clusterModes={genreClusterMode}
@@ -2053,6 +2066,7 @@ function App() {
                       setCursorHoveredArtist(id && position ? { id, position } : null);
                   }}
                   selectedArtistId={selectedArtist?.id}
+                  hoverSelectedId={optionHoverSelectedId}
                   computeArtistColor={getArtistColor}
                   autoFocus={autoFocusGraph}
                   show={(graph === "artists" || graph === "similarArtists") && !artistsError}

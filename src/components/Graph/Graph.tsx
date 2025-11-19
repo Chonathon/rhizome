@@ -77,6 +77,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   width?: number;
   height?: number;
   selectedId?: string;
+  hoverSelectedId?: string | null;
   dagMode?: boolean;
   autoFocus?: boolean;
   onNodeClick?: (node: T) => void;
@@ -125,6 +126,7 @@ const Graph = forwardRef(function GraphInner<
     width,
     height,
     selectedId,
+    hoverSelectedId,
     dagMode = false,
     autoFocus = true,
     onNodeClick,
@@ -229,8 +231,9 @@ const Graph = forwardRef(function GraphInner<
 
   // Pre-calculate values that are constant across all nodes during a render
   const defaultColor = resolvedTheme === "dark" ? "#8a80ff" : "#4a4a4a";
-  const hasSelection = !!selectedId;
-  const selectedNeighbors = hasSelection && selectedId ? neighborsById.get(selectedId) : undefined;
+  const effectiveSelectedId = hoverSelectedId || selectedId;
+  const hasSelection = !!effectiveSelectedId;
+  const selectedNeighbors = hasSelection && effectiveSelectedId ? neighborsById.get(effectiveSelectedId) : undefined;
 
   useEffect(() => {
     if (preparedDataRef.current !== preparedData) {
@@ -444,10 +447,10 @@ const Graph = forwardRef(function GraphInner<
             typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
           const base = source ? colorById.get(String(source)) : undefined;
           const fallback = resolvedTheme === "dark" ? "#ffffff" : "#000000";
-          const selected = !!selectedId && (source === selectedId || target === selectedId);
+          const selected = !!effectiveSelectedId && (source === effectiveSelectedId || target === effectiveSelectedId);
 
           // Calculate base opacity (what it would be with normal dimming)
-          const baseOpacity = selectedId ? (selected ? 0xcc : 0x30) : 0x80;
+          const baseOpacity = effectiveSelectedId ? (selected ? 0xcc : 0x30) : 0x80;
           const undimmedOpacity = 0x80;
 
           // Interpolate between base and undimmed opacity
@@ -458,12 +461,12 @@ const Graph = forwardRef(function GraphInner<
           return `${base ?? fallback}${opacityHex}`;
         }}
         linkWidth={(link) => {
-          if (!selectedId) return 1;
+          if (!effectiveSelectedId) return 1;
           const source =
             typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
           const target =
             typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
-          return source === selectedId || target === selectedId ? 2.5 : 0.6;
+          return source === effectiveSelectedId || target === effectiveSelectedId ? 2.5 : 0.6;
         }}
         linkCurvature={dagMode ? 0 : 0.5}
         onZoom={({ k }) => {
@@ -484,7 +487,8 @@ const Graph = forwardRef(function GraphInner<
           const y = node.y ?? 0;
           const radius = node.radius;
           const accent = colorById.get(node.id) ?? defaultColor;
-          const isSelected = selectedId === node.id;
+          const isSelected = effectiveSelectedId === node.id;
+          const isClickSelected = selectedId === node.id;
           const isNeighbor = hasSelection ? selectedNeighbors?.has(node.id) ?? false : false;
           const isHovered = hoveredId === node.id;
 
@@ -519,8 +523,8 @@ const Graph = forwardRef(function GraphInner<
           // Render node
           renderNode(renderContext);
 
-          // Render selection ring if selected
-          if (isSelected) {
+          // Render selection ring only for click-based selection (not hover-based)
+          if (isClickSelected) {
             renderSelection(renderContext);
           }
 
