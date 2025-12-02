@@ -11,6 +11,7 @@ const useAuth = () => {
     const [preferences, setPreferences] = useState<Preferences>();
     const [likedArtists, setLikedArtists] = useState<string[]>([]);
     const [isSocialUser, setIsSocialUser] = useState<boolean | undefined>();
+    const [userAccess, setUserAccess] = useState<string | undefined>();
 
     const {
         user,
@@ -24,6 +25,7 @@ const useAuth = () => {
         changePassword,
         deleteUser,
         updateUser,
+        updateUserAppAccess,
         validSession,
         forgotPassword,
         resetPassword,
@@ -37,6 +39,7 @@ const useAuth = () => {
         setPreferences(user ? user.preferences : undefined);
         setLikedArtists(user && user.liked ? user.liked.map(l => l.id) : []);
         setIsSocialUser(user ? user.socialUser : false);
+        setUserAccess(user ? user.appAccess : undefined)
     }, [user]);
 
     const likeArtist = async (artistID: string) => {
@@ -84,6 +87,7 @@ const useAuth = () => {
         preferences,
         likedArtists,
         isSocialUser,
+        userAccess,
         signIn,
         signInSocial,
         signUp,
@@ -92,6 +96,7 @@ const useAuth = () => {
         changePassword,
         deleteUser,
         updateUser,
+        updateUserAppAccess,
         likeArtist,
         unlikeArtist,
         updatePreferences,
