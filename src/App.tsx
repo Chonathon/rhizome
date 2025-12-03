@@ -99,27 +99,6 @@ function SidebarLogoTrigger() {
 }
 
 function App() {
-  const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess();
-  const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
-
-  // Keep alpha dialog open state in sync with validation
-  useEffect(() => {
-    setAlphaOpen(!isAlphaValidated);
-  }, [isAlphaValidated]);
-
-  // Manual trigger for testing - listen for both alpha:open and alpha:trigger
-  useEffect(() => {
-    const handleOpen = () => setAlphaOpen(true);
-    const handleTrigger = () => window.dispatchEvent(new Event('alpha:open'));
-
-    window.addEventListener('alpha:open', handleOpen as any);
-    window.addEventListener('alpha:trigger', handleTrigger);
-
-    return () => {
-      window.removeEventListener('alpha:open', handleOpen as any);
-      window.removeEventListener('alpha:trigger', handleTrigger);
-    };
-  }, []);
   type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
   const genresGraphRef = useRef<GraphHandle | null>(null);
   const artistsGraphRef = useRef<GraphHandle | null>(null);
@@ -251,6 +230,7 @@ function App() {
     preferences,
     likedArtists,
     isSocialUser,
+    userAccess,
     signIn,
     signInSocial,
     signUp,
@@ -268,6 +248,28 @@ function App() {
     authError,
     authLoading,
   } = useAuth();
+
+  const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess(userAccess);
+  const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
+
+  // Keep alpha dialog open state in sync with validation
+  useEffect(() => {
+    setAlphaOpen(!isAlphaValidated);
+  }, [isAlphaValidated]);
+
+  // Manual trigger for testing - listen for both alpha:open and alpha:trigger
+  useEffect(() => {
+    const handleOpen = () => setAlphaOpen(true);
+    const handleTrigger = () => window.dispatchEvent(new Event('alpha:open'));
+
+    window.addEventListener('alpha:open', handleOpen as any);
+    window.addEventListener('alpha:trigger', handleTrigger);
+
+    return () => {
+      window.removeEventListener('alpha:open', handleOpen as any);
+      window.removeEventListener('alpha:trigger', handleTrigger);
+    };
+  }, []);
   const navigate = useNavigate();
 
   const artistsAddedRef = useRef(0);
@@ -2344,12 +2346,12 @@ function App() {
           onForgotPassword={forgotPassword}
       />
       <AlphaAccessDialog
-        open={alphaOpen}
+        open={!isAlphaValidated && !authLoading}
         onValidPassword={() => {
           setAlphaValidated();
           setAlphaOpen(false);
         }}
-        onValidatePassword={(pwd) => validatePassword(pwd)}
+        onValidatePassword={validatePassword}
       />
       <FeedbackOverlay
         onSubmit={submitFeedback}

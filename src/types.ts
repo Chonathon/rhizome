@@ -142,6 +142,7 @@ export interface User {
     preferences: Preferences;
     socialUser?: boolean;
     image?: string;
+    appAccess?: string;
 }
 
 export interface Feedback {

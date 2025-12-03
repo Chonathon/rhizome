@@ -2,6 +2,7 @@ import {authClient} from "@/lib/auth-client";
 import {Social} from "@/types";
 import {BetterAuthError} from "better-auth";
 import {clientUrl} from "@/lib/utils";
+import {PHASE_VERSION} from "@/constants";
 
 export const signInUser = async (email: string, password: string, onSuccess?: () => void, onError?: () => void) => {
     const { data, error } = await authClient.signIn.email({
@@ -15,6 +16,9 @@ export const signInSocialUser = async (social: Social, fetchSuccess?: () => void
     const { data, error } = await authClient.signIn.social({
         provider: social,
         callbackURL: clientUrl(),
+        additionalData: {
+            appAccess: PHASE_VERSION
+        }
     }, {
         onSuccess: (ctx) => {
             if (fetchSuccess) fetchSuccess();
@@ -31,6 +35,7 @@ export const signUpUser = async (email: string, password: string, name: string) 
         email,
         password,
         name,
+        appAccess: PHASE_VERSION,
         callbackURL: clientUrl(),
     });
     return { data, error };
@@ -86,11 +91,12 @@ export const deleteUserAccount = async (password?: string) => {
     return false;
 }
 
-export const updateUserAccount = async (name?: string, image?: string) => {
+export const updateUserAccount = async (name?: string, image?: string, appAccess?: string) => {
     try {
         await authClient.updateUser({
             name,
             image,
+            appAccess,
         });
         return true;
     } catch (error) {
