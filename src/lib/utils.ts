@@ -22,6 +22,9 @@ export function cn(...inputs: ClassValue[]) {
 
 export const formatDate = (dateString: string) => {
   const date = new Date(dateString);
+  // Take the locale of the user into effect to avoid discrepancies
+  const offset = date.getTimezoneOffset();
+  date.setTime(date.getTime() + offset * 60 * 1000);
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
