@@ -597,11 +597,19 @@ function App() {
   }, [graph, artistInfoToShow, currentArtists, similarArtists]);
 
   // Add genre play IDs to the playerIDQueue on genre click
-  const updateGenrePlayerIDs = async () => {
-    const queueGenreID = topArtistsGenreId;
-    if (topArtists && topArtists.length && queueGenreID && !playerIDQueue.has(queueGenreID)) {
+  // Allows for manual fetching of top artists if passed a genre (i.e. search)
+  // Only pass a genre if needed to play outside of the graph or info drawer
+  const updateGenrePlayerIDs = async (genre?: Genre) => {
+    const queueGenreID = genre? genre.id : topArtistsGenreId;
+    let genreTopArtists: Artist[] = [];
+    if (genre) {
+      genreTopArtists = await getTopArtistsFromApi(queueGenreID);
+    } else {
+      genreTopArtists = topArtists
+    }
+    if (genreTopArtists && genreTopArtists.length && queueGenreID && !playerIDQueue.has(queueGenreID)) {
       const genreTracks: TopTrack[] = [];
-      for (const artist of topArtists) {
+      for (const artist of genreTopArtists) {
         if (!artist.noTopTracks) {
           if (artist.topTracks) {
             for (const track of artist.topTracks) {
@@ -681,7 +689,11 @@ function App() {
       if (artistsPlayIDsLoading && artistPlayIDLoadingKey === artistLoadingKey) {
         await until(() => !artistsPlayIDsLoadingRef.current || artistPlayIDLoadingKeyRef.current !== artistLoadingKey);
       }
-      const playerIDs = getSpecificPlayerIDs(artist.id);
+      let playerIDs = getSpecificPlayerIDs(artist.id);
+      if (!playerIDs.length) {
+        await updateArtistPlayerIDs(artist);
+        playerIDs = getSpecificPlayerIDs(artist.id);
+      }
       if (req !== playRequest.current) return; // superseded by a newer request
       if (playerIDs && playerIDs.length > 0) {
         setPlayerVideoIds(playerIDs);
@@ -728,7 +740,11 @@ function App() {
         const loadingIDs = genre.topArtists.map(artist => `artist:${artist.id}`);
         await until(() => !artistsPlayIDsLoadingRef.current || !loadingIDs.includes(artistPlayIDLoadingKeyRef.current));
       }
-      const playerIDs = getSpecificPlayerIDs(genre.id);
+      let playerIDs = getSpecificPlayerIDs(genre.id);
+      if (!playerIDs.length) {
+        await updateGenrePlayerIDs(genre);
+        playerIDs = getSpecificPlayerIDs(genre.id);
+      }
       if (!playerIDs || playerIDs.length === 0) {
         toast.error('No tracks found for this genre');
         setPlayerLoading(false);
