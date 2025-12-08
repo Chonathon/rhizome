@@ -579,7 +579,7 @@ function App() {
   // TODO: I suspect this causes "no genre selected" top 2000 artists to always be fetched, wasteful if clicking "All Artists"
   useEffect(() => {
     if (pendingArtistGenreGraph && artists.length > 0 && !artistsLoading) {
-      console.log('[useEffect pendingArtistGenreGraph] Artists loaded, switching to artists graph');
+      //console.log('[useEffect pendingArtistGenreGraph] Artists loaded, switching to artists graph');
       setGraph('artists');
       setPendingArtistGenreGraph(undefined);
     }
@@ -1723,12 +1723,12 @@ function App() {
   const focusArtistRelatedGenres = (artist: Artist) => {
     const genreIds = Array.from(new Set((artist.genres ?? []).filter(Boolean)));
 
-    console.log('[focusArtistRelatedGenres]', {
-      artistName: artist.name,
-      artistId: artist.id,
-      genreIds: genreIds,
-      genreCount: genreIds.length
-    });
+    // console.log('[focusArtistRelatedGenres]', {
+    //   artistName: artist.name,
+    //   artistId: artist.id,
+    //   genreIds: genreIds,
+    //   genreCount: genreIds.length
+    // });
 
     if (genreIds.length === 0) {
       toast.error(`We don't have genre data for ${artist.name} yet.`);
@@ -1745,7 +1745,7 @@ function App() {
       }
     });
 
-    console.log('[focusArtistRelatedGenres] matched genres:', matched.map(g => ({ id: g.id, name: g.name })));
+    //console.log('[focusArtistRelatedGenres] matched genres:', matched.map(g => ({ id: g.id, name: g.name })));
 
     if (!matched.length) {
       toast.error(`Couldn't find genres for ${artist.name} in the current dataset.`);
@@ -1763,6 +1763,7 @@ function App() {
     setArtistFilterGenres(matched); // Set the new filter state
     setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
     setPendingArtistGenreGraph(artist); // Will trigger graph switch when artists load
+    setCollectionMode(false);
   };
 
   const onAddArtistButtonToggle = async (artistID?: string) => {
