@@ -140,7 +140,7 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
           {/* <span className="text-[10px] leading-tight">More</span> */}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="end">
+      <DropdownMenuContent side="top" align="end" className="z-99">
         {signedInUser ? (
           <>
             <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
