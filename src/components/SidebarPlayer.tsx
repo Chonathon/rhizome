@@ -90,6 +90,7 @@ export default function SidebarPlayer({
   const notesTimeoutRef = useRef<number | null>(null);
   const prevMinimalModeRef = useRef<boolean>(false);
   const prevPlayingRef = useRef<boolean>(false);
+  const prevVideoIdsRef = useRef<string[]>([]);
 
   const hasPlaylist = videoIds && videoIds.length > 1;
   const currentVideoId = videoIds?.[currentIndex] || videoIds?.[0];
@@ -306,33 +307,36 @@ export default function SidebarPlayer({
     }, 5000);
   }, []);
 
-  // Activate notes when entering minimal mode with music playing, or when music starts in minimal mode
+  // Activate notes when entering minimal mode with music playing, or when new content selected in minimal mode
   useEffect(() => {
     const wasMinimalMode = prevMinimalModeRef.current;
     const wasPlaying = prevPlayingRef.current;
+    const prevVideoIds = prevVideoIdsRef.current;
 
     // Update refs for next render
     prevMinimalModeRef.current = isMinimalMode;
     prevPlayingRef.current = isPlaying;
+    prevVideoIdsRef.current = videoIds;
 
     // Don't activate on initial mount, only on state changes
-    if (wasMinimalMode === false && wasPlaying === false) {
+    if (wasMinimalMode === false && wasPlaying === false && prevVideoIds.length === 0) {
       // This is likely the first render, skip
       return;
     }
 
     // Trigger notes when:
-    // 1. Entering minimal mode while already playing
-    // 2. Starting playback while in minimal mode
+    // 1. Entering minimal mode while already playing (collapsed sidebar after selecting content)
+    // 2. New content selected while already in minimal mode and playing
     if (isMinimalMode && isPlaying) {
       const justEnteredMinimalMode = !wasMinimalMode && isMinimalMode;
-      const justStartedPlaying = !wasPlaying && isPlaying;
+      const videoIdsChanged = prevVideoIds.length > 0 &&
+        (prevVideoIds.length !== videoIds.length || prevVideoIds[0] !== videoIds[0]);
 
-      if (justEnteredMinimalMode || justStartedPlaying) {
+      if (justEnteredMinimalMode || (wasMinimalMode && videoIdsChanged)) {
         activateNotesForDuration();
       }
     }
-  }, [isMinimalMode, isPlaying, activateNotesForDuration]);
+  }, [isMinimalMode, isPlaying, videoIds, activateNotesForDuration]);
 
   // Spawn floating musical notes when active
   useEffect(() => {
