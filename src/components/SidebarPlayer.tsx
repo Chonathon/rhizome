@@ -464,7 +464,7 @@ export default function SidebarPlayer({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-              onMouseEnter={activateNotesForDuration}
+              // onMouseEnter={activateNotesForDuration}
             >
               {/* Floating musical notes */}
               <AnimatePresence>
