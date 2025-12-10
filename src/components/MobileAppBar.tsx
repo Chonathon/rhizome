@@ -57,7 +57,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
         className={`w-full ${buttonContainerStyles}`}
         
       >
-        <div className="p-1 w-full grid grid-cols-3 place-items-center">
+        <div className="p-1 !px-0  w-full grid grid-cols-3 place-items-center">
           <ToolbarButton
             label="Collection"
             onClick={onCollectionClick}
