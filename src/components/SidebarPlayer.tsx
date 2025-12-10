@@ -739,7 +739,7 @@ export default function SidebarPlayer({
               <div className="w-full text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
             )}
           </div>
-          <div className="group-hover:flex hidden items-center gap-[1px] shrink-0">
+          <div className="group-hover/player:flex hidden items-center gap-[1px] shrink-0">
             <Button variant="ghost" size="icon" onClick={() => setPlayerCollapsed((v) => !v)} title={playerCollapsed ? 'Expand' : 'Minimize'}>
               {playerCollapsed ? <ChevronsUp /> : <ChevronsDown />}
             </Button>
@@ -782,7 +782,7 @@ export default function SidebarPlayer({
                   />
                   <button
                     type="button"
-                    className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-opacity group-hover:opacity-100 group-hover:bg-black/30"
+                    className="absolute inset-0 grid place-items-center bg-black/0 opacity-0 transition-opacity group-hover/player:opacity-100 group-hover:bg-black/30"
                     aria-label={isPlaying ? 'Pause' : 'Play'}
                     onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                   >
@@ -817,7 +817,7 @@ export default function SidebarPlayer({
               </div>
               <Progress
                 value={percent}
-                className="group-hover:h-2"
+                className="group-hover/player:h-2"
                 onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
                 onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
               />
