@@ -801,13 +801,13 @@ export default function SidebarPlayer({
               )}
             </div>
             <div className="flex flex-col w-full">
-              <div className="flex items-center gap-1 mb-0.5 min-w-0 overflow-hidden">
+              <div className="flex items-center gap-1 pb-1 min-w-0 overflow-hidden">
                 {onTitleClick && title ? (
                   <button
                     type="button"
                     onClick={onTitleClick}
                     title={title}
-                    className={`text-left flex-1 leading-normal text-sm font-medium text-foreground hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
+                    className={`text-left flex-1 leading-none text-sm font-medium text-foreground hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
                   >
                     {title}
                   </button>
