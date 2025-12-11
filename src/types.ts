@@ -118,10 +118,13 @@ export interface TopTrackPlayIDs {
 export type PlayerType = 'youtube' | 'spotify' | 'apple';
 
 export type Theme = 'light' | 'dark' | 'system';
+export type PreviewTrigger = 'modifier' | 'delay';
 
 export interface Preferences {
     theme?: Theme;
     player?: PlayerType;
+    enableGraphCards?: boolean;
+    previewTrigger?: PreviewTrigger;
 }
 
 export type Social = 'google' | 'spotify';
@@ -139,6 +142,7 @@ export interface User {
     preferences: Preferences;
     socialUser?: boolean;
     image?: string;
+    appAccess?: string;
 }
 
 export interface Feedback {
@@ -158,6 +162,7 @@ export interface GraphHandle {
   zoomOut: () => void;
   zoomTo: (k: number, ms?: number) => void;
   getZoom: () => number;
+  getCanvas: () => HTMLCanvasElement | null;
 }
 
 export interface FindOption {

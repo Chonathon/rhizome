@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { LucideIcon } from 'lucide-react';
 
 export type BadgeIndicatorType = 'artist' | 'genre';
 
@@ -8,6 +9,7 @@ interface BadgeIndicatorProps {
   color?: string;
   imageUrl?: string;
   className?: string;
+  icon?: LucideIcon;
 }
 
 /**
@@ -19,6 +21,7 @@ export function BadgeIndicator({
   color,
   imageUrl,
   className,
+  icon: Icon,
 }: BadgeIndicatorProps) {
   if (type === 'genre') {
     return (
@@ -41,7 +44,9 @@ export function BadgeIndicator({
       )}
       style={{ borderColor: color }}
     >
-      {imageUrl ? (
+      {Icon ? (
+        <Icon className="size-3 text-muted-foreground" />
+      ) : imageUrl ? (
         <img
           src={imageUrl}
           alt={`${name} avatar`}

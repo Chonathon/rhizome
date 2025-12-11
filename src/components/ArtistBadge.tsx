@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BadgeIndicator } from '@/components/BadgeIndicator';
+import { LucideIcon } from 'lucide-react';
 
 interface ArtistBadgeProps {
   name: string;
@@ -8,6 +9,9 @@ interface ArtistBadgeProps {
   imageUrl?: string;
   genreColor?: string;
   title?: string;
+  icon?: LucideIcon;
+  variant?: "outline" | "default" | "secondary" | "destructive";
+  className?: string;
 }
 
 export default function ArtistBadge({
@@ -16,9 +20,12 @@ export default function ArtistBadge({
   imageUrl,
   genreColor,
   title,
+  icon,
+  variant = "outline",
+  className, 
 }: ArtistBadgeProps) {
   return (
-    <Badge asChild variant="outline" title={title ?? `Go to ${name}`}> 
+    <Badge asChild variant={variant} className={className} title={title ?? `Go to ${name}`}>
       <Button
         variant="ghost"
         size="sm"
@@ -30,6 +37,7 @@ export default function ArtistBadge({
           name={name}
           color={genreColor}
           imageUrl={imageUrl}
+          icon={icon}
         />
         {name}
       </Button>

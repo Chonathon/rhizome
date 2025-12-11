@@ -25,3 +25,8 @@ export const updateUserPreferences = async (userID: string, preferences: Prefere
     });
     return response.status === 200;
 }
+
+export const validateAccessCode = async (email: string, accessCode: string) => {
+    const response = await axios.get(`${url}/users/verify-access-code/${encodeURIComponent(accessCode)}/${encodeURIComponent(email)}`, {});
+    return response.status === 200;
+}

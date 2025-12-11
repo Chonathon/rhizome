@@ -1,4 +1,4 @@
-import { ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CircleX } from "lucide-react";
@@ -20,6 +20,10 @@ export interface GraphCardProps {
   meta?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
+  // Hover delay props
+  enableHoverDelay?: boolean;
+  previewModeActive?: boolean;
+  onShow?: () => void;
 }
 
 export function GraphCard({
@@ -37,11 +41,16 @@ export function GraphCard({
   meta,
   description,
   actions,
+  enableHoverDelay = false,
+  previewModeActive = false,
+  onShow,
 }: GraphCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const isMobile = useMediaQuery({ maxWidth: 640 });
   const cardRef = useRef<HTMLDivElement>(null);
   const [cardHeight, setCardHeight] = useState<number | null>(null);
+  const [actuallyShow, setActuallyShow] = useState(show && !enableHoverDelay);
+  const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useLayoutEffect(() => {
     if (cardRef.current && !loading) {
@@ -49,7 +58,41 @@ export function GraphCard({
     }
   }, [loading]);
 
-  if (!show) return null;
+  // Handle hover delay logic
+  useEffect(() => {
+    // Clear any pending timeout
+    if (showTimeoutRef.current) {
+      clearTimeout(showTimeoutRef.current);
+      showTimeoutRef.current = null;
+    }
+
+    if (!show) {
+      // Hide immediately
+      setActuallyShow(false);
+      return;
+    }
+
+    if (!enableHoverDelay || previewModeActive) {
+      // Show immediately (delay disabled or preview mode active)
+      setActuallyShow(true);
+      onShow?.();
+      return;
+    }
+
+    // First hover - delay 400ms
+    showTimeoutRef.current = setTimeout(() => {
+      setActuallyShow(true);
+      onShow?.();
+    }, 400);
+
+    return () => {
+      if (showTimeoutRef.current) {
+        clearTimeout(showTimeoutRef.current);
+      }
+    };
+  }, [show, enableHoverDelay, previewModeActive, onShow]);
+
+  if (!actuallyShow) return null;
 
   return (
     <AnimatePresence mode="wait">
@@ -62,9 +105,9 @@ export function GraphCard({
         exit={{ scale: 0 }}
         transition={{ type: "spring", stiffness: 250, damping: 24, mass: 0.8 }}
         className={`
-          w-[516px] min-h-[126px] h-auto p-3 z-50 pb-4
-          bg-stone-50/90 dark:bg-stone-900/90 backdrop-blur-xs shadow-lg rounded-3xl border border-border
-          max-w-full overflow-hidden
+          w-102 min-h-[126px] h-auto p-3 z-60 pb-4
+          bg-card backdrop-blur-xs shadow-lg rounded-3xl border border-border
+         overflow-hidden
           ${loading ? "bg-stone-50/86" : ""}
           ${className ?? ""}
         `}
@@ -92,7 +135,7 @@ export function GraphCard({
           exit={{ opacity: 0 }}
           transition={{
             layout: { duration: 0, ease: "easeOut" },
-            opacity: { delay: 0.3, duration: 0.3, ease: "easeOut" },
+            opacity: { delay: 0.0, duration: 0.2, ease: "easeOut" },
           }}
           layout
           className={`flex items-start gap-3 ${stacked ? "flex-col" : ""} ${contentClassName ?? ""}`}
@@ -104,11 +147,13 @@ export function GraphCard({
           ) : (
             <>
               {thumbnail}
-              <div className="flex-1 flex flex-col items-start gap-1 min-w-0">
-                {title}
-                {meta && <div className="text-sm w-full">{meta}</div>}
+              <div className="flex-1 flex flex-col items-stretch gap-1 min-w-0 h-full">
+                <div className="">
+                  {title}
+                  {meta && <div className="text-sm text-muted-foreground w-full">{meta}</div>}
+                </div>
                 {description && <div className="w-full flex flex-col text-sm">{description}</div>}
-                {actions && <div className="w-full mt-2">{actions}</div>}
+                {actions && <div className="w-full h-full pt-2">{actions}</div>}
               </div>
             </>
           )}

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -22,6 +22,7 @@ import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
 import { AddButton } from "./AddButton";
 import { Separator } from "@radix-ui/react-separator";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 
 interface ArtistInfoProps {
@@ -49,6 +50,10 @@ interface ArtistInfoProps {
   onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
   viewRelatedArtistsLoading?: boolean;
   shouldShowChevron?: boolean;
+  onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
+  onCanvasDragStart?: () => void;
+  onHeaderRefocus?: () => void;
+  expandToMiddleTrigger?: number;
 }
 
 export function ArtistInfo({
@@ -76,9 +81,14 @@ export function ArtistInfo({
   onPlayTrack,
   viewRelatedArtistsLoading,
   shouldShowChevron,
+  onDrawerSnapChange,
+  onCanvasDragStart,
+  onHeaderRefocus,
+  expandToMiddleTrigger,
 }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1200px)");
 
   const artistReasons = useMemo(
@@ -144,11 +154,18 @@ export function ArtistInfo({
       show={!!(show && selectedArtist)}
       onDismiss={onDismiss}
       bodyClassName=""
-      // snapPoints={[0.28, 0.9]}
+      snapPoints={[0.08, 0.50, 0.9]}
+      minimizeOnCanvasTouch={true}
+      onCanvasDragStart={onCanvasDragStart}
+      contentKey={selectedArtist?.id}
+      expandToMiddleTrigger={expandToMiddleTrigger}
       headerTitle={
         selectedArtist && onFocusInArtistsView && shouldShowChevron ? (
           <button
-            onClick={() => onFocusInArtistsView(selectedArtist, { forceRefocus: true })}
+            onClick={() => {
+              onFocusInArtistsView(selectedArtist, { forceRefocus: true });
+              onHeaderRefocus?.();
+            }}
             className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-block"
             title={selectedArtist ? `Go to ${selectedArtist.name}` : "Go to artist"}
           >
@@ -168,6 +185,11 @@ export function ArtistInfo({
       }
     >
       {({ isDesktop, isAtMaxSnap, isAtMinSnap }) => {
+        // Notify parent of snap state changes for dimming control
+        useEffect(() => {
+          onDrawerSnapChange?.(!isDesktop && isAtMinSnap);
+        }, [isAtMinSnap, isDesktop]);
+
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
         return (
           <>
@@ -187,12 +209,18 @@ export function ArtistInfo({
                 }`}
               >
                 {imageUrl ? (
-                  <img
-                    src={imageUrl}
-                    alt={selectedArtist?.name ?? "Artist image"}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                  <button
+                    onClick={() => setLightboxOpen(true)}
+                    className="w-full h-full cursor-zoom-in focus:outline-none group"
+                    title="Click to enlarge"
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={selectedArtist?.name ?? "Artist image"}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  </button>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
                     <span className="text-4xl font-semibold">{initial}</span>
@@ -375,12 +403,18 @@ export function ArtistInfo({
                 {!isDesktop && (
                   <div className="w-full overflow-hidden border-y border-sidebar-border rounded-lg h-[200px] shrink-0 flex-none">
                     {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={selectedArtist?.name ?? "Artist image"}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
+                      <button
+                        onClick={() => setLightboxOpen(true)}
+                        className="w-full h-full cursor-zoom-in focus:outline-none"
+                        title="Tap to enlarge"
+                      >
+                        <img
+                          src={imageUrl}
+                          alt={selectedArtist?.name ?? "Artist image"}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </button>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
                         <span className="text-4xl font-semibold">{initial}</span>
@@ -395,41 +429,44 @@ export function ArtistInfo({
                 {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
                   <div className="flex flex-col gap-2">
                     {onViewSimilarArtistGraph && selectedArtist ? (
-                    <button
-                    className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
-                    onClick={() => onViewSimilarArtistGraph(selectedArtist)}
-                    title={`Explore artists similar to ${selectedArtist.name}`}>
-                      <span className="text-md font-semibold">Similar Artists</span><ChevronRight className="shrink-0 text-muted-foreground size-5"/></button>
+                      <button
+                        className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
+                        onClick={() => onViewSimilarArtistGraph(selectedArtist)}
+                        title={`Explore artists similar to ${selectedArtist.name}`}
+                      >
+                        <span className="text-md font-semibold">Similar Artists</span>
+                        <ChevronRight className="shrink-0 text-muted-foreground size-5"/>
+                      </button>
                     ) : (
                       <span className="text-md font-semibold">Similar Artists</span>
                     )}
                     <div className="flex flex-wrap items-center gap-1.5">
                       {similarFilter(selectedArtist.similar).map((name) => {
-                        const img = getArtistImageByName?.(name);
                         const artistObj = getArtistByName?.(name);
+                        const isInView = !!artistObj;
+                        const img = getArtistImageByName?.(name);
                         const genreColor = artistObj ? getArtistColor(artistObj) : undefined;
+
                         return (
+                          // TODO: Provide navigation options for artists not in view
                           <ArtistBadge
                             key={name}
                             name={name}
-                            imageUrl={img}
+                            imageUrl={isInView ? img : undefined}
                             genreColor={genreColor}
-                            onClick={() => setArtistFromName(name)}
-                            title={`Go to ${name}`}
+                            onClick={() => {
+                              if (isInView) {
+                                setArtistFromName(name);
+                              } else {
+                                toast.info(`${name} is not in the current view.`);
+                              }
+                            }}
+                            title={!isInView ? `${name} is not in the current view` : `Go to ${name}`}
+                            icon={!isInView ? EyeOff : undefined}
                           />
                         );
                       })}
                     </div>
-                    {/* {onViewSimilarArtistGraph && selectedArtist && (
-                      <Button
-                        size={isDesktop ? "lg" : "xl"}
-                        variant="secondary"
-                        className={isDesktop ? "w-fit mt-2" : "w-full mt-3"}
-                        onClick={() => onViewSimilarArtistGraph(selectedArtist)}
-                      >
-                        View Similar Artists
-                      </Button>
-                    )} */}
                   </div>
                 )}
 
@@ -520,6 +557,17 @@ export function ArtistInfo({
                 description="Please let us know what information about this artist seems incorrect. Select a reason and provide any extra details if you'd like."
                 onSubmit={(reason, details) => onSubmitBadData(reason, details)}
               />
+
+              {/* Image Lightbox */}
+              {imageUrl && (
+                <ImageLightbox
+                  src={imageUrl}
+                  alt={selectedArtist?.name ?? "Artist image"}
+                  open={lightboxOpen}
+                  onOpenChange={setLightboxOpen}
+                  // link={<div><a href={imageUrl} target="_blank" rel="noopener noreferrer" className="underline">Open image in new tab</a></div>}
+                />
+              )}
               </div>
             </div>
           </>

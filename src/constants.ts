@@ -7,6 +7,7 @@ import {
     PlayerType, Preferences, Theme
 } from "@/types";
 
+export const PHASE_VERSION = `${import.meta.env.VITE_PRODUCT_PHASE}-${import.meta.env.VITE_PRODUCT_VERSION}`;
 export const DEFAULT_NODE_COUNT = 2000;
 export const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
 export const DEFAULT_GENRE_LIMIT_TYPE: GenreNodeLimitType = 'artistCount';
@@ -75,7 +76,7 @@ export const UNREGISTERED_USER_ID = 'unregistered';
 export const MAX_YTID_QUEUE_SIZE = 200;
 
 export const DEFAULT_THEME: Theme = 'system';
-export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER};
+export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER, enableGraphCards: false, previewTrigger: 'modifier'};
 export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
 export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
 // Tailwind default color palette (lighter/less saturated variants)

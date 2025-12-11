@@ -21,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 
 
@@ -45,6 +46,10 @@ interface GenreInfoProps {
   onFocusInGenresView?: (genre: Genre, options?: { forceRefocus?: boolean }) => void;
   genreTracks?: TopTrack[];
   onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
+  onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
+  onCanvasDragStart?: () => void;
+  onHeaderRefocus?: () => void;
+  expandToMiddleTrigger?: number;
 }
 
 export function GenreInfo({
@@ -68,10 +73,16 @@ export function GenreInfo({
     onFocusInGenresView,
     genreTracks,
     onPlayTrack,
+    onDrawerSnapChange,
+    onCanvasDragStart,
+    onHeaderRefocus,
+    expandToMiddleTrigger,
 }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(false)
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string; artist: Artist } | null>(null)
 
 
   const onDismiss = () => {
@@ -83,7 +94,7 @@ export function GenreInfo({
     const items = nodes.slice(0, limitRelated)
     return (
       <div className="flex flex-col items-start gap-2">
-        <span className="text-md font-medium text-muted-foreground">{label}:</span>
+        <span className="text-sm font-semibold leading-tight text-muted-foreground">{label}</span>
         <div className='flex items-center gap-1.5 flex-wrap'>
           {items.map((node, i) => {
             const genreColor = genreColorMap?.get(node.id);
@@ -214,11 +225,18 @@ export function GenreInfo({
       show={!!(show && selectedGenre)}
       onDismiss={onDismiss}
       bodyClassName=""
-      // snapPoints={[0.28, 0.9]}
+      snapPoints={[0.08, 0.50, 0.9]}
+      minimizeOnCanvasTouch={true}
+      onCanvasDragStart={onCanvasDragStart}
+      contentKey={selectedGenre?.id}
+      expandToMiddleTrigger={expandToMiddleTrigger}
       headerTitle={
         selectedGenre && onFocusInGenresView ? (
           <button
-            onClick={() => onFocusInGenresView(selectedGenre, { forceRefocus: true })}
+            onClick={() => {
+              onFocusInGenresView(selectedGenre, { forceRefocus: true });
+              onHeaderRefocus?.();
+            }}
             className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-block"
             title={selectedGenre ? `Go to ${selectedGenre.name}` : "Go to genre"}
           >
@@ -238,6 +256,11 @@ export function GenreInfo({
       }
     >
       {({ isDesktop, isAtMaxSnap, isAtMinSnap }) => {
+        // Notify parent of snap state changes for dimming control
+        useEffect(() => {
+          onDrawerSnapChange?.(!isDesktop && isAtMinSnap);
+        }, [isAtMinSnap, isDesktop]);
+
         const isExpanded = isDesktop ? desktopExpanded : isAtMaxSnap;
         return (
           <>
@@ -269,12 +292,15 @@ export function GenreInfo({
                             "col-span-1 row-span-1", // 2: bottom-right
                           ][i] || "col-span-1 row-span-1"
                           return (
-                            <div key={artist.id} className={`${spanClasses} relative overflow-hidden rounded-md`}>
+                            <div key={artist.id} className={`${spanClasses} relative overflow-hidden rounded-md group`}>
                               <button
                                 type="button"
-                                onClick={() => onTopArtistClick?.(artist)}
-                                title={artist.name}
-                                className="group block w-full h-full focus:outline-none"
+                                onClick={() => {
+                                  setLightboxImage({ src: fixWikiImageURL(artist.image as string), alt: artist.name, artist });
+                                  setLightboxOpen(true);
+                                }}
+                                title="Click to enlarge"
+                                className="block w-full h-full focus:outline-none cursor-zoom-in"
                               >
                                 <img
                                   src={fixWikiImageURL(artist.image as string)}
@@ -283,7 +309,13 @@ export function GenreInfo({
                                   loading="lazy"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
-                                <span className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm">{artist.name}</span>
+                              </button>
+                              <button
+                                onClick={() => onTopArtistClick?.(artist)}
+                                title={`Go to ${artist.name}`}
+                                className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm hover:underline z-10"
+                              >
+                                {artist.name}
                               </button>
                             </div>
                           )
@@ -452,12 +484,15 @@ export function GenreInfo({
                                 "col-span-1 row-span-1",
                               ][i] || "col-span-1 row-span-1"
                               return (
-                                <div key={artist.id} className={`${spanClasses} relative overflow-hidden rounded-md`}>
+                                <div key={artist.id} className={`${spanClasses} relative overflow-hidden rounded-md group`}>
                                   <button
                                     type="button"
-                                    onClick={() => onTopArtistClick?.(artist)}
-                                    title={artist.name}
-                                    className="group block w-full h-full focus:outline-none"
+                                    onClick={() => {
+                                      setLightboxImage({ src: artist.image as string, alt: artist.name, artist });
+                                      setLightboxOpen(true);
+                                    }}
+                                    title="Tap to enlarge"
+                                    className="block w-full h-full focus:outline-none cursor-zoom-in"
                                   >
                                     <img
                                       src={(artist.image as string)}
@@ -466,7 +501,13 @@ export function GenreInfo({
                                       loading="lazy"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
-                                    <span className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm">{artist.name}</span>
+                                  <span
+                                    // onClick={() => onTopArtistClick?.(artist)}
+                                    // title={`Go to ${artist.name}`}
+                                    className="absolute left-1.5 bottom-1.5 text-xs font-medium text-white drop-shadow-sm z-10"
+                                  >
+                                    {artist.name}
+                                  </span>
                                   </button>
                                 </div>
                               )
@@ -536,7 +577,7 @@ export function GenreInfo({
               {/* Related */}
               {genreError && <p>Can’t find {selectedGenre?.name} 🤔</p>}
               {!genreError && (
-                <div className='flex flex-col gap-3'>
+                <div className='flex flex-col gap-2'>
                   <text className='text-md font-semibold'>Relationships</text>
                   <>
                     {relatedLine('Subgenre of', selectedGenre?.subgenre_of)}
@@ -590,9 +631,34 @@ export function GenreInfo({
                 open={reportDialogOpen}
                 onOpenChange={setReportDialogOpen}
                 reasons={genreReasons}
-                description="Please let us know what information about this genre seems incorrect. Select a reason and provide any extra details if you’d like."
+                description="Please let us know what information about this genre seems incorrect. Select a reason and provide any extra details if you'd like."
                 onSubmit={(reason, details) => onSubmitBadData(reason, details)}
               />
+
+              {/* Image Lightbox */}
+              {lightboxImage && (
+                <ImageLightbox
+                  src={lightboxImage.src}
+                  alt={lightboxImage.alt}
+                  open={lightboxOpen}
+                  onOpenChange={setLightboxOpen}
+                  link={
+                    onTopArtistClick ? (
+                      <ArtistBadge
+                        name={lightboxImage.artist.name}
+                        imageUrl={fixWikiImageURL(lightboxImage.artist.image as string)}
+                        genreColor={getArtistColor(lightboxImage.artist)}
+                        onClick={() => {
+                          onTopArtistClick(lightboxImage.artist);
+                          setLightboxOpen(false);
+                        }}
+                        variant='outline'
+                        title={`Go to ${lightboxImage.artist.name}`}
+                      />
+                    ) : undefined
+                  }
+                />
+              )}
             </div>
           </div>
           </>

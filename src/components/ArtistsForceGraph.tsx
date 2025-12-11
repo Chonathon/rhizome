@@ -9,9 +9,11 @@ interface ArtistsForceGraphProps {
   artists: Artist[];
   artistLinks: NodeLink[];
   onNodeClick: (artist: Artist) => void;
+  onNodeHover?: (artistId: string | null, screenPosition: { x: number; y: number } | null) => void;
   loading: boolean;
   show: boolean;
   selectedArtistId?: string;
+  hoverSelectedId?: string | null;
   autoFocus?: boolean;
   computeArtistColor: (artist: Artist) => string;
   width?: number;
@@ -25,6 +27,7 @@ interface ArtistsForceGraphProps {
   textFadeThreshold?: number;
   showNodes?: boolean;
   showLinks?: boolean;
+  disableDimming?: boolean;
 }
 
 const MIN_RADIUS = 6;
@@ -36,9 +39,11 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       artists,
       artistLinks,
       onNodeClick,
+      onNodeHover,
       loading,
       show,
       selectedArtistId,
+      hoverSelectedId,
       autoFocus,
       computeArtistColor,
       width,
@@ -51,6 +56,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       textFadeThreshold,
       showNodes,
       showLinks,
+      disableDimming,
     },
     ref,
   ) => {
@@ -105,8 +111,10 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         width={width}
         height={height}
         selectedId={selectedArtistId}
+        hoverSelectedId={hoverSelectedId}
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
+        onNodeHover={onNodeHover ? (artist, screenPosition) => onNodeHover((artist as Artist | undefined)?.id ?? null, screenPosition) : undefined}
         nodeSize={nodeSize}
         linkThickness={linkThickness}
         linkCurvature={linkCurvature}
@@ -115,6 +123,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         textFadeThreshold={textFadeThreshold}
         showNodes={showNodes}
         showLinks={showLinks}
+        disableDimming={disableDimming}
       />
     );
   },

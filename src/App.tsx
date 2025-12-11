@@ -22,6 +22,8 @@ import { Toaster, toast } from 'sonner'
 import { useMediaQuery } from 'react-responsive';
 import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
+import GenrePreview from './components/GenrePreview';
+import ArtistPreview from './components/ArtistPreview';
 import Player from "@/components/Player";
 import { Search } from './components/Search';
 import FindFilter from "@/components/FindFilter";
@@ -43,6 +45,7 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import DisplayPanel from './components/DisplayPanel';
+import SharePanel from './components/SharePanel';
 import NodeLimiter from './components/NodeLimiter'
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSideBar"
@@ -61,7 +64,12 @@ import {
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
-  MAX_YTID_QUEUE_SIZE, DEFAULT_PLAYER, ALPHA_SURVEY_TIME_MS, DEFAULT_PREFERENCES, ALPHA_SURVEY_ADDED_ARTISTS
+  MAX_YTID_QUEUE_SIZE,
+  DEFAULT_PLAYER,
+  ALPHA_SURVEY_TIME_MS,
+  DEFAULT_PREFERENCES,
+  ALPHA_SURVEY_ADDED_ARTISTS,
+  NODE_AMOUNT_PRESETS
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -76,6 +84,7 @@ import useAuth from "@/hooks/useAuth";
 import SettingsOverlay, {ChangePasswordDialog} from '@/components/SettingsOverlay';
 import {submitFeedback} from "@/apis/feedbackApi";
 import {useNavigate} from "react-router";
+import { exportGraphAsImage } from "@/utils/exportGraph";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -90,28 +99,7 @@ function SidebarLogoTrigger() {
 }
 
 function App() {
-  const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess();
-  const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
-
-  // Keep alpha dialog open state in sync with validation
-  useEffect(() => {
-    setAlphaOpen(!isAlphaValidated);
-  }, [isAlphaValidated]);
-
-  // Manual trigger for testing - listen for both alpha:open and alpha:trigger
-  useEffect(() => {
-    const handleOpen = () => setAlphaOpen(true);
-    const handleTrigger = () => window.dispatchEvent(new Event('alpha:open'));
-
-    window.addEventListener('alpha:open', handleOpen as any);
-    window.addEventListener('alpha:trigger', handleTrigger);
-
-    return () => {
-      window.removeEventListener('alpha:open', handleOpen as any);
-      window.removeEventListener('alpha:trigger', handleTrigger);
-    };
-  }, []);
-  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number }
+  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
   const genresGraphRef = useRef<GraphHandle | null>(null);
   const artistsGraphRef = useRef<GraphHandle | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -125,6 +113,14 @@ function App() {
     return selectedGenres.map(genre => genre.id);
   }, [selectedGenres]);
   const [selectedDecades, setSelectedDecades] = useState<string[]>([]);
+  // Unified collection filter state for all filter types
+  const [collectionFilters, setCollectionFilters] = useState<{
+    genres: string[];
+    decades: string[];
+  }>({
+    genres: [],
+    decades: [],
+  });
   const artistFilterGenreIDs = useMemo(() => {
     return artistFilterGenres.map(genre => genre.id);
   }, [artistFilterGenres]);
@@ -137,14 +133,28 @@ function App() {
   const [artistInfoDrawerVersion, setArtistInfoDrawerVersion] = useState(0);
   const [artistInfoToShow, setArtistInfoToShow] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
+  const [cursorHoveredGenre, setCursorHoveredGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [cursorHoveredArtist, setCursorHoveredArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [previewGenre, setPreviewGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [previewArtist, setPreviewArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [optionHoverSelectedId, setOptionHoverSelectedId] = useState<string | null>(null);
+  const [previewModeActive, setPreviewModeActive] = useState(false);
+  const previewModeTimeoutRef = useRef<number | null>(null);
   const [genreInfoToShow, setGenreInfoToShow] = useState<Genre | undefined>(undefined);
   const [showGenreCard, setShowGenreCard] = useState(false);
   const [restoreGenreCardOnArtistDismiss, setRestoreGenreCardOnArtistDismiss] = useState(false);
+  const [isGenreDrawerAtMinSnap, setIsGenreDrawerAtMinSnap] = useState(false);
+  const [isArtistDrawerAtMinSnap, setIsArtistDrawerAtMinSnap] = useState(false);
+  const [isUserDraggingGenreCanvas, setIsUserDraggingGenreCanvas] = useState(false);
+  const [isUserDraggingArtistCanvas, setIsUserDraggingArtistCanvas] = useState(false);
+  const [genreDrawerExpandTrigger, setGenreDrawerExpandTrigger] = useState(0);
+  const [artistDrawerExpandTrigger, setArtistDrawerExpandTrigger] = useState(0);
   const [graph, setGraph] = useState<GraphType>('genres');
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
-  const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState(false);
   const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
+  const [genreTopArtistsCache, setGenreTopArtistsCache] = useState<Map<string, Artist[]>>(new Map());
+  const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [dagMode, setDagMode] = useState<boolean>(() => {
     const storedDagMode = localStorage.getItem('dagMode');
@@ -216,6 +226,7 @@ function App() {
   const [genreNodeCount, setGenreNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [artistNodeCount, setArtistNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
+  const [collectionMode, setCollectionMode] = useState<boolean>(false);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
   const { addRecentSelection } = useRecentSelections();
@@ -245,11 +256,11 @@ function App() {
     fetchSingleArtist,
     similarArtists,
     fetchSimilarArtists,
-  } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad);
+  } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode);
 
   // Fetch top artists for the currently displayed genre info or the active filter
-  const topArtistsGenreId = genreInfoToShow?.id || artistFilterGenres[0]?.id;
-  const { topArtists, loading: topArtistsLoading } = useGenreTopArtists(topArtistsGenreId);
+  const [topArtistsGenreId, setTopArtistsGenreId] = useState<string | undefined>(undefined);
+  const { topArtists, loading: topArtistsLoading, getTopArtistsFromApi } = useGenreTopArtists(topArtistsGenreId);
   const { resolvedTheme } = useTheme();
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
@@ -264,7 +275,6 @@ function App() {
   // TODO: prob need to make playerIDQueue an array or update state differently as it sometimes is out of sync with the ui
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
   const [autoFocusGraph, setAutoFocusGraph] = useState<boolean>(true);
-  const [collectionMode, setCollectionMode] = useState<boolean>(false);
   const [separationDegrees, setSeparationDegrees] = useState<number>(0);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState<boolean>(isOnPage('reset-password'));
   const [showArtistGoTo, setShowArtistGoTo] = useState<boolean>(false);
@@ -276,6 +286,7 @@ function App() {
     preferences,
     likedArtists,
     isSocialUser,
+    userAccess,
     signIn,
     signInSocial,
     signUp,
@@ -293,9 +304,37 @@ function App() {
     authError,
     authLoading,
   } = useAuth();
+
+  const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess(userAccess);
+  const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
+
+  // Keep alpha dialog open state in sync with validation
+  useEffect(() => {
+    setAlphaOpen(!isAlphaValidated);
+  }, [isAlphaValidated]);
+
+  // Manual trigger for testing - listen for both alpha:open and alpha:trigger
+  useEffect(() => {
+    const handleOpen = () => setAlphaOpen(true);
+    const handleTrigger = () => window.dispatchEvent(new Event('alpha:open'));
+
+    window.addEventListener('alpha:open', handleOpen as any);
+    window.addEventListener('alpha:trigger', handleTrigger);
+
+    return () => {
+      window.removeEventListener('alpha:open', handleOpen as any);
+      window.removeEventListener('alpha:trigger', handleTrigger);
+    };
+  }, []);
   const navigate = useNavigate();
 
   const artistsAddedRef = useRef(0);
+
+  // Get hovered artist data for preview
+  const hoveredArtistData = useMemo(() => {
+    if (!previewArtist) return null;
+    return currentArtists.find((a) => a.id === previewArtist.id) || null;
+  }, [previewArtist, currentArtists]);
 
   // Track window size and pass to ForceGraph for reliable resizing
   useEffect(() => {
@@ -442,8 +481,8 @@ function App() {
     }
   }, [findPanelDisabled, isFindFilterOpen]);
 
-  // Global hotkeys (+, -, /)
-  useHotkeys({
+  // Global hotkeys (+, -, /) and command key tracking
+  const { isCommandHeld, isOptionHeld } = useHotkeys({
     onZoomIn: () => {
       const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
       ref?.zoomIn?.();
@@ -457,6 +496,14 @@ function App() {
       setIsFindFilterOpen(true);
     },
   }, [graph, findPanelDisabled]);
+
+  // Export graph handler
+  const handleExportGraph = useCallback(() => {
+    const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+    const canvas = ref?.getCanvas?.() ?? null;
+    const graphType = graph === 'genres' ? 'genre' : 'artist';
+    exportGraphAsImage(canvas, { graphType, theme: resolvedTheme });
+  }, [graph, resolvedTheme]);
 
   // Restore standalone Escape handling (deselect)
   useEffect(() => {
@@ -488,11 +535,44 @@ function App() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // Sets current artists/links shown in the graph when artists are fetched from the DB
+  // Computes the artists/links to display - applies collection filters when in collection mode
+  const displayedArtistsData = useMemo(() => {
+    if (!collectionMode) {
+      return { artists, links: artistLinks };
+    }
+
+    let filtered = artists;
+
+    // Apply genre filter (if any genres selected)
+    if (collectionFilters.genres.length > 0) {
+      filtered = filtered.filter(artist =>
+        artist.genres.some(genreId => collectionFilters.genres.includes(genreId))
+      );
+    }
+
+    // Apply decade filter (if any decades selected)
+    // TODO: Implement when decade data is available on artists
+    // if (collectionFilters.decades.length > 0) {
+    //   filtered = filtered.filter(artist => {
+    //     const decade = getArtistDecade(artist);
+    //     return collectionFilters.decades.includes(decade);
+    //   });
+    // }
+
+    // Filter links to only include connections between filtered artists
+    const filteredArtistIds = new Set(filtered.map(a => a.id));
+    const filteredLinks = artistLinks.filter(link =>
+      filteredArtistIds.has(link.source) && filteredArtistIds.has(link.target)
+    );
+
+    return { artists: filtered, links: filteredLinks };
+  }, [collectionMode, artists, artistLinks, collectionFilters]);
+
+  // Sets current artists/links shown in the graph
   useEffect(() => {
-    setCurrentArtists(artists);
-    setCurrentArtistLinks(artistLinks);
-  }, [artists]);
+    setCurrentArtists(displayedArtistsData.artists);
+    setCurrentArtistLinks(displayedArtistsData.links);
+  }, [displayedArtistsData]);
 
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
@@ -504,24 +584,71 @@ function App() {
     return null;
   }, [graph, selectedGenres, selectedArtist]);
 
+  // Compute genres available in the collection (only includes genres from liked artists)
+  const collectionGenres = useMemo(() => {
+    if (!collectionMode || !artists.length) return genres;
+
+    // Extract unique genre IDs from all liked artists (use 'artists' not 'currentArtists' to avoid loops)
+    const genreIdsInCollection = new Set<string>();
+    artists.forEach(artist => {
+      artist.genres.forEach(genreId => genreIdsInCollection.add(genreId));
+    });
+
+    // Filter genres list to only include genres present in collection
+    return genres.filter(genre => genreIdsInCollection.has(genre.id));
+  }, [collectionMode, artists, genres]);
+
+  // Memoize the full genre list with singleton parent for collection mode
+  const collectionGenresWithParent = useMemo(() => {
+    return [...collectionGenres, singletonParentGenre];
+  }, [collectionGenres, singletonParentGenre]);
+
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
     if (genres) {
       const nodeCount = genres.length;
       onGenreNodeCountChange(nodeCount);
-      setGenreColorMap(buildGenreColorMap(genres, genreRoots));
+      const colorMap = buildGenreColorMap(genres, genreRoots);
+      // console.log('[App Debug] Building genreColorMap');
+      // console.log('  genres.length:', genres.length);
+      // console.log('  genreRoots:', genreRoots);
+      // console.log('  colorMap.size:', colorMap.size);
+      // console.log('  first 5 colorMap entries:', Array.from(colorMap.entries()).slice(0, 5));
+      setGenreColorMap(colorMap);
     }
-  }, [genres, genreLinks]);
+  }, [genres, genreLinks, genreRoots]);
 
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
+    if (topArtistsGenreId && topArtists.length) {
+      setGenreTopArtistsCache(prev => new Map(prev).set(topArtistsGenreId, topArtists));
+    }
     updateGenrePlayerIDs();
   }, [topArtists, topArtistsGenreId]);
 
+  // Sets the genre ID for which to fetch top artists
+  useEffect(() => {
+    if (genreInfoToShow) {
+      setTopArtistsGenreId(genreInfoToShow.id);
+    }
+  }, [genreInfoToShow]);
+
+  // Sets the genre ID for which to fetch top artists
+  useEffect(() => {
+    if (artistFilterGenres.length) {
+      setTopArtistsGenreId(artistFilterGenres[0]?.id);
+    }
+  }, [artistFilterGenres]);
+
   // Fetches top tracks of selected artist player ids in the background
   useEffect(() => {
-    updateArtistPlayerIDs();
+    if (selectedArtist) updateArtistPlayerIDs(selectedArtist)
   }, [selectedArtist]);
+
+  // Fetches top tracks of hovered artist player ids in the background
+  useEffect(() => {
+    if (hoveredArtistData) updateArtistPlayerIDs(hoveredArtistData)
+  }, [hoveredArtistData]);
 
   // Switches to the similar artists view once similar artist data is loaded
   useEffect(() => {
@@ -541,7 +668,7 @@ function App() {
   // TODO: I suspect this causes "no genre selected" top 2000 artists to always be fetched, wasteful if clicking "All Artists"
   useEffect(() => {
     if (pendingArtistGenreGraph && artists.length > 0 && !artistsLoading) {
-      console.log('[useEffect pendingArtistGenreGraph] Artists loaded, switching to artists graph');
+      //console.log('[useEffect pendingArtistGenreGraph] Artists loaded, switching to artists graph');
       setGraph('artists');
       setPendingArtistGenreGraph(undefined);
     }
@@ -559,11 +686,19 @@ function App() {
   }, [graph, artistInfoToShow, currentArtists, similarArtists]);
 
   // Add genre play IDs to the playerIDQueue on genre click
-  const updateGenrePlayerIDs = async () => {
-    const queueGenreID = topArtistsGenreId;
-    if (topArtists && topArtists.length && queueGenreID && !playerIDQueue.has(queueGenreID)) {
+  // Allows for manual fetching of top artists if passed a genre (i.e. search)
+  // Only pass a genre if needed to play outside of the graph or info drawer
+  const updateGenrePlayerIDs = async (genre?: Genre) => {
+    const queueGenreID = genre? genre.id : topArtistsGenreId;
+    let genreTopArtists: Artist[] = [];
+    if (genre) {
+      genreTopArtists = await getTopArtistsFromApi(queueGenreID);
+    } else {
+      genreTopArtists = topArtists
+    }
+    if (genreTopArtists && genreTopArtists.length && queueGenreID && !playerIDQueue.has(queueGenreID)) {
       const genreTracks: TopTrack[] = [];
-      for (const artist of topArtists) {
+      for (const artist of genreTopArtists) {
         if (!artist.noTopTracks) {
           if (artist.topTracks) {
             for (const track of artist.topTracks) {
@@ -592,14 +727,15 @@ function App() {
   }
 
   // Add artist play IDs to the playerIDQueue on genre click
-  const updateArtistPlayerIDs = async () => {
-    if (selectedArtist && !playerIDQueue.has(selectedArtist.id)) {
+  const updateArtistPlayerIDs = async (artist: Artist) => {
+    if (artist && !playerIDQueue.has(artist.id)) {
       const currentSelectedArtist = {
-        id: selectedArtist.id,
-        name: selectedArtist.name,
-        noTopTracks: selectedArtist.noTopTracks,
-        topTracks: selectedArtist.topTracks
+        id: artist.id,
+        name: artist.name,
+        noTopTracks: artist.noTopTracks,
+        topTracks: artist.topTracks
       };
+      // If we haven't already tried and failed to fetch tracks for this artist
       if (!currentSelectedArtist.noTopTracks) {
         if (currentSelectedArtist.topTracks) {
           playerIDQueue.set(currentSelectedArtist.id, currentSelectedArtist.topTracks);
@@ -642,7 +778,11 @@ function App() {
       if (artistsPlayIDsLoading && artistPlayIDLoadingKey === artistLoadingKey) {
         await until(() => !artistsPlayIDsLoadingRef.current || artistPlayIDLoadingKeyRef.current !== artistLoadingKey);
       }
-      const playerIDs = getSpecificPlayerIDs(artist.id);
+      let playerIDs = getSpecificPlayerIDs(artist.id);
+      if (!playerIDs.length) {
+        await updateArtistPlayerIDs(artist);
+        playerIDs = getSpecificPlayerIDs(artist.id);
+      }
       if (req !== playRequest.current) return; // superseded by a newer request
       if (playerIDs && playerIDs.length > 0) {
         setPlayerVideoIds(playerIDs);
@@ -689,7 +829,11 @@ function App() {
         const loadingIDs = genre.topArtists.map(artist => `artist:${artist.id}`);
         await until(() => !artistsPlayIDsLoadingRef.current || !loadingIDs.includes(artistPlayIDLoadingKeyRef.current));
       }
-      const playerIDs = getSpecificPlayerIDs(genre.id);
+      let playerIDs = getSpecificPlayerIDs(genre.id);
+      if (!playerIDs.length) {
+        await updateGenrePlayerIDs(genre);
+        playerIDs = getSpecificPlayerIDs(genre.id);
+      }
       if (!playerIDs || playerIDs.length === 0) {
         toast.error('No tracks found for this genre');
         setPlayerLoading(false);
@@ -809,6 +953,10 @@ function App() {
     }
   };
 
+  const onPlayGenreFromPreview = () => {
+
+  }
+
   // Returns only the play IDs of the DEFAULT_PLAYER from an artist/genre
   const getSpecificPlayerIDs = (id: string) => {
     let ids: string[] = [];
@@ -866,23 +1014,117 @@ function App() {
   }
 
   const getArtistImageByName = (name: string) => {
-    // Search in all loaded artists, not just current graph
-    const a = artists.find((x) => x.name === name);
+    const a = currentArtists.find((x) => x.name === name);
     const raw = a?.image as string | undefined;
     return raw ? fixWikiImageURL(raw) : undefined;
   }
 
   const getArtistByName = (name: string) => {
-    // Search in all loaded artists, not just current graph
-    return artists.find((a) => a.name === name);
+    return currentArtists.find((a) => a.name === name);
   }
 
   const getGenreNameById = (id: string) => {
     return genres.find((g) => g.id === id)?.name;
   }
 
-  const onGenreNodeClick = useCallback((genre: Genre) => {
+  // Fetch top artists for a genre
+  const fetchGenreTopArtists = async (genreID: string) => {
+    // Check if already in cache
+    if (genreTopArtistsCache.has(genreID)) return;
+    setTopArtistsGenreId(genreID);
+  };
+
+  // Update preview states based on cursor hover + command key or delay
+  useEffect(() => {
+    const triggerMode = preferences?.previewTrigger || 'modifier';
+    const shouldShowPreview = preferences?.enableGraphCards && !showGenreCard && !showArtistCard;
+
+    if (!shouldShowPreview || !cursorHoveredGenre) {
+      setPreviewGenre(null);
+      return;
+    }
+
+    // If trigger mode is 'delay', show immediately (GraphCard handles the delay)
+    // If trigger mode is 'modifier', only show when command key is held
+    if (triggerMode === 'delay' || (triggerMode === 'modifier' && isCommandHeld)) {
+      setPreviewGenre(cursorHoveredGenre);
+      if (cursorHoveredGenre.id) {
+        fetchGenreTopArtists(cursorHoveredGenre.id);
+      }
+    } else {
+      setPreviewGenre(null);
+    }
+  }, [isCommandHeld, cursorHoveredGenre, preferences?.enableGraphCards, preferences?.previewTrigger, showGenreCard, showArtistCard]);
+
+  useEffect(() => {
+    const triggerMode = preferences?.previewTrigger || 'modifier';
+    const shouldShowPreview = preferences?.enableGraphCards;
+
+    if (!shouldShowPreview || !cursorHoveredArtist) {
+      setPreviewArtist(null);
+      return;
+    }
+
+    // If trigger mode is 'delay', show immediately (GraphCard handles the delay)
+    // If trigger mode is 'modifier', only show when command key is held
+    if (triggerMode === 'delay' || (triggerMode === 'modifier' && isCommandHeld)) {
+      setPreviewArtist(cursorHoveredArtist);
+    } else {
+      setPreviewArtist(null);
+    }
+  }, [isCommandHeld, cursorHoveredArtist, preferences?.enableGraphCards, preferences?.previewTrigger]);
+
+  // Option + hover: temporarily select hovered node to show its connections
+  useEffect(() => {
+    if (isOptionHeld && cursorHoveredArtist) {
+      setOptionHoverSelectedId(cursorHoveredArtist.id);
+    } else if (isOptionHeld && cursorHoveredGenre) {
+      setOptionHoverSelectedId(cursorHoveredGenre.id);
+    } else {
+      setOptionHoverSelectedId(null);
+    }
+  }, [isOptionHeld, cursorHoveredArtist, cursorHoveredGenre]);
+
+  // Activate preview mode when a card is shown
+  const handlePreviewShown = () => {
+    setPreviewModeActive(true);
+
+    // Clear existing timeout
+    if (previewModeTimeoutRef.current) {
+      clearTimeout(previewModeTimeoutRef.current);
+    }
+
+    // Reset after 1s of inactivity
+    previewModeTimeoutRef.current = setTimeout(() => {
+      setPreviewModeActive(false);
+    }, 1000);
+  };
+
+  // Handle genre hover - track cursor hover state
+  const handleGenreHover = (id: string | null, position: { x: number; y: number } | null) => {
+    // Always track what's being hovered, regardless of command key
+    setCursorHoveredGenre(id && position ? { id, position } : null);
+  };
+
+  // Get hovered genre data for preview
+  const hoveredGenreData = useMemo(() => {
+    if (!previewGenre || !currentGenres) return null;
+    const genre = currentGenres.nodes.find((g) => g.id === previewGenre.id);
+    if (!genre) return null;
+
+    // If the preview genre is the selected genre, use the loaded topArtists data
+    // Otherwise, use cached artist data (fetched on hover)
+    const isSelectedGenre = selectedGenres.some(g => g.id === genre.id);
+    const cachedArtists = genreTopArtistsCache.get(genre.id) || [];
+    const artists = isSelectedGenre ? topArtists : cachedArtists;
+
+    return { genre, topArtists: artists };
+  }, [previewGenre, currentGenres, selectedGenres, topArtists, genreTopArtistsCache]);
+
+  const onGenreNodeClick = (genre: Genre) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+    setIsUserDraggingGenreCanvas(false); // Re-enable dimming when selecting a new node
+    setGenreDrawerExpandTrigger(prev => prev + 1); // Expand drawer to middle position
     // Don't set initialGenreFilter here - clicking a genre is just for viewing, not filtering
     setSelectedGenres([genre]);
     setGenreInfoToShow(genre);
@@ -890,7 +1132,7 @@ function App() {
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
     setAutoFocusGraph(true); // Enable auto-focus for node clicks
     addRecentSelection(genre);
-  }, [isBeforeArtistLoad, addRecentSelection]);
+  };
 
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
   const onShowAllArtists = (genre: Genre) => {
@@ -939,6 +1181,7 @@ function App() {
       }
     }
 
+    setGraph('artists');
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setSelectedArtist(artist); // For graph focus/dimming
@@ -951,7 +1194,27 @@ function App() {
     setRestoreGenreCardOnArtistDismiss(true);
   }
 
-  const onArtistNodeClick = useCallback((artist: Artist) => {
+  const handleGenreCanvasDragStart = () => {
+    setIsUserDraggingGenreCanvas(true);
+  };
+
+  const handleArtistCanvasDragStart = () => {
+    setIsUserDraggingArtistCanvas(true);
+  };
+
+  const handleGenreHeaderRefocus = () => {
+    setIsUserDraggingGenreCanvas(false);
+    setGenreDrawerExpandTrigger(prev => prev + 1);
+  };
+
+  const handleArtistHeaderRefocus = () => {
+    setIsUserDraggingArtistCanvas(false);
+    setArtistDrawerExpandTrigger(prev => prev + 1);
+  };
+
+  const onArtistNodeClick = (artist: Artist) => {
+    setIsUserDraggingArtistCanvas(false); // Re-enable dimming when selecting a new node
+    setArtistDrawerExpandTrigger(prev => prev + 1); // Expand drawer to middle position
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setRestoreGenreCardOnArtistDismiss(false); // Direct node click, don't restore genre card
@@ -976,7 +1239,7 @@ function App() {
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
     }
-  }, [graph, artistFilterGenres.length, addRecentSelection]);
+  };
 
   const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
@@ -1100,6 +1363,8 @@ function App() {
     setSimilarArtistAnchor(undefined);
     setGenreClusterMode(DEFAULT_CLUSTER_MODE);
     setCollectionMode(false);
+    // Clear collection mode filters when exiting to explore mode
+    setCollectionFilters({ genres: [], decades: [] });
   }
 
   const deselectGenre = () => {
@@ -1466,8 +1731,19 @@ function App() {
     // TODO: Implement decade filtering logic
   }
 
+  // Generic collection filter handler - works for any filter type
+  const onCollectionFilterChange = useCallback((filterType: 'genres' | 'decades', selectedIDs: string[]) => {
+    setCollectionFilters(prev => ({
+      ...prev,
+      [filterType]: selectedIDs,
+    }));
+  }, []);
+
+  // Just filter the current nodes if selection is less than the current node count
   const artistNodeCountSelection = (value: number) => {
-    if (value <= artistNodeCount) {
+    if (value === artistNodeCount) return;
+    setArtistNodeCount(value);
+    if (value < artistNodeCount) {
       if (artists && artists.length) {
         const filteredArtists = [...artists]
             .sort((a: Artist, b: Artist) => b[artistNodeLimitType] - a[artistNodeLimitType])
@@ -1479,8 +1755,6 @@ function App() {
         setCurrentArtists(filteredArtists);
         setCurrentArtistLinks(filteredLinks);
       }
-    } else {
-      setArtistNodeCount(value);
     }
   }
 
@@ -1554,12 +1828,12 @@ function App() {
   const focusArtistRelatedGenres = (artist: Artist) => {
     const genreIds = Array.from(new Set((artist.genres ?? []).filter(Boolean)));
 
-    console.log('[focusArtistRelatedGenres]', {
-      artistName: artist.name,
-      artistId: artist.id,
-      genreIds: genreIds,
-      genreCount: genreIds.length
-    });
+    // console.log('[focusArtistRelatedGenres]', {
+    //   artistName: artist.name,
+    //   artistId: artist.id,
+    //   genreIds: genreIds,
+    //   genreCount: genreIds.length
+    // });
 
     if (genreIds.length === 0) {
       toast.error(`We don't have genre data for ${artist.name} yet.`);
@@ -1576,7 +1850,7 @@ function App() {
       }
     });
 
-    console.log('[focusArtistRelatedGenres] matched genres:', matched.map(g => ({ id: g.id, name: g.name })));
+    //console.log('[focusArtistRelatedGenres] matched genres:', matched.map(g => ({ id: g.id, name: g.name })));
 
     if (!matched.length) {
       toast.error(`Couldn't find genres for ${artist.name} in the current dataset.`);
@@ -1594,6 +1868,7 @@ function App() {
     setArtistFilterGenres(matched); // Set the new filter state
     setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
     setPendingArtistGenreGraph(artist); // Will trigger graph switch when artists load
+    setCollectionMode(false);
   };
 
   const onAddArtistButtonToggle = async (artistID?: string) => {
@@ -1625,6 +1900,10 @@ function App() {
   const onCollectionClick = async () => {
     if (userID) {
       setCollectionMode(true);
+      // Clear explore mode filters when entering collection mode
+      setArtistGenreFilter([]);
+      setArtistFilterGenres([]);
+      setSelectedDecades([]);
       if (likedArtists.length) {
         await fetchLikedArtists(likedArtists);
         setGraph('artists');
@@ -1705,90 +1984,152 @@ function App() {
         onExploreClick={onExploreClick}
         signedInUser={!!userID}
         isCollectionMode={collectionMode}
+        searchOpen={searchOpen}
       >
         <SidebarLogoTrigger />
         <Toaster />
         <div className="fixed inset-0 z-0 overflow-hidden no-scrollbar">
           <Gradient />
-          <motion.div
-            className={
-              "fixed top-0 left-0 z-50 pt-2 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
-            }
-            style={{
-              left: "var(--sidebar-gap)",
-            }}
-          >
-            {/* <Header
-            selectedGenre={selectedGenres[0]?.name}
-            selectedArtist={selectedArtist}
-            graph={graph}
-            toggleListView={() => {}}
-            showListView={false}
-            hideArtistCard={() => setShowArtistCard(false)}
-            content={
-              graph === 'artists' &&
-                <div className='flex mr-[var(--sidebar-gap)] flex-col w-full justify-center sm:flex-row gap-3'>
-                   <GenresFilter
-                    genres={[...genres, singletonParentGenre]}
-                    genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
-                    graphType={graph}
-                    onGenreSelectionChange={onGenreFilterSelectionChange}
-                    initialSelection={initialGenreFilter}
-                    selectedGenreIds={selectedGenreIDs}
-                   />
-
-                  <Button size='default' variant='outline'>Mood & Activity
-                    <ChevronDown />
-                  </Button>
-                  <Button size='default' className='self-start' variant='outline'>Decade
-                    <ChevronDown />
-                  </Button>
-                </div>
-                }
-            /> */}
-            <Tabs
-                value={graph === 'similarArtists' ? 'artists' : graph}
-                onValueChange={(val) => onTabChange(val as GraphType)}>
-                  <TabsList>
-                      <TabsTrigger value="genres">Genres</TabsTrigger>
-                    <TabsTrigger value="artists">Artists</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                {graph === 'similarArtists' && similarArtistAnchor && (
-                  <Button
-                    size='lg'
-                    variant='outline'
-                    onClick={() => onTabChange('artists')}
-                    className="gap-2"
+          <AnimatePresence>
+            <motion.div
+              layout
+              transition={{ layout: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } }}
+              className={
+                "fixed top-0 left-0 z-70 pt-3 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
+              }
+              style={{ left: "var(--sidebar-gap)" }}
+            >
+              {/* <Header
+              selectedGenre={selectedGenres[0]?.name}
+              selectedArtist={selectedArtist}
+              graph={graph}
+              toggleListView={() => {}}
+              showListView={false}
+              hideArtistCard={() => setShowArtistCard(false)}
+              content={
+                graph === 'artists' &&
+                  <div className='flex mr-[var(--sidebar-gap)] flex-col w-full justify-center sm:flex-row gap-3'>
+                     <GenresFilter
+                      genres={[...genres, singletonParentGenre]}
+                      genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
+                      graphType={graph}
+                      onGenreSelectionChange={onGenreFilterSelectionChange}
+                      initialSelection={initialGenreFilter}
+                      selectedGenreIds={selectedGenreIDs}
+                      genreColorMap={genreColorMap}
+                     />
+                    <Button size='default' variant='outline'>Mood & Activity
+                      <ChevronDown />
+                    </Button>
+                    <Button size='default' className='self-start' variant='outline'>Decade
+                      <ChevronDown />
+                    </Button>
+                  </div>
+                  }
+              /> */}
+              <AnimatePresence initial={false} mode="popLayout">
+                {!collectionMode && (
+                  <motion.div
+                    key="tabs"
+                    layout
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    Similar artists: {similarArtistAnchor.name}
-                    <X className="h-4 w-4" />
-                  </Button>
+                    <Tabs
+                      value={graph === 'similarArtists' ? 'artists' : graph}
+                      onValueChange={(val) => onTabChange(val as GraphType)}>
+                        <TabsList>
+                          <TabsTrigger value="genres">Genres</TabsTrigger>
+                          <TabsTrigger value="artists">Artists</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                  </motion.div>
                 )}
-
-                { graph === 'artists' &&
-                <div className='flex flex-col items-start sm:flex-row gap-3'>
-                   <GenresFilter
-                    //key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
-                    genres={[...genres, singletonParentGenre]}
-                    genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
-                    graphType={graph}
-                    onGenreSelectionChange={onGenreFilterSelectionChange}
-                    initialSelection={initialGenreFilter}
-                    selectedGenreIds={artistGenreFilterIDs}
-                   />
-
-                  {/* <Button size='lg' variant='outline'
-                  onClick={() => toast('Opens a filter menu for Moods & Activities...')}
-                  >Moods & Activities
-                    <ChevronDown />
-                  </Button> */}
-                  <DecadesFilter
-                    onDecadeSelectionChange={onDecadeSelectionChange}
-                  />
-                </div>
-                }
+              </AnimatePresence>
+              <AnimatePresence initial={false} mode="popLayout">
+                {graph === 'similarArtists' && similarArtistAnchor && (
+                  <motion.div
+                    key="similar-banner"
+                    layout
+                    initial={{ opacity: 0, y: -8, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <Button
+                      size='lg'
+                      variant='outline'
+                      onClick={() => onTabChange('artists')}
+                      className="gap-2"
+                    >
+                      Similar artists: {similarArtistAnchor.name}
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <AnimatePresence initial={false} mode="popLayout">
+                {collectionMode && graph === 'artists' && (
+                  <motion.div
+                    key="collection-filters"
+                    layout
+                    initial={{ opacity: 0, y: -8, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ overflow: "hidden" }}
+                    className='flex flex-col items-start sm:flex-row gap-3'
+                  >
+                    <GenresFilter
+                      genres={collectionGenresWithParent}
+                      genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
+                      graphType={graph}
+                      onGenreSelectionChange={(ids) => onCollectionFilterChange('genres', ids)}
+                      initialSelection={{ genre: undefined, isRoot: false, parents: {} }}
+                      selectedGenreIds={collectionFilters.genres}
+                      genreColorMap={genreColorMap}
+                    />
+                    {/* TODO: Add DecadesFilter when ready
+                    <DecadesFilter
+                      onDecadeSelectionChange={(ids) => onCollectionFilterChange('decades', ids)}
+                      selectedDecadeIds={collectionFilters.decades}
+                    />
+                    */}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <AnimatePresence initial={false} mode="popLayout">
+                {!collectionMode && graph === 'artists' && (
+                  <motion.div
+                    key="artist-filters"
+                    layout
+                    initial={{ opacity: 0, y: -8, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ overflow: "hidden" }}
+                    className='flex flex-col items-start sm:flex-row gap-3'
+                  >
+                    <GenresFilter
+                      //key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
+                      genres={[...genres, singletonParentGenre]}
+                      genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
+                      graphType={graph}
+                      onGenreSelectionChange={onGenreFilterSelectionChange}
+                      initialSelection={initialGenreFilter}
+                      selectedGenreIds={artistGenreFilterIDs}
+                      genreColorMap={genreColorMap}
+                    />
+                    <DecadesFilter
+                      onDecadeSelectionChange={onDecadeSelectionChange}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <motion.div layout>
                 <FindFilter
                   items={findOptions}
                   onSelect={handleFindSelect}
@@ -1803,12 +2144,16 @@ function App() {
                     setIsFindFilterOpen(open);
                   }}
                 />
+              </motion.div>
           </motion.div>
+          </AnimatePresence>
                 <GenresForceGraph
                   ref={genresGraphRef}
                   graphData={currentGenres}
                   onNodeClick={onGenreNodeClick}
+                  onNodeHover={handleGenreHover}
                   selectedGenreId={selectedGenres[0]?.id}
+                  hoverSelectedId={optionHoverSelectedId}
                   colorMap={genreColorMap}
                   dag={dagMode}
                   clusterModes={genreClusterMode}
@@ -1825,13 +2170,19 @@ function App() {
                   textFadeThreshold={textFadeThreshold}
                   showNodes={showNodes}
                   showLinks={showLinks}
+                  disableDimming={isUserDraggingGenreCanvas || isGenreDrawerAtMinSnap}
                 />
                 <ArtistsForceGraph
                   ref={artistsGraphRef}
                   artists={currentArtists}
                   artistLinks={currentArtistLinks}
                   onNodeClick={onArtistNodeClick}
+                  onNodeHover={(id, position) => {
+                      // Always track what's being hovered, regardless of command key
+                      setCursorHoveredArtist(id && position ? { id, position } : null);
+                  }}
                   selectedArtistId={selectedArtist?.id}
+                  hoverSelectedId={optionHoverSelectedId}
                   computeArtistColor={getArtistColor}
                   autoFocus={autoFocusGraph}
                   show={(graph === "artists" || graph === "similarArtists") && !artistsError}
@@ -1847,7 +2198,48 @@ function App() {
                   textFadeThreshold={textFadeThreshold}
                   showNodes={showNodes}
                   showLinks={showLinks}
+                  disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
                 />
+
+          {/* Genre hover preview */}
+          {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && !showGenreCard && (
+              <GenrePreview
+                  genre={hoveredGenreData.genre}
+                  topArtists={hoveredGenreData.topArtists}
+                  genreColorMap={genreColorMap}
+                  onNavigate={(genre) => onGenreNodeClick(genre)}
+                  onAllArtists={(genre) => onShowAllArtists(genre)}
+                  onPlay={onPlayGenre}
+                  playLoading={playerLoading}
+                  position={previewGenre.position}
+                  visible={!isMobile}
+                  previewModeActive={preferences?.previewTrigger === 'modifier' ? true : previewModeActive}
+                  onShow={handlePreviewShown}
+              />
+          )}
+
+          {/* Artist hover preview */}
+          {preferences?.enableGraphCards && hoveredArtistData && previewArtist
+              && (graph === 'artists' || graph === 'similarArtists') && !showArtistCard && (
+                  <ArtistPreview
+                      artist={hoveredArtistData}
+                      genreColorMap={genreColorMap}
+                      getGenreNameById={getGenreNameById}
+                      onNavigate={(artist) => onArtistNodeClick(artist)}
+                      onPlay={onPlayArtist}
+                      onToggle={onAddArtistButtonToggle}
+                      playLoading={playerLoading}
+                      isInCollection={isInCollection(hoveredArtistData.id)}
+                      position={previewArtist.position}
+                      visible={!isMobile}
+                      getArtistImageByName={getArtistImageByName}
+                      getArtistByName={getArtistByName}
+                      setArtistFromName={setArtistFromName}
+                      getArtistColor={getArtistColor}
+                      previewModeActive={preferences?.previewTrigger === 'modifier' ? true : previewModeActive}
+                      onShow={handlePreviewShown}
+                  />
+              )}
 
             <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
               <ZoomButtons
@@ -1862,19 +2254,23 @@ function App() {
               />
             </div>
           {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
+            {/*Genre Node Limiter*/}
             <NodeLimiter
-                totalNodes={genres ? genres.length : 0}
-                nodeType={'genres'}
-                initialValue={genreNodeCount}
-                onChange={onGenreNodeCountChange}
-                show={showGenreNodeLimiter()}
+              totalNodes={genres ? genres.length : 0}
+              nodeType={'genres'}
+              initialValue={genreNodeCount}
+              onChange={onGenreNodeCountChange}
+              show={showGenreNodeLimiter()}
+              nodeAmountPresets={NODE_AMOUNT_PRESETS}
             />
+            {/*Artist Node Limiter*/}
             <NodeLimiter
               totalNodes={totalArtistsInDB}
               nodeType={'artists'}
               initialValue={currentArtists.length}
-              onChange={(value) => artistNodeCountSelection(value)}
+              onChange={artistNodeCountSelection}
               show={showArtistNodeLimiter()}
+              nodeAmountPresets={NODE_AMOUNT_PRESETS}
             />
             {/*For testing node degrees*/}
             {/*<NodeLimiter*/}
@@ -1888,10 +2284,10 @@ function App() {
           {/* right controls */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               {/* <ModeToggle /> */}
-              <ClusteringPanel 
+              <ClusteringPanel
                 clusterMode={genreClusterMode[0]}
                 setClusterMode={onGenreClusterModeChange}
-                dagMode={dagMode} 
+                dagMode={dagMode}
                 setDagMode={setDagMode} />
               <DisplayPanel
                 genreArtistCountThreshold={genreSizeThreshold}
@@ -1924,6 +2320,7 @@ function App() {
                   showLinks: true,
                 }}
               />
+              <SharePanel onExport={handleExportGraph} />
               {/* Bottom positioned Zoomies */}
               <div className='pt-6 hidden sm:block'>
                 <ZoomButtons
@@ -1970,6 +2367,10 @@ function App() {
                 playLoading={isPlayerLoadingGenre()}
                 genreTracks={selectedGenres.length > 0 ? playerIDQueue.get(selectedGenres[0].id) : undefined}
                 onPlayTrack={onPlayGenreTrack}
+                onDrawerSnapChange={setIsGenreDrawerAtMinSnap}
+                onCanvasDragStart={handleGenreCanvasDragStart}
+                onHeaderRefocus={handleGenreHeaderRefocus}
+                expandToMiddleTrigger={genreDrawerExpandTrigger}
               />
               <ArtistInfo
                 key={artistInfoDrawerVersion}
@@ -1994,9 +2395,13 @@ function App() {
                 playLoading={isPlayerLoadingArtist()}
                 viewRelatedArtistsLoading={!!pendingArtistGenreGraph}
                 onArtistToggle={onAddArtistButtonToggle}
-                isInCollection={isInCollection(selectedArtist?.id)}
+                isInCollection={isInCollection(artistInfoToShow?.id)}
                 onPlayTrack={onPlayArtistTrack}
                 shouldShowChevron={showArtistGoTo}
+                onDrawerSnapChange={setIsArtistDrawerAtMinSnap}
+                onCanvasDragStart={handleArtistCanvasDragStart}
+                onHeaderRefocus={handleArtistHeaderRefocus}
+                expandToMiddleTrigger={artistDrawerExpandTrigger}
               />
 
             {/* Show reset button in desktop header when Artists view is pre-filtered by a selected genre */}
@@ -2028,6 +2433,27 @@ function App() {
                     setOpen={setSearchOpen}
                     genreColorMap={genreColorMap}
                     getArtistColor={getArtistColor}
+                    onArtistPlay={onPlayArtist}
+                    onGenrePlay={onPlayGenre}
+                    onArtistGoTo={(artist) => {
+                      // For artists: Explore Related Genres (since artist might not be in current view)
+                      focusArtistRelatedGenres(artist);
+                      setArtistInfoToShow(artist);
+                      setShowArtistCard(true);
+                    }}
+                    onGenreGoTo={(genre) => {
+                      // For genres: Go To (switches to genres view and focuses the genre)
+                      focusGenreInCurrentView(genre, { forceRefocus: true });
+                    }}
+                    onArtistViewSimilar={async (artist) => {
+                      await createSimilarArtistGraph(artist);
+                      setArtistInfoToShow(artist);
+                      setShowArtistCard(true);
+                    }}
+                    onGenreViewSimilar={(genre) => {
+                      // For genres: View Similar also navigates to genres view
+                      focusGenreInCurrentView(genre, { forceRefocus: true });
+                    }}
                   />
 
                 </motion.div>
@@ -2069,12 +2495,12 @@ function App() {
           onForgotPassword={forgotPassword}
       />
       <AlphaAccessDialog
-        open={alphaOpen}
+        open={!isAlphaValidated && !authLoading}
         onValidPassword={() => {
           setAlphaValidated();
           setAlphaOpen(false);
         }}
-        onValidatePassword={(pwd) => validatePassword(pwd)}
+        onValidatePassword={validatePassword}
       />
       <FeedbackOverlay
         onSubmit={submitFeedback}

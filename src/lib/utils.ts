@@ -22,6 +22,9 @@ export function cn(...inputs: ClassValue[]) {
 
 export const formatDate = (dateString: string) => {
   const date = new Date(dateString);
+  // Take the locale of the user into effect to avoid discrepancies
+  const offset = date.getTimezoneOffset();
+  date.setTime(date.getTime() + offset * 60 * 1000);
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -31,6 +34,12 @@ export const formatDate = (dateString: string) => {
 
 export const formatNumber = (value: number) =>
   new Intl.NumberFormat('en-US').format(value);
+
+export const formatNumberCompact = (value: number) =>
+  new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    compactDisplay: 'short'
+  }).format(value);
 
 export const envBoolean = (value: string) => {
   return value && (value.toLowerCase() === 'true' || parseInt(value) === 1);

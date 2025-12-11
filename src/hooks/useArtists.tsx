@@ -6,7 +6,7 @@ import {DEFAULT_NODE_COUNT, MAX_NODES, TOP_ARTISTS_TO_FETCH} from "@/constants";
 
 const url = serverUrl();
 
-const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter: ArtistNodeLimitType, amount: number, initial: boolean) => {
+const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter: ArtistNodeLimitType, amount: number, initial: boolean, collectionMode = false) => {
     const [artists, setArtists] = useState<Artist[]>([]);
     const [artistLinks, setArtistLinks] = useState<NodeLink[]>([]);
     const [artistsLoading, setArtistsLoading] = useState(false);
@@ -23,7 +23,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         resetArtistsError();
         if (!initial) {
             setArtistsLoading(true);
-            //console.log('fetching....')
+            // console.log(`fetching ${amount} artists...`);
             try {
                 const selectedSize = genreIDs.length;
                 if (selectedSize === 0) {
@@ -38,7 +38,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
                     setArtists(response.data.artists);
                     setArtistLinks(response.data.links);
                     setTotalArtistsInDB(
-                        response.data.count > DEFAULT_NODE_COUNT && artistCount === DEFAULT_NODE_COUNT
+                        response.data.count > amount
                             ? response.data.count
                             : artistCount
                     );
@@ -87,8 +87,18 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
     }
 
     useEffect(() => {
-        fetchArtists();
-    }, [genreIDs, filter, amount, initial]);
+        // Skip fetching when in collection mode - collection uses fetchLikedArtists instead
+        if (!collectionMode) {
+            fetchArtists();
+        }
+    }, [genreIDs, filter, initial, collectionMode]);
+
+    // Only refetch if change in amount is more than current amount of artists
+    useEffect(() => {
+        if (!collectionMode && amount > artists.length) {
+            fetchArtists();
+        }
+    }, [amount, collectionMode]);
 
     const flagBadArtistData = async (report: BadDataReport) => {
         resetArtistsDataFlagError();

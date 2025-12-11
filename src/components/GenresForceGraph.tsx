@@ -8,12 +8,14 @@ import { Genre, GenreClusterMode, GenreGraphData, NodeLink } from "@/types";
 interface GenresForceGraphProps {
   graphData?: GenreGraphData;
   onNodeClick: (genre: Genre) => void;
+  onNodeHover?: (genreId: string | null, screenPosition: { x: number; y: number } | null) => void;
   loading: boolean;
   show: boolean;
   dag: boolean;
   clusterModes: GenreClusterMode[];
   colorMap?: Map<string, string>;
   selectedGenreId?: string;
+  hoverSelectedId?: string | null;
   autoFocus?: boolean;
   width?: number;
   height?: number;
@@ -26,6 +28,7 @@ interface GenresForceGraphProps {
   textFadeThreshold?: number;
   showNodes?: boolean;
   showLinks?: boolean;
+  disableDimming?: boolean;
 }
 
 const MIN_RADIUS = 6;
@@ -36,6 +39,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
     {
       graphData,
       onNodeClick,
+      onNodeHover,
       loading,
       show,
       dag,
@@ -43,6 +47,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       clusterModes: _clusterModes,
       colorMap,
       selectedGenreId,
+      hoverSelectedId,
       autoFocus,
       width,
       height,
@@ -54,6 +59,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       textFadeThreshold,
       showNodes,
       showLinks,
+      disableDimming,
     },
     ref,
   ) => {
@@ -111,9 +117,11 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         width={width}
         height={height}
         selectedId={selectedGenreId}
+        hoverSelectedId={hoverSelectedId}
         dagMode={dag}
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
+        onNodeHover={onNodeHover ? (genre, screenPosition) => onNodeHover((genre as Genre | undefined)?.id ?? null, screenPosition) : undefined}
         nodeSize={nodeSize}
         linkThickness={linkThickness}
         linkCurvature={linkCurvature}
@@ -122,6 +130,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         textFadeThreshold={textFadeThreshold}
         showNodes={showNodes}
         showLinks={showLinks}
+        disableDimming={disableDimming}
       />
     );
   },
