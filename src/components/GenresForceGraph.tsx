@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from "react";
+import { forwardRef, memo, useMemo } from "react";
 import Graph, {
   type GraphHandle,
   type SharedGraphNode,
@@ -19,6 +19,15 @@ interface GenresForceGraphProps {
   autoFocus?: boolean;
   width?: number;
   height?: number;
+  // Display controls
+  nodeSize?: number;
+  linkThickness?: number;
+  linkCurvature?: number;
+  showLabels?: boolean;
+  labelSize?: 'Small' | 'Default' | 'Large';
+  textFadeThreshold?: number;
+  showNodes?: boolean;
+  showLinks?: boolean;
   disableDimming?: boolean;
 }
 
@@ -42,6 +51,14 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       autoFocus,
       width,
       height,
+      nodeSize,
+      linkThickness,
+      linkCurvature,
+      showLabels,
+      labelSize,
+      textFadeThreshold,
+      showNodes,
+      showLinks,
       disableDimming,
     },
     ref,
@@ -60,7 +77,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       return nodes.map((genre) => {
         const value = Math.log10(Math.max(1, genre.artistCount || 1));
         const t = (value - min) / denom;
-        const radius = MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS);
+        const radius = MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS); // Base radius only, no scaling
         return {
           id: genre.id,
           label: genre.name,
@@ -104,7 +121,15 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         dagMode={dag}
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
-        onNodeHover={onNodeHover}
+        onNodeHover={onNodeHover ? (genre, screenPosition) => onNodeHover((genre as Genre | undefined)?.id ?? null, screenPosition) : undefined}
+        nodeSize={nodeSize}
+        linkThickness={linkThickness}
+        linkCurvature={linkCurvature}
+        showLabels={showLabels}
+        labelSize={labelSize}
+        textFadeThreshold={textFadeThreshold}
+        showNodes={showNodes}
+        showLinks={showLinks}
         disableDimming={disableDimming}
       />
     );
@@ -112,4 +137,4 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
 );
 
 export type { GraphHandle };
-export default GenresForceGraph;
+export default memo(GenresForceGraph);

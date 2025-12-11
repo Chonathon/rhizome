@@ -163,6 +163,62 @@ function App() {
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const [similarArtistAnchor, setSimilarArtistAnchor] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
+
+  // Default display control states
+  const [nodeSize, setNodeSize] = useState<number>(() => {
+    const stored = localStorage.getItem('nodeSize');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [linkThickness, setLinkThickness] = useState<number>(() => {
+    const stored = localStorage.getItem('linkThickness');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [linkCurvature, setLinkCurvature] = useState<number>(() => {
+    const stored = localStorage.getItem('linkCurvature');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [textFadeThreshold, setTextFadeThreshold] = useState<number>(() => {
+    const stored = localStorage.getItem('textFadeThreshold');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [showLabels, setShowLabels] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showLabels');
+    return stored ? JSON.parse(stored) : true;
+  });
+  const [labelSize, setLabelSize] = useState<'Small' | 'Default' | 'Large'>(() => {
+    const stored = localStorage.getItem('labelSize');
+    return stored ? JSON.parse(stored) : 'Default';
+  });
+  const [showNodes, setShowNodes] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showNodes');
+    return stored ? JSON.parse(stored) : true;
+  });
+  const [showLinks, setShowLinks] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showLinks');
+    return stored ? JSON.parse(stored) : true;
+  });
+
+  // Reset display controls to defaults
+  const handleResetDisplayControls = useCallback(() => {
+    setNodeSize(50);
+    setLinkThickness(50);
+    setLinkCurvature(50);
+    setTextFadeThreshold(50);
+    setShowLabels(true);
+    setLabelSize('Default');
+    setShowNodes(true);
+    setShowLinks(true);
+    // Clear from localStorage
+    localStorage.removeItem('nodeSize');
+    localStorage.removeItem('linkThickness');
+    localStorage.removeItem('linkCurvature');
+    localStorage.removeItem('textFadeThreshold');
+    localStorage.removeItem('showLabels');
+    localStorage.removeItem('labelSize');
+    localStorage.removeItem('showNodes');
+    localStorage.removeItem('showLinks');
+  }, []);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [isFindFilterOpen, setIsFindFilterOpen] = useState(false);
   const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>(DEFAULT_GENRE_LIMIT_TYPE);
@@ -329,6 +385,39 @@ function App() {
   useEffect(() => {
     localStorage.setItem('dagMode', JSON.stringify(dagMode));
   }, [dagMode]);
+
+  // Persist display settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('nodeSize', JSON.stringify(nodeSize));
+  }, [nodeSize]);
+
+  useEffect(() => {
+    localStorage.setItem('linkThickness', JSON.stringify(linkThickness));
+  }, [linkThickness]);
+
+  useEffect(() => {
+    localStorage.setItem('linkCurvature', JSON.stringify(linkCurvature));
+  }, [linkCurvature]);
+
+  useEffect(() => {
+    localStorage.setItem('textFadeThreshold', JSON.stringify(textFadeThreshold));
+  }, [textFadeThreshold]);
+
+  useEffect(() => {
+    localStorage.setItem('showLabels', JSON.stringify(showLabels));
+  }, [showLabels]);
+
+  useEffect(() => {
+    localStorage.setItem('labelSize', JSON.stringify(labelSize));
+  }, [labelSize]);
+
+  useEffect(() => {
+    localStorage.setItem('showNodes', JSON.stringify(showNodes));
+  }, [showNodes]);
+
+  useEffect(() => {
+    localStorage.setItem('showLinks', JSON.stringify(showLinks));
+  }, [showLinks]);
 
   const findOptions = useMemo<FindOption[]>(() => {
     if (graph === 'genres' && currentGenres) {
@@ -1043,7 +1132,7 @@ function App() {
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
     setAutoFocusGraph(true); // Enable auto-focus for node clicks
     addRecentSelection(genre);
-  }
+  };
 
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
   const onShowAllArtists = (genre: Genre) => {
@@ -1150,7 +1239,7 @@ function App() {
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
     }
-  }
+  };
 
   const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
@@ -1484,13 +1573,13 @@ function App() {
     }
   }
 
-  const getGenreRootsFromID = (genreID: string) => {
+  const getGenreRootsFromID = useCallback((genreID: string) => {
     const genre = genres ? genres.find((g) => g.id === genreID) : undefined;
     if (genre) {
       return genre.rootGenres;
     }
     return [];
-  }
+  }, [genres]);
 
   const onBadDataGenreSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
     const user = userID ? userID : 'unregistered';
@@ -2073,6 +2162,14 @@ function App() {
                   loading={genresLoading}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
+                  nodeSize={nodeSize}
+                  linkThickness={linkThickness}
+                  linkCurvature={linkCurvature}
+                  showLabels={showLabels}
+                  labelSize={labelSize}
+                  textFadeThreshold={textFadeThreshold}
+                  showNodes={showNodes}
+                  showLinks={showLinks}
                   disableDimming={isUserDraggingGenreCanvas || isGenreDrawerAtMinSnap}
                 />
                 <ArtistsForceGraph
@@ -2093,6 +2190,14 @@ function App() {
                   loading={artistsLoading}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
+                  nodeSize={nodeSize}
+                  linkThickness={linkThickness}
+                  linkCurvature={linkCurvature}
+                  showLabels={showLabels}
+                  labelSize={labelSize}
+                  textFadeThreshold={textFadeThreshold}
+                  showNodes={showNodes}
+                  showLinks={showLinks}
                   disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
                 />
 
@@ -2187,6 +2292,33 @@ function App() {
               <DisplayPanel
                 genreArtistCountThreshold={genreSizeThreshold}
                 setGenreArtistCountThreshold={setGenreSizeThreshold}
+                nodeSize={nodeSize}
+                setNodeSize={setNodeSize}
+                linkThickness={linkThickness}
+                setLinkThickness={setLinkThickness}
+                linkCurvature={linkCurvature}
+                setLinkCurvature={setLinkCurvature}
+                textFadeThreshold={textFadeThreshold}
+                setTextFadeThreshold={setTextFadeThreshold}
+                showLabels={showLabels}
+                setShowLabels={setShowLabels}
+                labelSize={labelSize}
+                setLabelSize={setLabelSize}
+                showNodes={showNodes}
+                setShowNodes={setShowNodes}
+                showLinks={showLinks}
+                setShowLinks={setShowLinks}
+                onReset={handleResetDisplayControls}
+                defaults={{
+                  nodeSize: 50,
+                  linkThickness: 50,
+                  linkCurvature: 50,
+                  textFadeThreshold: 50,
+                  showLabels: true,
+                  labelSize: 'Default',
+                  showNodes: true,
+                  showLinks: true,
+                }}
               />
               <SharePanel onExport={handleExportGraph} />
               {/* Bottom positioned Zoomies */}
