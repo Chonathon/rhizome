@@ -155,14 +155,38 @@ function App() {
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
 
   // Default display control states
-  const [nodeSize, setNodeSize] = useState(50);
-  const [linkThickness, setLinkThickness] = useState(50);
-  const [linkCurvature, setLinkCurvature] = useState(50);
-  const [textFadeThreshold, setTextFadeThreshold] = useState(50);
-  const [showLabels, setShowLabels] = useState(true);
-  const [labelSize, setLabelSize] = useState<'Small' | 'Default' | 'Large'>('Default');
-  const [showNodes, setShowNodes] = useState(true);
-  const [showLinks, setShowLinks] = useState(true);
+  const [nodeSize, setNodeSize] = useState<number>(() => {
+    const stored = localStorage.getItem('nodeSize');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [linkThickness, setLinkThickness] = useState<number>(() => {
+    const stored = localStorage.getItem('linkThickness');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [linkCurvature, setLinkCurvature] = useState<number>(() => {
+    const stored = localStorage.getItem('linkCurvature');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [textFadeThreshold, setTextFadeThreshold] = useState<number>(() => {
+    const stored = localStorage.getItem('textFadeThreshold');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [showLabels, setShowLabels] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showLabels');
+    return stored ? JSON.parse(stored) : true;
+  });
+  const [labelSize, setLabelSize] = useState<'Small' | 'Default' | 'Large'>(() => {
+    const stored = localStorage.getItem('labelSize');
+    return stored ? JSON.parse(stored) : 'Default';
+  });
+  const [showNodes, setShowNodes] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showNodes');
+    return stored ? JSON.parse(stored) : true;
+  });
+  const [showLinks, setShowLinks] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showLinks');
+    return stored ? JSON.parse(stored) : true;
+  });
 
   // Reset display controls to defaults
   const handleResetDisplayControls = useCallback(() => {
@@ -174,6 +198,15 @@ function App() {
     setLabelSize('Default');
     setShowNodes(true);
     setShowLinks(true);
+    // Clear from localStorage
+    localStorage.removeItem('nodeSize');
+    localStorage.removeItem('linkThickness');
+    localStorage.removeItem('linkCurvature');
+    localStorage.removeItem('textFadeThreshold');
+    localStorage.removeItem('showLabels');
+    localStorage.removeItem('labelSize');
+    localStorage.removeItem('showNodes');
+    localStorage.removeItem('showLinks');
   }, []);
 
   const [searchOpen, setSearchOpen] = useState(false);
@@ -313,6 +346,39 @@ function App() {
   useEffect(() => {
     localStorage.setItem('dagMode', JSON.stringify(dagMode));
   }, [dagMode]);
+
+  // Persist display settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('nodeSize', JSON.stringify(nodeSize));
+  }, [nodeSize]);
+
+  useEffect(() => {
+    localStorage.setItem('linkThickness', JSON.stringify(linkThickness));
+  }, [linkThickness]);
+
+  useEffect(() => {
+    localStorage.setItem('linkCurvature', JSON.stringify(linkCurvature));
+  }, [linkCurvature]);
+
+  useEffect(() => {
+    localStorage.setItem('textFadeThreshold', JSON.stringify(textFadeThreshold));
+  }, [textFadeThreshold]);
+
+  useEffect(() => {
+    localStorage.setItem('showLabels', JSON.stringify(showLabels));
+  }, [showLabels]);
+
+  useEffect(() => {
+    localStorage.setItem('labelSize', JSON.stringify(labelSize));
+  }, [labelSize]);
+
+  useEffect(() => {
+    localStorage.setItem('showNodes', JSON.stringify(showNodes));
+  }, [showNodes]);
+
+  useEffect(() => {
+    localStorage.setItem('showLinks', JSON.stringify(showLinks));
+  }, [showLinks]);
 
   const findOptions = useMemo<FindOption[]>(() => {
     if (graph === 'genres' && currentGenres) {
