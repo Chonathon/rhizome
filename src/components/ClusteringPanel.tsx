@@ -3,8 +3,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Spline } from "lucide-react";
+import { Spline, RotateCcw } from "lucide-react";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
+import { useState } from "react";
 
 interface ClusteringPanelProps {
     clusterMode: GenreClusterMode;
@@ -14,6 +15,7 @@ interface ClusteringPanelProps {
 }
 
 export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, setDagMode }: ClusteringPanelProps) {
+
     const options = [
         { id: "subgenre", label: "Hierarchy", description: "Clusters genres based on their parent-child relationships, such as 'rock' and its subgenre 'alternative rock'." },
         { id: "influence", label: "Influence", description: "Visualizes how genres have influenced each other over time, revealing historical connections and the evolution of musical styles." },
@@ -31,11 +33,19 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
             className="w-full w-sm"
             side="left"
         >
+         {/* header */}
+                <div className="flex items-center pl-2 mb-1 h-10">
+                    <h2 className="text-lg w-full font-semibold leading-tight text-foreground">Clustering</h2>
+                    <Button
+                    // onClick={handleResetClick}
+                    variant="ghost" size="icon" className=" size-10">
+
+                    </Button>
+                </div>   
             <RadioGroup
                 value={clusterMode}
                 onValueChange={(value) => setClusterMode([value as GenreClusterMode])}
-                className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm rounded-2xl  bg-accent"
-            >
+                className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm rounded-2xl  bg-accent"            >
                 {options.map((option) => (
                     <div key={option.id} className="w-full">
                         <label
