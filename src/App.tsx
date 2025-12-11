@@ -1242,13 +1242,13 @@ function App() {
     }
   }
 
-  const getGenreRootsFromID = (genreID: string) => {
+  const getGenreRootsFromID = useCallback((genreID: string) => {
     const genre = genres ? genres.find((g) => g.id === genreID) : undefined;
     if (genre) {
       return genre.rootGenres;
     }
     return [];
-  }
+  }, [genres]);
 
   const onBadDataGenreSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
     const user = userID ? userID : 'unregistered';
