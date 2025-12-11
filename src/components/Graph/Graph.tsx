@@ -446,6 +446,31 @@ const Graph = forwardRef(function GraphInner<
     return () => window.clearTimeout(timeout);
   }, [autoFocus, preparedData.nodes, selectedId, show]);
 
+  // Get hovered node data
+  const hoveredNode = useMemo(() => {
+      if (!hoveredId) return null;
+      return preparedData.nodes.find(n => n.id === hoveredId) || null;
+  }, [hoveredId, preparedData.nodes]);
+
+  // Get screen position for hovered node
+  const hoveredNodeScreenPos = useMemo(() => {
+      if (!hoveredNode || !fgRef.current) return null;
+      const node = hoveredNode as unknown as BasicNode & { x?: number; y?: number };
+      if (node.x === undefined || node.y === undefined) return null;
+
+      // Convert graph coordinates to screen coordinates
+      const screenCoords = fgRef.current.graph2ScreenCoords?.(node.x, node.y);
+      return screenCoords ? { x: screenCoords.x, y: screenCoords.y } : null;
+  }, [hoveredNode]);
+
+  // Notify parent of hover state changes
+  useEffect(() => {
+      if (onNodeHover) {
+          onNodeHover(hoveredNode?.data, hoveredNodeScreenPos);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoveredId, hoveredNodeScreenPos]); // Don't include onNodeHover to avoid infinite loops
+
   // Smooth transition for dimming state changes
   useEffect(() => {
     const target = disableDimming ? 1 : 0;
