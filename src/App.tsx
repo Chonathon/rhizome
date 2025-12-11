@@ -1913,6 +1913,16 @@ function App() {
                 showLinks={showLinks}
                 setShowLinks={setShowLinks}
                 onReset={handleResetDisplayControls}
+                defaults={{
+                  nodeSize: 50,
+                  linkThickness: 50,
+                  linkCurvature: 50,
+                  textFadeThreshold: 50,
+                  showLabels: true,
+                  labelSize: 'Default',
+                  showNodes: true,
+                  showLinks: true,
+                }}
               />
               {/* Bottom positioned Zoomies */}
               <div className='pt-6 hidden sm:block'>

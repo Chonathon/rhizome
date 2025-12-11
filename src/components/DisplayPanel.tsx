@@ -30,6 +30,16 @@ interface DisplayPanelProps {
     showLinks: boolean;
     setShowLinks: (show: boolean) => void;
     onReset: () => void;
+    defaults?: {
+        nodeSize: number;
+        linkThickness: number;
+        linkCurvature: number;
+        textFadeThreshold: number;
+        showLabels: boolean;
+        labelSize: 'Small' | 'Default' | 'Large';
+        showNodes: boolean;
+        showLinks: boolean;
+    };
 }
 
 export default function DisplayPanel({
@@ -51,7 +61,8 @@ export default function DisplayPanel({
     setShowNodes,
     showLinks,
     setShowLinks,
-    onReset
+    onReset,
+    defaults
 }: DisplayPanelProps) {
     const [isRotating, setIsRotating] = useState(false);
     const handleResetClick = () => {
@@ -61,7 +72,19 @@ export default function DisplayPanel({
         setIsRotating(false);
       }, 200)
     }
-    
+
+    // Check if any value differs from defaults
+    const hasChanges = defaults ? (
+        nodeSize !== defaults.nodeSize ||
+        linkThickness !== defaults.linkThickness ||
+        linkCurvature !== defaults.linkCurvature ||
+        textFadeThreshold !== defaults.textFadeThreshold ||
+        showLabels !== defaults.showLabels ||
+        labelSize !== defaults.labelSize ||
+        showNodes !== defaults.showNodes ||
+        showLinks !== defaults.showLinks
+    ) : true;
+
     const labelStyles = "w-full text-left text-md font-medium text-foreground"
     const badgeStyles = "w-12 p-1 text-center"
     const feildsetStyles = "flex flex-col gap-4 p-2 rounded-2xl bg-accent dark:dark:bg-accent/50 border-accent border"
@@ -79,20 +102,22 @@ export default function DisplayPanel({
             headerTitle="Display Settings"
         >
             {/* header */}
-                <div className="flex items-center pl-2 mb-1">
+                <div className="flex items-center pl-2 mb-1 h-10">
                     <h2 className="text-lg w-full font-semibold leading-tight text-foreground">Display</h2>
-                    <Button
-                    onClick={handleResetClick}
-                    variant="ghost" size="icon" className=" size-10">
-                    <motion.div
-                        animate={ 
-                            isRotating 
-                            ? { rotate: -45 } : { rotate: 0 } }
-                            transition={{ type: "spring", stiffness: 600, damping: 12 }}
-                                   >
-                        <RotateCcw  />
-                    </motion.div>
-                    </Button>
+                    {hasChanges && (
+                        <Button
+                        onClick={handleResetClick}
+                        variant="ghost" size="icon" className=" size-10">
+                        <motion.div
+                            animate={
+                                isRotating
+                                ? { rotate: -45 } : { rotate: 0 } }
+                                transition={{ type: "spring", stiffness: 600, damping: 12 }}
+                                       >
+                            <RotateCcw  />
+                        </motion.div>
+                        </Button>
+                    )}
                 </div>
                 {/* content */}
             <div className="flex flex-col gap-3">
