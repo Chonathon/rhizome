@@ -3,7 +3,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { Badge } from "@/components/ui/badge"
 import { BadgeIndicator } from "@/components/BadgeIndicator"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
-import { X, Search as SearchIcon, CirclePlay } from "lucide-react"
+import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon } from "lucide-react"
 import { motion } from "framer-motion";
 import { isGenre } from "@/lib/utils"
 import { Artist, BasicNode, Genre, GraphType } from "@/types";
@@ -460,15 +460,15 @@ export function Search({
               key={"Feedback"}
               onSelect={() => {window.dispatchEvent(new Event('feedback:open'))}}
             >
-              Give Feedback
+              <HandHeart/>Give Feedback
             </CommandItem>
             <CommandItem
               key={"toggle-theme"}
               onSelect={() => {
                 setTheme(theme === "light" ? "dark" : "light");
               }}
-              className="flex items-center justify-between"
-            >
+            > 
+              {theme === "dark" ? <Sun/> : <Moon/>}
               {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
             </CommandItem>
           </CommandGroup>
