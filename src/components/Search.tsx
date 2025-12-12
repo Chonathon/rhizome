@@ -77,6 +77,11 @@ export function Search({
     }
   }, [inputValue, SEARCH_DEBOUNCE_MS]);
 
+  // Reset selected value when input changes to keep cmdk selection in sync
+  useEffect(() => {
+    setSelectedValue("");
+  }, [inputValue]);
+
   // Track modifier key states
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -151,10 +156,9 @@ export function Search({
     };
   };
 
-  // Clears the selection on remount
+  // Position cursor at end of input when dialog opens
   useEffect(() => {
     if (open) {
-      // Wait for next tick after remount and selection
       requestAnimationFrame(() => {
         if (inputRef.current) {
           const input = inputRef.current; 
@@ -163,7 +167,7 @@ export function Search({
         } 
       });
     }
-  }, [open, filteredSearchableItems.length]);
+  }, [open]);
 
   const onItemSelect = (selection: BasicNode) => {
     if (isGenre(selection)) {
@@ -296,9 +300,6 @@ export function Search({
         </Button>
       </motion.div>
       <CommandDialog
-          key={filteredSearchableItems.length
-            ? filteredSearchableItems[filteredSearchableItems.length - 1].id
-            : filteredSearchableItems.length}
           open={open}
           onOpenChange={setOpen}
           shouldFilter={false}
