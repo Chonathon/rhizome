@@ -362,7 +362,7 @@ export function Search({
         />
         <CommandList className="max-h-none flex-1 overflow-y-auto">
           {searchLoading && <Loading />}
-          <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>
+          {!searchLoading && inputValue === query && <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>}
           {hasSearchResults && (
               <CommandGroup heading="Search Results">
                 {filteredSearchableItems.map((item, i) => {
