@@ -69,13 +69,11 @@ export function Search({
 
   // Debouncing
   useEffect(() => {
-    if (inputValue) {
-      const timeout = setTimeout(() => {
-        setQuery(inputValue);
-      }, SEARCH_DEBOUNCE_MS);
-      return () => clearTimeout(timeout);
-    }
-  }, [inputValue, SEARCH_DEBOUNCE_MS]);
+    const timeout = setTimeout(() => {
+      setQuery(inputValue);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+  }, [inputValue]);
 
   // Reset selected value when input changes to keep cmdk selection in sync
   useEffect(() => {
