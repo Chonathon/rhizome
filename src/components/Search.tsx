@@ -459,6 +459,12 @@ export function Search({
           {!inputValue && (
           <CommandGroup heading="Actions">
             <CommandItem
+              key={"Feedback"}
+              onSelect={() => {window.dispatchEvent(new Event('feedback:open'))}}
+            >
+              Give Feedback
+            </CommandItem>
+            <CommandItem
               key={"toggle-theme"}
               onSelect={() => {
                 setTheme(theme === "light" ? "dark" : "light");
