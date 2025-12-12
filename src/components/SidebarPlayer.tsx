@@ -116,8 +116,7 @@ export default function SidebarPlayer({
   const mountPlayer = useCallback(async () => {
     if (!containerRef.current || !open) return;
     const YT = await loadYTApi();
-
-    // Clean existing tracked player
+    // Clean existing
     if (playerRef.current) {
       try { playerRef.current.stopVideo?.(); } catch {}
       if (playerRef.current.destroy) {
@@ -125,16 +124,6 @@ export default function SidebarPlayer({
       }
       playerRef.current = null;
     }
-
-    // Clean up any orphaned YouTube iframes in all wrappers
-    [mobileWrapperRef, desktopWrapperRef, offscreenWrapperRef].forEach(ref => {
-      if (ref.current) {
-        ref.current.querySelectorAll('iframe[src*="youtube.com"]').forEach(iframe => {
-          iframe.remove();
-        });
-      }
-    });
-
     const elementId = `yt-frame-${Math.random().toString(36).slice(2)}`;
     const frame = document.createElement('div');
     frame.id = elementId;
@@ -214,7 +203,7 @@ export default function SidebarPlayer({
         playerRef.current = null;
       }
     };
-  }, [open, videoIds, mountPlayer, isMobileMode]);
+  }, [open, videoIds, mountPlayer]);
 
   // Reset derived state when a new playlist arrives
   useEffect(() => {
@@ -250,7 +239,7 @@ export default function SidebarPlayer({
     } else {
       moveTo(offscreenWrapperRef.current);
     }
-  }, [isMobileMode, isDesktop, ready]);
+  }, [isMobileMode, ready]);
 
   // Progress polling
   useEffect(() => {
