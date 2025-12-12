@@ -130,6 +130,13 @@ export function Search({
       [genres, searchResults, currentArtists, inputValue]
   );
 
+  // Check if filtered items include any actual search results
+  const hasSearchResults = useMemo(() => {
+    if (!query || searchResults.length === 0) return false;
+    const searchResultIds = new Set(searchResults.map(r => r.id));
+    return filteredSearchableItems.some(item => searchResultIds.has(item.id));
+  }, [query, searchResults, filteredSearchableItems]);
+
   const isArtistWithDetail = (node: BasicNode): node is Artist => {
     return 'tags' in node && Array.isArray((node as Artist).tags);
   };
@@ -356,7 +363,7 @@ export function Search({
         <CommandList className="max-h-none flex-1 overflow-y-auto">
           {searchLoading && <Loading />}
           <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>
-          {inputValue && searchResults.length > 0 && (
+          {hasSearchResults && (
               <CommandGroup heading="Search Results">
                 {filteredSearchableItems.map((item, i) => {
                   const meta = getIndicatorMeta(item);
