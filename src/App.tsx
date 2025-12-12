@@ -152,6 +152,7 @@ function App() {
   const [selectedArtistFromSearch, setSelectedArtistFromSearch] = useState<boolean>(false);
   const [artistPreviewStack, setArtistPreviewStack] = useState<Artist[]>([]);
   const [artistInfoDrawerVersion, setArtistInfoDrawerVersion] = useState(0);
+  // used for tracking artist info drawer state
   const [artistInfoToShow, setArtistInfoToShow] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [cursorHoveredGenre, setCursorHoveredGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
@@ -624,29 +625,58 @@ function App() {
 
   // Add artist play IDs to the playerIDQueue on genre click
   const updateArtistPlayerIDs = async (artist: Artist) => {
-    if (artist && !playerIDQueue.has(artist.id)) {
-      const currentSelectedArtist = {
-        id: artist.id,
-        name: artist.name,
-        noTopTracks: artist.noTopTracks,
-        topTracks: artist.topTracks
-      };
-      // If we haven't already tried and failed to fetch tracks for this artist
-      if (!currentSelectedArtist.noTopTracks) {
-        if (currentSelectedArtist.topTracks) {
-          playerIDQueue.set(currentSelectedArtist.id, currentSelectedArtist.topTracks);
-        } else {
-          const artistTracks = await fetchArtistTopTracks(currentSelectedArtist.id, currentSelectedArtist.name);
-          if (artistTracks) {
-            playerIDQueue.set(currentSelectedArtist.id, artistTracks);
-            // Update the selectedArtist state so the UI reflects the newly fetched tracks
-            setSelectedArtist(prev => {
-              if (prev && prev.id === currentSelectedArtist.id) {
-                return { ...prev, topTracks: artistTracks };
-              }
-              return prev;
-            });
-          }
+    if (!artist) return;
+
+    // Check if we already have tracks cached in the queue
+    const cachedTracks = playerIDQueue.get(artist.id);
+
+    if (cachedTracks) {
+      // We have cached tracks, update the states with them immediately
+      setSelectedArtist(prev => {
+        if (prev && prev.id === artist.id && !prev.topTracks) {
+          return { ...prev, topTracks: cachedTracks };
+        }
+        return prev;
+      });
+      setArtistInfoToShow(prev => {
+        if (prev && prev.id === artist.id && !prev.topTracks) {
+          return { ...prev, topTracks: cachedTracks };
+        }
+        return prev;
+      });
+      return;
+    }
+
+    // Not in cache, need to fetch or add to queue
+    const currentSelectedArtist = {
+      id: artist.id,
+      name: artist.name,
+      noTopTracks: artist.noTopTracks,
+      topTracks: artist.topTracks
+    };
+
+    // If we haven't already tried and failed to fetch tracks for this artist
+    if (!currentSelectedArtist.noTopTracks) {
+      if (currentSelectedArtist.topTracks) {
+        playerIDQueue.set(currentSelectedArtist.id, currentSelectedArtist.topTracks);
+      } else {
+        const artistTracks = await fetchArtistTopTracks(currentSelectedArtist.id, currentSelectedArtist.name);
+        if (artistTracks) {
+          playerIDQueue.set(currentSelectedArtist.id, artistTracks);
+          // Update the selectedArtist state so the UI reflects the newly fetched tracks
+          setSelectedArtist(prev => {
+            if (prev && prev.id === currentSelectedArtist.id) {
+              return { ...prev, topTracks: artistTracks };
+            }
+            return prev;
+          });
+          // Also update artistInfoToShow so the drawer dropdown reflects the newly fetched tracks
+          setArtistInfoToShow(prev => {
+            if (prev && prev.id === currentSelectedArtist.id) {
+              return { ...prev, topTracks: artistTracks };
+            }
+            return prev;
+          });
         }
       }
     }
