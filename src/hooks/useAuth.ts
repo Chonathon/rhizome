@@ -2,6 +2,7 @@ import {useContext, useEffect, useState} from "react";
 import {Preferences} from "@/types";
 import {AuthContext} from "@/providers/AuthProvider";
 import {likeArtistUser, unlikeArtistUser, updateUserPreferences} from "@/apis/usersApi";
+import {DEFAULT_PREFERENCES} from "@/constants";
 
 const useAuth = () => {
     const [userID, setUserID] = useState<string>();
@@ -36,7 +37,7 @@ const useAuth = () => {
         setUserName(user ? user.name : undefined);
         setUserEmail(user ? user.email : undefined);
         setUserImage(user ? user.image : undefined);
-        setPreferences(user ? user.preferences : undefined);
+        setPreferences(user ? user.preferences : DEFAULT_PREFERENCES);
         setLikedArtists(user && user.liked ? user.liked.map(l => l.id) : []);
         setIsSocialUser(user ? user.socialUser : false);
         setUserAccess(user ? user.appAccess : undefined)
