@@ -3,7 +3,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { Badge } from "@/components/ui/badge"
 import { BadgeIndicator } from "@/components/BadgeIndicator"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
-import { X, Search as SearchIcon, CirclePlay } from "lucide-react"
+import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon } from "lucide-react"
 import { motion } from "framer-motion";
 import { isGenre } from "@/lib/utils"
 import { Artist, BasicNode, Genre, GraphType } from "@/types";
@@ -69,13 +69,16 @@ export function Search({
 
   // Debouncing
   useEffect(() => {
-    if (inputValue) {
-      const timeout = setTimeout(() => {
-        setQuery(inputValue);
-      }, SEARCH_DEBOUNCE_MS);
-      return () => clearTimeout(timeout);
-    }
-  }, [inputValue, SEARCH_DEBOUNCE_MS]);
+    const timeout = setTimeout(() => {
+      setQuery(inputValue);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+  }, [inputValue]);
+
+  // Reset selected value when input changes to keep cmdk selection in sync
+  useEffect(() => {
+    setSelectedValue("");
+  }, [inputValue]);
 
   // Track modifier key states
   useEffect(() => {
@@ -125,6 +128,13 @@ export function Search({
       [genres, searchResults, currentArtists, inputValue]
   );
 
+  // Check if filtered items include any actual search results
+  const hasSearchResults = useMemo(() => {
+    if (!query || searchResults.length === 0) return false;
+    const searchResultIds = new Set(searchResults.map(r => r.id));
+    return filteredSearchableItems.some(item => searchResultIds.has(item.id));
+  }, [query, searchResults, filteredSearchableItems]);
+
   const isArtistWithDetail = (node: BasicNode): node is Artist => {
     return 'tags' in node && Array.isArray((node as Artist).tags);
   };
@@ -151,10 +161,9 @@ export function Search({
     };
   };
 
-  // Clears the selection on remount
+  // Position cursor at end of input when dialog opens
   useEffect(() => {
     if (open) {
-      // Wait for next tick after remount and selection
       requestAnimationFrame(() => {
         if (inputRef.current) {
           const input = inputRef.current; 
@@ -163,7 +172,7 @@ export function Search({
         } 
       });
     }
-  }, [open, filteredSearchableItems.length]);
+  }, [open]);
 
   const onItemSelect = (selection: BasicNode) => {
     if (isGenre(selection)) {
@@ -173,6 +182,45 @@ export function Search({
     }
     addRecentSelection(selection);
     setOpen(false);
+  }
+  // Checks which modifier keys are held and performs the appropriate action
+  const handleItemAction = (item: BasicNode) => {
+    const isGenreItem = isGenre(item);
+
+    // Cmd/Ctrl + Click: Go To
+    if (cmdCtrlHeld && !altHeld && !shiftHeld) {
+      if (isGenreItem && onGenreGoTo) {
+        onGenreGoTo(item as Genre);
+      } else if (!isGenreItem && onArtistGoTo) {
+        onArtistGoTo(item as Artist);
+      }
+      addRecentSelection(item);
+      setOpen(false);
+    }
+    // Alt + Click: View Similar
+    else if (altHeld && !cmdCtrlHeld && !shiftHeld) {
+      if (isGenreItem && onGenreViewSimilar) {
+        onGenreViewSimilar(item as Genre);
+      } else if (!isGenreItem && onArtistViewSimilar) {
+        onArtistViewSimilar(item as Artist);
+      }
+      addRecentSelection(item);
+      setOpen(false);
+    }
+    // Shift + Click: Play
+    else if (shiftHeld && !cmdCtrlHeld && !altHeld) {
+      if (isGenreItem && onGenrePlay) {
+        onGenrePlay(item as Genre);
+      } else if (!isGenreItem && onArtistPlay) {
+        onArtistPlay(item as Artist);
+      }
+      addRecentSelection(item);
+      setOpen(false);
+    }
+    // No modifiers: Default select
+    else {
+      onItemSelect(item);
+    }
   }
 
   const getActionHint = (item: BasicNode, isSelected: boolean) => {
@@ -193,6 +241,34 @@ export function Search({
   };
 
   const { theme, setTheme } = useTheme()
+
+  // Define searchable actions
+  const searchableActions = useMemo(() => [
+    {
+      id: 'feedback',
+      label: 'Give Feedback',
+      keywords: ['feedback', 'give', 'report', 'suggest'],
+      icon: HandHeart,
+      onSelect: () => { window.dispatchEvent(new Event('feedback:open')) }
+    },
+    {
+      id: 'toggle-theme',
+      label: theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
+      keywords: ['theme', 'dark', 'light', 'mode', 'switch', 'toggle', 'dark mode', 'light mode'],
+      icon: theme === "dark" ? Sun : Moon,
+      onSelect: () => { setTheme(theme === "light" ? "dark" : "light") }
+    }
+  ], [theme, setTheme]);
+
+  // Filter actions based on input
+  const filteredActions = useMemo(() => {
+    if (!inputValue) return searchableActions;
+    const searchLower = inputValue.toLowerCase();
+    return searchableActions.filter(action =>
+      action.label.toLowerCase().includes(searchLower) ||
+      action.keywords.some(keyword => keyword.includes(searchLower))
+    );
+  }, [inputValue, searchableActions]);
 
   // Create a map for quick lookup of items by their value (id)
   const itemsById = useMemo(() => {
@@ -296,9 +372,6 @@ export function Search({
         </Button>
       </motion.div>
       <CommandDialog
-          key={filteredSearchableItems.length
-            ? filteredSearchableItems[filteredSearchableItems.length - 1].id
-            : filteredSearchableItems.length}
           open={open}
           onOpenChange={setOpen}
           shouldFilter={false}
@@ -315,8 +388,8 @@ export function Search({
         />
         <CommandList className="max-h-none flex-1 overflow-y-auto">
           {searchLoading && <Loading />}
-          <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>
-          {inputValue && searchResults.length > 0 && (
+          {!searchLoading && inputValue === query && <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>}
+          {hasSearchResults && (
               <CommandGroup heading="Search Results">
                 {filteredSearchableItems.map((item, i) => {
                   const meta = getIndicatorMeta(item);
@@ -326,7 +399,7 @@ export function Search({
                     <CommandItem
                         key={`${item.id}-${i}`}
                         value={item.id}
-                        onSelect={() => onItemSelect(item)}
+                        onSelect={() => handleItemAction(item)}
                         className="flex items-center justify-between gap-2"
                     >
                       <div className="flex min-w-0 items-center gap-2">
@@ -367,7 +440,7 @@ export function Search({
                   <CommandItem
                     key={selection.id}
                     value={selection.id}
-                    onSelect={() => onItemSelect(selection)}
+                    onSelect={() => handleItemAction(selection)}
                     className="flex items-center justify-between gap-2"
                   >
                     <div className="flex min-w-0 items-center gap-2">
@@ -409,17 +482,20 @@ export function Search({
               })}
             </CommandGroup>
           )}
-          {!inputValue && (
+          {filteredActions.length > 0 && (
           <CommandGroup heading="Actions">
-            <CommandItem
-              key={"toggle-theme"}
-              onSelect={() => {
-                setTheme(theme === "light" ? "dark" : "light");
-              }}
-              className="flex items-center justify-between"
-            >
-              {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            </CommandItem>
+            {filteredActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <CommandItem
+                  key={action.id}
+                  onSelect={action.onSelect}
+                >
+                  <Icon className="mr-2 size-4" />
+                  {action.label}
+                </CommandItem>
+              );
+            })}
           </CommandGroup>
           )}
        
