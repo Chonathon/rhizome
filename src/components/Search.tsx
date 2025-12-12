@@ -242,6 +242,34 @@ export function Search({
 
   const { theme, setTheme } = useTheme()
 
+  // Define searchable actions
+  const searchableActions = useMemo(() => [
+    {
+      id: 'feedback',
+      label: 'Give Feedback',
+      keywords: ['feedback', 'give', 'report', 'suggest'],
+      icon: HandHeart,
+      onSelect: () => { window.dispatchEvent(new Event('feedback:open')) }
+    },
+    {
+      id: 'toggle-theme',
+      label: theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
+      keywords: ['theme', 'dark', 'light', 'mode', 'switch', 'toggle', 'dark mode', 'light mode'],
+      icon: theme === "dark" ? Sun : Moon,
+      onSelect: () => { setTheme(theme === "light" ? "dark" : "light") }
+    }
+  ], [theme, setTheme]);
+
+  // Filter actions based on input
+  const filteredActions = useMemo(() => {
+    if (!inputValue) return searchableActions;
+    const searchLower = inputValue.toLowerCase();
+    return searchableActions.filter(action =>
+      action.label.toLowerCase().includes(searchLower) ||
+      action.keywords.some(keyword => keyword.includes(searchLower))
+    );
+  }, [inputValue, searchableActions]);
+
   // Create a map for quick lookup of items by their value (id)
   const itemsById = useMemo(() => {
     const map = new Map<string, BasicNode>();
@@ -454,23 +482,20 @@ export function Search({
               })}
             </CommandGroup>
           )}
-          {!inputValue && (
+          {filteredActions.length > 0 && (
           <CommandGroup heading="Actions">
-            <CommandItem
-              key={"Feedback"}
-              onSelect={() => {window.dispatchEvent(new Event('feedback:open'))}}
-            >
-              <HandHeart/>Give Feedback
-            </CommandItem>
-            <CommandItem
-              key={"toggle-theme"}
-              onSelect={() => {
-                setTheme(theme === "light" ? "dark" : "light");
-              }}
-            > 
-              {theme === "dark" ? <Sun/> : <Moon/>}
-              {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            </CommandItem>
+            {filteredActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <CommandItem
+                  key={action.id}
+                  onSelect={action.onSelect}
+                >
+                  <Icon className="mr-2 size-4" />
+                  {action.label}
+                </CommandItem>
+              );
+            })}
           </CommandGroup>
           )}
        
