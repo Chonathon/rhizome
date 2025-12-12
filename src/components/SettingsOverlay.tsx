@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CircleUserRound, Cable, HandHeart, Check, X, Cog } from "lucide-react"
+import { CircleUserRound, Cable, HandHeart, Check, X, Cog, Info } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
@@ -767,7 +767,9 @@ const ConnectionsSection = () => {
                          <DropdownMenuContent align="end" side="bottom">
                                <div
                                 className="p-3">
-                                  <div className="flex items-center gap-2"><Cable size={20}/><h2 className="text-lg font-semibold">Connections in Rhizome</h2></div>
+                                  <div className="flex items-center gap-1">
+                                    <Info size={20}/>
+                                  <h2 className="text-lg font-semibold">Whoops, we haven’t implemented this yet</h2></div>
                                   <p className="text-base text-muted-foreground">
                                     How would you use connections in Rhizome?
                                   </p>
