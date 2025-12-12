@@ -178,6 +178,45 @@ export function Search({
     addRecentSelection(selection);
     setOpen(false);
   }
+  // Checks which modifier keys are held and performs the appropriate action
+  const handleItemAction = (item: BasicNode) => {
+    const isGenreItem = isGenre(item);
+
+    // Cmd/Ctrl + Click: Go To
+    if (cmdCtrlHeld && !altHeld && !shiftHeld) {
+      if (isGenreItem && onGenreGoTo) {
+        onGenreGoTo(item as Genre);
+      } else if (!isGenreItem && onArtistGoTo) {
+        onArtistGoTo(item as Artist);
+      }
+      addRecentSelection(item);
+      setOpen(false);
+    }
+    // Alt + Click: View Similar
+    else if (altHeld && !cmdCtrlHeld && !shiftHeld) {
+      if (isGenreItem && onGenreViewSimilar) {
+        onGenreViewSimilar(item as Genre);
+      } else if (!isGenreItem && onArtistViewSimilar) {
+        onArtistViewSimilar(item as Artist);
+      }
+      addRecentSelection(item);
+      setOpen(false);
+    }
+    // Shift + Click: Play
+    else if (shiftHeld && !cmdCtrlHeld && !altHeld) {
+      if (isGenreItem && onGenrePlay) {
+        onGenrePlay(item as Genre);
+      } else if (!isGenreItem && onArtistPlay) {
+        onArtistPlay(item as Artist);
+      }
+      addRecentSelection(item);
+      setOpen(false);
+    }
+    // No modifiers: Default select
+    else {
+      onItemSelect(item);
+    }
+  }
 
   const getActionHint = (item: BasicNode, isSelected: boolean) => {
     if (!isSelected) return null;
@@ -327,7 +366,7 @@ export function Search({
                     <CommandItem
                         key={`${item.id}-${i}`}
                         value={item.id}
-                        onSelect={() => onItemSelect(item)}
+                        onSelect={() => handleItemAction(item)}
                         className="flex items-center justify-between gap-2"
                     >
                       <div className="flex min-w-0 items-center gap-2">
@@ -368,7 +407,7 @@ export function Search({
                   <CommandItem
                     key={selection.id}
                     value={selection.id}
-                    onSelect={() => onItemSelect(selection)}
+                    onSelect={() => handleItemAction(selection)}
                     className="flex items-center justify-between gap-2"
                   >
                     <div className="flex min-w-0 items-center gap-2">
