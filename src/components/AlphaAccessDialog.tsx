@@ -108,15 +108,13 @@ function AlphaAccessDialog({ open, onValidPassword, onValidatePassword }: AlphaA
                     <FieldDescription>
                     This must match the email address the access code was sent to
                     </FieldDescription>
-                    <FieldError>{errorMessage}</FieldError>
                   </FieldContent>
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="alpha-password">Alpha Password</FieldLabel>
+                  <FieldLabel htmlFor="alpha-password">Alpha Access Code</FieldLabel>
                   <FieldContent>
                     <Input
                         id="alpha-password"
-                        type="password"
                         placeholder="Enter your alpha password"
                         ref={passwordRef}
                         value={accessCode}
@@ -125,7 +123,7 @@ function AlphaAccessDialog({ open, onValidPassword, onValidatePassword }: AlphaA
                         required
                     />
                     <FieldDescription>
-                      You’ll get a unique password by email when invited
+                      You’ll get a unique access code by email when invited
                     </FieldDescription>
                     <FieldError>{errorMessage}</FieldError>
                   </FieldContent>
