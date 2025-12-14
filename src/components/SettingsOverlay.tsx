@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CircleUserRound, Cable, HandHeart, Check, X, Cog } from "lucide-react"
+import { CircleUserRound, Cable, HandHeart, Check, X, Cog, Info } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
@@ -49,6 +49,7 @@ import { toast } from "sonner"
 import {Preferences, PreviewTrigger, Theme} from "@/types";
 import KofiLogo from "@/assets/kofi_symbol.svg"
 import LastFMLogo from "@/assets/Last.fm Logo.svg"
+import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuContent } from "@/components/ui/dropdown-menu"
 
 const data = {
   nav: [
@@ -755,7 +756,38 @@ const ConnectionsSection = () => {
                       </FieldLabel>
                       <FieldDescription id="lastfm-connection-description">Two way sync: Import your followed artists and share your collection</FieldDescription>
                       </FieldContent>
-                      <ToggleButton
+                      
+                      <DropdownMenu>
+                         <DropdownMenuTrigger asChild>
+                           <Button
+                              variant="secondary">
+                              Connect 
+                            </Button>
+                         </DropdownMenuTrigger>
+                         <DropdownMenuContent align="end" side="bottom">
+                               <div
+                                className="p-3">
+                                  <div className="flex items-center gap-1">
+                                    <Info size={20}/>
+                                  <h2 className="text-lg font-semibold">Whoops, we haven’t implemented this yet</h2></div>
+                                  <p className="text-base text-muted-foreground">
+                                    How would you use connections in Rhizome?
+                                  </p>
+
+                                  <div className="mt-6">
+                                    <Button asChild>
+                                      <a 
+                                        target="_blank" 
+                                        href="https://tally.so/r/obEpvO"
+                                        rel="noopener noreferrer"
+                                        >Give Feedback</a>
+                                    </Button>
+                                  </div>
+                                </div>
+                         </DropdownMenuContent>
+                       </DropdownMenu>
+                       {/* Hidden while not functional */}
+                      {/* <ToggleButton
                         isActive={isLastFmConnected}
                         onToggle={handleLastFmToggle}
                         activeLabel="Connected"
@@ -766,7 +798,7 @@ const ConnectionsSection = () => {
                         size="sm"
                         ariaLabel={isLastFmConnected ? "Disconnect from Last.FM" : "Connect to Last.FM"}
                         ariaDescribedBy="lastfm-connection-description"
-                      />
+                      /> */}
                   </Field>
           </FieldGroup>
         </FieldSet>
