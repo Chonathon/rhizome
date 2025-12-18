@@ -239,12 +239,10 @@ export function ResponsiveDrawer({
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance >= 5) {
-          console.log('[ResponsiveDrawer] Canvas drag detected, distance:', distance);
           // Notify parent immediately (e.g., to undim the graph)
           canvasDragStartRef.current = null;
           onCanvasDragStart?.();
           // Then minimize drawer (mobile only)
-          console.log('[ResponsiveDrawer] Calling minimizeToFirstSnap, isDesktop:', isDesktop, 'minimizeOnCanvasTouch:', minimizeOnCanvasTouch);
           minimizeToFirstSnap();
         }
       }
