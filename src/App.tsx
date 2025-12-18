@@ -164,6 +164,7 @@ function App() {
   });
   const [artistClusterMode, setArtistClusterMode] = useState<ArtistClusterMode>(DEFAULT_ARTIST_CLUSTER_MODE);
   const [artistColorMap, setArtistColorMap] = useState<Map<string, string>>(new Map());
+  const [filteredArtistLinks, setFilteredArtistLinks] = useState<NodeLink[]>([]);
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const [similarArtistAnchor, setSimilarArtistAnchor] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
@@ -578,24 +579,42 @@ function App() {
     setCurrentArtistLinks(displayedArtistsData.links);
   }, [displayedArtistsData]);
 
+  // Filter artist links to show only intra-cluster connections
+  // This mirrors the genre graph's filterLinksByClusterMode pattern
+  const filterArtistLinksByClusters = useCallback((
+    links: NodeLink[],
+    clusters: ClusterResult | null
+  ): NodeLink[] => {
+    if (!clusters || graph !== 'artists') return links;
+
+    const artistToCluster = clusters.artistToCluster;
+
+    // Keep only links where both artists are in the same cluster
+    return links.filter(link => {
+      const sourceCluster = artistToCluster.get(link.source);
+      const targetCluster = artistToCluster.get(link.target);
+      return sourceCluster && targetCluster && sourceCluster === targetCluster;
+    });
+  }, [graph]);
+
   // Compute artist clusters when data or mode changes
   const artistClusters = useMemo<ClusterResult | null>(() => {
     if (graph !== 'artists' || !currentArtists.length) return null;
 
     try {
-      const engine = new ClusteringEngine(currentArtists);
+      const engine = new ClusteringEngine(currentArtists, currentArtistLinks);
 
       switch (artistClusterMode) {
         case 'genre':
           return engine.cluster({ method: 'genre' });
         case 'tags':
           return engine.cluster({ method: 'tags', tagSimilarityThreshold: 0.3 });
-        case 'similar':
-          return engine.cluster({ method: 'similar' });
+        case 'louvain':
+          return engine.cluster({ method: 'louvain', resolution: 1.0 });
         case 'hybrid':
           return engine.cluster({
             method: 'hybrid',
-            hybridWeights: { genre: 0.3, tags: 0.4, similar: 0.3 }
+            hybridWeights: { genre: 0.3, tags: 0.4, louvain: 0.3 }
           });
         default:
           return null;
@@ -605,11 +624,12 @@ function App() {
       toast.error('Failed to compute artist clusters');
       return null;
     }
-  }, [currentArtists, artistClusterMode, graph]);
+  }, [currentArtists, currentArtistLinks, artistClusterMode, graph]);
 
-  // Build color map from clusters
+  // Build color map from clusters AND filter links
   useEffect(() => {
     if (artistClusters && graph === 'artists') {
+      // Build color map
       const colorMap = new Map<string, string>();
       artistClusters.artistToCluster.forEach((clusterId, artistId) => {
         const cluster = artistClusters.clusters.get(clusterId);
@@ -618,10 +638,15 @@ function App() {
         }
       });
       setArtistColorMap(colorMap);
+
+      // Filter links by cluster membership
+      const filtered = filterArtistLinksByClusters(currentArtistLinks, artistClusters);
+      setFilteredArtistLinks(filtered);
     } else {
       setArtistColorMap(new Map());
+      setFilteredArtistLinks(currentArtistLinks); // Show all links when not clustering
     }
-  }, [artistClusters, graph]);
+  }, [artistClusters, graph, currentArtistLinks, filterArtistLinksByClusters]);
 
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
@@ -2230,7 +2255,7 @@ function App() {
                 <ArtistsForceGraph
                   ref={artistsGraphRef}
                   artists={currentArtists}
-                  artistLinks={currentArtistLinks}
+                  artistLinks={filteredArtistLinks}
                   onNodeClick={onArtistNodeClick}
                   onNodeHover={(id, position) => {
                       // Always track what's being hovered, regardless of command key

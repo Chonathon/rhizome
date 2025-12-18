@@ -25,8 +25,8 @@ export default function ClusteringPanel({ graphType, clusterMode, setClusterMode
         : [
             { id: "genre", label: "Genre", description: "Groups artists by their primary genre classification." },
             { id: "tags", label: "Tags", description: "Clusters artists by tag similarity using cosine distance." },
-            { id: "similar", label: "Similar", description: "Creates connected components from similar artist relationships." },
-            { id: "hybrid", label: "Hybrid", description: "Combines genre, tag, and similar artist signals for sophisticated clustering." },
+            { id: "louvain", label: "Community", description: "Louvain algorithm - modularity-based community detection (Gephi-style)." },
+            { id: "hybrid", label: "Hybrid", description: "Combines Louvain communities with genre and tag signals for sophisticated clustering." },
         ];
 
     return (

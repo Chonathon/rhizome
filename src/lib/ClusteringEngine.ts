@@ -1,7 +1,9 @@
-import { Artist } from '@/types';
+import { Artist, NodeLink } from '@/types';
 import { CLUSTER_COLORS } from '@/constants';
+import Graph from 'graphology';
+import louvain from 'graphology-communities-louvain';
 
-export type ClusteringMethod = 'genre' | 'tags' | 'similar' | 'hybrid';
+export type ClusteringMethod = 'genre' | 'tags' | 'louvain' | 'hybrid';
 
 export interface ClusterResult {
   method: ClusteringMethod;
@@ -25,22 +27,28 @@ export interface Cluster {
 export interface ClusteringOptions {
   method: ClusteringMethod;
   tagSimilarityThreshold?: number;
+  resolution?: number;  // For Louvain
   hybridWeights?: {
     genre: number;
     tags: number;
-    similar: number;
+    louvain: number;
   };
 }
 
 export class ClusteringEngine {
   private artists: Artist[];
+  private artistLinks: NodeLink[];
   private allTags: string[];
+  private tagIndexMap: Map<string, number>;
   private artistNameToId: Map<string, string>;
 
-  constructor(artists: Artist[]) {
+  constructor(artists: Artist[], artistLinks: NodeLink[]) {
     this.artists = artists;
+    this.artistLinks = artistLinks;
     this.artistNameToId = new Map(artists.map(a => [a.name, a.id]));
     this.allTags = this.extractAllTags();
+    // Build tag index map for O(1) lookups instead of O(m) indexOf
+    this.tagIndexMap = new Map(this.allTags.map((tag, idx) => [tag, idx]));
   }
 
   private extractAllTags(): string[] {
@@ -57,8 +65,8 @@ export class ClusteringEngine {
         return this.clusterByGenre();
       case 'tags':
         return this.clusterByTags(options.tagSimilarityThreshold || 0.3);
-      case 'similar':
-        return this.clusterBySimilarArtists();
+      case 'louvain':
+        return this.clusterByLouvain(options.resolution || 1.0);
       case 'hybrid':
         return this.clusterHybrid(options.hybridWeights);
       default:
@@ -120,7 +128,7 @@ export class ClusteringEngine {
       const vector = new Array(this.allTags.length).fill(0);
 
       artist.tags?.forEach(tag => {
-        const idx = this.allTags.indexOf(tag.name);
+        const idx = this.tagIndexMap.get(tag.name) ?? -1;
         if (idx !== -1) {
           vector[idx] = tag.count; // Weight by tag count
         }
@@ -211,37 +219,67 @@ export class ClusteringEngine {
     return dotProduct / (magA * magB);
   }
 
-  // 3. SIMILAR ARTISTS CLUSTERING
-  private clusterBySimilarArtists(): ClusterResult {
-    // Build adjacency list from similar artist relationships
-    const adjacency = new Map<string, Set<string>>();
+  // 3. LOUVAIN COMMUNITY DETECTION
+  private clusterByLouvain(resolution: number = 1.0): ClusterResult {
+    // Build graphology graph from artists and links
+    const graph = new Graph({ type: 'undirected' });
 
+    // Add nodes
     this.artists.forEach(artist => {
-      if (!adjacency.has(artist.id)) {
-        adjacency.set(artist.id, new Set());
-      }
+      graph.addNode(artist.id);
+    });
 
-      // FIX: Artist.similar contains names, not IDs
-      artist.similar?.forEach(similarName => {
-        const targetId = this.artistNameToId.get(similarName);
-        if (targetId) {
-          adjacency.get(artist.id)!.add(targetId);
-          // Add reverse connection
-          if (!adjacency.has(targetId)) {
-            adjacency.set(targetId, new Set());
-          }
-          adjacency.get(targetId)!.add(artist.id);
-        }
+    // Add edges from links
+    this.artistLinks.forEach(link => {
+      if (!graph.hasEdge(link.source, link.target)) {
+        graph.addEdge(link.source, link.target);
+      }
+    });
+
+    // Run Louvain community detection
+    const communities = louvain(graph, {
+      resolution,
+      randomWalk: false
+    });
+
+    // Convert to ClusterResult format
+    return this.formatLouvainClusters(communities);
+  }
+
+  private formatLouvainClusters(communities: Record<string, number>): ClusterResult {
+    // Group artists by community ID
+    const communityMap = new Map<number, string[]>();
+
+    Object.entries(communities).forEach(([artistId, communityId]) => {
+      if (!communityMap.has(communityId)) {
+        communityMap.set(communityId, []);
+      }
+      communityMap.get(communityId)!.push(artistId);
+    });
+
+    // Convert to Cluster format
+    const clusters = new Map<string, Cluster>();
+    const artistToCluster = new Map<string, string>();
+
+    communityMap.forEach((artistIds, communityId) => {
+      const clusterId = `louvain-${communityId}`;
+
+      clusters.set(clusterId, {
+        id: clusterId,
+        name: `Community ${communityId}`,
+        artistIds,
+        color: this.getColorForCluster(clusterId),
+      });
+
+      artistIds.forEach(artistId => {
+        artistToCluster.set(artistId, clusterId);
       });
     });
 
-    // Use connected components algorithm
-    const clusters = this.findConnectedComponents(adjacency);
-
     return {
-      method: 'similar',
+      method: 'louvain',
       clusters,
-      artistToCluster: this.buildArtistToClusterMap(clusters),
+      artistToCluster,
       stats: this.calculateStats(clusters),
     };
   }
@@ -279,13 +317,15 @@ export class ClusteringEngine {
   }
 
   // 4. HYBRID CLUSTERING
-  private clusterHybrid(weights = { genre: 0.3, tags: 0.4, similar: 0.3 }): ClusterResult {
-    // Calculate similarities from each method
+  private clusterHybrid(weights = { genre: 0.3, tags: 0.4, louvain: 0.3 }): ClusterResult {
+    // Get Louvain communities as base structure
+    const louvainResult = this.clusterByLouvain(1.0);
+
+    // Calculate genre and tag similarities for refinement
     const genreSim = this.calculateGenreSimilarities();
     const tagSim = this.calculateTagSimilarities();
-    const similarSim = this.calculateSimilarArtistSimilarities();
 
-    // Combine with weights
+    // Build combined similarity scores
     const combinedSim = new Map<string, number>();
 
     const addWeightedSim = (
@@ -300,7 +340,10 @@ export class ClusteringEngine {
 
     addWeightedSim(genreSim, weights.genre);
     addWeightedSim(tagSim, weights.tags);
-    addWeightedSim(similarSim, weights.similar);
+
+    // Add Louvain structure as similarities
+    const louvainSim = this.extractLouvainSimilarities(louvainResult);
+    addWeightedSim(louvainSim, weights.louvain);
 
     // Build adjacency from combined similarities
     const adjacency = this.buildAdjacencyFromSimilarities(combinedSim, 0.4);
@@ -314,6 +357,25 @@ export class ClusteringEngine {
       artistToCluster: this.buildArtistToClusterMap(clusters),
       stats: this.calculateStats(clusters),
     };
+  }
+
+  private extractLouvainSimilarities(louvainResult: ClusterResult): Map<string, number> {
+    const similarities = new Map<string, number>();
+
+    // Artists in same Louvain community have similarity of 1.0
+    louvainResult.clusters.forEach(cluster => {
+      const artistIds = cluster.artistIds;
+      for (let i = 0; i < artistIds.length; i++) {
+        for (let j = i + 1; j < artistIds.length; j++) {
+          const key = artistIds[i] < artistIds[j]
+            ? `${artistIds[i]}-${artistIds[j]}`
+            : `${artistIds[j]}-${artistIds[i]}`;
+          similarities.set(key, 1.0);
+        }
+      }
+    });
+
+    return similarities;
   }
 
   private calculateGenreSimilarities(): Map<string, number> {
@@ -360,25 +422,6 @@ export class ClusteringEngine {
         }
       }
     }
-
-    return similarities;
-  }
-
-  private calculateSimilarArtistSimilarities(): Map<string, number> {
-    const similarities = new Map<string, number>();
-
-    // FIX: Artist.similar contains names, not IDs
-    this.artists.forEach(artist => {
-      artist.similar?.forEach(similarName => {
-        const targetId = this.artistNameToId.get(similarName);
-        if (targetId) {
-          const key = artist.id < targetId
-            ? `${artist.id}-${targetId}`
-            : `${targetId}-${artist.id}`;
-          similarities.set(key, 1.0); // Binary: connected or not
-        }
-      });
-    });
 
     return similarities;
   }
