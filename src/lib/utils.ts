@@ -480,3 +480,8 @@ export const assignDegreesToArtists = (currentArtists: Artist[], likedArtists: s
     return {...a, degree: artistDegrees.get(a.id)}
   });
 }
+
+export const parseAppAccess = (appAccess: string) => {
+  const [phase, version] = appAccess.split('-');
+  return { phase, version };
+}

@@ -38,7 +38,7 @@ import {
   assignDegreesToArtists,
   formatNumber,
   until,
-  isOnPage,
+  isOnPage, parseAppAccess,
 } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -69,7 +69,7 @@ import {
   ALPHA_SURVEY_TIME_MS,
   DEFAULT_PREFERENCES,
   ALPHA_SURVEY_ADDED_ARTISTS,
-  NODE_AMOUNT_PRESETS
+  NODE_AMOUNT_PRESETS, PHASE_VERSION
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -358,10 +358,11 @@ function App() {
   }, []);
 
   // Show release notes notification on mount for testing
-  // TODO: Trigger notification when user first accesses a new app version
   useEffect(() => {
-  showNotiToast('release-notes');
-}, []);
+    if (userID && userAccess !== PHASE_VERSION) {
+      showNotiToast('release-notes');
+    }
+  }, [userAccess]);
 
   // Do any actions requested before login
   useEffect(() => {
