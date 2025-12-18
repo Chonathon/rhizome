@@ -357,6 +357,12 @@ function App() {
     }
   }, []);
 
+  // Show release notes notification on mount for testing
+  // TODO: Trigger notification when user first accesses a new app version
+  useEffect(() => {
+  showNotiToast('release-notes');
+}, []);
+
   // Do any actions requested before login
   useEffect(() => {
     if (userID) {
