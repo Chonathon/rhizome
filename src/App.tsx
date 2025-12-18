@@ -357,10 +357,15 @@ function App() {
     }
   }, []);
 
-  // Show release notes notification on mount for testing
+  // Show release notes notification, set in localStorage to avoid repeats
   useEffect(() => {
-    if (userID && userAccess !== PHASE_VERSION) {
+    if (
+        userAccess !== PHASE_VERSION
+        && localStorage.getItem('versionLastAccessed')
+        && localStorage.getItem('versionLastAccessed') !== PHASE_VERSION
+    ) {
       showNotiToast('release-notes');
+      localStorage.setItem('versionLastAccessed', PHASE_VERSION);
     }
   }, [userAccess]);
 
