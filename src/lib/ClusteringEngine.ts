@@ -9,6 +9,7 @@ export interface ClusterResult {
   method: ClusteringMethod;
   clusters: Map<string, Cluster>;
   artistToCluster: Map<string, string>; // artistId -> clusterId
+  links?: Array<{ source: string; target: string; weight: number }>; // Links used for clustering
   stats: {
     clusterCount: number;
     avgClusterSize: number;
@@ -86,7 +87,7 @@ export class ClusteringEngine {
     const graph = this.buildWeightedGraph(genreSimilarities);
     const communities = louvain(graph, { resolution, randomWalk: false });
 
-    return this.formatLouvainClusters(communities, 'genre');
+    return this.formatLouvainClusters(communities, 'genre', genreSimilarities);
   }
 
   // 2. TAG CLUSTERING - Louvain with tag-weighted edges
@@ -98,7 +99,7 @@ export class ClusteringEngine {
     const graph = this.buildWeightedGraph(tagSimilarities);
     const communities = louvain(graph, { resolution, randomWalk: false });
 
-    return this.formatLouvainClusters(communities, 'tags');
+    return this.formatLouvainClusters(communities, 'tags', tagSimilarities);
   }
 
   private buildTagVectors(): Map<string, number[]> {
@@ -159,7 +160,10 @@ export class ClusteringEngine {
     // Run Louvain community detection
     const communities = louvain(graph, { resolution, randomWalk: false });
 
-    return this.formatLouvainClusters(communities, 'louvain');
+    // Convert existing links to similarity map format
+    const networkSim = this.calculateNetworkSimilarities();
+
+    return this.formatLouvainClusters(communities, 'louvain', networkSim);
   }
 
   // 4. HYBRID CLUSTERING - Louvain with combined weighted edges
@@ -193,7 +197,7 @@ export class ClusteringEngine {
     const graph = this.buildWeightedGraph(combinedSim);
     const communities = louvain(graph, { resolution, randomWalk: false });
 
-    return this.formatLouvainClusters(communities, 'hybrid');
+    return this.formatLouvainClusters(communities, 'hybrid', combinedSim);
   }
 
   // HELPER: Build weighted graph from similarity map
@@ -221,7 +225,8 @@ export class ClusteringEngine {
   // HELPER: Format Louvain output to ClusterResult
   private formatLouvainClusters(
     communities: Record<string, number>,
-    method: ClusteringMethod
+    method: ClusteringMethod,
+    similarities: Map<string, number>
   ): ClusterResult {
     // Group artists by community ID
     const communityMap = new Map<number, string[]>();
@@ -252,10 +257,24 @@ export class ClusteringEngine {
       });
     });
 
+    // Generate links from similarities (filter to only intra-community links)
+    const links: Array<{ source: string; target: string; weight: number }> = [];
+    similarities.forEach((weight, key) => {
+      const [source, target] = key.split('-');
+      const sourceCluster = artistToCluster.get(source);
+      const targetCluster = artistToCluster.get(target);
+
+      // Only include links within the same cluster
+      if (sourceCluster && targetCluster && sourceCluster === targetCluster) {
+        links.push({ source, target, weight });
+      }
+    });
+
     return {
       method,
       clusters,
       artistToCluster,
+      links,
       stats: this.calculateStats(clusters),
     };
   }

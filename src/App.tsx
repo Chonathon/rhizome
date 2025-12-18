@@ -626,7 +626,7 @@ function App() {
     }
   }, [currentArtists, currentArtistLinks, artistClusterMode, graph]);
 
-  // Build color map from clusters AND filter links
+  // Build color map from clusters AND use generated links
   useEffect(() => {
     if (artistClusters && graph === 'artists') {
       // Build color map
@@ -639,9 +639,19 @@ function App() {
       });
       setArtistColorMap(colorMap);
 
-      // Filter links by cluster membership
-      const filtered = filterArtistLinksByClusters(currentArtistLinks, artistClusters);
-      setFilteredArtistLinks(filtered);
+      // Use generated links from clustering if available, otherwise filter existing links
+      if (artistClusters.links && artistClusters.links.length > 0) {
+        const generatedLinks: NodeLink[] = artistClusters.links.map(link => ({
+          source: link.source,
+          target: link.target,
+          linkType: 'similar' as const
+        }));
+        setFilteredArtistLinks(generatedLinks);
+      } else {
+        // Fallback to filtering existing links by cluster membership
+        const filtered = filterArtistLinksByClusters(currentArtistLinks, artistClusters);
+        setFilteredArtistLinks(filtered);
+      }
     } else {
       setArtistColorMap(new Map());
       setFilteredArtistLinks(currentArtistLinks); // Show all links when not clustering
