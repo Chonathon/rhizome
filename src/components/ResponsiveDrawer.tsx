@@ -19,8 +19,7 @@ export interface ResponsiveDrawerProps {
   directionDesktop?: Extract<DrawerDirection, "left" | "right">;
   snapPoints?: number[];
   /**
-   * Alternate snap points for fine-pointer devices that still render the sheet (e.g., desktop browsers emulating mobile).
-   * Keeps the drawer from sitting too high on tall viewports.
+   * Alternate snap points for fine-pointer devices that still render the bottom sheet
    */
   desktopSnapPoints?: number[];
   clickToCycleSnap?: boolean;
@@ -96,7 +95,7 @@ export function ResponsiveDrawer({
   expandToMiddleTrigger,
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
-  // Detect pointer type so we can keep snap targets lower on tall desktop browsers.
+  // Detect pointer type for snap point selection
   const hasCoarsePointer = useMediaQuery("(pointer: coarse)");
   const snapPoints = useMemo(
     () => (hasCoarsePointer ? mobileSnapPoints : desktopSnapPoints),
