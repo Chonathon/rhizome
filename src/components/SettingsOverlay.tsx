@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CircleUserRound, Cable, HandHeart, Check, X, Cog, Info } from "lucide-react"
+import { CircleUserRound, Cable, HandHeart, Check, X, Cog, Info, Sparkle, Sparkles } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
@@ -512,6 +512,28 @@ const ProfileSection = ({
   )
 }
 
+// Release Notes Section Component
+const ReleaseNotesSection = () => {
+  return (
+    <SettingsSection>
+      <FieldGroup>
+           <Field orientation="responsive">
+              <FieldLabel >
+                Changelog
+              </FieldLabel>
+             <a className="w-full" target="_blank" href="https://www.notion.so/seanathon/Rhizome-Changelog-2cd7b160b42a8090ace6d43d3803b2ae?source=copy_link">
+              <Button variant='outline' className="w-full" size="sm">
+                <Sparkles />
+                See what's new
+              </Button>
+            </a>
+          </Field>
+      </FieldGroup>
+    </SettingsSection>
+  )
+}
+
+
 // Preferences Section Component
 const PreferencesSection = ({
   preferences,
@@ -943,6 +965,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
           preferences={preferences}
           onPreferencesChange={onChangePreferences}
         />
+        <ReleaseNotesSection />
         {/* <ExperimentalFeaturesSection
           preferences={preferences}
           onPreferencesChange={onChangePreferences}
@@ -1001,7 +1024,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
                               size="lg"
                               variant="outline"
                               isActive={item.name === activeView}
-                              className={item.name === "Support" ? "text-[#8A80FF] hover:text-[#8A80FF] hover:brightness-110" : ""}
+                              // className={item.name === "Support" ? "text-[#8A80FF] hover:text-[#8A80FF] hover:brightness-110" : ""}
                               onClick={() => setActiveView(item.name)}
                             >
                               <item.icon />
