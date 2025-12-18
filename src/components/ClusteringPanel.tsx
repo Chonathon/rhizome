@@ -23,10 +23,10 @@ export default function ClusteringPanel({ graphType, clusterMode, setClusterMode
             { id: "fusion", label: "Fusion", description: "Highlights genres that have merged to create new, hybrid genres, like 'jazz fusion' or 'folk punk'." },
         ]
         : [
-            { id: "genre", label: "Genre", description: "Groups artists by their primary genre classification." },
-            { id: "tags", label: "Tags", description: "Clusters artists by tag similarity using cosine distance." },
-            { id: "louvain", label: "Community", description: "Louvain algorithm - modularity-based community detection (Gephi-style)." },
-            { id: "hybrid", label: "Hybrid", description: "Combines Louvain communities with genre and tag signals for sophisticated clustering." },
+            { id: "genre", label: "Genre", description: "Finds communities of artists with similar genre classifications." },
+            { id: "tags", label: "Tags", description: "Finds communities of artists with similar tags and musical attributes." },
+            { id: "louvain", label: "Network", description: "Finds communities based on the existing similarity network structure." },
+            { id: "hybrid", label: "Hybrid", description: "Finds communities using a balanced combination of genre, tags, and network relationships." },
         ];
 
     return (
