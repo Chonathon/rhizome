@@ -1,6 +1,7 @@
 import { toast as sonnerToast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
+import { Sparkles } from 'lucide-react';
 
 /**
  * Banner-style notification toast system
@@ -47,7 +48,7 @@ interface NotiToastConfig {
     label: string;
     href?: string;
     onClick?: () => void;
-    iconRight?: React.ReactNode;
+    iconLeft?: React.ReactNode;
   };
   dismissButton: {
     label: string;
@@ -75,7 +76,7 @@ const notificationConfigs: Record<NotificationType, NotiToastConfig> = {
     primaryButton: {
       label: 'See what\'s new',
       href: 'https://www.notion.so/seanathon/Rhizome-Changelog-2cd7b160b42a8090ace6d43d3803b2ae?source=copy_link',
-      iconRight: <Sparkle className="h-4 w-4" />
+      iconLeft: <Sparkles className="h-4 w-4" />
     },
     dismissButton: {
       label: 'Dismiss',
@@ -165,8 +166,8 @@ function NotiToast({
 
           <div className="flex gap-2 mt-6">
             <Button onClick={handlePrimaryAction}>
+              {config.primaryButton.iconLeft}
               {config.primaryButton.label}
-              {config.primaryButton.iconRight}
             </Button>
             <Button
               variant="outline"
