@@ -208,7 +208,9 @@ export class ClusteringEngine {
     // Add weighted edges from similarities
     similarities.forEach((weight, key) => {
       const [source, target] = key.split('-');
-      if (!graph.hasEdge(source, target) && weight > 0) {
+      // Only add edge if both nodes exist in the graph and weight > 0
+      if (graph.hasNode(source) && graph.hasNode(target) &&
+          !graph.hasEdge(source, target) && weight > 0) {
         graph.addEdge(source, target, { weight });
       }
     });
