@@ -1,4 +1,3 @@
-import { GenreClusterMode } from "@/types";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
@@ -8,19 +7,27 @@ import { ResponsivePanel } from "@/components/ResponsivePanel";
 import { useState } from "react";
 
 interface ClusteringPanelProps {
-    clusterMode: GenreClusterMode;
-    setClusterMode: (mode: GenreClusterMode[]) => void;
+    graphType: 'genres' | 'artists';
+    clusterMode: string;
+    setClusterMode: (mode: string[]) => void;
     dagMode: boolean;
     setDagMode: (enabled: boolean) => void;
 }
 
-export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, setDagMode }: ClusteringPanelProps) {
+export default function ClusteringPanel({ graphType, clusterMode, setClusterMode, dagMode, setDagMode }: ClusteringPanelProps) {
 
-    const options = [
-        { id: "subgenre", label: "Hierarchy", description: "Clusters genres based on their parent-child relationships, such as 'rock' and its subgenre 'alternative rock'." },
-        { id: "influence", label: "Influence", description: "Visualizes how genres have influenced each other over time, revealing historical connections and the evolution of musical styles." },
-        { id: "fusion", label: "Fusion", description: "Highlights genres that have merged to create new, hybrid genres, like 'jazz fusion' or 'folk punk'." },
-    ];
+    const options = graphType === 'genres'
+        ? [
+            { id: "subgenre", label: "Hierarchy", description: "Clusters genres based on their parent-child relationships, such as 'rock' and its subgenre 'alternative rock'." },
+            { id: "influence", label: "Influence", description: "Visualizes how genres have influenced each other over time, revealing historical connections and the evolution of musical styles." },
+            { id: "fusion", label: "Fusion", description: "Highlights genres that have merged to create new, hybrid genres, like 'jazz fusion' or 'folk punk'." },
+        ]
+        : [
+            { id: "genre", label: "Genre", description: "Groups artists by their primary genre classification." },
+            { id: "tags", label: "Tags", description: "Clusters artists by tag similarity using cosine distance." },
+            { id: "similar", label: "Similar", description: "Creates connected components from similar artist relationships." },
+            { id: "hybrid", label: "Hybrid", description: "Combines genre, tag, and similar artist signals for sophisticated clustering." },
+        ];
 
     return (
         <ResponsivePanel
@@ -44,7 +51,7 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
                 </div>   
             <RadioGroup
                 value={clusterMode}
-                onValueChange={(value) => setClusterMode([value as GenreClusterMode])}
+                onValueChange={(value) => setClusterMode([value])}
                 className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm rounded-2xl  bg-accent"            >
                 {options.map((option) => (
                     <div key={option.id} className="w-full">
@@ -85,13 +92,15 @@ export default function ClusteringPanel({ clusterMode, setClusterMode, dagMode, 
                         </label>
                     </div>
                 ))}
-                <div className="flex items-center justify-between w-full p-3">
-                    <div className="flex flex-col">
-                        <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">DAG Mode</span>
-                        <span className="text-sm text-gray-700 dark:text-gray-300 mt-1">Display as a directed acyclic graph.</span>
+                {graphType === 'genres' && (
+                    <div className="flex items-center justify-between w-full p-3">
+                        <div className="flex flex-col">
+                            <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">DAG Mode</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-300 mt-1">Display as a directed acyclic graph.</span>
+                        </div>
+                        <Switch checked={dagMode} onCheckedChange={setDagMode} />
                     </div>
-                    <Switch checked={dagMode} onCheckedChange={setDagMode} />
-                </div>
+                )}
             </RadioGroup>
         </ResponsivePanel>
     )
