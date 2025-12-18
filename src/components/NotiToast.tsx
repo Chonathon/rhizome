@@ -1,9 +1,43 @@
 import { toast as sonnerToast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
+import { Sparkles } from 'lucide-react';
+
+/**
+ * Banner-style notification toast system
+ *
+ * Usage:
+ *
+ * 1. Add a new notification type to the NotificationType union below
+ * 2. Add its configuration to the notificationConfigs object
+ * 3. Call showNotiToast('your-type') anywhere in your app
+ *
+ * Example:
+ * ```tsx
+ * // Show immediately
+ * showNotiToast('release-notes');
+ *
+ * // Show after a delay (e.g., in a useEffect)
+ * useEffect(() => {
+ *   const timer = setTimeout(() => {
+ *     if (localStorage.getItem('showMyNoti') !== 'false') {
+ *       showNotiToast('my-notification');
+ *       localStorage.setItem('showMyNoti', 'false');
+ *     }
+ *   }, 5000);
+ *   return () => clearTimeout(timer);
+ * }, []);
+ * ```
+ *
+ * Notes:
+ * - If ackTitle and ackDescription are provided, clicking dismiss shows a second
+ *   acknowledgment screen before auto-dismissing after 4 seconds
+ * - If ackTitle and ackDescription are omitted, clicking dismiss closes immediately
+ * - Primary button can have an href (opens in new tab) and/or onClick handler
+ */
 
 // Notification type configurations
-type NotificationType = 'alpha-feedback';
+type NotificationType = 'alpha-feedback' | 'release-notes';
 
 interface NotiToastConfig {
   title: string;
@@ -14,6 +48,7 @@ interface NotiToastConfig {
     label: string;
     href?: string;
     onClick?: () => void;
+    iconLeft?: React.ReactNode;
   };
   dismissButton: {
     label: string;
@@ -33,6 +68,18 @@ const notificationConfigs: Record<NotificationType, NotiToastConfig> = {
     },
     dismissButton: {
       label: 'Maybe later',
+    },
+  },
+  'release-notes': {
+    title: 'This is a new version of Rhizome',
+    description: 'If something feels off, go to the "More" menu and hit "Feedback & Requests"',
+    primaryButton: {
+      label: 'See what\'s new',
+      href: 'https://www.notion.so/seanathon/Rhizome-Changelog-2cd7b160b42a8090ace6d43d3803b2ae?source=copy_link',
+      iconLeft: <Sparkles className="h-4 w-4" />
+    },
+    dismissButton: {
+      label: 'Dismiss',
     },
   },
 };
@@ -119,13 +166,19 @@ function NotiToast({
 
           <div className="flex gap-2 mt-6">
             <Button onClick={handlePrimaryAction}>
+              {config.primaryButton.iconLeft}
               {config.primaryButton.label}
             </Button>
             <Button
               variant="outline"
               onClick={() => {
-                // User said no thanks. Switch to acknowledgment state.
-                setAcknowledged(true);
+                // If no acknowledgment message, dismiss immediately
+                if (!config.ackTitle && !config.ackDescription) {
+                  sonnerToast.dismiss(id);
+                } else {
+                  // Otherwise, switch to acknowledgment state
+                  setAcknowledged(true);
+                }
               }}
             >
               {config.dismissButton.label}

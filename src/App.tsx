@@ -69,7 +69,8 @@ import {
   ALPHA_SURVEY_TIME_MS,
   DEFAULT_PREFERENCES,
   ALPHA_SURVEY_ADDED_ARTISTS,
-  NODE_AMOUNT_PRESETS
+  NODE_AMOUNT_PRESETS,
+  PHASE_VERSION,
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -356,6 +357,18 @@ function App() {
       clearTimeout(timer);
     }
   }, []);
+
+  // Show release notes notification, set in localStorage to avoid repeats
+  useEffect(() => {
+    if (
+        userAccess !== PHASE_VERSION
+        && localStorage.getItem('versionLastAccessed')
+        && localStorage.getItem('versionLastAccessed') !== PHASE_VERSION
+    ) {
+      showNotiToast('release-notes');
+      localStorage.setItem('versionLastAccessed', PHASE_VERSION);
+    }
+  }, [userAccess]);
 
   // Do any actions requested before login
   useEffect(() => {
