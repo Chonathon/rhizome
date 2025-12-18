@@ -69,7 +69,8 @@ import {
   ALPHA_SURVEY_TIME_MS,
   DEFAULT_PREFERENCES,
   ALPHA_SURVEY_ADDED_ARTISTS,
-  NODE_AMOUNT_PRESETS
+  NODE_AMOUNT_PRESETS,
+  PHASE_VERSION,
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -357,11 +358,17 @@ function App() {
     }
   }, []);
 
-  // Show release notes notification on mount for testing
-  // TODO: Trigger notification when user first accesses a new app version
+  // Show release notes notification, set in localStorage to avoid repeats
   useEffect(() => {
-  showNotiToast('release-notes');
-}, []);
+    if (
+        userAccess !== PHASE_VERSION
+        && localStorage.getItem('versionLastAccessed')
+        && localStorage.getItem('versionLastAccessed') !== PHASE_VERSION
+    ) {
+      showNotiToast('release-notes');
+      localStorage.setItem('versionLastAccessed', PHASE_VERSION);
+    }
+  }, [userAccess]);
 
   // Do any actions requested before login
   useEffect(() => {
