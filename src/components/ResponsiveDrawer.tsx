@@ -193,6 +193,8 @@ export function ResponsiveDrawer({
     return activeSnapIndex === snapPoints.length - 1;
   }, [activeSnapIndex, snapPoints.length]);
 
+  const isAtMiddleSnap = activeSnapIndex === 1;
+
   const isAtMinSnap = useMemo(() => {
     return activeSnapIndex === 0;
   }, [activeSnapIndex]);
@@ -364,9 +366,9 @@ export function ResponsiveDrawer({
       direction={isDesktop ? directionDesktop : "bottom"}
       // Reduce velocity-driven jumps between distant snap points
       snapToSequentialPoint
-      // Conservative: on mobile, only the handle can drag between snaps.
+      // On mobile, only the handle can drag between snaps at the max snap position
       // This eliminates unintended cycles from content taps/drags.
-      handleOnly={!isDesktop && lockDragToHandleWhenScrolled}
+      handleOnly={!isDesktop && !isAtMiddleSnap && !isAtMinSnap && lockDragToHandleWhenScrolled}
       dismissible={true}
       modal={false}
       {...(!isDesktop
