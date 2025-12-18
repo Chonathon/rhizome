@@ -38,7 +38,7 @@ import {
   assignDegreesToArtists,
   formatNumber,
   until,
-  isOnPage, parseAppAccess,
+  isOnPage,
 } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -69,7 +69,8 @@ import {
   ALPHA_SURVEY_TIME_MS,
   DEFAULT_PREFERENCES,
   ALPHA_SURVEY_ADDED_ARTISTS,
-  NODE_AMOUNT_PRESETS, PHASE_VERSION
+  NODE_AMOUNT_PRESETS,
+  PHASE_VERSION,
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
