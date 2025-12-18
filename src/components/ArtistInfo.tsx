@@ -154,7 +154,6 @@ export function ArtistInfo({
       show={!!(show && selectedArtist)}
       onDismiss={onDismiss}
       bodyClassName=""
-      snapPoints={[0.08, 0.50, 0.9]}
       minimizeOnCanvasTouch={true}
       onCanvasDragStart={onCanvasDragStart}
       contentKey={selectedArtist?.id}

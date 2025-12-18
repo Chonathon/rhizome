@@ -225,7 +225,6 @@ export function GenreInfo({
       show={!!(show && selectedGenre)}
       onDismiss={onDismiss}
       bodyClassName=""
-      snapPoints={[0.08, 0.50, 0.9]}
       minimizeOnCanvasTouch={true}
       onCanvasDragStart={onCanvasDragStart}
       contentKey={selectedGenre?.id}
