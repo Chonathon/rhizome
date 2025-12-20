@@ -16,18 +16,16 @@ interface ClusteringPanelProps {
 
 export default function ClusteringPanel({ graphType, clusterMode, setClusterMode, dagMode, setDagMode }: ClusteringPanelProps) {
 
-    const options = graphType === 'genres'
-        ? [
-            { id: "subgenre", label: "Hierarchy", description: "Clusters genres based on their parent-child relationships, such as 'rock' and its subgenre 'alternative rock'." },
-            { id: "influence", label: "Influence", description: "Visualizes how genres have influenced each other over time, revealing historical connections and the evolution of musical styles." },
-            { id: "fusion", label: "Fusion", description: "Highlights genres that have merged to create new, hybrid genres, like 'jazz fusion' or 'folk punk'." },
-        ]
-        : [
-            { id: "genre", label: "Genre", description: "Finds communities of artists with similar genre classifications." },
-            { id: "tags", label: "Tags", description: "Finds communities of artists with similar tags and musical attributes." },
-            { id: "louvain", label: "Network", description: "Finds communities based on the existing similarity network structure." },
-            { id: "hybrid", label: "Hybrid", description: "Finds communities using a balanced combination of genre, tags, and network relationships." },
-        ];
+    // Only show clustering options for genres, not artists
+    if (graphType !== 'genres') {
+        return null;
+    }
+
+    const options = [
+        { id: "subgenre", label: "Hierarchy", description: "Clusters genres based on their parent-child relationships, such as 'rock' and its subgenre 'alternative rock'." },
+        { id: "influence", label: "Influence", description: "Visualizes how genres have influenced each other over time, revealing historical connections and the evolution of musical styles." },
+        { id: "fusion", label: "Fusion", description: "Highlights genres that have merged to create new, hybrid genres, like 'jazz fusion' or 'folk punk'." },
+    ];
 
     return (
         <ResponsivePanel

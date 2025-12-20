@@ -210,14 +210,30 @@ export class ClusteringEngine {
     });
 
     // Add weighted edges from similarities
+    let edgesAdded = 0;
+    let skippedMissingNode = 0;
+    let skippedZeroWeight = 0;
+
     similarities.forEach((weight, key) => {
-      const [source, target] = key.split('-');
-      // Only add edge if both nodes exist in the graph and weight > 0
-      if (graph.hasNode(source) && graph.hasNode(target) &&
-          !graph.hasEdge(source, target) && weight > 0) {
+      const [source, target] = key.split('|');
+
+      if (!graph.hasNode(source) || !graph.hasNode(target)) {
+        skippedMissingNode++;
+        return;
+      }
+
+      if (weight <= 0) {
+        skippedZeroWeight++;
+        return;
+      }
+
+      if (!graph.hasEdge(source, target)) {
         graph.addEdge(source, target, { weight });
+        edgesAdded++;
       }
     });
+
+    // console.log(`[buildWeightedGraph] Nodes: ${graph.order}, Edges added: ${edgesAdded}, Skipped (missing node): ${skippedMissingNode}, Skipped (zero weight): ${skippedZeroWeight}`);
 
     return graph;
   }
@@ -237,6 +253,8 @@ export class ClusteringEngine {
       }
       communityMap.get(communityId)!.push(artistId);
     });
+
+    console.log(`[${method}] Found ${communityMap.size} communities, generating links...`);
 
     // Convert to Cluster format
     const clusters = new Map<string, Cluster>();
@@ -259,8 +277,9 @@ export class ClusteringEngine {
 
     // Generate links from similarities (filter to only intra-community links)
     const links: Array<{ source: string; target: string; weight: number }> = [];
+
     similarities.forEach((weight, key) => {
-      const [source, target] = key.split('-');
+      const [source, target] = key.split('|');
       const sourceCluster = artistToCluster.get(source);
       const targetCluster = artistToCluster.get(target);
 
@@ -269,6 +288,8 @@ export class ClusteringEngine {
         links.push({ source, target, weight });
       }
     });
+
+    console.log(`[${method}] Generated ${links.length} intra-community links`);
 
     return {
       method,
@@ -294,10 +315,15 @@ export class ClusteringEngine {
 
   private calculateGenreSimilarities(): Map<string, number> {
     const similarities = new Map<string, number>();
+    const K = 50; // Top K most similar artists per artist
 
+    // For each artist, find their K most similar artists
     for (let i = 0; i < this.artists.length; i++) {
-      for (let j = i + 1; j < this.artists.length; j++) {
-        const artistA = this.artists[i];
+      const artistA = this.artists[i];
+      const artistSimilarities: Array<{ id: string; similarity: number }> = [];
+
+      for (let j = 0; j < this.artists.length; j++) {
+        if (i === j) continue;
         const artistB = this.artists[j];
 
         const sharedGenres = artistA.genres?.filter(g =>
@@ -311,11 +337,28 @@ export class ClusteringEngine {
           ]).size;
 
           const similarity = sharedGenres / totalGenres; // Jaccard similarity
-          similarities.set(`${artistA.id}-${artistB.id}`, similarity);
+          artistSimilarities.push({ id: artistB.id, similarity });
         }
       }
+
+      // Keep only top K most similar
+      artistSimilarities.sort((a, b) => b.similarity - a.similarity);
+      const topK = artistSimilarities.slice(0, K);
+
+      // Add to global similarities map
+      topK.forEach(({ id, similarity }) => {
+        const key = artistA.id < id
+          ? `${artistA.id}|${id}`
+          : `${id}|${artistA.id}`;
+
+        // Only add if not already present (avoid duplicates from both directions)
+        if (!similarities.has(key)) {
+          similarities.set(key, similarity);
+        }
+      });
     }
 
+    // console.log(`[Genre] Calculated ${similarities.size} genre similarities (k-NN with K=${K})`);
     return similarities;
   }
 
@@ -323,20 +366,44 @@ export class ClusteringEngine {
     const vectors = this.buildTagVectors();
     const similarities = new Map<string, number>();
     const artistIds = Array.from(vectors.keys());
+    const K = 50; // Top K most similar artists per artist
 
+    // For each artist, find their K most similar artists
     for (let i = 0; i < artistIds.length; i++) {
-      for (let j = i + 1; j < artistIds.length; j++) {
-        const sim = this.cosineSimilarity(
-          vectors.get(artistIds[i])!,
-          vectors.get(artistIds[j])!
-        );
+      const artistAId = artistIds[i];
+      const vectorA = vectors.get(artistAId)!;
+      const artistSimilarities: Array<{ id: string; similarity: number }> = [];
+
+      for (let j = 0; j < artistIds.length; j++) {
+        if (i === j) continue;
+        const artistBId = artistIds[j];
+        const vectorB = vectors.get(artistBId)!;
+
+        const sim = this.cosineSimilarity(vectorA, vectorB);
 
         if (sim > 0) {
-          similarities.set(`${artistIds[i]}-${artistIds[j]}`, sim);
+          artistSimilarities.push({ id: artistBId, similarity: sim });
         }
       }
+
+      // Keep only top K most similar
+      artistSimilarities.sort((a, b) => b.similarity - a.similarity);
+      const topK = artistSimilarities.slice(0, K);
+
+      // Add to global similarities map
+      topK.forEach(({ id, similarity }) => {
+        const key = artistAId < id
+          ? `${artistAId}|${id}`
+          : `${id}|${artistAId}`;
+
+        // Only add if not already present (avoid duplicates from both directions)
+        if (!similarities.has(key)) {
+          similarities.set(key, similarity);
+        }
+      });
     }
 
+    // console.log(`[Tags] Calculated ${similarities.size} tag similarities (k-NN with K=${K})`);
     return similarities;
   }
 
@@ -346,8 +413,8 @@ export class ClusteringEngine {
 
     this.artistLinks.forEach(link => {
       const key = link.source < link.target
-        ? `${link.source}-${link.target}`
-        : `${link.target}-${link.source}`;
+        ? `${link.source}|${link.target}`
+        : `${link.target}|${link.source}`;
       similarities.set(key, 1.0);
     });
 
