@@ -31,8 +31,8 @@ interface GenresForceGraphProps {
   disableDimming?: boolean;
 }
 
-const MIN_RADIUS = 6;
-const MAX_RADIUS = 32;
+const MIN_RADIUS = 4;
+const MAX_RADIUS = 50;
 
 const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
   (

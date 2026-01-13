@@ -30,8 +30,8 @@ interface ArtistsForceGraphProps {
   disableDimming?: boolean;
 }
 
-const MIN_RADIUS = 6;
-const MAX_RADIUS = 22;
+const MIN_RADIUS = 3;
+const MAX_RADIUS = 35;
 
 const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
   (

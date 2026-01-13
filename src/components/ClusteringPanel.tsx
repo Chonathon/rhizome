@@ -38,9 +38,9 @@ export default function ClusteringPanel({
     ];
 
     const artistOptions = [
-        { id: "genre", label: "Genre-Based", description: "Groups artists by shared genres using Jaccard similarity. Artists with similar genre profiles cluster together." },
-        { id: "tags", label: "Tag-Based", description: "Clusters artists based on Last.fm tags using cosine similarity. Reveals thematic and stylistic connections." },
-        { id: "louvain", label: "Network-Based", description: "Uses the existing artist network structure to find communities. Artists connected by similar artist links form clusters." },
+        { id: "genre", label: "Genre", description: "Groups artists by shared genres using Jaccard similarity. Artists with similar genre profiles cluster together." },
+        { id: "tags", label: "Tag", description: "Clusters artists based on Last.fm tags using cosine similarity. Reveals thematic and stylistic connections." },
+        { id: "louvain", label: "Network", description: "Uses the existing artist network structure to find communities. Artists connected by similar artist links form clusters." },
         { id: "hybrid", label: "Hybrid", description: "Combines genre similarity, tag similarity, and network structure for comprehensive clustering." },
     ];
 
