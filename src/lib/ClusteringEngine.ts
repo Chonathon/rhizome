@@ -244,7 +244,7 @@ export class ClusteringEngine {
     const graph = this.buildWeightedGraph(filteredCombinedSim);
     const communities = louvain(graph, { resolution, randomWalk: false });
 
-    const artistCount = this.artists.length;
+    // Reuse artistCount from above
     const minLinkWeight = artistCount > 1000 ? 0.25 : 0.2;
     return this.formatLouvainClusters(communities, 'hybrid', filteredCombinedSim, minLinkWeight);
   }
