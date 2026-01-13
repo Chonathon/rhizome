@@ -34,6 +34,8 @@ export interface ClusteringOptions {
     tags: number;
     louvain: number;
   };
+  kNeighbors?: number;  // Number of nearest neighbors to keep (default: 20)
+  minSimilarity?: number;  // Minimum similarity threshold (0-1, default: 0.1)
 }
 
 export class ClusteringEngine {
@@ -61,17 +63,44 @@ export class ClusteringEngine {
   }
 
   cluster(options: ClusteringOptions): ClusterResult {
+    const artistCount = this.artists.length;
+    
+    // Aggressive optimizations for large graphs
+    // For graphs > 1000 artists, use much more restrictive settings
+    let kNeighbors: number;
+    let minSimilarity: number;
+    
+    if (artistCount > 2000) {
+      // Very large graphs: very aggressive filtering
+      kNeighbors = options.kNeighbors ?? 8;
+      minSimilarity = options.minSimilarity ?? 0.3;
+    } else if (artistCount > 1000) {
+      // Large graphs: aggressive filtering
+      kNeighbors = options.kNeighbors ?? 12;
+      minSimilarity = options.minSimilarity ?? 0.25;
+    } else {
+      // Smaller graphs: moderate filtering
+      kNeighbors = options.kNeighbors ?? 15;
+      minSimilarity = options.minSimilarity ?? 0.2;
+    }
+    
+    // For tags and hybrid methods with large graphs, be even more aggressive
+    if ((options.method === 'tags' || options.method === 'hybrid') && artistCount > 1000) {
+      kNeighbors = Math.min(kNeighbors, 10);
+      minSimilarity = Math.max(minSimilarity, 0.3);
+    }
+    
     switch (options.method) {
       case 'genre':
-        return this.clusterByGenre(options.resolution || 1.0);
+        return this.clusterByGenre(options.resolution || 1.0, kNeighbors, minSimilarity);
       case 'tags':
-        return this.clusterByTags(options.resolution || 1.0);
+        return this.clusterByTags(options.resolution || 1.0, kNeighbors, minSimilarity);
       case 'louvain':
         return this.clusterByLouvain(options.resolution || 1.0);
       case 'hybrid':
-        return this.clusterHybrid(options.resolution || 1.0, options.hybridWeights);
+        return this.clusterHybrid(options.resolution || 1.0, options.hybridWeights, kNeighbors, minSimilarity);
       default:
-        return this.clusterByGenre(options.resolution || 1.0);
+        return this.clusterByGenre(options.resolution || 1.0, kNeighbors, minSimilarity);
     }
   }
 
@@ -79,27 +108,31 @@ export class ClusteringEngine {
   // All methods build weighted graphs and run Louvain community detection
 
   // 1. GENRE CLUSTERING - Louvain with genre-weighted edges
-  private clusterByGenre(resolution: number): ClusterResult {
+  private clusterByGenre(resolution: number, kNeighbors: number = 15, minSimilarity: number = 0.2): ClusterResult {
     // Calculate genre similarities (Jaccard coefficient)
-    const genreSimilarities = this.calculateGenreSimilarities();
+    const genreSimilarities = this.calculateGenreSimilarities(kNeighbors, minSimilarity);
 
     // Build weighted graph and run Louvain
     const graph = this.buildWeightedGraph(genreSimilarities);
     const communities = louvain(graph, { resolution, randomWalk: false });
 
-    return this.formatLouvainClusters(communities, 'genre', genreSimilarities);
+    const artistCount = this.artists.length;
+    const minLinkWeight = artistCount > 1000 ? 0.2 : 0.15;
+    return this.formatLouvainClusters(communities, 'genre', genreSimilarities, minLinkWeight);
   }
 
   // 2. TAG CLUSTERING - Louvain with tag-weighted edges
-  private clusterByTags(resolution: number): ClusterResult {
+  private clusterByTags(resolution: number, kNeighbors: number = 15, minSimilarity: number = 0.2): ClusterResult {
     // Calculate tag similarities (cosine distance)
-    const tagSimilarities = this.calculateTagSimilarities();
+    const tagSimilarities = this.calculateTagSimilarities(kNeighbors, minSimilarity);
 
     // Build weighted graph and run Louvain
     const graph = this.buildWeightedGraph(tagSimilarities);
     const communities = louvain(graph, { resolution, randomWalk: false });
 
-    return this.formatLouvainClusters(communities, 'tags', tagSimilarities);
+    const artistCount = this.artists.length;
+    const minLinkWeight = artistCount > 1000 ? 0.25 : 0.2;
+    return this.formatLouvainClusters(communities, 'tags', tagSimilarities, minLinkWeight);
   }
 
   private buildTagVectors(): Map<string, number[]> {
@@ -163,17 +196,21 @@ export class ClusteringEngine {
     // Convert existing links to similarity map format
     const networkSim = this.calculateNetworkSimilarities();
 
-    return this.formatLouvainClusters(communities, 'louvain', networkSim);
+    const artistCount = this.artists.length;
+    const minLinkWeight = artistCount > 1000 ? 0.2 : 0.15;
+    return this.formatLouvainClusters(communities, 'louvain', networkSim, minLinkWeight);
   }
 
   // 4. HYBRID CLUSTERING - Louvain with combined weighted edges
   private clusterHybrid(
     resolution: number,
-    weights = { genre: 0.33, tags: 0.33, louvain: 0.34 }
+    weights = { genre: 0.33, tags: 0.33, louvain: 0.34 },
+    kNeighbors: number = 15,
+    minSimilarity: number = 0.2
   ): ClusterResult {
     // Calculate all similarity metrics
-    const genreSim = this.calculateGenreSimilarities();
-    const tagSim = this.calculateTagSimilarities();
+    const genreSim = this.calculateGenreSimilarities(kNeighbors, minSimilarity);
+    const tagSim = this.calculateTagSimilarities(kNeighbors, minSimilarity);
     const networkSim = this.calculateNetworkSimilarities();
 
     // Combine with weights
@@ -193,11 +230,23 @@ export class ClusteringEngine {
     addWeightedSim(tagSim, weights.tags);
     addWeightedSim(networkSim, weights.louvain);
 
+    // Filter out weak combined similarities to reduce graph complexity
+    const filteredCombinedSim = new Map<string, number>();
+    const artistCount = this.artists.length;
+    const minCombinedWeight = artistCount > 1000 ? 0.25 : 0.2;  // Higher threshold for large graphs
+    combinedSim.forEach((weight, key) => {
+      if (weight >= minCombinedWeight) {
+        filteredCombinedSim.set(key, weight);
+      }
+    });
+
     // Build weighted graph and run Louvain
-    const graph = this.buildWeightedGraph(combinedSim);
+    const graph = this.buildWeightedGraph(filteredCombinedSim);
     const communities = louvain(graph, { resolution, randomWalk: false });
 
-    return this.formatLouvainClusters(communities, 'hybrid', combinedSim);
+    const artistCount = this.artists.length;
+    const minLinkWeight = artistCount > 1000 ? 0.25 : 0.2;
+    return this.formatLouvainClusters(communities, 'hybrid', filteredCombinedSim, minLinkWeight);
   }
 
   // HELPER: Build weighted graph from similarity map
@@ -242,7 +291,8 @@ export class ClusteringEngine {
   private formatLouvainClusters(
     communities: Record<string, number>,
     method: ClusteringMethod,
-    similarities: Map<string, number>
+    similarities: Map<string, number>,
+    minLinkWeightOverride?: number
   ): ClusterResult {
     // Group artists by community ID
     const communityMap = new Map<number, string[]>();
@@ -276,9 +326,20 @@ export class ClusteringEngine {
     });
 
     // Generate links from similarities (filter to only intra-community links)
+    // Also apply a weight threshold to reduce link count for better performance
     const links: Array<{ source: string; target: string; weight: number }> = [];
+    // Adaptive link weight threshold based on method and graph size
+    const artistCount = this.artists.length;
+    const minLinkWeight = minLinkWeightOverride ?? (
+      (method === 'tags' || method === 'hybrid') && artistCount > 1000
+        ? 0.25  // Higher threshold for expensive methods on large graphs
+        : 0.2   // Standard threshold
+    );
 
     similarities.forEach((weight, key) => {
+      // Skip weak connections to reduce link count
+      if (weight < minLinkWeight) return;
+      
       const [source, target] = key.split('|');
       const sourceCluster = artistToCluster.get(source);
       const targetCluster = artistToCluster.get(target);
@@ -289,7 +350,7 @@ export class ClusteringEngine {
       }
     });
 
-    console.log(`[${method}] Generated ${links.length} intra-community links`);
+    console.log(`[${method}] Generated ${links.length} intra-community links (from ${similarities.size} similarities, min weight: ${minLinkWeight})`);
 
     return {
       method,
@@ -313,9 +374,8 @@ export class ClusteringEngine {
 
   // SIMILARITY CALCULATION METHODS
 
-  private calculateGenreSimilarities(): Map<string, number> {
+  private calculateGenreSimilarities(kNeighbors: number = 15, minSimilarity: number = 0.2): Map<string, number> {
     const similarities = new Map<string, number>();
-    const K = 50; // Top K most similar artists per artist
 
     // For each artist, find their K most similar artists
     for (let i = 0; i < this.artists.length; i++) {
@@ -337,13 +397,17 @@ export class ClusteringEngine {
           ]).size;
 
           const similarity = sharedGenres / totalGenres; // Jaccard similarity
-          artistSimilarities.push({ id: artistB.id, similarity });
+          
+          // Only consider if above threshold
+          if (similarity >= minSimilarity) {
+            artistSimilarities.push({ id: artistB.id, similarity });
+          }
         }
       }
 
       // Keep only top K most similar
       artistSimilarities.sort((a, b) => b.similarity - a.similarity);
-      const topK = artistSimilarities.slice(0, K);
+      const topK = artistSimilarities.slice(0, kNeighbors);
 
       // Add to global similarities map
       topK.forEach(({ id, similarity }) => {
@@ -358,15 +422,14 @@ export class ClusteringEngine {
       });
     }
 
-    // console.log(`[Genre] Calculated ${similarities.size} genre similarities (k-NN with K=${K})`);
+    // console.log(`[Genre] Calculated ${similarities.size} genre similarities (k-NN with K=${kNeighbors}, min=${minSimilarity})`);
     return similarities;
   }
 
-  private calculateTagSimilarities(): Map<string, number> {
+  private calculateTagSimilarities(kNeighbors: number = 15, minSimilarity: number = 0.2): Map<string, number> {
     const vectors = this.buildTagVectors();
     const similarities = new Map<string, number>();
     const artistIds = Array.from(vectors.keys());
-    const K = 50; // Top K most similar artists per artist
 
     // For each artist, find their K most similar artists
     for (let i = 0; i < artistIds.length; i++) {
@@ -381,14 +444,15 @@ export class ClusteringEngine {
 
         const sim = this.cosineSimilarity(vectorA, vectorB);
 
-        if (sim > 0) {
+        // Only consider if above threshold
+        if (sim >= minSimilarity) {
           artistSimilarities.push({ id: artistBId, similarity: sim });
         }
       }
 
       // Keep only top K most similar
       artistSimilarities.sort((a, b) => b.similarity - a.similarity);
-      const topK = artistSimilarities.slice(0, K);
+      const topK = artistSimilarities.slice(0, kNeighbors);
 
       // Add to global similarities map
       topK.forEach(({ id, similarity }) => {
@@ -403,7 +467,7 @@ export class ClusteringEngine {
       });
     }
 
-    // console.log(`[Tags] Calculated ${similarities.size} tag similarities (k-NN with K=${K})`);
+    // console.log(`[Tags] Calculated ${similarities.size} tag similarities (k-NN with K=${kNeighbors}, min=${minSimilarity})`);
     return similarities;
   }
 

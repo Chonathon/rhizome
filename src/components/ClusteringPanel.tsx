@@ -2,9 +2,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Spline, RotateCcw } from "lucide-react";
+import { Spline, RotateCcw, Loader2 } from "lucide-react";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
 import { useState } from "react";
+import { ClusterResult } from "@/lib/ClusteringEngine";
 
 interface ClusteringPanelProps {
     graphType: 'genres' | 'artists';
@@ -12,20 +13,38 @@ interface ClusteringPanelProps {
     setClusterMode: (mode: string[]) => void;
     dagMode: boolean;
     setDagMode: (enabled: boolean) => void;
+    artistColorMode?: 'genre' | 'cluster';
+    setArtistColorMode?: (mode: 'genre' | 'cluster') => void;
+    artistClusters?: ClusterResult | null;
+    clusteringInProgress?: boolean;
 }
 
-export default function ClusteringPanel({ graphType, clusterMode, setClusterMode, dagMode, setDagMode }: ClusteringPanelProps) {
+export default function ClusteringPanel({ 
+    graphType, 
+    clusterMode, 
+    setClusterMode, 
+    dagMode, 
+    setDagMode,
+    artistColorMode,
+    setArtistColorMode,
+    artistClusters,
+    clusteringInProgress
+}: ClusteringPanelProps) {
 
-    // Only show clustering options for genres, not artists
-    if (graphType !== 'genres') {
-        return null;
-    }
-
-    const options = [
+    const genreOptions = [
         { id: "subgenre", label: "Hierarchy", description: "Clusters genres based on their parent-child relationships, such as 'rock' and its subgenre 'alternative rock'." },
         { id: "influence", label: "Influence", description: "Visualizes how genres have influenced each other over time, revealing historical connections and the evolution of musical styles." },
         { id: "fusion", label: "Fusion", description: "Highlights genres that have merged to create new, hybrid genres, like 'jazz fusion' or 'folk punk'." },
     ];
+
+    const artistOptions = [
+        { id: "genre", label: "Genre-Based", description: "Groups artists by shared genres using Jaccard similarity. Artists with similar genre profiles cluster together." },
+        { id: "tags", label: "Tag-Based", description: "Clusters artists based on Last.fm tags using cosine similarity. Reveals thematic and stylistic connections." },
+        { id: "louvain", label: "Network-Based", description: "Uses the existing artist network structure to find communities. Artists connected by similar artist links form clusters." },
+        { id: "hybrid", label: "Hybrid", description: "Combines genre similarity, tag similarity, and network structure for comprehensive clustering." },
+    ];
+
+    const options = graphType === 'genres' ? genreOptions : artistOptions;
 
     return (
         <ResponsivePanel
@@ -90,6 +109,48 @@ export default function ClusteringPanel({ graphType, clusterMode, setClusterMode
                         </label>
                     </div>
                 ))}
+                {graphType === 'artists' && artistColorMode !== undefined && setArtistColorMode && (
+                    <>
+                        <div className="flex items-center justify-between w-full p-3 border-t border-border mt-2 pt-3">
+                            <div className="flex flex-col">
+                                <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">Color Mode</span>
+                                <span className="text-sm text-gray-700 dark:text-gray-300 mt-1">Choose how artists are colored in the graph.</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant={artistColorMode === 'genre' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setArtistColorMode('genre')}
+                                >
+                                    Genre
+                                </Button>
+                                <Button
+                                    variant={artistColorMode === 'cluster' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setArtistColorMode('cluster')}
+                                >
+                                    Cluster
+                                </Button>
+                            </div>
+                        </div>
+                        {clusteringInProgress && (
+                            <div className="flex items-center gap-2 w-full p-3 border-t border-border">
+                                <Loader2 className="h-4 w-4 animate-spin text-gray-600 dark:text-gray-400" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300">Computing clusters...</span>
+                            </div>
+                        )}
+                        {!clusteringInProgress && artistClusters && artistClusters.stats && (
+                            <div className="flex flex-col gap-2 w-full p-3 border-t border-border">
+                                <span className="text-md font-semibold text-gray-900 dark:text-gray-100">Cluster Stats</span>
+                                <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                                    <div>Communities: {artistClusters.stats.clusterCount}</div>
+                                    <div>Avg size: {Math.round(artistClusters.stats.avgClusterSize)} artists</div>
+                                    <div>Largest: {artistClusters.stats.largestCluster} artists</div>
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
                 {graphType === 'genres' && (
                     <div className="flex items-center justify-between w-full p-3">
                         <div className="flex flex-col">
