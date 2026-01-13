@@ -660,11 +660,37 @@ function App() {
     if (artistClusters && graph === 'artists') {
       // Use generated links from clustering if available, otherwise filter existing links
       if (artistClusters.links && artistClusters.links.length > 0) {
-        const generatedLinks: NodeLink[] = artistClusters.links.map(link => ({
-          source: link.source,
-          target: link.target,
-          linkType: 'similar' as const
-        }));
+        // Create a Set of valid artist IDs for O(1) lookup
+        const validArtistIds = new Set(currentArtists.map(a => a.id));
+
+        // Filter links to only include those where both source and target exist
+        // Also remove duplicates using a Set
+        const seenLinks = new Set<string>();
+        const generatedLinks: NodeLink[] = artistClusters.links
+          .filter(link => {
+            // Check if both nodes exist
+            if (!validArtistIds.has(link.source) || !validArtistIds.has(link.target)) {
+              return false;
+            }
+
+            // Create a unique key for this link (order-independent)
+            const linkKey = link.source < link.target
+              ? `${link.source}|${link.target}`
+              : `${link.target}|${link.source}`;
+
+            // Skip if we've already seen this link
+            if (seenLinks.has(linkKey)) {
+              return false;
+            }
+
+            seenLinks.add(linkKey);
+            return true;
+          })
+          .map(link => ({
+            source: link.source,
+            target: link.target,
+            linkType: 'similar' as const
+          }));
         setFilteredArtistLinks(generatedLinks);
       } else {
         // Fallback to filtering existing links by cluster membership
@@ -674,7 +700,7 @@ function App() {
     } else {
       setFilteredArtistLinks(currentArtistLinks); // Show all links when not clustering
     }
-  }, [artistClusters, graph, currentArtistLinks, filterArtistLinksByClusters]);
+  }, [artistClusters, graph, currentArtistLinks, filterArtistLinksByClusters, currentArtists]);
 
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
