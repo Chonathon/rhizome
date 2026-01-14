@@ -547,16 +547,12 @@ function App() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // Computes the artists/links to display - applies collection filters when in collection mode
+  // Computes the artists/links to display - applies node limit and collection filters
   const displayedArtistsData = useMemo(() => {
-    if (!collectionMode) {
-      return { artists, links: artistLinks };
-    }
-
     let filtered = artists;
 
-    // Apply genre filter (if any genres selected)
-    if (collectionFilters.genres.length > 0) {
+    // Apply collection filters when in collection mode
+    if (collectionMode && collectionFilters.genres.length > 0) {
       filtered = filtered.filter(artist =>
         artist.genres.some(genreId => collectionFilters.genres.includes(genreId))
       );
@@ -571,6 +567,13 @@ function App() {
     //   });
     // }
 
+    // Apply node limit - sort by the limit type and take top N
+    if (filtered.length > artistNodeCount) {
+      filtered = [...filtered]
+        .sort((a: Artist, b: Artist) => b[artistNodeLimitType] - a[artistNodeLimitType])
+        .slice(0, artistNodeCount);
+    }
+
     // Filter links to only include connections between filtered artists
     const filteredArtistIds = new Set(filtered.map(a => a.id));
     const filteredLinks = artistLinks.filter(link =>
@@ -578,7 +581,7 @@ function App() {
     );
 
     return { artists: filtered, links: filteredLinks };
-  }, [collectionMode, artists, artistLinks, collectionFilters]);
+  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType]);
 
   // Sets current artists/links shown in the graph
   useEffect(() => {
@@ -770,13 +773,41 @@ function App() {
         ? collectionFilters.genres
         : artistFilterGenreIDs;
 
+      // Helper to get root genres from artist's top tag (matches getArtistColor logic)
+      const getTopGenreRoots = (artist: Artist): string[] => {
+        if (artist.tags?.length) {
+          // Find tags that match known genres, sorted by count (highest first)
+          const genreTags = artist.tags
+            .filter(t => genres.some(g => g.name === t.name))
+            .sort((a, b) => b.count - a.count);
+          if (genreTags.length > 0) {
+            const bestTag = genreTags[0];
+            const tagGenre = genres.find(g => g.name === bestTag.name);
+            if (tagGenre?.rootGenres?.length) {
+              return tagGenre.rootGenres;
+            }
+          }
+        }
+        // Fallback to first genre if no matching tag
+        if (artist.genres?.length) {
+          const firstGenre = genreById.get(artist.genres[0]);
+          if (firstGenre?.rootGenres?.length) {
+            return firstGenre.rootGenres;
+          }
+        }
+        return [];
+      };
+
       if (filterGenreIds.length > 0) {
         // When a genre filter is active, use only the filtered genres for the legend
         filterGenreIds.forEach(addRootsFromGenreId);
       } else if (currentArtists.length) {
-        // No filter active - derive legend from all genres of visible artists
+        // Use each artist's TOP genre (by tag count) for the legend - matches coloring logic
         currentArtists.forEach((artist) => {
-          artist.genres.forEach(addRootsFromGenreId);
+          const topRoots = getTopGenreRoots(artist);
+          topRoots.forEach(rootId => {
+            rootIdSet.add(rootId);
+          });
         });
       }
     } else {
