@@ -15,6 +15,7 @@ interface ClusteringPanelProps {
     setDagMode: (enabled: boolean) => void;
     artistColorMode?: 'genre' | 'cluster';
     setArtistColorMode?: (mode: 'genre' | 'cluster') => void;
+    genreColorLegend?: { id: string; name: string; color: string }[];
     artistClusters?: ClusterResult | null;
     clusteringInProgress?: boolean;
 }
@@ -27,6 +28,7 @@ export default function ClusteringPanel({
     setDagMode,
     artistColorMode,
     setArtistColorMode,
+    genreColorLegend,
     artistClusters,
     clusteringInProgress
 }: ClusteringPanelProps) {
@@ -38,9 +40,9 @@ export default function ClusteringPanel({
     ];
 
     const artistOptions = [
-        { id: "genre", label: "Genre", description: "Groups artists by shared genres using Jaccard similarity. Artists with similar genre profiles cluster together." },
-        { id: "tags", label: "Tag", description: "Clusters artists based on Last.fm tags using cosine similarity. Reveals thematic and stylistic connections." },
-        { id: "louvain", label: "Network", description: "Uses the existing artist network structure to find communities. Artists connected by similar artist links form clusters." },
+        { id: "genre", label: "Shared Genre", description: "Groups artists by shared genres using Jaccard similarity. Artists with similar genre profiles cluster together." },
+        { id: "tags", label: "Shared Tags", description: "Clusters artists based on Last.fm tags using cosine similarity. Reveals thematic and stylistic connections." },
+        { id: "louvain", label: "Similar Artists", description: "Uses the existing artist network structure to find communities. Artists connected by similar artist links form clusters." },
         { id: "hybrid", label: "Hybrid", description: "Combines genre similarity, tag similarity, and network structure for comprehensive clustering." },
     ];
 
@@ -133,6 +135,27 @@ export default function ClusteringPanel({
                                 </Button>
                             </div>
                         </div>
+                        {artistColorMode === 'genre' && genreColorLegend && genreColorLegend.length > 0 && (
+                            <div className="flex flex-col gap-2 w-full p-3 border-t border-border">
+                                <span className="text-md font-semibold text-gray-900 dark:text-gray-100">Genre Color Legend</span>
+                                <div className="max-h-32 overflow-y-auto pr-1">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+                                        {genreColorLegend.map((genre) => (
+                                            <div key={genre.id} className="flex items-center gap-2 min-w-0">
+                                                <span
+                                                    className="h-3 w-3 rounded-full shrink-0"
+                                                    style={{ backgroundColor: genre.color }}
+                                                />
+                                                <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                                    {genre.name}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <span className="text-xs text-gray-600 dark:text-gray-400">Multi-root genres blend colors.</span>
+                            </div>
+                        )}
                         {clusteringInProgress && (
                             <div className="flex items-center gap-2 w-full p-3 border-t border-border">
                                 <Loader2 className="h-4 w-4 animate-spin text-gray-600 dark:text-gray-400" />

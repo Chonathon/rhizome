@@ -33,6 +33,7 @@ import {
   isRootGenre,
   isSingletonGenre,
   mixColors,
+  assignRootGenreColors,
   primitiveArraysEqual,
   fixWikiImageURL,
   assignDegreesToArtists,
@@ -726,10 +727,89 @@ function App() {
     return genres.filter(genre => genreIdsInCollection.has(genre.id));
   }, [collectionMode, artists, genres]);
 
-  // Memoize the full genre list with singleton parent for collection mode
-  const collectionGenresWithParent = useMemo(() => {
-    return [...collectionGenres, singletonParentGenre];
-  }, [collectionGenres, singletonParentGenre]);
+  const genresInView = useMemo(() => {
+    return currentGenres?.nodes ?? genres;
+  }, [currentGenres, genres]);
+
+  const genresInViewWithParent = useMemo(() => {
+    return [...genresInView, singletonParentGenre];
+  }, [genresInView, singletonParentGenre]);
+
+  const collectionGenresInView = useMemo(() => {
+    if (!collectionMode) return collectionGenres;
+    const inViewIds = new Set(genresInView.map((genre) => genre.id));
+    return collectionGenres.filter((genre) => inViewIds.has(genre.id));
+  }, [collectionMode, collectionGenres, genresInView]);
+
+  const collectionGenresInViewWithParent = useMemo(() => {
+    return [...collectionGenresInView, singletonParentGenre];
+  }, [collectionGenresInView, singletonParentGenre]);
+
+  const genreColorLegend = useMemo(() => {
+    if (!genreRoots.length || !genres.length) return [];
+    const rootColorMap = assignRootGenreColors(genreRoots);
+    const genreNameById = new Map(genres.map((genre) => [genre.id, genre.name]));
+    const genreById = new Map(genres.map((genre) => [genre.id, genre]));
+    const rootIdLookup = new Set(genreRoots);
+    const rootIdSet = new Set<string>();
+
+    // Helper to add root genres from a genre ID
+    const addRootsFromGenreId = (genreId: string) => {
+      const genre = genreById.get(genreId);
+      if (genre?.rootGenres?.length) {
+        genre.rootGenres.forEach((rootId) => rootIdSet.add(rootId));
+      }
+      if (rootIdLookup.has(genreId)) {
+        rootIdSet.add(genreId);
+      }
+    };
+
+    if (graph === 'artists') {
+      // Determine which genre IDs to use for the legend
+      const filterGenreIds = collectionMode
+        ? collectionFilters.genres
+        : artistFilterGenreIDs;
+
+      if (filterGenreIds.length > 0) {
+        // When a genre filter is active, use only the filtered genres for the legend
+        filterGenreIds.forEach(addRootsFromGenreId);
+      } else if (currentArtists.length) {
+        // No filter active - derive legend from all genres of visible artists
+        currentArtists.forEach((artist) => {
+          artist.genres.forEach(addRootsFromGenreId);
+        });
+      }
+    } else {
+      // For genre graph, use genres in view
+      const legendSource = collectionMode ? collectionGenresInView : genresInView;
+      if (!legendSource.length) return [];
+      legendSource.forEach((genre) => {
+        if (genre.rootGenres?.length) {
+          genre.rootGenres.forEach((rootId) => rootIdSet.add(rootId));
+        }
+        if (rootIdLookup.has(genre.id)) {
+          rootIdSet.add(genre.id);
+        }
+      });
+    }
+
+    const sortedRootIds = [...rootIdSet].sort((a, b) => {
+      const nameA = genreNameById.get(a) ?? a;
+      const nameB = genreNameById.get(b) ?? b;
+      return nameA.localeCompare(nameB);
+    });
+    return sortedRootIds
+      .map((id) => {
+        const color = rootColorMap.get(id);
+        if (!color) return null;
+        return {
+          id,
+          name: genreNameById.get(id) ?? id,
+          color,
+        };
+      })
+      .filter((entry): entry is { id: string; name: string; color: string } => Boolean(entry));
+  }, [graph, currentArtists, collectionMode, collectionFilters.genres, artistFilterGenreIDs, collectionGenresInView, genresInView, genres, genreRoots]);
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
@@ -2224,7 +2304,7 @@ function App() {
                     className='flex flex-col items-start sm:flex-row gap-3'
                   >
                     <GenresFilter
-                      genres={collectionGenresWithParent}
+                      genres={collectionGenresInViewWithParent}
                       genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
                       graphType={graph}
                       onGenreSelectionChange={(ids) => onCollectionFilterChange('genres', ids)}
@@ -2255,7 +2335,7 @@ function App() {
                   >
                     <GenresFilter
                       //key={initialGenreFilter.genre ? initialGenreFilter.genre.id : "none_selected"}
-                      genres={[...genres, singletonParentGenre]}
+                      genres={genresInViewWithParent}
                       genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
                       graphType={graph}
                       onGenreSelectionChange={onGenreFilterSelectionChange}
@@ -2444,6 +2524,7 @@ function App() {
                     setArtistColorMode(mode);
                     localStorage.setItem('artistColorMode', mode);
                   } : undefined}
+                  genreColorLegend={graph === 'artists' ? genreColorLegend : undefined}
                   artistClusters={graph === 'artists' ? artistClusters : undefined}
                   clusteringInProgress={graph === 'artists' ? clusteringInProgress : undefined}
                 />
