@@ -565,11 +565,17 @@ const Graph = forwardRef(function GraphInner<
         width={width}
         height={height}
         graphData={preparedData}
+        // Enables hierarchical radial layout (nodes arranged in concentric rings from center)
         dagMode={dagMode ? 'radialin' : undefined}
+        // Pixel distance between hierarchy levels in DAG mode
         dagLevelDistance={dagMode ? 200 : undefined}
+        // How quickly the simulation "cools down" (higher = faster settling, less movement)
         d3AlphaDecay={0.02}
+        // Friction/damping on node velocity (higher = nodes slow down faster, less drift)
         d3VelocityDecay={0.75}
+        // Maximum time (ms) the simulation runs before auto-stopping (12 seconds)
         cooldownTime={12000}
+        // Pause canvas redraws when simulation is idle (performance optimization)
         autoPauseRedraw={true}
         nodeColor={() => "rgba(0,0,0,0)"}
         nodeCanvasObjectMode={() => "replace"}
