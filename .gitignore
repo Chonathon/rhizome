@@ -14,6 +14,7 @@ dist-ssr
 *.zip
 
 .env
+.claude
 
 # Editor directories and files
 .vscode/*
@@ -25,3 +26,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
