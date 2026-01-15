@@ -76,7 +76,7 @@ export class ClusteringEngine {
       minSimilarity = options.minSimilarity ?? 0.3;
     } else if (artistCount > 1000) {
       // Large graphs: aggressive filtering
-      kNeighbors = options.kNeighbors ?? 12;
+      kNeighbors = options.kNeighbors ?? 8;
       minSimilarity = options.minSimilarity ?? 0.25;
     } else {
       // Smaller graphs: moderate filtering
