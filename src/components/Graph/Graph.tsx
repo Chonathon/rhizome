@@ -377,13 +377,28 @@ const Graph = forwardRef(function GraphInner<
     if (signature && lastInitializedSignatureRef.current === signature) return;
     const fg = fgRef.current;
 
+    // ===========================================
     // Standardized force configuration
+    // These forces apply to ALL graph types (Artists, Genres, etc.)
+    // dagMode adjusts values for hierarchical layouts
+    // ===========================================
+
+    // Charge force: nodes repel each other (negative = repulsion)
+    // Higher magnitude = stronger repulsion = more spread out
     fg.d3Force("charge")?.strength(dagMode ? -1230 : -200);
+
+    // Link force: connected nodes attract each other
     const linkForce = fg.d3Force("link") as d3.ForceLink<PreparedNode<T>, L> | undefined;
+    // Target distance between linked nodes (pixels)
     linkForce?.distance(dagMode ? 150 : 90);
+    // How strongly links pull nodes together (higher = tighter clusters)
     linkForce?.strength(dagMode ? 1 : 1.6);
     linkForce?.id((node: any) => node.id);
+
+    // Center force: pulls entire graph toward origin (prevents drift)
     fg.d3Force("center", d3.forceCenter(0, 0).strength(dagMode ? 0.01 : 0.05));
+
+    // Collision force: prevents nodes from overlapping
     fg.d3Force(
       "collide",
       d3
@@ -397,8 +412,8 @@ const Graph = forwardRef(function GraphInner<
           // Use the larger of node radius or label dimensions
           return Math.max(n.radius + padding, labelDiagonal + padding);
         })
-        .iterations(2)
-        .strength(dagMode ? 0.02 : 0.7),
+        .iterations(2) // Collision detection passes per tick (higher = more accurate but slower)
+        .strength(dagMode ? 0.02 : 0.7), // How rigidly collisions are enforced
     );
     if (selectedId) {
       // Pull only the selected node toward the origin to keep it in view
