@@ -29,6 +29,12 @@ interface GenresForceGraphProps {
   showNodes?: boolean;
   showLinks?: boolean;
   disableDimming?: boolean;
+  // Radial layout for popularity stratification (concentric rings)
+  radialLayout?: {
+    enabled: boolean;
+    nodeToRadius: Map<string, number>;
+    strength?: number;
+  };
 }
 
 const MIN_RADIUS = 4;
@@ -60,6 +66,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       showNodes,
       showLinks,
       disableDimming,
+      radialLayout,
     },
     ref,
   ) => {
@@ -131,6 +138,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         showNodes={showNodes}
         showLinks={showLinks}
         disableDimming={disableDimming}
+        radialLayout={radialLayout}
       />
     );
   },

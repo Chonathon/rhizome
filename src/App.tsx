@@ -706,6 +706,29 @@ function App() {
     }
   }, [artistClusters, graph, currentArtistLinks, filterArtistLinksByClusters, currentArtists]);
 
+  // Compute radial layout from cluster tier data for popularity stratification
+  const artistRadialLayout = useMemo(() => {
+    if (!artistClusters || artistClusters.method !== 'listeners' || !artistClusters.tierData) {
+      return undefined;
+    }
+
+    const { nodeToTier, tiers } = artistClusters.tierData;
+    const nodeToRadius = new Map<string, number>();
+
+    nodeToTier.forEach((tierId, nodeId) => {
+      const tier = tiers.find(t => t.id === tierId);
+      if (tier) {
+        nodeToRadius.set(nodeId, tier.radius);
+      }
+    });
+
+    return {
+      enabled: true,
+      nodeToRadius,
+      strength: 0.3,
+    };
+  }, [artistClusters]);
+
   const findLabel = useMemo(() => {
     if (graph === 'genres' && selectedGenres.length) {
       return selectedGenres[0].name;
@@ -2450,6 +2473,7 @@ function App() {
                   showNodes={showNodes}
                   showLinks={showLinks}
                   disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
+                  radialLayout={artistRadialLayout}
                 />
 
           {/* Genre hover preview */}

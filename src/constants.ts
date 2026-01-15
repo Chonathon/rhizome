@@ -125,3 +125,28 @@ export const CLUSTER_COLORS = [
 ];
 
 export const SINGLETON_PARENT_COLOR = "#c4b5fd"; // violet-300 (arbitrary)
+
+// Listener-based popularity tiers for radial stratification
+export interface ListenerTier {
+    id: number;
+    name: string;
+    min: number;
+    max: number;
+    radius: number; // Distance from center (popular = inner, underground = outer)
+}
+
+export const ARTIST_LISTENER_TIERS: ListenerTier[] = [
+    { id: 5, name: 'Mainstream', min: 1_000_000, max: Infinity, radius: 100 },
+    { id: 4, name: 'Popular', min: 100_000, max: 1_000_000, radius: 250 },
+    { id: 3, name: 'Established', min: 10_000, max: 100_000, radius: 400 },
+    { id: 2, name: 'Emerging', min: 1_000, max: 10_000, radius: 550 },
+    { id: 1, name: 'Underground', min: 0, max: 1_000, radius: 700 },
+];
+
+export const GENRE_LISTENER_TIERS: ListenerTier[] = [
+    { id: 5, name: 'Major', min: 10_000_000, max: Infinity, radius: 100 },
+    { id: 4, name: 'Large', min: 1_000_000, max: 10_000_000, radius: 250 },
+    { id: 3, name: 'Medium', min: 100_000, max: 1_000_000, radius: 400 },
+    { id: 2, name: 'Small', min: 10_000, max: 100_000, radius: 550 },
+    { id: 1, name: 'Niche', min: 0, max: 10_000, radius: 700 },
+];

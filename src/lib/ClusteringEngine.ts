@@ -1,9 +1,9 @@
 import { Artist, NodeLink } from '@/types';
-import { CLUSTER_COLORS } from '@/constants';
+import { CLUSTER_COLORS, ARTIST_LISTENER_TIERS, ListenerTier } from '@/constants';
 import Graph from 'graphology';
 import louvain from 'graphology-communities-louvain';
 
-export type ClusteringMethod = 'genre' | 'tags' | 'louvain' | 'hybrid';
+export type ClusteringMethod = 'genre' | 'tags' | 'louvain' | 'hybrid' | 'listeners';
 
 export interface ClusterResult {
   method: ClusteringMethod;
@@ -14,6 +14,11 @@ export interface ClusterResult {
     clusterCount: number;
     avgClusterSize: number;
     largestCluster: number;
+  };
+  // For listeners clustering: tier metadata for Y-axis layout
+  tierData?: {
+    nodeToTier: Map<string, number>; // nodeId -> tierId (1-5)
+    tiers: ListenerTier[];
   };
 }
 
@@ -99,6 +104,8 @@ export class ClusteringEngine {
         return this.clusterByLouvain(options.resolution || 1.0);
       case 'hybrid':
         return this.clusterHybrid(options.resolution || 1.0, options.hybridWeights, kNeighbors, minSimilarity);
+      case 'listeners':
+        return this.clusterByListeners();
       default:
         return this.clusterByGenre(options.resolution || 1.0, kNeighbors, minSimilarity);
     }
@@ -249,6 +256,56 @@ export class ClusteringEngine {
     return this.formatLouvainClusters(communities, 'hybrid', filteredCombinedSim, minLinkWeight);
   }
 
+  // 5. LISTENERS CLUSTERING - Threshold-based popularity tiers
+  private clusterByListeners(tiers: ListenerTier[] = ARTIST_LISTENER_TIERS): ClusterResult {
+    const clusters = new Map<string, Cluster>();
+    const artistToCluster = new Map<string, string>();
+    const nodeToTier = new Map<string, number>();
+
+    // Initialize clusters for each tier
+    tiers.forEach(tier => {
+      const clusterId = `listeners-${tier.id}`;
+      clusters.set(clusterId, {
+        id: clusterId,
+        name: tier.name,
+        artistIds: [],
+        color: this.getColorForCluster(clusterId),
+      });
+    });
+
+    // Assign each artist to a tier based on listener count
+    this.artists.forEach(artist => {
+      const listeners = artist.listeners || 0;
+      const tier = tiers.find(t => listeners >= t.min && listeners < t.max) || tiers[0];
+
+      const clusterId = `listeners-${tier.id}`;
+      clusters.get(clusterId)!.artistIds.push(artist.id);
+      artistToCluster.set(artist.id, clusterId);
+      nodeToTier.set(artist.id, tier.id);
+    });
+
+    // Remove empty tiers
+    clusters.forEach((cluster, id) => {
+      if (cluster.artistIds.length === 0) {
+        clusters.delete(id);
+      }
+    });
+
+    console.log(`[listeners] Assigned ${this.artists.length} artists to ${clusters.size} popularity tiers`);
+
+    return {
+      method: 'listeners',
+      clusters,
+      artistToCluster,
+      links: [], // No relationship-based links for tier clustering
+      stats: this.calculateStats(clusters),
+      tierData: {
+        nodeToTier,
+        tiers,
+      },
+    };
+  }
+
   // HELPER: Build weighted graph from similarity map
   private buildWeightedGraph(similarities: Map<string, number>): Graph {
     const graph = new Graph({ type: 'undirected' });
@@ -368,6 +425,7 @@ export class ClusteringEngine {
       case 'tags': return 'Tag Community';
       case 'louvain': return 'Community';
       case 'hybrid': return 'Hybrid Community';
+      case 'listeners': return 'Popularity Tier';
       default: return 'Community';
     }
   }

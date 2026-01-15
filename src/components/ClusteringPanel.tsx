@@ -44,6 +44,7 @@ export default function ClusteringPanel({
         { id: "tags", label: "Shared Tags", description: "Clusters artists based on Last.fm tags using cosine similarity. Reveals thematic and stylistic connections." },
         { id: "louvain", label: "Similar Artists", description: "Uses the existing artist network structure to find communities. Artists connected by similar artist links form clusters." },
         { id: "hybrid", label: "Hybrid", description: "Combines genre similarity, tag similarity, and network structure for comprehensive clustering." },
+        { id: "listeners", label: "Popularity", description: "Arranges artists in concentric rings by listener count. Popular artists at center, underground at outer ring." },
     ];
 
     const options = graphType === 'genres' ? genreOptions : artistOptions;

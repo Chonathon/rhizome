@@ -97,6 +97,12 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   showNodes?: boolean;
   showLinks?: boolean;
   disableDimming?: boolean;
+  // Radial layout for popularity stratification (concentric rings)
+  radialLayout?: {
+    enabled: boolean;
+    nodeToRadius: Map<string, number>;
+    strength?: number;
+  };
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -154,6 +160,7 @@ const Graph = forwardRef(function GraphInner<
     showNodes = true,
     showLinks = true,
     disableDimming = false,
+    radialLayout,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -408,6 +415,20 @@ const Graph = forwardRef(function GraphInner<
       fg.d3Force("selected-position-y", null);
     }
 
+    // Radial layout for popularity stratification (concentric rings)
+    if (radialLayout?.enabled && radialLayout.nodeToRadius.size > 0) {
+      fg.d3Force(
+        "radial",
+        d3.forceRadial<PreparedNode<T>>(
+          (node) => radialLayout.nodeToRadius.get(node.id) ?? 400,
+          0, // center x
+          0  // center y
+        ).strength(radialLayout.strength ?? 0.3)
+      );
+    } else {
+      fg.d3Force("radial", null);
+    }
+
     fg.d3ReheatSimulation?.();
     if (shouldResetZoomRef.current) {
       const isMobile = window.matchMedia('(max-width: 640px)').matches;
@@ -420,7 +441,7 @@ const Graph = forwardRef(function GraphInner<
     if (signature) {
       lastInitializedSignatureRef.current = signature;
     }
-  }, [dataSignature, dagMode, preparedData, selectedId, show]);
+  }, [dataSignature, dagMode, preparedData, selectedId, show, radialLayout]);
 
   useEffect(() => {
     if (!autoFocus || !show || !selectedId || !fgRef.current) return;

@@ -63,7 +63,7 @@ export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'parentGenre';
 
 export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion';
 
-export type ArtistClusterMode = 'genre' | 'tags' | 'louvain' | 'hybrid';
+export type ArtistClusterMode = 'genre' | 'tags' | 'louvain' | 'hybrid' | 'listeners';
 
 export type LinkType = GenreClusterMode | 'similar';
 

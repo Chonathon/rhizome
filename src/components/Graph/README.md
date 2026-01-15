@@ -93,6 +93,13 @@ interface GraphProps<T, L extends SharedGraphLink> {
   renderNode?: NodeRenderer<T>;
   renderSelection?: SelectionRenderer<T>;
   renderLabel?: LabelRenderer<T>;
+
+  // Radial layout (for popularity stratification with concentric rings)
+  radialLayout?: {
+    enabled: boolean;
+    nodeToRadius: Map<string, number>;
+    strength?: number;  // Force strength (default: 0.3)
+  };
 }
 
 // Imperative API
@@ -167,6 +174,23 @@ Override node shapes, selection indicators, or label styles without forking the 
 
 ### 6. Type Safety
 Full TypeScript generics with domain data preservation - callbacks receive original typed objects.
+
+### 7. Radial Layout
+For popularity-based stratification, nodes can be positioned in concentric rings using `d3.forceRadial`:
+
+```typescript
+<Graph
+  nodes={nodes}
+  links={links}
+  radialLayout={{
+    enabled: true,
+    nodeToRadius: tierMap,  // Map<string, number> - nodeId -> radius from center
+    strength: 0.3,          // Force strength (0-1)
+  }}
+/>
+```
+
+This is used with `listeners` clustering to arrange artists in concentric rings by popularity tier (popular at center, underground at outer ring).
 
 ## Custom Rendering
 

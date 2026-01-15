@@ -42,6 +42,21 @@ Unified Louvain-based clustering with different similarity metrics.
 | `tags` | Cosine similarity | Groups artists by Last.fm tag vectors |
 | `louvain` | Network edges | Uses existing similar-artist links |
 | `hybrid` | Weighted combination | Blends all three metrics |
+| `listeners` | Listener count thresholds | Groups artists into popularity tiers with radial layout |
+
+### Listeners (Popularity Tiers)
+
+Unlike other methods, `listeners` clustering uses threshold-based categorization rather than community detection. Artists are assigned to tiers based on their listener count:
+
+| Tier | Name | Range | Radius |
+|------|------|-------|--------|
+| 5 | Mainstream | >1M listeners | 100 (center) |
+| 4 | Popular | 100K-1M | 250 |
+| 3 | Established | 10K-100K | 400 |
+| 2 | Emerging | 1K-10K | 550 |
+| 1 | Underground | <1K | 700 (outer) |
+
+The result includes `tierData` for radial positioning, which arranges artists in concentric rings by popularity (popular at center, underground at outer ring).
 
 ### Usage
 
@@ -83,6 +98,11 @@ interface ClusterResult {
     clusterCount: number;
     avgClusterSize: number;
     largestCluster: number;
+  };
+  // For 'listeners' method: tier metadata for Y-axis layout
+  tierData?: {
+    nodeToTier: Map<string, number>;  // nodeId -> tierId (1-5)
+    tiers: ListenerTier[];
   };
 }
 
