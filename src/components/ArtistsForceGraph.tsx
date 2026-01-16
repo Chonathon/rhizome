@@ -79,7 +79,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       return artists.map((artist) => {
         const value = Math.log10(Math.max(1, artist.listeners || 1));
         const t = (value - min) / denom;
-        const radius = MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS); // Base radius only, no scaling
+        const tExp = Math.pow(t, 2); // Exponential scaling: larger nodes get proportionally bigger
+        const radius = MIN_RADIUS + tExp * (MAX_RADIUS - MIN_RADIUS);
         return {
           id: artist.id,
           label: artist.name,
