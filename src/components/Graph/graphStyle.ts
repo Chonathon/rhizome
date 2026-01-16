@@ -75,6 +75,32 @@ export function drawCircleNode(
   ctx.stroke();
 }
 
+// Default node radius bounds
+export const DEFAULT_MIN_RADIUS = 3;
+export const DEFAULT_MAX_RADIUS = 35;
+// Exponent for node size scaling (higher = more dramatic size differences)
+export const NODE_SIZE_EXPONENT = 2;
+
+/**
+ * Calculate node radius from a normalized value (0-1).
+ * Uses exponential scaling for better visual separation between large and small nodes.
+ *
+ * @param t - Normalized value between 0 and 1
+ * @param minRadius - Minimum node radius
+ * @param maxRadius - Maximum node radius
+ * @param exponent - Power curve exponent (higher = more dramatic differences)
+ * @returns Calculated radius
+ */
+export function calculateNodeRadius(
+  t: number,
+  minRadius = DEFAULT_MIN_RADIUS,
+  maxRadius = DEFAULT_MAX_RADIUS,
+  exponent = NODE_SIZE_EXPONENT
+): number {
+  const tExp = Math.pow(t, exponent);
+  return minRadius + tExp * (maxRadius - minRadius);
+}
+
 export function drawLabelBelow(
   ctx: CanvasRenderingContext2D,
   label: string,

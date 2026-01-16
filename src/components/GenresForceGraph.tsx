@@ -3,6 +3,7 @@ import Graph, {
   type GraphHandle,
   type SharedGraphNode,
 } from "./Graph";
+import { calculateNodeRadius } from "./Graph/graphStyle";
 import { Genre, GenreClusterMode, GenreGraphData, NodeLink } from "@/types";
 
 interface GenresForceGraphProps {
@@ -84,7 +85,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       return nodes.map((genre) => {
         const value = Math.log10(Math.max(1, genre.artistCount || 1));
         const t = (value - min) / denom;
-        const radius = MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS); // Base radius only, no scaling
+        const radius = calculateNodeRadius(t, MIN_RADIUS, MAX_RADIUS);
         return {
           id: genre.id,
           label: genre.name,

@@ -3,6 +3,7 @@ import Graph, {
   type GraphHandle,
   type SharedGraphNode,
 } from "./Graph";
+import { calculateNodeRadius, DEFAULT_MIN_RADIUS, DEFAULT_MAX_RADIUS } from "./Graph/graphStyle";
 import { Artist, NodeLink } from "@/types";
 
 interface ArtistsForceGraphProps {
@@ -36,8 +37,6 @@ interface ArtistsForceGraphProps {
   };
 }
 
-const MIN_RADIUS = 3;
-const MAX_RADIUS = 35;
 
 const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
   (
@@ -79,8 +78,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       return artists.map((artist) => {
         const value = Math.log10(Math.max(1, artist.listeners || 1));
         const t = (value - min) / denom;
-        const tExp = Math.pow(t, 2); // Exponential scaling: larger nodes get proportionally bigger
-        const radius = MIN_RADIUS + tExp * (MAX_RADIUS - MIN_RADIUS);
+        const radius = calculateNodeRadius(t, DEFAULT_MIN_RADIUS, DEFAULT_MAX_RADIUS);
         return {
           id: artist.id,
           label: artist.name,
