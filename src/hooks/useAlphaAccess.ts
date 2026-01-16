@@ -5,10 +5,18 @@ import {PHASE_VERSION} from "@/constants";
 
 const LS_KEY = "alpha_access_ok";
 const BYPASS = import.meta.env.VITE_ALPHA_BYPASS === "true";
+const URL_BYPASS_PARAM = "alpha";
+
+function getAlphaBypassFromUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.has(URL_BYPASS_PARAM);
+}
 
 export function useAlphaAccess(userAccess?: string) {
+  const urlBypass = useMemo(() => getAlphaBypassFromUrl(), []);
   const [validated, setValidated] = useState<boolean>(() => {
-    if (BYPASS || (userAccess && userAccess === PHASE_VERSION)) return true;
+    if (BYPASS || urlBypass || (userAccess && userAccess === PHASE_VERSION)) return true;
     try {
       return localStorage.getItem(LS_KEY) === "true";
     } catch {
