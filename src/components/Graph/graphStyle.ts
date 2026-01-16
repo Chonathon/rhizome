@@ -3,6 +3,8 @@
 export const LABEL_FONT_SIZE = 12;
 export const DEFAULT_LABEL_FADE_START = .1;
 export const DEFAULT_LABEL_FADE_END = .3;
+// Highest normalized label-value cutoff when zoomed out (0-1, higher = fewer labels)
+export const DEFAULT_LABEL_IMPORTANCE_THRESHOLD = 0.85;
 // Default upward screen-space offset (in px) to lift a focused node on mobile
 export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
 
@@ -17,6 +19,19 @@ export function labelAlphaForZoom(
   const denom = Math.max(1e-6, end - start);
   const t = Math.max(0, Math.min(1, (k - start) / denom));
   return smoothstep(t);
+}
+
+// Convert zoom-based alpha (0-1) into a normalized label-value threshold (0-1).
+export function labelValueThresholdForZoom(
+  zoomAlpha: number,
+  maxThreshold: number = DEFAULT_LABEL_IMPORTANCE_THRESHOLD
+): number {
+  const t = Math.max(0, Math.min(1, zoomAlpha));
+  return maxThreshold * (1 - t);
+}
+
+export function fontPxForZoom(baseFontPx: number, k: number): number {
+  return baseFontPx / Math.max(k || 1, 1e-6);
 }
 
 // Convert a screen-space pixel offset to world-space, given current zoom k

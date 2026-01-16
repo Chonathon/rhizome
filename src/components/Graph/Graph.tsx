@@ -22,6 +22,8 @@ import {
   DEFAULT_LABEL_FADE_START,
   DEFAULT_LABEL_FADE_END,
   labelAlphaForZoom,
+  labelValueThresholdForZoom,
+  fontPxForZoom,
   drawCircleNode,
   drawLabelBelow,
   applyMobileDrawerYOffset,
@@ -37,6 +39,8 @@ export interface SharedGraphNode<T = unknown> {
   label: string;
   radius: number;
   color?: string;
+  // Normalized 0-1 value for label density filtering at low zoom
+  labelValue?: number;
   data: T;
 }
 
@@ -693,33 +697,39 @@ const Graph = forwardRef(function GraphInner<
           if (showLabels) {
             const k = zoomRef.current || 1;
             const zoomBasedAlpha = labelAlphaForZoom(k, labelFadeStart, labelFadeEnd);
+            const minLabelValue = labelValueThresholdForZoom(zoomBasedAlpha);
+            const meetsLabelThreshold =
+              node.labelValue === undefined || node.labelValue >= minLabelValue;
 
-            // Calculate base label alpha (what it would be without dimming override)
-            let baseLabelAlpha = zoomBasedAlpha;
-            if (isSelected || isHovered) {
-              baseLabelAlpha = 1;
-            } else if (hasSelection && !isNeighbor) {
-              baseLabelAlpha = Math.min(zoomBasedAlpha, 0.25);
-            }
+            if (meetsLabelThreshold || isSelected || isHovered) {
+              // Calculate base label alpha (what it would be without dimming override)
+              let baseLabelAlpha = zoomBasedAlpha;
+              if (isSelected || isHovered) {
+                baseLabelAlpha = 1;
+              } else if (hasSelection && !isNeighbor) {
+                baseLabelAlpha = Math.min(zoomBasedAlpha, 0.25);
+              }
 
-            // When transitioning to undimmed state, interpolate toward zoom-based alpha only
-            // (we don't want to boost labels to full brightness, just remove selection dimming)
-            const labelAlpha = baseLabelAlpha * (1 - transition) + zoomBasedAlpha * transition;
+              // When transitioning to undimmed state, interpolate toward zoom-based alpha only
+              // (we don't want to boost labels to full brightness, just remove selection dimming)
+              const labelAlpha = baseLabelAlpha * (1 - transition) + zoomBasedAlpha * transition;
 
-            const labelContext: LabelRenderContext<T> = {
-              ...renderContext,
-              label: node.label,
-              labelAlpha,
-              zoomLevel: k,
-            };
+              const labelContext: LabelRenderContext<T> = {
+                ...renderContext,
+                label: node.label,
+                labelAlpha,
+                zoomLevel: k,
+              };
 
-            // Pass fontSize if using default renderer
-            if (renderLabel === defaultRenderLabel) {
-              // When nodes are hidden, use node color for labels
-              const labelColor = !showNodesRef.current ? accent : undefined;
-              defaultRenderLabel(labelContext, labelFontSize, labelColor);
-            } else {
-              renderLabel(labelContext);
+              // Pass fontSize if using default renderer
+              if (renderLabel === defaultRenderLabel) {
+                // When nodes are hidden, use node color for labels
+                const labelColor = !showNodesRef.current ? accent : undefined;
+                const zoomedFontSize = fontPxForZoom(labelFontSize, k);
+                defaultRenderLabel(labelContext, zoomedFontSize, labelColor);
+              } else {
+                renderLabel(labelContext);
+              }
             }
           }
         }}
