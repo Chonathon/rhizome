@@ -262,14 +262,14 @@ export class ClusteringEngine {
     const artistToCluster = new Map<string, string>();
     const nodeToTier = new Map<string, number>();
 
-    // Initialize clusters for each tier
+    // Initialize clusters for each tier using explicit tier colors for visual distinction
     tiers.forEach(tier => {
       const clusterId = `listeners-${tier.id}`;
       clusters.set(clusterId, {
         id: clusterId,
         name: tier.name,
         artistIds: [],
-        color: this.getColorForCluster(clusterId),
+        color: tier.color,
       });
     });
 

@@ -133,20 +133,21 @@ export interface ListenerTier {
     min: number;
     max: number;
     radius: number; // Distance from center (popular = inner, underground = outer)
+    color: string; // Explicit color for visual distinction
 }
 
 export const ARTIST_LISTENER_TIERS: ListenerTier[] = [
-    { id: 5, name: 'Mainstream', min: 1_000_000, max: Infinity, radius: 100 },
-    { id: 4, name: 'Popular', min: 100_000, max: 1_000_000, radius: 250 },
-    { id: 3, name: 'Established', min: 10_000, max: 100_000, radius: 400 },
-    { id: 2, name: 'Emerging', min: 1_000, max: 10_000, radius: 550 },
-    { id: 1, name: 'Underground', min: 0, max: 1_000, radius: 700 },
+    { id: 5, name: 'Mainstream', min: 1_000_000, max: Infinity, radius: 100, color: '#facc15' },    // yellow-400
+    { id: 4, name: 'Popular', min: 100_000, max: 1_000_000, radius: 250, color: '#4ade80' },       // green-400
+    { id: 3, name: 'Established', min: 10_000, max: 100_000, radius: 400, color: '#38bdf8' },      // sky-400
+    { id: 2, name: 'Emerging', min: 1_000, max: 10_000, radius: 550, color: '#c084fc' },           // purple-400
+    { id: 1, name: 'Underground', min: 0, max: 1_000, radius: 700, color: '#fb7185' },             // rose-400
 ];
 
 export const GENRE_LISTENER_TIERS: ListenerTier[] = [
-    { id: 5, name: 'Major', min: 10_000_000, max: Infinity, radius: 100 },
-    { id: 4, name: 'Large', min: 1_000_000, max: 10_000_000, radius: 250 },
-    { id: 3, name: 'Medium', min: 100_000, max: 1_000_000, radius: 400 },
-    { id: 2, name: 'Small', min: 10_000, max: 100_000, radius: 550 },
-    { id: 1, name: 'Niche', min: 0, max: 10_000, radius: 700 },
+    { id: 5, name: 'Major', min: 10_000_000, max: Infinity, radius: 100, color: '#facc15' },       // yellow-400
+    { id: 4, name: 'Large', min: 1_000_000, max: 10_000_000, radius: 250, color: '#4ade80' },      // green-400
+    { id: 3, name: 'Medium', min: 100_000, max: 1_000_000, radius: 400, color: '#38bdf8' },        // sky-400
+    { id: 2, name: 'Small', min: 10_000, max: 100_000, radius: 550, color: '#c084fc' },            // purple-400
+    { id: 1, name: 'Niche', min: 0, max: 10_000, radius: 700, color: '#fb7185' },                  // rose-400
 ];
