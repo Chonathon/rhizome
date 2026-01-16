@@ -80,7 +80,9 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       );
       const min = Math.min(...artistCounts);
       const max = Math.max(...artistCounts);
-      const denom = Math.max(1e-6, max - min);
+      const range = max - min;
+      const denom = Math.max(1e-6, range);
+      const hasRange = range > 1e-6;
 
       return nodes.map((genre) => {
         const value = Math.log10(Math.max(1, genre.artistCount || 1));
@@ -91,6 +93,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
           label: genre.name,
           radius,
           color: colorMap?.get(genre.id),
+          labelValue: hasRange ? t : 1,
           data: genre,
         };
       });

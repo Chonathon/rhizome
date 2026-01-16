@@ -73,7 +73,9 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       );
       const min = Math.min(...listenerValues);
       const max = Math.max(...listenerValues);
-      const denom = Math.max(1e-6, max - min);
+      const range = max - min;
+      const denom = Math.max(1e-6, range);
+      const hasRange = range > 1e-6;
 
       return artists.map((artist) => {
         const value = Math.log10(Math.max(1, artist.listeners || 1));
@@ -84,6 +86,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
           label: artist.name,
           radius,
           color: computeArtistColor(artist),
+          labelValue: hasRange ? t : 1,
           data: artist,
         };
       });
