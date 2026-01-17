@@ -2470,8 +2470,8 @@ function App() {
                     (graph === "similarArtists" && !artistsError) ||
                     (graph === "artists" && !artistsError && !!artistClusters)
                   }
-                  // Show loading spinner while data or clustering is in progress
-                  loading={artistsLoading || (graph === 'artists' && !artistClusters)}
+                  // Show loading spinner while data or clustering is in progress (only when on artists/similarArtists view)
+                  loading={((graph === 'artists' || graph === 'similarArtists') && artistsLoading) || (graph === 'artists' && !artistClusters)}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
                   nodeSize={nodeSize}
