@@ -23,6 +23,8 @@ interface DisplayPanelProps {
     setTextFadeThreshold: (threshold: number) => void;
     showLabels: boolean;
     setShowLabels: (show: boolean) => void;
+    useCentralLabels: boolean;
+    setUseCentralLabels: (enabled: boolean) => void;
     labelSize: 'Small' | 'Default' | 'Large';
     setLabelSize: (size: 'Small' | 'Default' | 'Large') => void;
     showNodes: boolean;
@@ -36,6 +38,7 @@ interface DisplayPanelProps {
         linkCurvature: number;
         textFadeThreshold: number;
         showLabels: boolean;
+        useCentralLabels: boolean;
         labelSize: 'Small' | 'Default' | 'Large';
         showNodes: boolean;
         showLinks: boolean;
@@ -55,6 +58,8 @@ export default function DisplayPanel({
     setTextFadeThreshold,
     showLabels,
     setShowLabels,
+    useCentralLabels,
+    setUseCentralLabels,
     labelSize,
     setLabelSize,
     showNodes,
@@ -80,6 +85,7 @@ export default function DisplayPanel({
         linkCurvature !== defaults.linkCurvature ||
         textFadeThreshold !== defaults.textFadeThreshold ||
         showLabels !== defaults.showLabels ||
+        useCentralLabels !== defaults.useCentralLabels ||
         labelSize !== defaults.labelSize ||
         showNodes !== defaults.showNodes ||
         showLinks !== defaults.showLinks
@@ -235,7 +241,15 @@ export default function DisplayPanel({
                                     className="w-full"
                                 />
                             </div>
-                        </div>
+                            </div>
+                            <div className="flex items-center justify-start gap-6">
+                                <label htmlFor="central-labels" className={labelStyles}>Central Labels</label>
+                                <Switch
+                                    id="central-labels"
+                                    checked={useCentralLabels}
+                                    onCheckedChange={setUseCentralLabels}
+                                />
+                            </div>
                             <div className="flex items-center justify-start gap-6">
                                 <label htmlFor="text-size" className={labelStyles}>Text Size</label>
                                 <Select value={labelSize} onValueChange={(value) => setLabelSize(value as 'Small' | 'Default' | 'Large')}>

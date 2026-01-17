@@ -106,6 +106,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   showNodes?: boolean;
   showLinks?: boolean;
   disableDimming?: boolean;
+  priorityLabelIds?: string[];
   // Radial layout for popularity stratification (concentric rings)
   radialLayout?: {
     enabled: boolean;
@@ -169,6 +170,7 @@ const Graph = forwardRef(function GraphInner<
     showNodes = true,
     showLinks = true,
     disableDimming = false,
+    priorityLabelIds: priorityLabelIdsProp,
     radialLayout,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
@@ -268,6 +270,9 @@ const Graph = forwardRef(function GraphInner<
   }, [nodes, links]);
 
   const priorityLabelIds = useMemo(() => {
+    if (priorityLabelIdsProp !== undefined) {
+      return new Set(priorityLabelIdsProp);
+    }
     const values = preparedData.nodes
       .map((node) => ({ id: node.id, value: node.labelValue }))
       .filter((entry): entry is { id: string; value: number } =>
@@ -278,7 +283,7 @@ const Graph = forwardRef(function GraphInner<
     const sorted = [...values].sort((a, b) => b.value - a.value);
     const cutoff = sorted[Math.min(count - 1, sorted.length - 1)].value;
     return new Set(values.filter((entry) => entry.value >= cutoff).map((entry) => entry.id));
-  }, [preparedData.nodes]);
+  }, [priorityLabelIdsProp, preparedData.nodes]);
 
   // Stable fingerprint lets us detect meaningful topology changes without diffing objects deeply.
   const dataSignature = useMemo(() => {

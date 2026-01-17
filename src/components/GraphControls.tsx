@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, use } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ClusteringPanel from "./ClusteringPanel";
-import DisplayPanel from "./DisplayPanel";
 import GenrePanel from "./GenrePanel";
 import { Spline, Settings2, Tag, RotateCcw, CircleX } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -124,7 +123,9 @@ export function GraphControls() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <DisplayPanel />
+              <div className="text-sm text-muted-foreground">
+                Display controls are managed in the main UI.
+              </div>
             </motion.div>
           )}
           {activePanel === "genres" && (

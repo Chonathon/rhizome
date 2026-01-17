@@ -88,6 +88,7 @@ import SettingsOverlay, {ChangePasswordDialog} from '@/components/SettingsOverla
 import {submitFeedback} from "@/apis/feedbackApi";
 import {useNavigate} from "react-router";
 import { exportGraphAsImage } from "@/utils/exportGraph";
+import { DEFAULT_PRIORITY_LABEL_PERCENT } from "@/components/Graph/graphStyle";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -100,6 +101,45 @@ function SidebarLogoTrigger() {
     </div>
   )
 }
+
+const getLinkNodeId = (value: unknown): string | null => {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && "id" in value) {
+    const id = (value as { id?: string }).id;
+    return id ? String(id) : null;
+  }
+  return null;
+};
+
+const buildDegreeMap = (links: NodeLink[], allowedIds: Set<string>) => {
+  const degreeById = new Map<string, number>();
+  links.forEach((link) => {
+    const source = getLinkNodeId(link.source);
+    const target = getLinkNodeId(link.target);
+    if (!source || !target) return;
+    if (!allowedIds.has(source) || !allowedIds.has(target)) return;
+    degreeById.set(source, (degreeById.get(source) ?? 0) + 1);
+    degreeById.set(target, (degreeById.get(target) ?? 0) + 1);
+  });
+  return degreeById;
+};
+
+const selectTopDegreeIds = (
+  nodes: { id: string }[],
+  degreeById: Map<string, number>,
+  percent: number,
+) => {
+  const safePercent = Math.max(0, Math.min(1, percent));
+  if (safePercent <= 0) return [];
+  const entries = nodes
+    .map((node) => ({ id: node.id, degree: degreeById.get(node.id) ?? 0 }))
+    .filter((entry) => entry.degree > 0);
+  if (!entries.length) return [];
+  const count = Math.max(1, Math.ceil(entries.length * safePercent));
+  const sorted = [...entries].sort((a, b) => b.degree - a.degree);
+  const cutoff = sorted[Math.min(count - 1, sorted.length - 1)].degree;
+  return entries.filter((entry) => entry.degree >= cutoff).map((entry) => entry.id);
+};
 
 function App() {
   type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
@@ -209,6 +249,10 @@ function App() {
     const stored = localStorage.getItem('showLinks');
     return stored ? JSON.parse(stored) : true;
   });
+  const [useCentralLabels, setUseCentralLabels] = useState<boolean>(() => {
+    const stored = localStorage.getItem('useCentralLabels');
+    return stored ? JSON.parse(stored) : false;
+  });
 
   // Reset display controls to defaults
   const handleResetDisplayControls = useCallback(() => {
@@ -220,6 +264,7 @@ function App() {
     setLabelSize('Default');
     setShowNodes(true);
     setShowLinks(true);
+    setUseCentralLabels(false);
     // Clear from localStorage
     localStorage.removeItem('nodeSize');
     localStorage.removeItem('linkThickness');
@@ -229,7 +274,9 @@ function App() {
     localStorage.removeItem('labelSize');
     localStorage.removeItem('showNodes');
     localStorage.removeItem('showLinks');
+    localStorage.removeItem('useCentralLabels');
   }, []);
+
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [isFindFilterOpen, setIsFindFilterOpen] = useState(false);
@@ -430,6 +477,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('showLinks', JSON.stringify(showLinks));
   }, [showLinks]);
+
+  useEffect(() => {
+    localStorage.setItem('useCentralLabels', JSON.stringify(useCentralLabels));
+  }, [useCentralLabels]);
 
   const findOptions = useMemo<FindOption[]>(() => {
     if (graph === 'genres' && currentGenres) {
@@ -738,6 +789,38 @@ function App() {
     }
     return null;
   }, [graph, selectedGenres, selectedArtist]);
+
+  const centralGenreLabelIds = useMemo(() => {
+    if (!useCentralLabels) return undefined;
+    const nodes = currentGenres?.nodes ?? [];
+    if (!nodes.length) return [];
+    const nodeIds = new Set(nodes.map((node) => node.id));
+    const degreeById = buildDegreeMap(currentGenres?.links ?? [], nodeIds);
+    const hasHierarchyMode = genreClusterMode.includes('subgenre') && genreRoots.length > 0;
+    if (hasHierarchyMode) {
+      return genreRoots.filter(
+        (id) => nodeIds.has(id) && (degreeById.get(id) ?? 0) > 0,
+      );
+    }
+    return selectTopDegreeIds(nodes, degreeById, DEFAULT_PRIORITY_LABEL_PERCENT);
+  }, [
+    useCentralLabels,
+    currentGenres,
+    genreClusterMode,
+    genreRoots,
+  ]);
+
+  const centralArtistLabelIds = useMemo(() => {
+    if (!useCentralLabels) return undefined;
+    if (!currentArtists.length) return [];
+    const nodeIds = new Set(currentArtists.map((node) => node.id));
+    const degreeById = buildDegreeMap(filteredArtistLinks, nodeIds);
+    return selectTopDegreeIds(currentArtists, degreeById, DEFAULT_PRIORITY_LABEL_PERCENT);
+  }, [
+    useCentralLabels,
+    currentArtists,
+    filteredArtistLinks,
+  ]);
 
   // Compute genres available in the collection (only includes genres from liked artists)
   const collectionGenres = useMemo(() => {
@@ -2445,6 +2528,7 @@ function App() {
                   showNodes={showNodes}
                   showLinks={showLinks}
                   disableDimming={isUserDraggingGenreCanvas || isGenreDrawerAtMinSnap}
+                  priorityLabelIds={centralGenreLabelIds}
                 />
                 <ArtistsForceGraph
                   ref={artistsGraphRef}
@@ -2474,6 +2558,7 @@ function App() {
                   showLinks={showLinks}
                   disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
                   radialLayout={artistRadialLayout}
+                  priorityLabelIds={centralArtistLabelIds}
                 />
 
           {/* Genre hover preview */}
@@ -2597,6 +2682,8 @@ function App() {
                 setTextFadeThreshold={setTextFadeThreshold}
                 showLabels={showLabels}
                 setShowLabels={setShowLabels}
+                useCentralLabels={useCentralLabels}
+                setUseCentralLabels={setUseCentralLabels}
                 labelSize={labelSize}
                 setLabelSize={setLabelSize}
                 showNodes={showNodes}
@@ -2610,6 +2697,7 @@ function App() {
                   linkCurvature: 50,
                   textFadeThreshold: 50,
                   showLabels: true,
+                  useCentralLabels: false,
                   labelSize: 'Default',
                   showNodes: true,
                   showLinks: true,
