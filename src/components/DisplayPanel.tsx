@@ -23,8 +23,8 @@ interface DisplayPanelProps {
     setTextFadeThreshold: (threshold: number) => void;
     showLabels: boolean;
     setShowLabels: (show: boolean) => void;
-    useCentralLabels: boolean;
-    setUseCentralLabels: (enabled: boolean) => void;
+    priorityLabelMode: 'popularity' | 'central';
+    setPriorityLabelMode: (mode: 'popularity' | 'central') => void;
     labelSize: 'Small' | 'Default' | 'Large';
     setLabelSize: (size: 'Small' | 'Default' | 'Large') => void;
     showNodes: boolean;
@@ -38,7 +38,7 @@ interface DisplayPanelProps {
         linkCurvature: number;
         textFadeThreshold: number;
         showLabels: boolean;
-        useCentralLabels: boolean;
+        priorityLabelMode: 'popularity' | 'central';
         labelSize: 'Small' | 'Default' | 'Large';
         showNodes: boolean;
         showLinks: boolean;
@@ -58,8 +58,8 @@ export default function DisplayPanel({
     setTextFadeThreshold,
     showLabels,
     setShowLabels,
-    useCentralLabels,
-    setUseCentralLabels,
+    priorityLabelMode,
+    setPriorityLabelMode,
     labelSize,
     setLabelSize,
     showNodes,
@@ -85,7 +85,7 @@ export default function DisplayPanel({
         linkCurvature !== defaults.linkCurvature ||
         textFadeThreshold !== defaults.textFadeThreshold ||
         showLabels !== defaults.showLabels ||
-        useCentralLabels !== defaults.useCentralLabels ||
+        priorityLabelMode !== defaults.priorityLabelMode ||
         labelSize !== defaults.labelSize ||
         showNodes !== defaults.showNodes ||
         showLinks !== defaults.showLinks
@@ -243,12 +243,23 @@ export default function DisplayPanel({
                             </div>
                             </div>
                             <div className="flex items-center justify-start gap-6">
-                                <label htmlFor="central-labels" className={labelStyles}>Central Labels</label>
-                                <Switch
-                                    id="central-labels"
-                                    checked={useCentralLabels}
-                                    onCheckedChange={setUseCentralLabels}
-                                />
+                                <label htmlFor="priority-labels" className={labelStyles}>Priority Labels</label>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant={priorityLabelMode === 'popularity' ? 'default' : 'outline'}
+                                        size="sm"
+                                        onClick={() => setPriorityLabelMode('popularity')}
+                                    >
+                                        Popularity
+                                    </Button>
+                                    <Button
+                                        variant={priorityLabelMode === 'central' ? 'default' : 'outline'}
+                                        size="sm"
+                                        onClick={() => setPriorityLabelMode('central')}
+                                    >
+                                        Central
+                                    </Button>
+                                </div>
                             </div>
                             <div className="flex items-center justify-start gap-6">
                                 <label htmlFor="text-size" className={labelStyles}>Text Size</label>

@@ -252,9 +252,9 @@ function App() {
     const stored = localStorage.getItem('showLinks');
     return stored ? JSON.parse(stored) : true;
   });
-  const [useCentralLabels, setUseCentralLabels] = useState<boolean>(() => {
-    const stored = localStorage.getItem('useCentralLabels');
-    return stored ? JSON.parse(stored) : false;
+  const [priorityLabelMode, setPriorityLabelMode] = useState<'popularity' | 'central'>(() => {
+    const stored = localStorage.getItem('priorityLabelMode');
+    return stored ? JSON.parse(stored) : 'popularity';
   });
 
   // Reset display controls to defaults
@@ -267,7 +267,7 @@ function App() {
     setLabelSize('Default');
     setShowNodes(true);
     setShowLinks(true);
-    setUseCentralLabels(false);
+    setPriorityLabelMode('popularity');
     // Clear from localStorage
     localStorage.removeItem('nodeSize');
     localStorage.removeItem('linkThickness');
@@ -277,7 +277,7 @@ function App() {
     localStorage.removeItem('labelSize');
     localStorage.removeItem('showNodes');
     localStorage.removeItem('showLinks');
-    localStorage.removeItem('useCentralLabels');
+    localStorage.removeItem('priorityLabelMode');
   }, []);
 
 
@@ -482,8 +482,8 @@ function App() {
   }, [showLinks]);
 
   useEffect(() => {
-    localStorage.setItem('useCentralLabels', JSON.stringify(useCentralLabels));
-  }, [useCentralLabels]);
+    localStorage.setItem('priorityLabelMode', JSON.stringify(priorityLabelMode));
+  }, [priorityLabelMode]);
 
   const findOptions = useMemo<FindOption[]>(() => {
     if (graph === 'genres' && currentGenres) {
@@ -803,7 +803,7 @@ function App() {
   }, [graph, selectedGenres, selectedArtist]);
 
   const centralGenreLabelIds = useMemo(() => {
-    if (!useCentralLabels) return undefined;
+    if (priorityLabelMode !== 'central') return undefined;
     const nodes = currentGenres?.nodes ?? [];
     if (!nodes.length) return [];
     const nodeIds = new Set(nodes.map((node) => node.id));
@@ -816,20 +816,20 @@ function App() {
     }
     return selectTopDegreeIds(nodes, degreeById, DEFAULT_PRIORITY_LABEL_PERCENT);
   }, [
-    useCentralLabels,
+    priorityLabelMode,
     currentGenres,
     genreClusterMode,
     genreRoots,
   ]);
 
   const centralArtistLabelIds = useMemo(() => {
-    if (!useCentralLabels) return undefined;
+    if (priorityLabelMode !== 'central') return undefined;
     if (!currentArtists.length) return [];
     const nodeIds = new Set(currentArtists.map((node) => node.id));
     const degreeById = buildDegreeMap(filteredArtistLinks, nodeIds);
     return selectTopDegreeIds(currentArtists, degreeById, DEFAULT_PRIORITY_LABEL_PERCENT);
   }, [
-    useCentralLabels,
+    priorityLabelMode,
     currentArtists,
     filteredArtistLinks,
   ]);
@@ -2698,8 +2698,8 @@ function App() {
                 setTextFadeThreshold={setTextFadeThreshold}
                 showLabels={showLabels}
                 setShowLabels={setShowLabels}
-                useCentralLabels={useCentralLabels}
-                setUseCentralLabels={setUseCentralLabels}
+                priorityLabelMode={priorityLabelMode}
+                setPriorityLabelMode={setPriorityLabelMode}
                 labelSize={labelSize}
                 setLabelSize={setLabelSize}
                 showNodes={showNodes}
@@ -2713,7 +2713,7 @@ function App() {
                   linkCurvature: 50,
                   textFadeThreshold: 50,
                   showLabels: true,
-                  useCentralLabels: false,
+                  priorityLabelMode: 'popularity',
                   labelSize: 'Default',
                   showNodes: true,
                   showLinks: true,
