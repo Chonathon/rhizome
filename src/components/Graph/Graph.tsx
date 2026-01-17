@@ -24,6 +24,11 @@ import {
   labelAlphaForZoom,
   labelValueThresholdForZoom,
   fontPxForZoom,
+  smoothstep,
+  applyLabelFadeCurve,
+  DEFAULT_PRIORITY_LABEL_IMPORTANCE_THRESHOLD,
+  DEFAULT_PRIORITY_LABEL_ZOOM_SCALE,
+  DEFAULT_PRIORITY_LABEL_PERCENT,
   drawCircleNode,
   drawLabelBelow,
   applyMobileDrawerYOffset,
@@ -261,6 +266,19 @@ const Graph = forwardRef(function GraphInner<
     const clonedLinks = links.map((link) => ({ ...link }));
     return { nodes: clonedNodes, links: clonedLinks };
   }, [nodes, links]);
+
+  const priorityLabelIds = useMemo(() => {
+    const values = preparedData.nodes
+      .map((node) => ({ id: node.id, value: node.labelValue }))
+      .filter((entry): entry is { id: string; value: number } =>
+        typeof entry.value === "number" && Number.isFinite(entry.value)
+      );
+    if (!values.length) return new Set<string>();
+    const count = Math.max(1, Math.ceil(values.length * DEFAULT_PRIORITY_LABEL_PERCENT));
+    const sorted = [...values].sort((a, b) => b.value - a.value);
+    const cutoff = sorted[Math.min(count - 1, sorted.length - 1)].value;
+    return new Set(values.filter((entry) => entry.value >= cutoff).map((entry) => entry.id));
+  }, [preparedData.nodes]);
 
   // Stable fingerprint lets us detect meaningful topology changes without diffing objects deeply.
   const dataSignature = useMemo(() => {
@@ -696,10 +714,28 @@ const Graph = forwardRef(function GraphInner<
           // Calculate and render label with smooth transition
           if (showLabels) {
             const k = zoomRef.current || 1;
-            const zoomBasedAlpha = labelAlphaForZoom(k, labelFadeStart, labelFadeEnd);
-            const minLabelValue = labelValueThresholdForZoom(zoomBasedAlpha);
-            const meetsLabelThreshold =
-              node.labelValue === undefined || node.labelValue >= minLabelValue;
+            const zoomAlpha = labelAlphaForZoom(k, labelFadeStart, labelFadeEnd);
+            const priorityZoomAlpha = labelAlphaForZoom(
+              k,
+              labelFadeStart * DEFAULT_PRIORITY_LABEL_ZOOM_SCALE,
+              labelFadeEnd * DEFAULT_PRIORITY_LABEL_ZOOM_SCALE,
+            );
+            const isPriorityLabel = priorityLabelIds.has(node.id);
+            const activeZoomAlpha = isPriorityLabel ? priorityZoomAlpha : zoomAlpha;
+            const activeZoomAlphaCurved = applyLabelFadeCurve(activeZoomAlpha);
+            const minLabelValue = isPriorityLabel
+              ? labelValueThresholdForZoom(activeZoomAlpha, DEFAULT_PRIORITY_LABEL_IMPORTANCE_THRESHOLD)
+              : labelValueThresholdForZoom(activeZoomAlpha);
+            const meetsLabelThreshold = isPriorityLabel
+              ? activeZoomAlpha > 0
+              : node.labelValue === undefined || node.labelValue >= minLabelValue;
+            let importanceAlpha = 0;
+            if (node.labelValue !== undefined && node.labelValue >= minLabelValue) {
+              const denom = Math.max(1e-6, 1 - minLabelValue);
+              const t = (node.labelValue - minLabelValue) / denom;
+              importanceAlpha = applyLabelFadeCurve(smoothstep(t));
+            }
+            const zoomBasedAlpha = Math.max(activeZoomAlphaCurved, importanceAlpha);
 
             if (meetsLabelThreshold || isSelected || isHovered) {
               // Calculate base label alpha (what it would be without dimming override)
