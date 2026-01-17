@@ -14,7 +14,7 @@ export const DEFAULT_PRIORITY_LABEL_IMPORTANCE_THRESHOLD = 0.9;
 // Zoom threshold scale for priority labels (lower = appear earlier)
 export const DEFAULT_PRIORITY_LABEL_ZOOM_SCALE = 0.6;
 // Share of nodes treated as priority labels for early visibility
-export const DEFAULT_PRIORITY_LABEL_PERCENT = 0.1;
+export const DEFAULT_PRIORITY_LABEL_PERCENT = 0.05;
 // Default upward screen-space offset (in px) to lift a focused node on mobile
 export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
 

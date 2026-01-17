@@ -721,21 +721,22 @@ const Graph = forwardRef(function GraphInner<
               labelFadeEnd * DEFAULT_PRIORITY_LABEL_ZOOM_SCALE,
             );
             const isPriorityLabel = priorityLabelIds.has(node.id);
-            const activeZoomAlpha = isPriorityLabel ? priorityZoomAlpha : zoomAlpha;
-            const activeZoomAlphaCurved = applyLabelFadeCurve(activeZoomAlpha);
-            const minLabelValue = isPriorityLabel
-              ? labelValueThresholdForZoom(activeZoomAlpha, DEFAULT_PRIORITY_LABEL_IMPORTANCE_THRESHOLD)
-              : labelValueThresholdForZoom(activeZoomAlpha);
-            const meetsLabelThreshold = isPriorityLabel
-              ? activeZoomAlpha > 0
-              : node.labelValue === undefined || node.labelValue >= minLabelValue;
-            let importanceAlpha = 0;
-            if (node.labelValue !== undefined && node.labelValue >= minLabelValue) {
-              const denom = Math.max(1e-6, 1 - minLabelValue);
-              const t = (node.labelValue - minLabelValue) / denom;
-              importanceAlpha = applyLabelFadeCurve(smoothstep(t));
+            let zoomBasedAlpha = applyLabelFadeCurve(isPriorityLabel ? priorityZoomAlpha : zoomAlpha);
+            let meetsLabelThreshold = true;
+
+            if (isPriorityLabel) {
+              const minLabelValue = labelValueThresholdForZoom(
+                priorityZoomAlpha,
+                DEFAULT_PRIORITY_LABEL_IMPORTANCE_THRESHOLD,
+              );
+              meetsLabelThreshold = priorityZoomAlpha > 0;
+              if (node.labelValue !== undefined && node.labelValue >= minLabelValue) {
+                const denom = Math.max(1e-6, 1 - minLabelValue);
+                const t = (node.labelValue - minLabelValue) / denom;
+                const importanceAlpha = applyLabelFadeCurve(smoothstep(t));
+                zoomBasedAlpha = Math.max(zoomBasedAlpha, importanceAlpha);
+              }
             }
-            const zoomBasedAlpha = Math.max(activeZoomAlphaCurved, importanceAlpha);
 
             if (meetsLabelThreshold || isSelected || isHovered) {
               // Calculate base label alpha (what it would be without dimming override)
