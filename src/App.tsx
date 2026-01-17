@@ -614,25 +614,19 @@ function App() {
   const clusteringTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    console.log(`[Clustering Effect] graph: ${graph}, artists: ${currentArtists.length}, method: ${artistClusterMethod}`);
-
     if (graph !== 'artists' || !currentArtists.length) {
-      console.log(`[Clustering Effect] Early return, clearing clusters`);
       setArtistClusters(null);
       return;
     }
 
     // Clear any pending clustering
     if (clusteringTimeoutRef.current) {
-      console.log(`[Clustering Effect] Clearing pending timeout`);
       clearTimeout(clusteringTimeoutRef.current);
     }
 
-    console.log(`[Clustering Effect] Setting clusteringInProgress = true`);
     setClusteringInProgress(true);
 
     // Debounce clustering computation and run it async
-    const capturedMethod = artistClusterMethod;
     clusteringTimeoutRef.current = setTimeout(() => {
       // Use requestIdleCallback if available, otherwise setTimeout with delay
       const scheduleClustering = (callback: () => void) => {
@@ -644,11 +638,9 @@ function App() {
       };
 
       scheduleClustering(() => {
-        console.log(`[Clustering Effect] Executing clustering with method: ${capturedMethod}`);
         try {
           const engine = new ClusteringEngine(currentArtists, currentArtistLinks);
-          const result = engine.cluster({ method: capturedMethod, resolution: 1.0 });
-          console.log(`[Clustering Effect] Complete: ${result.method}, clusters: ${result.clusters.size}`);
+          const result = engine.cluster({ method: artistClusterMethod, resolution: 1.0 });
           setArtistClusters(result);
         } catch (error) {
           console.error('Artist clustering failed:', error);
@@ -669,8 +661,6 @@ function App() {
 
   // Use generated links from clustering (artists colored by parent genre)
   useEffect(() => {
-    console.log(`[Links Effect] clusters: ${artistClusters?.method ?? 'null'}, graph: ${graph}, rawLinks: ${currentArtistLinks.length}`);
-
     if (graph === 'artists') {
       if (artistClusters) {
         // Use generated links from clustering if available, otherwise filter existing links
@@ -706,23 +696,18 @@ function App() {
               target: link.target,
               linkType: 'similar' as const
             }));
-          console.log(`[Links Effect] Setting ${generatedLinks.length} clustered links`);
           setFilteredArtistLinks(generatedLinks);
         } else {
           // Fallback to filtering existing links by cluster membership
           const filtered = filterArtistLinksByClusters(currentArtistLinks, artistClusters);
-          console.log(`[Links Effect] Setting ${filtered.length} filtered links`);
           setFilteredArtistLinks(filtered);
         }
       } else {
         // On artists graph but no clusters yet - hide links until clustering completes
-        // This prevents flashing the raw similar-artist network
-        console.log(`[Links Effect] Artists graph, awaiting clusters - hiding links`);
         setFilteredArtistLinks([]);
       }
     } else {
       // Not on artists graph - show raw links (for similar artists graph, etc.)
-      console.log(`[Links Effect] Not on artists graph, showing raw links: ${currentArtistLinks.length}`);
       setFilteredArtistLinks(currentArtistLinks);
     }
   }, [artistClusters, graph, currentArtistLinks, filterArtistLinksByClusters, currentArtists]);

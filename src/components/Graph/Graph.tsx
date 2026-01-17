@@ -563,7 +563,8 @@ const Graph = forwardRef(function GraphInner<
       className="flex-1 w-full relative"
       style={{
         height: height ?? "100%",
-        display: show ? "block" : "none", // Keep the canvas mounted while simply hiding it.
+        // Always show container so loading spinner is visible, but disable pointer events when hidden
+        display: (show || loading) ? "block" : "none",
         pointerEvents: show ? "auto" : "none",
       }}
     >
@@ -575,6 +576,7 @@ const Graph = forwardRef(function GraphInner<
           <Loading />
         </div>
       )}
+      <div style={{ visibility: show ? "visible" : "hidden" }}>
       <ForceGraph<PreparedNode<T>, L>
         ref={fgRef as any}
         width={width}
@@ -733,6 +735,7 @@ const Graph = forwardRef(function GraphInner<
         }}
         nodeVal={(node) => node.radius}
       />
+      </div>
     </div>
   );
 });
