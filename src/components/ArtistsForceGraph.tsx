@@ -29,6 +29,7 @@ interface ArtistsForceGraphProps {
   showNodes?: boolean;
   showLinks?: boolean;
   disableDimming?: boolean;
+  priorityLabelIds?: string[];
   // Radial layout for popularity stratification (concentric rings)
   radialLayout?: {
     enabled: boolean;
@@ -62,6 +63,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       showNodes,
       showLinks,
       disableDimming,
+      priorityLabelIds,
       radialLayout,
     },
     ref,
@@ -133,6 +135,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         showNodes={showNodes}
         showLinks={showLinks}
         disableDimming={disableDimming}
+        priorityLabelIds={priorityLabelIds}
         radialLayout={radialLayout}
       />
     );
