@@ -767,8 +767,8 @@ const Graph = forwardRef(function GraphInner<
               if (renderLabel === defaultRenderLabel) {
                 // When nodes are hidden, use node color for labels
                 const labelColor = !showNodesRef.current ? accent : undefined;
-                const zoomedFontSize = fontPxForZoom(labelFontSize, k);
-                defaultRenderLabel(labelContext, zoomedFontSize, labelColor);
+                const labelPx = isPriorityLabel ? fontPxForZoom(labelFontSize, k) : labelFontSize;
+                defaultRenderLabel(labelContext, labelPx, labelColor);
               } else {
                 renderLabel(labelContext);
               }
