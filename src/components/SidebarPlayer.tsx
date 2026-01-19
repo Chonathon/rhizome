@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward, Music2 } from "lucide-react";
 import { appendYoutubeWatchURL } from "@/lib/utils";
@@ -67,10 +68,10 @@ export default function SidebarPlayer({
   isDesktop
 }: SidebarPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const offscreenWrapperRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
-  const mobileWrapperRef = useRef<HTMLDivElement | null>(null);
-  const desktopWrapperRef = useRef<HTMLDivElement | null>(null);
+  const mobileVideoAreaRef = useRef<HTMLDivElement | null>(null);
+  const desktopVideoAreaRef = useRef<HTMLDivElement | null>(null);
+  const [iframePosition, setIframePosition] = useState({ left: -9999, top: -9999, width: 0, height: 0 });
   const [ready, setReady] = useState(false);
   const [playerCollapsed, setPlayerCollapsed] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -83,6 +84,9 @@ export default function SidebarPlayer({
 
   // Track if bottom drawer is expanded beyond minimum snap on mobile
   const [drawerExpanded, setDrawerExpanded] = useState(false);
+
+  // Portal slot for desktop UI (to render inside sidebar while component is outside)
+  const [desktopSlot, setDesktopSlot] = useState<HTMLElement | null>(null);
 
   // Track floating musical notes for minimal mode
   const [floatingNotes, setFloatingNotes] = useState<{ id: number; offset: number }[]>([]);
@@ -112,6 +116,74 @@ export default function SidebarPlayer({
 
   // Approx video height for different widths with 16:9 aspect ratio
   const videoHeight = isFullDesktopMode ? (208 * 9 / 16) : (375 * 9 / 16);
+
+  // Find portal slot for desktop UI
+  useEffect(() => {
+    const slot = document.getElementById('sidebar-player-slot');
+    setDesktopSlot(slot);
+  }, []);
+
+  // Calculate iframe position based on active video area (CSS-only positioning to preserve playback)
+  useEffect(() => {
+    if (!open) {
+      setIframePosition({ left: -9999, top: -9999, width: 0, height: 0 });
+      return;
+    }
+
+    const calculatePosition = () => {
+      if (isMinimalMode || playerCollapsed) {
+        setIframePosition({ left: -9999, top: -9999, width: 0, height: 0 });
+        return;
+      }
+
+      let targetRef: HTMLDivElement | null = null;
+
+      if (isMobileMode && mobileVideoAreaRef.current) {
+        targetRef = mobileVideoAreaRef.current;
+      } else if (isFullDesktopMode && desktopVideoAreaRef.current) {
+        targetRef = desktopVideoAreaRef.current;
+      }
+
+      if (targetRef) {
+        const rect = targetRef.getBoundingClientRect();
+        // Skip if element is hidden (zero dimensions)
+        if (rect.width === 0 || rect.height === 0) return;
+
+        setIframePosition({
+          left: rect.left + window.scrollX,
+          top: rect.top + window.scrollY,
+          width: rect.width,
+          height: rect.height,
+        });
+      }
+    };
+
+    // Use requestAnimationFrame to ensure layout is complete
+    let rafId: number;
+    const scheduleCalculation = () => {
+      rafId = requestAnimationFrame(calculatePosition);
+    };
+
+    // Initial calculation after layout
+    scheduleCalculation();
+
+    // Recalculate after animations (framer-motion spring animations)
+    const timeoutId1 = setTimeout(scheduleCalculation, 50);
+    const timeoutId2 = setTimeout(scheduleCalculation, 150);
+    const timeoutId3 = setTimeout(scheduleCalculation, 350);
+
+    window.addEventListener('resize', scheduleCalculation);
+    window.addEventListener('scroll', scheduleCalculation, true);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', scheduleCalculation);
+      window.removeEventListener('scroll', scheduleCalculation, true);
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      clearTimeout(timeoutId3);
+    };
+  }, [isMinimalMode, isMobileMode, isFullDesktopMode, playerCollapsed, drawerExpanded, open, ready]);
 
   const mountPlayer = useCallback(async () => {
     if (!containerRef.current || !open) return;
@@ -213,33 +285,6 @@ export default function SidebarPlayer({
       setVideoTitle("");
     }
   }, [videoIds, startIndex, headerPreferProvidedTitle]);
-
-  // Move YouTube container to the correct wrapper based on display mode
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const moveTo = (target: HTMLDivElement | null) => {
-      if (!target || !containerRef.current) return;
-      if (target.contains(containerRef.current)) return;
-      target.appendChild(containerRef.current);
-    };
-
-    if (isMobileMode) {
-      if (mobileWrapperRef.current) {
-        moveTo(mobileWrapperRef.current);
-      } else {
-        moveTo(offscreenWrapperRef.current);
-      }
-      return;
-    }
-
-    // Default to the desktop wrapper (even when the sidebar is collapsed)
-    if (desktopWrapperRef.current) {
-      moveTo(desktopWrapperRef.current);
-    } else {
-      moveTo(offscreenWrapperRef.current);
-    }
-  }, [isMobileMode, ready]);
 
   // Progress polling
   useEffect(() => {
@@ -444,15 +489,23 @@ export default function SidebarPlayer({
 
   return (
     <>
-      {/* YouTube iframe container - ALWAYS mounted off-screen to prevent player destruction */}
-      {/* YouTube API requires iframe to be "visible" (not display:none) so we position it off-screen */}
+      {/* YouTube iframe - SINGLE fixed container, CSS-positioned to preserve playback across breakpoints */}
       <div
-        className="fixed -left-[9999px] -top-[9999px] pointer-events-none"
-        aria-hidden="true"
-        ref={offscreenWrapperRef}
-        style={{ width: isMobileMode ? '375px' : '240px' }}
+        className="fixed overflow-hidden rounded-2xl"
+        style={{
+          left: `${iframePosition.left}px`,
+          top: `${iframePosition.top}px`,
+          width: `${iframePosition.width}px`,
+          height: `${iframePosition.height}px`,
+          // z-61 for mobile (above wrapper z-60), z-51 for desktop (above sidebar z-50)
+          zIndex: isMobileMode ? 61 : 51,
+          opacity: (isMinimalMode || playerCollapsed || iframePosition.width === 0) ? 0 : 1,
+          pointerEvents: (isMinimalMode || playerCollapsed || iframePosition.width === 0) ? 'none' : 'auto',
+          transition: 'opacity 0.15s ease-out',
+        }}
+        aria-hidden={isMinimalMode || playerCollapsed}
       >
-        <div ref={containerRef} className="w-full" style={{ height: videoHeight }} />
+        <div ref={containerRef} className="w-full h-full" />
       </div>
 
       {/*
@@ -592,15 +645,15 @@ export default function SidebarPlayer({
             </div>
           </div>
 
-          {/* Video */}
+          {/* Video area - position target for CSS-positioned iframe */}
           <motion.div
+            ref={mobileVideoAreaRef}
             className={`relative w-full rounded-2xl bg-black overflow-hidden ${playerCollapsed ? '' : 'mb-2'}`}
             initial={false}
             animate={{ height: playerCollapsed ? 0 : videoHeight, opacity: playerCollapsed ? 0 : 1 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             aria-busy={loading || !ready || !currentVideoId}
           >
-            <div ref={mobileWrapperRef} className="w-full" style={{ height: videoHeight }} />
             {(loading || !ready || !currentVideoId) && (
               <div className="absolute inset-0 grid place-items-center">
                 <RhizomeLogo className="h-10 w-10 text-muted-foreground" title="Loading" animated />
@@ -706,18 +759,19 @@ export default function SidebarPlayer({
         </div>
       </motion.div>
 
-      {/* 
-      * Full desktop mode (sidebar expanded) 
+      {/*
+      * Full desktop mode (sidebar expanded) - rendered into sidebar via portal
       */}
-      <motion.div
-        key="player-desktop"
-        className={`w-full px-1 mb-2 ${isFullDesktopMode ? '' : 'hidden'}`}
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -12 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-        aria-hidden={!isFullDesktopMode}
-      >
+      {desktopSlot && createPortal(
+        <motion.div
+          key="player-desktop"
+          className={`w-full px-1 mb-2 ${isFullDesktopMode ? '' : 'hidden'}`}
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+          aria-hidden={!isFullDesktopMode}
+        >
       <div className="group/player rounded-xl border border-sidebar-border bg-popover shadow-lg overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 pl-2">
@@ -748,15 +802,15 @@ export default function SidebarPlayer({
             </Button>
           </div>
         </div>
-        {/* Video */}
+        {/* Video area - position target for CSS-positioned iframe */}
         <motion.div
+          ref={desktopVideoAreaRef}
           className="relative w-full bg-black overflow-hidden"
           initial={false}
           animate={{ height: playerCollapsed ? 0 : videoHeight, opacity: playerCollapsed ? 0 : 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 26 }}
           aria-busy={loading || !ready || !currentVideoId}
         >
-          <div ref={desktopWrapperRef} className="w-full" style={{ height: videoHeight }} />
           {(loading || !ready || !currentVideoId) && (
             <div className="absolute inset-0 grid place-items-center">
               <RhizomeLogo className="h-10 w-10 text-muted-foreground" title="Loading" animated />
@@ -836,7 +890,9 @@ export default function SidebarPlayer({
           </Button>
         </div>
       </div>
-      </motion.div>
+        </motion.div>,
+        desktopSlot
+      )}
     </>
   );
 }

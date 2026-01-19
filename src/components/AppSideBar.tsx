@@ -181,24 +181,8 @@ export function AppSidebar({
           </SidebarContent>}
         </SidebarContent>
 
-        {/* Player - inside sidebar for desktop */}
-        {isDesktop && (
-          <SidebarPlayer
-            open={playerOpen}
-            onOpenChange={onPlayerOpenChange}
-            videoIds={playerVideoIds}
-            title={playerTitle}
-            autoplay
-            artworkUrl={playerArtworkUrl}
-            loading={playerLoading}
-            onLoadingChange={onPlayerLoadingChange}
-            headerPreferProvidedTitle={playerHeaderPreferProvidedTitle}
-            onTitleClick={onPlayerTitleClick}
-            startIndex={playerStartIndex}
-            sidebarCollapsed={isCollapsed}
-            isDesktop={isDesktop}
-          />
-        )}
+        {/* Portal slot for desktop player UI - SidebarPlayer renders into this */}
+        <div id="sidebar-player-slot" />
 
         <SidebarFooter className="mt-auto flex p-1 pb-3">
           <SidebarMenu className={isCollapsed ? "mx-auto gap-4" : "flex w-full flex-row justify-between gap-4"}>
@@ -262,24 +246,22 @@ export function AppSidebar({
         </SidebarFooter>
       </Sidebar>
 
-      {/* Player - rendered outside Sidebar for mobile (desktop renders inside Sidebar above) */}
-      {!isDesktop && (
-        <SidebarPlayer
-          open={playerOpen}
-          onOpenChange={onPlayerOpenChange}
-          videoIds={playerVideoIds}
-          title={playerTitle}
-          autoplay
-          artworkUrl={playerArtworkUrl}
-          loading={playerLoading}
-          onLoadingChange={onPlayerLoadingChange}
-          headerPreferProvidedTitle={playerHeaderPreferProvidedTitle}
-          onTitleClick={onPlayerTitleClick}
-          startIndex={playerStartIndex}
-          sidebarCollapsed={isCollapsed}
-          isDesktop={isDesktop}
-        />
-      )}
+      {/* Player - single stable instance outside Sidebar to avoid containing block issues */}
+      <SidebarPlayer
+        open={playerOpen}
+        onOpenChange={onPlayerOpenChange}
+        videoIds={playerVideoIds}
+        title={playerTitle}
+        autoplay
+        artworkUrl={playerArtworkUrl}
+        loading={playerLoading}
+        onLoadingChange={onPlayerLoadingChange}
+        headerPreferProvidedTitle={playerHeaderPreferProvidedTitle}
+        onTitleClick={onPlayerTitleClick}
+        startIndex={playerStartIndex}
+        sidebarCollapsed={isCollapsed}
+        isDesktop={isDesktop}
+      />
 
       <SidebarInset>{children}</SidebarInset>
 
