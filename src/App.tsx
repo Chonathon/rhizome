@@ -815,12 +815,7 @@ function App() {
       );
     }
     return selectTopDegreeIds(nodes, degreeById, DEFAULT_PRIORITY_LABEL_PERCENT);
-  }, [
-    priorityLabelMode,
-    currentGenres,
-    genreClusterMode,
-    genreRoots,
-  ]);
+  }, [priorityLabelMode, currentGenres, genreClusterMode, genreRoots]);
 
   const centralArtistLabelIds = useMemo(() => {
     if (priorityLabelMode !== 'central') return undefined;
@@ -828,11 +823,7 @@ function App() {
     const nodeIds = new Set(currentArtists.map((node) => node.id));
     const degreeById = buildDegreeMap(filteredArtistLinks, nodeIds);
     return selectTopDegreeIds(currentArtists, degreeById, DEFAULT_PRIORITY_LABEL_PERCENT);
-  }, [
-    priorityLabelMode,
-    currentArtists,
-    filteredArtistLinks,
-  ]);
+  }, [priorityLabelMode, currentArtists, filteredArtistLinks]);
 
   // Compute genres available in the collection (only includes genres from liked artists)
   const collectionGenres = useMemo(() => {
