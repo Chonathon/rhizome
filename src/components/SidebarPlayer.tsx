@@ -117,11 +117,27 @@ export default function SidebarPlayer({
   // Approx video height for different widths with 16:9 aspect ratio
   const videoHeight = isFullDesktopMode ? (208 * 9 / 16) : (375 * 9 / 16);
 
-  // Find portal slot for desktop UI
+  // Find portal slot for desktop UI (retry until found)
   useEffect(() => {
-    const slot = document.getElementById('sidebar-player-slot');
-    setDesktopSlot(slot);
-  }, []);
+    const findSlot = () => {
+      const slot = document.getElementById('sidebar-player-slot');
+      if (slot) {
+        setDesktopSlot(slot);
+        return true;
+      }
+      return false;
+    };
+
+    if (!findSlot()) {
+      // Retry a few times if not found immediately (sidebar may not have rendered yet)
+      const timeouts = [50, 100, 200, 500].map((delay) =>
+        setTimeout(() => {
+          if (!desktopSlot) findSlot();
+        }, delay)
+      );
+      return () => timeouts.forEach(clearTimeout);
+    }
+  }, [desktopSlot]);
 
   // Calculate iframe position based on active video area (CSS-only positioning to preserve playback)
   useEffect(() => {
@@ -509,9 +525,9 @@ export default function SidebarPlayer({
       </div>
 
       {/*
-      * Minimal thumbnail mode (desktop + sidebar collapsed)
+      * Minimal thumbnail mode (desktop + sidebar collapsed) - rendered into sidebar via portal
       */}
-      {isMinimalMode && (
+      {desktopSlot && isMinimalMode && createPortal(
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <motion.div
@@ -590,9 +606,10 @@ export default function SidebarPlayer({
             </motion.div>
           </TooltipTrigger>
           <TooltipContent side="right">
-        <p>{videoTitle}</p>
-      </TooltipContent>
-        </Tooltip>
+            <p>{videoTitle}</p>
+          </TooltipContent>
+        </Tooltip>,
+        desktopSlot
       )}
 
       {/* 
