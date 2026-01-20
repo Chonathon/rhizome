@@ -640,7 +640,11 @@ function App() {
       scheduleClustering(() => {
         try {
           const engine = new ClusteringEngine(currentArtists, currentArtistLinks);
-          const result = engine.cluster({ method: artistClusterMethod, resolution: 1.0 });
+          const result = engine.cluster({
+            method: artistClusterMethod,
+            resolution: 1.0,
+            excludeGenres: artistGenreFilterIDs,  // Exclude filtered genres from Jaccard similarity
+          });
           setArtistClusters(result);
         } catch (error) {
           console.error('Artist clustering failed:', error);
@@ -657,7 +661,7 @@ function App() {
         clearTimeout(clusteringTimeoutRef.current);
       }
     };
-  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod]);
+  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod, artistGenreFilterIDs]);
 
   // Use generated links from clustering (artists colored by parent genre)
   useEffect(() => {

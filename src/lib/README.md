@@ -70,6 +70,7 @@ const result = engine.cluster({
   resolution: 1.0,      // Louvain resolution (higher = more clusters)
   kNeighbors: 15,       // K-nearest neighbors to keep
   minSimilarity: 0.2,   // Minimum similarity threshold
+  excludeGenres: [],    // Genres to exclude from Jaccard calculation
 });
 ```
 

@@ -41,6 +41,7 @@ export interface ClusteringOptions {
   };
   kNeighbors?: number;  // Number of nearest neighbors to keep (default: 20)
   minSimilarity?: number;  // Minimum similarity threshold (0-1, default: 0.1)
+  excludeGenres?: string[];  // Genres to exclude from Jaccard similarity (e.g., when filtering by genre)
 }
 
 export class ClusteringEngine {
@@ -95,19 +96,21 @@ export class ClusteringEngine {
       minSimilarity = Math.max(minSimilarity, 0.3);
     }
     
+    const excludeGenres = options.excludeGenres || [];
+
     switch (options.method) {
       case 'genre':
-        return this.clusterByGenre(options.resolution || 1.0, kNeighbors, minSimilarity);
+        return this.clusterByGenre(options.resolution || 1.0, kNeighbors, minSimilarity, excludeGenres);
       case 'tags':
         return this.clusterByTags(options.resolution || 1.0, kNeighbors, minSimilarity);
       case 'louvain':
         return this.clusterByLouvain(options.resolution || 1.0);
       case 'hybrid':
-        return this.clusterHybrid(options.resolution || 1.0, options.hybridWeights, kNeighbors, minSimilarity);
+        return this.clusterHybrid(options.resolution || 1.0, options.hybridWeights, kNeighbors, minSimilarity, excludeGenres);
       case 'listeners':
         return this.clusterByListeners();
       default:
-        return this.clusterByGenre(options.resolution || 1.0, kNeighbors, minSimilarity);
+        return this.clusterByGenre(options.resolution || 1.0, kNeighbors, minSimilarity, excludeGenres);
     }
   }
 
@@ -115,9 +118,9 @@ export class ClusteringEngine {
   // All methods build weighted graphs and run Louvain community detection
 
   // 1. GENRE CLUSTERING - Louvain with genre-weighted edges
-  private clusterByGenre(resolution: number, kNeighbors: number = 15, minSimilarity: number = 0.2): ClusterResult {
+  private clusterByGenre(resolution: number, kNeighbors: number = 15, minSimilarity: number = 0.2, excludeGenres: string[] = []): ClusterResult {
     // Calculate genre similarities (Jaccard coefficient)
-    const genreSimilarities = this.calculateGenreSimilarities(kNeighbors, minSimilarity);
+    const genreSimilarities = this.calculateGenreSimilarities(kNeighbors, minSimilarity, excludeGenres);
 
     // Build weighted graph and run Louvain
     const graph = this.buildWeightedGraph(genreSimilarities);
@@ -143,6 +146,7 @@ export class ClusteringEngine {
   }
 
   private buildTagVectors(): Map<string, number[]> {
+    const idfByIndex = this.calculateTagIdf();
     const vectors = new Map<string, number[]>();
 
     this.artists.forEach(artist => {
@@ -151,7 +155,8 @@ export class ClusteringEngine {
       artist.tags?.forEach(tag => {
         const idx = this.tagIndexMap.get(tag.name) ?? -1;
         if (idx !== -1) {
-          vector[idx] = tag.count; // Weight by tag count
+          const tf = Math.log(1 + tag.count);
+          vector[idx] = tf * idfByIndex[idx];
         }
       });
 
@@ -159,6 +164,28 @@ export class ClusteringEngine {
     });
 
     return vectors;
+  }
+
+  private calculateTagIdf(): number[] {
+    const docFreq = new Array(this.allTags.length).fill(0);
+
+    this.artists.forEach(artist => {
+      const seen = new Set<number>();
+      artist.tags?.forEach(tag => {
+        const idx = this.tagIndexMap.get(tag.name) ?? -1;
+        if (idx !== -1 && !seen.has(idx)) {
+          docFreq[idx] += 1;
+          seen.add(idx);
+        }
+      });
+    });
+
+    const totalDocs = Math.max(this.artists.length, 1);
+
+    return docFreq.map(df => {
+      const smoothed = (totalDocs + 1) / (df + 1);
+      return Math.log(smoothed) + 1;
+    });
   }
 
 
@@ -213,10 +240,11 @@ export class ClusteringEngine {
     resolution: number,
     weights = { genre: 0.33, tags: 0.33, louvain: 0.34 },
     kNeighbors: number = 15,
-    minSimilarity: number = 0.2
+    minSimilarity: number = 0.2,
+    excludeGenres: string[] = []
   ): ClusterResult {
     // Calculate all similarity metrics
-    const genreSim = this.calculateGenreSimilarities(kNeighbors, minSimilarity);
+    const genreSim = this.calculateGenreSimilarities(kNeighbors, minSimilarity, excludeGenres);
     const tagSim = this.calculateTagSimilarities(kNeighbors, minSimilarity);
     const networkSim = this.calculateNetworkSimilarities();
 
@@ -432,30 +460,32 @@ export class ClusteringEngine {
 
   // SIMILARITY CALCULATION METHODS
 
-  private calculateGenreSimilarities(kNeighbors: number = 15, minSimilarity: number = 0.2): Map<string, number> {
-    const similarities = new Map<string, number>();
+  private calculateGenreSimilarities(kNeighbors: number = 15, minSimilarity: number = 0.2, excludeGenres: string[] = []): Map<string, number> {
+    const excludeSet = new Set(excludeGenres);
+    const topKByArtist = new Map<string, Map<string, number>>();
 
     // For each artist, find their K most similar artists
     for (let i = 0; i < this.artists.length; i++) {
       const artistA = this.artists[i];
       const artistSimilarities: Array<{ id: string; similarity: number }> = [];
 
+      // Filter out excluded genres (e.g., the genre being filtered on)
+      const genresA = (artistA.genres || []).filter(g => !excludeSet.has(g));
+
       for (let j = 0; j < this.artists.length; j++) {
         if (i === j) continue;
         const artistB = this.artists[j];
 
-        const sharedGenres = artistA.genres?.filter(g =>
-          artistB.genres?.includes(g)
-        ).length || 0;
+        // Filter out excluded genres for artist B as well
+        const genresB = (artistB.genres || []).filter(g => !excludeSet.has(g));
+
+        const sharedGenres = genresA.filter(g => genresB.includes(g)).length;
 
         if (sharedGenres > 0) {
-          const totalGenres = new Set([
-            ...(artistA.genres || []),
-            ...(artistB.genres || [])
-          ]).size;
+          const totalGenres = new Set([...genresA, ...genresB]).size;
 
           const similarity = sharedGenres / totalGenres; // Jaccard similarity
-          
+
           // Only consider if above threshold
           if (similarity >= minSimilarity) {
             artistSimilarities.push({ id: artistB.id, similarity });
@@ -467,27 +497,23 @@ export class ClusteringEngine {
       artistSimilarities.sort((a, b) => b.similarity - a.similarity);
       const topK = artistSimilarities.slice(0, kNeighbors);
 
-      // Add to global similarities map
+      const neighborMap = new Map<string, number>();
       topK.forEach(({ id, similarity }) => {
-        const key = artistA.id < id
-          ? `${artistA.id}|${id}`
-          : `${id}|${artistA.id}`;
-
-        // Only add if not already present (avoid duplicates from both directions)
-        if (!similarities.has(key)) {
-          similarities.set(key, similarity);
-        }
+        neighborMap.set(id, similarity);
       });
+      topKByArtist.set(artistA.id, neighborMap);
     }
 
-    // console.log(`[Genre] Calculated ${similarities.size} genre similarities (k-NN with K=${kNeighbors}, min=${minSimilarity})`);
+    const similarities = this.buildMutualKnnSimilarities(topKByArtist);
+
+    // console.log(`[Genre] Calculated ${similarities.size} genre similarities (mutual k-NN with K=${kNeighbors}, min=${minSimilarity}, excluding ${excludeGenres.length} genres)`);
     return similarities;
   }
 
   private calculateTagSimilarities(kNeighbors: number = 15, minSimilarity: number = 0.2): Map<string, number> {
     const vectors = this.buildTagVectors();
-    const similarities = new Map<string, number>();
     const artistIds = Array.from(vectors.keys());
+    const topKByArtist = new Map<string, Map<string, number>>();
 
     // For each artist, find their K most similar artists
     for (let i = 0; i < artistIds.length; i++) {
@@ -512,20 +538,36 @@ export class ClusteringEngine {
       artistSimilarities.sort((a, b) => b.similarity - a.similarity);
       const topK = artistSimilarities.slice(0, kNeighbors);
 
-      // Add to global similarities map
+      const neighborMap = new Map<string, number>();
       topK.forEach(({ id, similarity }) => {
-        const key = artistAId < id
-          ? `${artistAId}|${id}`
-          : `${id}|${artistAId}`;
-
-        // Only add if not already present (avoid duplicates from both directions)
-        if (!similarities.has(key)) {
-          similarities.set(key, similarity);
-        }
+        neighborMap.set(id, similarity);
       });
+      topKByArtist.set(artistAId, neighborMap);
     }
 
-    // console.log(`[Tags] Calculated ${similarities.size} tag similarities (k-NN with K=${kNeighbors}, min=${minSimilarity})`);
+    return this.buildMutualKnnSimilarities(topKByArtist);
+  }
+
+  private buildMutualKnnSimilarities(topKByArtist: Map<string, Map<string, number>>): Map<string, number> {
+    const similarities = new Map<string, number>();
+
+    topKByArtist.forEach((neighborsA, artistAId) => {
+      neighborsA.forEach((simA, artistBId) => {
+        const neighborsB = topKByArtist.get(artistBId);
+        if (!neighborsB || !neighborsB.has(artistAId)) return;
+
+        const simB = neighborsB.get(artistAId) ?? simA;
+        const weight = Math.min(simA, simB);
+        const key = artistAId < artistBId
+          ? `${artistAId}|${artistBId}`
+          : `${artistBId}|${artistAId}`;
+
+        if (!similarities.has(key)) {
+          similarities.set(key, weight);
+        }
+      });
+    });
+
     return similarities;
   }
 
