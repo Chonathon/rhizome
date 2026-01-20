@@ -30,6 +30,7 @@ type SidebarPlayerProps = {
   startIndex?: number;
   sidebarCollapsed: boolean;
   isDesktop: boolean;
+  desktopSlotRef?: React.RefObject<HTMLDivElement | null>;
 };
 
 // Load the YouTube IFrame API once
@@ -65,7 +66,8 @@ export default function SidebarPlayer({
   onTitleClick,
   startIndex = 0,
   sidebarCollapsed,
-  isDesktop
+  isDesktop,
+  desktopSlotRef
 }: SidebarPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<any>(null);
@@ -117,27 +119,43 @@ export default function SidebarPlayer({
   // Approx video height for different widths with 16:9 aspect ratio
   const videoHeight = isFullDesktopMode ? (208 * 9 / 16) : (375 * 9 / 16);
 
-  // Find portal slot for desktop UI (retry until found)
+  // Find portal slot for desktop UI - use ref if provided, otherwise find by ID
   useEffect(() => {
+    // If ref is provided and has current value, use it
+    if (desktopSlotRef?.current) {
+      setDesktopSlot(desktopSlotRef.current);
+      return;
+    }
+
+    // If already found, no need to search
+    if (desktopSlot) return;
+
+    let found = false;
+
     const findSlot = () => {
-      const slot = document.getElementById('sidebar-player-slot');
+      if (found) return true;
+      // Check ref first, then fall back to ID
+      const slot = desktopSlotRef?.current || document.getElementById('sidebar-player-slot');
       if (slot) {
+        found = true;
         setDesktopSlot(slot);
         return true;
       }
       return false;
     };
 
-    if (!findSlot()) {
-      // Retry a few times if not found immediately (sidebar may not have rendered yet)
-      const timeouts = [50, 100, 200, 500].map((delay) =>
-        setTimeout(() => {
-          if (!desktopSlot) findSlot();
-        }, delay)
-      );
-      return () => timeouts.forEach(clearTimeout);
-    }
-  }, [desktopSlot]);
+    // Try immediately
+    if (findSlot()) return;
+
+    // Poll every 50ms until found
+    const interval = setInterval(() => {
+      if (findSlot()) {
+        clearInterval(interval);
+      }
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [desktopSlot, open, desktopSlotRef]);
 
   // Calculate iframe position based on active video area (CSS-only positioning to preserve playback)
   useEffect(() => {
@@ -146,12 +164,16 @@ export default function SidebarPlayer({
       return;
     }
 
-    const calculatePosition = () => {
-      if (isMinimalMode || playerCollapsed) {
-        setIframePosition({ left: -9999, top: -9999, width: 0, height: 0 });
-        return;
-      }
+    if (isMinimalMode || playerCollapsed) {
+      setIframePosition({ left: -9999, top: -9999, width: 0, height: 0 });
+      return;
+    }
 
+    let rafId: number;
+    let attempts = 0;
+    const maxAttempts = 50; // 50 frames ~= 800ms at 60fps
+
+    const calculatePosition = () => {
       let targetRef: HTMLDivElement | null = null;
 
       if (isMobileMode && mobileVideoAreaRef.current) {
@@ -162,44 +184,61 @@ export default function SidebarPlayer({
 
       if (targetRef) {
         const rect = targetRef.getBoundingClientRect();
-        // Skip if element is hidden (zero dimensions)
-        if (rect.width === 0 || rect.height === 0) return;
 
-        setIframePosition({
-          left: rect.left + window.scrollX,
-          top: rect.top + window.scrollY,
-          width: rect.width,
-          height: rect.height,
-        });
+        // If we have valid dimensions, update position
+        if (rect.width > 0 && rect.height > 0) {
+          setIframePosition({
+            left: rect.left + window.scrollX,
+            top: rect.top + window.scrollY,
+            width: rect.width,
+            height: rect.height,
+          });
+          attempts = 0; // Reset for future recalculations
+        } else if (attempts < maxAttempts) {
+          // Keep trying if element has zero dimensions (still animating)
+          attempts++;
+          rafId = requestAnimationFrame(calculatePosition);
+        }
+      } else if (attempts < maxAttempts) {
+        // Ref not available yet, keep trying
+        attempts++;
+        rafId = requestAnimationFrame(calculatePosition);
       }
     };
 
-    // Use requestAnimationFrame to ensure layout is complete
-    let rafId: number;
-    const scheduleCalculation = () => {
+    // Start the calculation loop
+    rafId = requestAnimationFrame(calculatePosition);
+
+    // ResizeObserver to detect when video areas change size
+    const resizeObserver = new ResizeObserver(() => {
+      attempts = 0;
+      rafId = requestAnimationFrame(calculatePosition);
+    });
+
+    // Observe refs when available
+    if (mobileVideoAreaRef.current) {
+      resizeObserver.observe(mobileVideoAreaRef.current);
+    }
+    if (desktopVideoAreaRef.current) {
+      resizeObserver.observe(desktopVideoAreaRef.current);
+    }
+
+    // Also recalculate on resize/scroll
+    const handleResize = () => {
+      attempts = 0;
       rafId = requestAnimationFrame(calculatePosition);
     };
 
-    // Initial calculation after layout
-    scheduleCalculation();
-
-    // Recalculate after animations (framer-motion spring animations)
-    const timeoutId1 = setTimeout(scheduleCalculation, 50);
-    const timeoutId2 = setTimeout(scheduleCalculation, 150);
-    const timeoutId3 = setTimeout(scheduleCalculation, 350);
-
-    window.addEventListener('resize', scheduleCalculation);
-    window.addEventListener('scroll', scheduleCalculation, true);
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleResize, true);
 
     return () => {
       cancelAnimationFrame(rafId);
-      window.removeEventListener('resize', scheduleCalculation);
-      window.removeEventListener('scroll', scheduleCalculation, true);
-      clearTimeout(timeoutId1);
-      clearTimeout(timeoutId2);
-      clearTimeout(timeoutId3);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleResize, true);
+      resizeObserver.disconnect();
     };
-  }, [isMinimalMode, isMobileMode, isFullDesktopMode, playerCollapsed, drawerExpanded, open, ready]);
+  }, [isMinimalMode, isMobileMode, isFullDesktopMode, playerCollapsed, drawerExpanded, open, ready, desktopSlot]);
 
   const mountPlayer = useCallback(async () => {
     if (!containerRef.current || !open) return;

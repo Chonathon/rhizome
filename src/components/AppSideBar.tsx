@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import React, { useCallback } from "react"
+import React, { useCallback, useRef } from "react"
 import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog } from "lucide-react"
 import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
 import { Genre, GraphType } from "@/types"
@@ -92,6 +92,7 @@ export function AppSidebar({
   const { setTheme } = useTheme()
   const { toggleSidebar, state } = useSidebar()
   const isDesktop = useMediaQuery("(min-width: 768px)")
+  const desktopPlayerSlotRef = useRef<HTMLDivElement>(null)
 
   const isCollapsed = state === "collapsed"
 
@@ -182,7 +183,7 @@ export function AppSidebar({
         </SidebarContent>
 
         {/* Portal slot for desktop player UI - SidebarPlayer renders into this */}
-        <div id="sidebar-player-slot" />
+        <div id="sidebar-player-slot" ref={desktopPlayerSlotRef} />
 
         <SidebarFooter className="mt-auto flex p-1 pb-3">
           <SidebarMenu className={isCollapsed ? "mx-auto gap-4" : "flex w-full flex-row justify-between gap-4"}>
@@ -261,6 +262,7 @@ export function AppSidebar({
         startIndex={playerStartIndex}
         sidebarCollapsed={isCollapsed}
         isDesktop={isDesktop}
+        desktopSlotRef={desktopPlayerSlotRef}
       />
 
       <SidebarInset>{children}</SidebarInset>
