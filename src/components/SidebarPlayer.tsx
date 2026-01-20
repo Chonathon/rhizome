@@ -155,7 +155,7 @@ export default function SidebarPlayer({
     }, 50);
 
     return () => clearInterval(interval);
-  }, [desktopSlot, open, desktopSlotRef]);
+  }, [desktopSlot, open, desktopSlotRef, isDesktop]);
 
   // Calculate iframe position based on active video area (CSS-only positioning to preserve playback)
   useEffect(() => {
@@ -170,8 +170,7 @@ export default function SidebarPlayer({
     }
 
     let rafId: number;
-    let attempts = 0;
-    const maxAttempts = 50; // 50 frames ~= 800ms at 60fps
+    let positionFound = false;
 
     const calculatePosition = () => {
       let targetRef: HTMLDivElement | null = null;
@@ -193,15 +192,12 @@ export default function SidebarPlayer({
             width: rect.width,
             height: rect.height,
           });
-          attempts = 0; // Reset for future recalculations
-        } else if (attempts < maxAttempts) {
-          // Keep trying if element has zero dimensions (still animating)
-          attempts++;
-          rafId = requestAnimationFrame(calculatePosition);
+          positionFound = true;
         }
-      } else if (attempts < maxAttempts) {
-        // Ref not available yet, keep trying
-        attempts++;
+      }
+
+      // Keep polling until position is found
+      if (!positionFound) {
         rafId = requestAnimationFrame(calculatePosition);
       }
     };
@@ -209,23 +205,34 @@ export default function SidebarPlayer({
     // Start the calculation loop
     rafId = requestAnimationFrame(calculatePosition);
 
+    // Also poll on an interval as backup (in case RAF stops)
+    const pollInterval = setInterval(() => {
+      if (!positionFound) {
+        positionFound = false; // Reset to allow recalculation
+        rafId = requestAnimationFrame(calculatePosition);
+      }
+    }, 100);
+
     // ResizeObserver to detect when video areas change size
     const resizeObserver = new ResizeObserver(() => {
-      attempts = 0;
+      positionFound = false;
       rafId = requestAnimationFrame(calculatePosition);
     });
 
-    // Observe refs when available
-    if (mobileVideoAreaRef.current) {
-      resizeObserver.observe(mobileVideoAreaRef.current);
-    }
-    if (desktopVideoAreaRef.current) {
-      resizeObserver.observe(desktopVideoAreaRef.current);
-    }
+    // Observe refs when available - also poll for refs
+    const observeRefs = () => {
+      if (mobileVideoAreaRef.current) {
+        resizeObserver.observe(mobileVideoAreaRef.current);
+      }
+      if (desktopVideoAreaRef.current) {
+        resizeObserver.observe(desktopVideoAreaRef.current);
+      }
+    };
+    observeRefs();
 
     // Also recalculate on resize/scroll
     const handleResize = () => {
-      attempts = 0;
+      positionFound = false;
       rafId = requestAnimationFrame(calculatePosition);
     };
 
@@ -234,6 +241,7 @@ export default function SidebarPlayer({
 
     return () => {
       cancelAnimationFrame(rafId);
+      clearInterval(pollInterval);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', handleResize, true);
       resizeObserver.disconnect();
