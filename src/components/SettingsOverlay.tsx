@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CircleUserRound, Cable, HandHeart, Check, X, Cog } from "lucide-react"
+import { CircleUserRound, Cable, HandHeart, Check, X, Cog, Info, Sparkle, Sparkles } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
@@ -49,6 +49,7 @@ import { toast } from "sonner"
 import {Preferences, PreviewTrigger, Theme} from "@/types";
 import KofiLogo from "@/assets/kofi_symbol.svg"
 import LastFMLogo from "@/assets/Last.fm Logo.svg"
+import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuContent } from "@/components/ui/dropdown-menu"
 
 const data = {
   nav: [
@@ -511,6 +512,28 @@ const ProfileSection = ({
   )
 }
 
+// Release Notes Section Component
+const ReleaseNotesSection = () => {
+  return (
+    <SettingsSection>
+      <FieldGroup>
+           <Field orientation="responsive">
+              <FieldLabel >
+                Changelog
+              </FieldLabel>
+             <a className="w-full" target="_blank" href="https://www.notion.so/seanathon/Rhizome-Changelog-2cd7b160b42a8090ace6d43d3803b2ae?source=copy_link">
+              <Button variant='outline' className="w-full" size="sm">
+                <Sparkles />
+                See what's new
+              </Button>
+            </a>
+          </Field>
+      </FieldGroup>
+    </SettingsSection>
+  )
+}
+
+
 // Preferences Section Component
 const PreferencesSection = ({
   preferences,
@@ -755,7 +778,38 @@ const ConnectionsSection = () => {
                       </FieldLabel>
                       <FieldDescription id="lastfm-connection-description">Two way sync: Import your followed artists and share your collection</FieldDescription>
                       </FieldContent>
-                      <ToggleButton
+                      
+                      <DropdownMenu>
+                         <DropdownMenuTrigger asChild>
+                           <Button
+                              variant="secondary">
+                              Connect 
+                            </Button>
+                         </DropdownMenuTrigger>
+                         <DropdownMenuContent align="end" side="bottom">
+                               <div
+                                className="p-3">
+                                  <div className="flex items-center gap-1">
+                                    <Info size={20}/>
+                                  <h2 className="text-lg font-semibold">Whoops, we haven’t implemented this yet</h2></div>
+                                  <p className="text-base text-muted-foreground">
+                                    How would you use connections in Rhizome?
+                                  </p>
+
+                                  <div className="mt-6">
+                                    <Button asChild>
+                                      <a 
+                                        target="_blank" 
+                                        href="https://tally.so/r/obEpvO"
+                                        rel="noopener noreferrer"
+                                        >Give Feedback</a>
+                                    </Button>
+                                  </div>
+                                </div>
+                         </DropdownMenuContent>
+                       </DropdownMenu>
+                       {/* Hidden while not functional */}
+                      {/* <ToggleButton
                         isActive={isLastFmConnected}
                         onToggle={handleLastFmToggle}
                         activeLabel="Connected"
@@ -766,7 +820,7 @@ const ConnectionsSection = () => {
                         size="sm"
                         ariaLabel={isLastFmConnected ? "Disconnect from Last.FM" : "Connect to Last.FM"}
                         ariaDescribedBy="lastfm-connection-description"
-                      />
+                      /> */}
                   </Field>
           </FieldGroup>
         </FieldSet>
@@ -911,6 +965,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
           preferences={preferences}
           onPreferencesChange={onChangePreferences}
         />
+        <ReleaseNotesSection />
         {/* <ExperimentalFeaturesSection
           preferences={preferences}
           onPreferencesChange={onChangePreferences}
@@ -969,7 +1024,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
                               size="lg"
                               variant="outline"
                               isActive={item.name === activeView}
-                              className={item.name === "Support" ? "text-[#8A80FF] hover:text-[#8A80FF] hover:brightness-110" : ""}
+                              // className={item.name === "Support" ? "text-[#8A80FF] hover:text-[#8A80FF] hover:brightness-110" : ""}
                               onClick={() => setActiveView(item.name)}
                             >
                               <item.icon />

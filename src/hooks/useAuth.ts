@@ -2,6 +2,7 @@ import {useContext, useEffect, useState} from "react";
 import {Preferences} from "@/types";
 import {AuthContext} from "@/providers/AuthProvider";
 import {likeArtistUser, unlikeArtistUser, updateUserPreferences} from "@/apis/usersApi";
+import {DEFAULT_PREFERENCES} from "@/constants";
 
 const useAuth = () => {
     const [userID, setUserID] = useState<string>();
@@ -11,6 +12,7 @@ const useAuth = () => {
     const [preferences, setPreferences] = useState<Preferences>();
     const [likedArtists, setLikedArtists] = useState<string[]>([]);
     const [isSocialUser, setIsSocialUser] = useState<boolean | undefined>();
+    const [userAccess, setUserAccess] = useState<string | undefined>();
 
     const {
         user,
@@ -24,6 +26,7 @@ const useAuth = () => {
         changePassword,
         deleteUser,
         updateUser,
+        updateUserAppAccess,
         validSession,
         forgotPassword,
         resetPassword,
@@ -34,9 +37,10 @@ const useAuth = () => {
         setUserName(user ? user.name : undefined);
         setUserEmail(user ? user.email : undefined);
         setUserImage(user ? user.image : undefined);
-        setPreferences(user ? user.preferences : undefined);
+        setPreferences(user ? user.preferences : DEFAULT_PREFERENCES);
         setLikedArtists(user && user.liked ? user.liked.map(l => l.id) : []);
         setIsSocialUser(user ? user.socialUser : false);
+        setUserAccess(user ? user.appAccess : undefined)
     }, [user]);
 
     const likeArtist = async (artistID: string) => {
@@ -84,6 +88,7 @@ const useAuth = () => {
         preferences,
         likedArtists,
         isSocialUser,
+        userAccess,
         signIn,
         signInSocial,
         signUp,
@@ -92,6 +97,7 @@ const useAuth = () => {
         changePassword,
         deleteUser,
         updateUser,
+        updateUserAppAccess,
         likeArtist,
         unlikeArtist,
         updatePreferences,

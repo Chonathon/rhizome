@@ -69,7 +69,8 @@ import {
   ALPHA_SURVEY_TIME_MS,
   DEFAULT_PREFERENCES,
   ALPHA_SURVEY_ADDED_ARTISTS,
-  NODE_AMOUNT_PRESETS
+  NODE_AMOUNT_PRESETS,
+  PHASE_VERSION,
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -99,27 +100,6 @@ function SidebarLogoTrigger() {
 }
 
 function App() {
-  const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess();
-  const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
-
-  // Keep alpha dialog open state in sync with validation
-  useEffect(() => {
-    setAlphaOpen(!isAlphaValidated);
-  }, [isAlphaValidated]);
-
-  // Manual trigger for testing - listen for both alpha:open and alpha:trigger
-  useEffect(() => {
-    const handleOpen = () => setAlphaOpen(true);
-    const handleTrigger = () => window.dispatchEvent(new Event('alpha:open'));
-
-    window.addEventListener('alpha:open', handleOpen as any);
-    window.addEventListener('alpha:trigger', handleTrigger);
-
-    return () => {
-      window.removeEventListener('alpha:open', handleOpen as any);
-      window.removeEventListener('alpha:trigger', handleTrigger);
-    };
-  }, []);
   type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
   const genresGraphRef = useRef<GraphHandle | null>(null);
   const artistsGraphRef = useRef<GraphHandle | null>(null);
@@ -159,6 +139,7 @@ function App() {
   const [cursorHoveredArtist, setCursorHoveredArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
   const [previewGenre, setPreviewGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
   const [previewArtist, setPreviewArtist] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  const [optionHoverSelectedId, setOptionHoverSelectedId] = useState<string | null>(null);
   const [previewModeActive, setPreviewModeActive] = useState(false);
   const previewModeTimeoutRef = useRef<number | null>(null);
   const [genreInfoToShow, setGenreInfoToShow] = useState<Genre | undefined>(undefined);
@@ -184,6 +165,62 @@ function App() {
   const [currentGenres, setCurrentGenres] = useState<GenreGraphData>();
   const [similarArtistAnchor, setSimilarArtistAnchor] = useState<Artist | undefined>();
   const [genreSizeThreshold, setGenreSizeThreshold] = useState<number>(0);
+
+  // Default display control states
+  const [nodeSize, setNodeSize] = useState<number>(() => {
+    const stored = localStorage.getItem('nodeSize');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [linkThickness, setLinkThickness] = useState<number>(() => {
+    const stored = localStorage.getItem('linkThickness');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [linkCurvature, setLinkCurvature] = useState<number>(() => {
+    const stored = localStorage.getItem('linkCurvature');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [textFadeThreshold, setTextFadeThreshold] = useState<number>(() => {
+    const stored = localStorage.getItem('textFadeThreshold');
+    return stored ? JSON.parse(stored) : 50;
+  });
+  const [showLabels, setShowLabels] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showLabels');
+    return stored ? JSON.parse(stored) : true;
+  });
+  const [labelSize, setLabelSize] = useState<'Small' | 'Default' | 'Large'>(() => {
+    const stored = localStorage.getItem('labelSize');
+    return stored ? JSON.parse(stored) : 'Default';
+  });
+  const [showNodes, setShowNodes] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showNodes');
+    return stored ? JSON.parse(stored) : true;
+  });
+  const [showLinks, setShowLinks] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showLinks');
+    return stored ? JSON.parse(stored) : true;
+  });
+
+  // Reset display controls to defaults
+  const handleResetDisplayControls = useCallback(() => {
+    setNodeSize(50);
+    setLinkThickness(50);
+    setLinkCurvature(50);
+    setTextFadeThreshold(50);
+    setShowLabels(true);
+    setLabelSize('Default');
+    setShowNodes(true);
+    setShowLinks(true);
+    // Clear from localStorage
+    localStorage.removeItem('nodeSize');
+    localStorage.removeItem('linkThickness');
+    localStorage.removeItem('linkCurvature');
+    localStorage.removeItem('textFadeThreshold');
+    localStorage.removeItem('showLabels');
+    localStorage.removeItem('labelSize');
+    localStorage.removeItem('showNodes');
+    localStorage.removeItem('showLinks');
+  }, []);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [isFindFilterOpen, setIsFindFilterOpen] = useState(false);
   const [genreNodeLimitType, setGenreNodeLimitType] = useState<GenreNodeLimitType>(DEFAULT_GENRE_LIMIT_TYPE);
@@ -251,6 +288,7 @@ function App() {
     preferences,
     likedArtists,
     isSocialUser,
+    userAccess,
     signIn,
     signInSocial,
     signUp,
@@ -268,6 +306,28 @@ function App() {
     authError,
     authLoading,
   } = useAuth();
+
+  const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess(userAccess);
+  const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
+
+  // Keep alpha dialog open state in sync with validation
+  useEffect(() => {
+    setAlphaOpen(!isAlphaValidated);
+  }, [isAlphaValidated]);
+
+  // Manual trigger for testing - listen for both alpha:open and alpha:trigger
+  useEffect(() => {
+    const handleOpen = () => setAlphaOpen(true);
+    const handleTrigger = () => window.dispatchEvent(new Event('alpha:open'));
+
+    window.addEventListener('alpha:open', handleOpen as any);
+    window.addEventListener('alpha:trigger', handleTrigger);
+
+    return () => {
+      window.removeEventListener('alpha:open', handleOpen as any);
+      window.removeEventListener('alpha:trigger', handleTrigger);
+    };
+  }, []);
   const navigate = useNavigate();
 
   const artistsAddedRef = useRef(0);
@@ -299,6 +359,18 @@ function App() {
     }
   }, []);
 
+  // Show release notes notification, set in localStorage to avoid repeats
+  useEffect(() => {
+    if (
+        userAccess !== PHASE_VERSION
+        && localStorage.getItem('versionLastAccessed')
+        && localStorage.getItem('versionLastAccessed') !== PHASE_VERSION
+    ) {
+      showNotiToast('release-notes');
+      localStorage.setItem('versionLastAccessed', PHASE_VERSION);
+    }
+  }, [userAccess]);
+
   // Do any actions requested before login
   useEffect(() => {
     if (userID) {
@@ -327,6 +399,39 @@ function App() {
   useEffect(() => {
     localStorage.setItem('dagMode', JSON.stringify(dagMode));
   }, [dagMode]);
+
+  // Persist display settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('nodeSize', JSON.stringify(nodeSize));
+  }, [nodeSize]);
+
+  useEffect(() => {
+    localStorage.setItem('linkThickness', JSON.stringify(linkThickness));
+  }, [linkThickness]);
+
+  useEffect(() => {
+    localStorage.setItem('linkCurvature', JSON.stringify(linkCurvature));
+  }, [linkCurvature]);
+
+  useEffect(() => {
+    localStorage.setItem('textFadeThreshold', JSON.stringify(textFadeThreshold));
+  }, [textFadeThreshold]);
+
+  useEffect(() => {
+    localStorage.setItem('showLabels', JSON.stringify(showLabels));
+  }, [showLabels]);
+
+  useEffect(() => {
+    localStorage.setItem('labelSize', JSON.stringify(labelSize));
+  }, [labelSize]);
+
+  useEffect(() => {
+    localStorage.setItem('showNodes', JSON.stringify(showNodes));
+  }, [showNodes]);
+
+  useEffect(() => {
+    localStorage.setItem('showLinks', JSON.stringify(showLinks));
+  }, [showLinks]);
 
   const findOptions = useMemo<FindOption[]>(() => {
     if (graph === 'genres' && currentGenres) {
@@ -391,7 +496,7 @@ function App() {
   }, [findPanelDisabled, isFindFilterOpen]);
 
   // Global hotkeys (+, -, /) and command key tracking
-  const { isCommandHeld } = useHotkeys({
+  const { isCommandHeld, isOptionHeld } = useHotkeys({
     onZoomIn: () => {
       const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
       ref?.zoomIn?.();
@@ -517,9 +622,15 @@ function App() {
     if (genres) {
       const nodeCount = genres.length;
       onGenreNodeCountChange(nodeCount);
-      setGenreColorMap(buildGenreColorMap(genres, genreRoots));
+      const colorMap = buildGenreColorMap(genres, genreRoots);
+      // console.log('[App Debug] Building genreColorMap');
+      // console.log('  genres.length:', genres.length);
+      // console.log('  genreRoots:', genreRoots);
+      // console.log('  colorMap.size:', colorMap.size);
+      // console.log('  first 5 colorMap entries:', Array.from(colorMap.entries()).slice(0, 5));
+      setGenreColorMap(colorMap);
     }
-  }, [genres, genreLinks]);
+  }, [genres, genreLinks, genreRoots]);
 
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
@@ -572,7 +683,7 @@ function App() {
   // TODO: I suspect this causes "no genre selected" top 2000 artists to always be fetched, wasteful if clicking "All Artists"
   useEffect(() => {
     if (pendingArtistGenreGraph && artists.length > 0 && !artistsLoading) {
-      console.log('[useEffect pendingArtistGenreGraph] Artists loaded, switching to artists graph');
+      //console.log('[useEffect pendingArtistGenreGraph] Artists loaded, switching to artists graph');
       setGraph('artists');
       setPendingArtistGenreGraph(undefined);
     }
@@ -590,13 +701,27 @@ function App() {
   }, [graph, artistInfoToShow, currentArtists, similarArtists]);
 
   // Add genre play IDs to the playerIDQueue on genre click
-  const updateGenrePlayerIDs = async () => {
-    const queueGenreID = topArtistsGenreId;
+  // Allows for manual fetching of top artists if passed a genre (i.e. search)
+  // Only pass a genre if needed to play outside of the graph or info drawer
+  const updateGenrePlayerIDs = async (genre?: Genre) => {
+    const queueGenreID = genre ? genre.id : topArtistsGenreId;
     if (!queueGenreID) return;
-    if (topArtistsLoading) return;
-    if (!topArtists || topArtists.length === 0) return;
+    if (!genre && topArtistsLoading) return;
+
+    const cachedTracks = playerIDQueue.get(queueGenreID);
+    if (cachedTracks && cachedTracks.length > 0) return;
+
+    let genreTopArtists: Artist[] = [];
+    if (genre) {
+      genreTopArtists = await getTopArtistsFromApi(queueGenreID);
+    } else {
+      if (!topArtists || topArtists.length === 0) return;
+      genreTopArtists = topArtists;
+    }
+    if (!genreTopArtists || genreTopArtists.length === 0) return;
+
     const genreTracks: TopTrack[] = [];
-    for (const artist of topArtists) {
+    for (const artist of genreTopArtists) {
       if (!artist.noTopTracks) {
         if (artist.topTracks) {
           for (const track of artist.topTracks) {
@@ -704,7 +829,11 @@ function App() {
       if (artistsPlayIDsLoading && artistPlayIDLoadingKey === artistLoadingKey) {
         await until(() => !artistsPlayIDsLoadingRef.current || artistPlayIDLoadingKeyRef.current !== artistLoadingKey);
       }
-      const playerIDs = getSpecificPlayerIDs(artist.id);
+      let playerIDs = getSpecificPlayerIDs(artist.id);
+      if (!playerIDs.length) {
+        await updateArtistPlayerIDs(artist);
+        playerIDs = getSpecificPlayerIDs(artist.id);
+      }
       if (req !== playRequest.current) return; // superseded by a newer request
       if (playerIDs && playerIDs.length > 0) {
         setPlayerVideoIds(playerIDs);
@@ -751,7 +880,11 @@ function App() {
         const loadingIDs = genre.topArtists.map(artist => `artist:${artist.id}`);
         await until(() => !artistsPlayIDsLoadingRef.current || !loadingIDs.includes(artistPlayIDLoadingKeyRef.current));
       }
-      const playerIDs = getSpecificPlayerIDs(genre.id);
+      let playerIDs = getSpecificPlayerIDs(genre.id);
+      if (!playerIDs.length) {
+        await updateGenrePlayerIDs(genre);
+        playerIDs = getSpecificPlayerIDs(genre.id);
+      }
       if (!playerIDs || playerIDs.length === 0) {
         toast.error('No tracks found for this genre');
         setPlayerLoading(false);
@@ -992,6 +1125,17 @@ function App() {
     }
   }, [isCommandHeld, cursorHoveredArtist, preferences?.enableGraphCards, preferences?.previewTrigger]);
 
+  // Option + hover: temporarily select hovered node to show its connections
+  useEffect(() => {
+    if (isOptionHeld && cursorHoveredArtist) {
+      setOptionHoverSelectedId(cursorHoveredArtist.id);
+    } else if (isOptionHeld && cursorHoveredGenre) {
+      setOptionHoverSelectedId(cursorHoveredGenre.id);
+    } else {
+      setOptionHoverSelectedId(null);
+    }
+  }, [isOptionHeld, cursorHoveredArtist, cursorHoveredGenre]);
+
   // Activate preview mode when a card is shown
   const handlePreviewShown = () => {
     setPreviewModeActive(true);
@@ -1039,7 +1183,7 @@ function App() {
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
     setAutoFocusGraph(true); // Enable auto-focus for node clicks
     addRecentSelection(genre);
-  }
+  };
 
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
   const onShowAllArtists = (genre: Genre) => {
@@ -1146,7 +1290,7 @@ function App() {
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
     }
-  }
+  };
 
   const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
     if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
@@ -1480,13 +1624,13 @@ function App() {
     }
   }
 
-  const getGenreRootsFromID = (genreID: string) => {
+  const getGenreRootsFromID = useCallback((genreID: string) => {
     const genre = genres ? genres.find((g) => g.id === genreID) : undefined;
     if (genre) {
       return genre.rootGenres;
     }
     return [];
-  }
+  }, [genres]);
 
   const onBadDataGenreSubmit = async (itemID: string, reason: string, type: 'genre' | 'artist', hasFlag: boolean, details?: string) => {
     const user = userID ? userID : 'unregistered';
@@ -1735,12 +1879,12 @@ function App() {
   const focusArtistRelatedGenres = (artist: Artist) => {
     const genreIds = Array.from(new Set((artist.genres ?? []).filter(Boolean)));
 
-    console.log('[focusArtistRelatedGenres]', {
-      artistName: artist.name,
-      artistId: artist.id,
-      genreIds: genreIds,
-      genreCount: genreIds.length
-    });
+    // console.log('[focusArtistRelatedGenres]', {
+    //   artistName: artist.name,
+    //   artistId: artist.id,
+    //   genreIds: genreIds,
+    //   genreCount: genreIds.length
+    // });
 
     if (genreIds.length === 0) {
       toast.error(`We don't have genre data for ${artist.name} yet.`);
@@ -1757,7 +1901,7 @@ function App() {
       }
     });
 
-    console.log('[focusArtistRelatedGenres] matched genres:', matched.map(g => ({ id: g.id, name: g.name })));
+    //console.log('[focusArtistRelatedGenres] matched genres:', matched.map(g => ({ id: g.id, name: g.name })));
 
     if (!matched.length) {
       toast.error(`Couldn't find genres for ${artist.name} in the current dataset.`);
@@ -1775,6 +1919,7 @@ function App() {
     setArtistFilterGenres(matched); // Set the new filter state
     setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
     setPendingArtistGenreGraph(artist); // Will trigger graph switch when artists load
+    setCollectionMode(false);
   };
 
   const onAddArtistButtonToggle = async (artistID?: string) => {
@@ -1932,6 +2077,7 @@ function App() {
                       onGenreSelectionChange={onGenreFilterSelectionChange}
                       initialSelection={initialGenreFilter}
                       selectedGenreIds={selectedGenreIDs}
+                      genreColorMap={genreColorMap}
                      />
                     <Button size='default' variant='outline'>Mood & Activity
                       <ChevronDown />
@@ -2005,6 +2151,7 @@ function App() {
                       onGenreSelectionChange={(ids) => onCollectionFilterChange('genres', ids)}
                       initialSelection={{ genre: undefined, isRoot: false, parents: {} }}
                       selectedGenreIds={collectionFilters.genres}
+                      genreColorMap={genreColorMap}
                     />
                     {/* TODO: Add DecadesFilter when ready
                     <DecadesFilter
@@ -2035,6 +2182,7 @@ function App() {
                       onGenreSelectionChange={onGenreFilterSelectionChange}
                       initialSelection={initialGenreFilter}
                       selectedGenreIds={artistGenreFilterIDs}
+                      genreColorMap={genreColorMap}
                     />
                     <DecadesFilter
                       onDecadeSelectionChange={onDecadeSelectionChange}
@@ -2066,6 +2214,7 @@ function App() {
                   onNodeClick={onGenreNodeClick}
                   onNodeHover={handleGenreHover}
                   selectedGenreId={selectedGenres[0]?.id}
+                  hoverSelectedId={optionHoverSelectedId}
                   colorMap={genreColorMap}
                   dag={dagMode}
                   clusterModes={genreClusterMode}
@@ -2074,6 +2223,14 @@ function App() {
                   loading={genresLoading}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
+                  nodeSize={nodeSize}
+                  linkThickness={linkThickness}
+                  linkCurvature={linkCurvature}
+                  showLabels={showLabels}
+                  labelSize={labelSize}
+                  textFadeThreshold={textFadeThreshold}
+                  showNodes={showNodes}
+                  showLinks={showLinks}
                   disableDimming={isUserDraggingGenreCanvas || isGenreDrawerAtMinSnap}
                 />
                 <ArtistsForceGraph
@@ -2086,6 +2243,7 @@ function App() {
                       setCursorHoveredArtist(id && position ? { id, position } : null);
                   }}
                   selectedArtistId={selectedArtist?.id}
+                  hoverSelectedId={optionHoverSelectedId}
                   computeArtistColor={getArtistColor}
                   autoFocus={autoFocusGraph}
                   show={(graph === "artists" || graph === "similarArtists") && !artistsError}
@@ -2093,6 +2251,14 @@ function App() {
                   loading={artistsLoading}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
+                  nodeSize={nodeSize}
+                  linkThickness={linkThickness}
+                  linkCurvature={linkCurvature}
+                  showLabels={showLabels}
+                  labelSize={labelSize}
+                  textFadeThreshold={textFadeThreshold}
+                  showNodes={showNodes}
+                  showLinks={showLinks}
                   disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
                 />
 
@@ -2187,6 +2353,33 @@ function App() {
               <DisplayPanel
                 genreArtistCountThreshold={genreSizeThreshold}
                 setGenreArtistCountThreshold={setGenreSizeThreshold}
+                nodeSize={nodeSize}
+                setNodeSize={setNodeSize}
+                linkThickness={linkThickness}
+                setLinkThickness={setLinkThickness}
+                linkCurvature={linkCurvature}
+                setLinkCurvature={setLinkCurvature}
+                textFadeThreshold={textFadeThreshold}
+                setTextFadeThreshold={setTextFadeThreshold}
+                showLabels={showLabels}
+                setShowLabels={setShowLabels}
+                labelSize={labelSize}
+                setLabelSize={setLabelSize}
+                showNodes={showNodes}
+                setShowNodes={setShowNodes}
+                showLinks={showLinks}
+                setShowLinks={setShowLinks}
+                onReset={handleResetDisplayControls}
+                defaults={{
+                  nodeSize: 50,
+                  linkThickness: 50,
+                  linkCurvature: 50,
+                  textFadeThreshold: 50,
+                  showLabels: true,
+                  labelSize: 'Default',
+                  showNodes: true,
+                  showLinks: true,
+                }}
               />
               <SharePanel onExport={handleExportGraph} />
               {/* Bottom positioned Zoomies */}
@@ -2301,6 +2494,27 @@ function App() {
                     setOpen={setSearchOpen}
                     genreColorMap={genreColorMap}
                     getArtistColor={getArtistColor}
+                    onArtistPlay={onPlayArtist}
+                    onGenrePlay={onPlayGenre}
+                    onArtistGoTo={(artist) => {
+                      // For artists: Explore Related Genres (since artist might not be in current view)
+                      focusArtistRelatedGenres(artist);
+                      setArtistInfoToShow(artist);
+                      setShowArtistCard(true);
+                    }}
+                    onGenreGoTo={(genre) => {
+                      // For genres: Go To (switches to genres view and focuses the genre)
+                      focusGenreInCurrentView(genre, { forceRefocus: true });
+                    }}
+                    onArtistViewSimilar={async (artist) => {
+                      await createSimilarArtistGraph(artist);
+                      setArtistInfoToShow(artist);
+                      setShowArtistCard(true);
+                    }}
+                    onGenreViewSimilar={(genre) => {
+                      // For genres: View Similar also navigates to genres view
+                      focusGenreInCurrentView(genre, { forceRefocus: true });
+                    }}
                   />
 
                 </motion.div>
@@ -2343,12 +2557,12 @@ function App() {
           onForgotPassword={forgotPassword}
       />
       <AlphaAccessDialog
-        open={alphaOpen}
+        open={!isAlphaValidated && !authLoading}
         onValidPassword={() => {
           setAlphaValidated();
           setAlphaOpen(false);
         }}
-        onValidatePassword={(pwd) => validatePassword(pwd)}
+        onValidatePassword={validatePassword}
       />
       <FeedbackOverlay
         onSubmit={submitFeedback}

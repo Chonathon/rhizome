@@ -22,20 +22,22 @@ import {
 interface AlphaAccessDialogProps {
   open: boolean;
   onValidPassword: () => void;
-  onValidatePassword: (password: string) => Promise<boolean>;
+  onValidatePassword: (email: string, accessCode: string) => Promise<boolean>;
 }
 
 function AlphaAccessDialog({ open, onValidPassword, onValidatePassword }: AlphaAccessDialogProps) {
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [accessCode, setAccessCode] = useState("");
   const [isValidating, setIsValidating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(undefined);
 
-    if (!password.trim()) {
+    if (!accessCode.trim()) {
       const msg = "Please enter the alpha access password";
       setErrorMessage(msg);
       toast.error(msg);
@@ -44,7 +46,7 @@ function AlphaAccessDialog({ open, onValidPassword, onValidatePassword }: AlphaA
 
     setIsValidating(true);
     try {
-      const isValid = await onValidatePassword(password);
+      const isValid = await onValidatePassword(email, accessCode);
       if (isValid) {
         toast.success("You're in! Welcome to Rhizome Alpha");
         onValidPassword();
@@ -52,7 +54,7 @@ function AlphaAccessDialog({ open, onValidPassword, onValidatePassword }: AlphaA
         const msg = "Hmm, that didn’t match. Try again?";
         setErrorMessage(msg);
         toast.error(msg);
-        setPassword("");
+        setAccessCode("");
         passwordRef.current?.focus();
       }
     } catch (err) {
@@ -91,20 +93,37 @@ function AlphaAccessDialog({ open, onValidPassword, onValidatePassword }: AlphaA
             <div className="grid gap-6 py-4">
               <FieldSet>
                 <Field>
-                  <FieldLabel htmlFor="alpha-password">Alpha Password</FieldLabel>
+                  <FieldLabel htmlFor="alpha-email">Email Address</FieldLabel>
                   <FieldContent>
                     <Input
-                      id="alpha-password"
-                      type="password"
-                      placeholder="Enter your alpha password"
-                      ref={passwordRef}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      id="alpha-email"
+                      type="email"
+                      placeholder="Enter your email address"
+                      ref={emailRef}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       disabled={isValidating}
                       required
                     />
                     <FieldDescription>
-                    You’ll get a unique password by email when invited
+                    This must match the email address the access code was sent to
+                    </FieldDescription>
+                  </FieldContent>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="alpha-password">Alpha Access Code</FieldLabel>
+                  <FieldContent>
+                    <Input
+                        id="alpha-password"
+                        placeholder="Enter your alpha password"
+                        ref={passwordRef}
+                        value={accessCode}
+                        onChange={(e) => setAccessCode(e.target.value)}
+                        disabled={isValidating}
+                        required
+                    />
+                    <FieldDescription>
+                      You’ll get a unique access code by email when invited
                     </FieldDescription>
                     <FieldError>{errorMessage}</FieldError>
                   </FieldContent>

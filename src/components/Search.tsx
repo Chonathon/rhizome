@@ -3,7 +3,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import { Badge } from "@/components/ui/badge"
 import { BadgeIndicator } from "@/components/BadgeIndicator"
 import { useRecentSelections } from "@/hooks/useRecentSelections"
-import { X, Search as SearchIcon } from "lucide-react"
+import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon } from "lucide-react"
 import { motion } from "framer-motion";
 import { isGenre } from "@/lib/utils"
 import { Artist, BasicNode, Genre, GraphType } from "@/types";
@@ -15,6 +15,7 @@ import { useTheme } from "next-themes"
 import { useMediaQuery } from "react-responsive";
 import useSearch from "@/hooks/useSearch";
 import {SEARCH_DEBOUNCE_MS} from "@/constants";
+import { Kbd } from "./ui/kbd"
 
 interface SearchProps {
   onGenreSelect: (genre: Genre) => void;
@@ -28,6 +29,12 @@ interface SearchProps {
   setOpen: (open: boolean) => void;
   genreColorMap?: Map<string, string>;
   getArtistColor?: (artist: Artist) => string;
+  onArtistPlay?: (artist: Artist) => void;
+  onGenrePlay?: (genre: Genre) => void;
+  onArtistGoTo?: (artist: Artist) => void;
+  onGenreGoTo?: (genre: Genre) => void;
+  onArtistViewSimilar?: (artist: Artist) => void;
+  onGenreViewSimilar?: (genre: Genre) => void;
 }
 
 export function Search({
@@ -41,24 +48,71 @@ export function Search({
   setOpen,
   genreColorMap,
   getArtistColor,
+  onArtistPlay,
+  onGenrePlay,
+  onArtistGoTo,
+  onGenreGoTo,
+  onArtistViewSimilar,
+  onGenreViewSimilar,
 }: SearchProps) {
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [open, setOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");
   const [query, setQuery] = useState("");
+  const [shiftHeld, setShiftHeld] = useState(false);
+  const [cmdCtrlHeld, setCmdCtrlHeld] = useState(false);
+  const [altHeld, setAltHeld] = useState(false);
+  const [selectedValue, setSelectedValue] = useState<string>("");
   const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
   const { searchResults, searchLoading, searchError } = useSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Debouncing
   useEffect(() => {
-    if (inputValue) {
-      const timeout = setTimeout(() => {
-        setQuery(inputValue);
-      }, SEARCH_DEBOUNCE_MS);
-      return () => clearTimeout(timeout);
-    }
-  }, [inputValue, SEARCH_DEBOUNCE_MS]);
+    const timeout = setTimeout(() => {
+      setQuery(inputValue);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+  }, [inputValue]);
+
+  // Reset selected value when input changes to keep cmdk selection in sync
+  useEffect(() => {
+    setSelectedValue("");
+  }, [inputValue]);
+
+  // Track modifier key states
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        setShiftHeld(true);
+      }
+      if (e.key === 'Meta' || e.key === 'Control') {
+        setCmdCtrlHeld(true);
+      }
+      if (e.key === 'Alt') {
+        setAltHeld(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        setShiftHeld(false);
+      }
+      if (e.key === 'Meta' || e.key === 'Control') {
+        setCmdCtrlHeld(false);
+      }
+      if (e.key === 'Alt') {
+        setAltHeld(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
 
   // Filter the searchable items. This is problematic with bands of the same name, for now it just uses the first one in the results
@@ -71,8 +125,15 @@ export function Search({
       return true;
     }
     )},
-      [genres, searchResults, currentArtists]
+      [genres, searchResults, currentArtists, inputValue]
   );
+
+  // Check if filtered items include any actual search results
+  const hasSearchResults = useMemo(() => {
+    if (!query || searchResults.length === 0) return false;
+    const searchResultIds = new Set(searchResults.map(r => r.id));
+    return filteredSearchableItems.some(item => searchResultIds.has(item.id));
+  }, [query, searchResults, filteredSearchableItems]);
 
   const isArtistWithDetail = (node: BasicNode): node is Artist => {
     return 'tags' in node && Array.isArray((node as Artist).tags);
@@ -100,10 +161,9 @@ export function Search({
     };
   };
 
-  // Clears the selection on remount
+  // Position cursor at end of input when dialog opens
   useEffect(() => {
     if (open) {
-      // Wait for next tick after remount and selection
       requestAnimationFrame(() => {
         if (inputRef.current) {
           const input = inputRef.current; 
@@ -112,7 +172,7 @@ export function Search({
         } 
       });
     }
-  }, [open, filteredSearchableItems.length]);
+  }, [open]);
 
   const onItemSelect = (selection: BasicNode) => {
     if (isGenre(selection)) {
@@ -123,7 +183,161 @@ export function Search({
     addRecentSelection(selection);
     setOpen(false);
   }
+  // Checks which modifier keys are held and performs the appropriate action
+  const handleItemAction = (item: BasicNode) => {
+    const isGenreItem = isGenre(item);
+
+    // Cmd/Ctrl + Click: Go To
+    if (cmdCtrlHeld && !altHeld && !shiftHeld) {
+      if (isGenreItem && onGenreGoTo) {
+        onGenreGoTo(item as Genre);
+      } else if (!isGenreItem && onArtistGoTo) {
+        onArtistGoTo(item as Artist);
+      }
+      addRecentSelection(item);
+      setOpen(false);
+    }
+    // Alt + Click: View Similar
+    else if (altHeld && !cmdCtrlHeld && !shiftHeld) {
+      if (isGenreItem && onGenreViewSimilar) {
+        onGenreViewSimilar(item as Genre);
+      } else if (!isGenreItem && onArtistViewSimilar) {
+        onArtistViewSimilar(item as Artist);
+      }
+      addRecentSelection(item);
+      setOpen(false);
+    }
+    // Shift + Click: Play
+    else if (shiftHeld && !cmdCtrlHeld && !altHeld) {
+      if (isGenreItem && onGenrePlay) {
+        onGenrePlay(item as Genre);
+      } else if (!isGenreItem && onArtistPlay) {
+        onArtistPlay(item as Artist);
+      }
+      addRecentSelection(item);
+      setOpen(false);
+    }
+    // No modifiers: Default select
+    else {
+      onItemSelect(item);
+    }
+  }
+
+  const getActionHint = (item: BasicNode, isSelected: boolean) => {
+    if (!isSelected) return null;
+
+    const isGenreItem = isGenre(item);
+
+    // Only show one hint at a time, prioritize in order: Cmd/Ctrl, Alt, Shift
+    if (cmdCtrlHeld && !altHeld && !shiftHeld) {
+      return isGenreItem ? `Go to ${item.name}` : 'Explore Related Genres';
+    } else if (altHeld && !cmdCtrlHeld && !shiftHeld) {
+      return 'View Similar';
+    } else if (shiftHeld && !cmdCtrlHeld && !altHeld) {
+      return `Play ${item.name}`;
+    }
+
+    return null;
+  };
+
   const { theme, setTheme } = useTheme()
+
+  // Define searchable actions
+  const searchableActions = useMemo(() => [
+    {
+      id: 'feedback',
+      label: 'Give Feedback',
+      keywords: ['feedback', 'give', 'report', 'suggest'],
+      icon: HandHeart,
+      onSelect: () => { window.dispatchEvent(new Event('feedback:open')) }
+    },
+    {
+      id: 'toggle-theme',
+      label: theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
+      keywords: ['theme', 'dark', 'light', 'mode', 'switch', 'toggle', 'dark mode', 'light mode'],
+      icon: theme === "dark" ? Sun : Moon,
+      onSelect: () => { setTheme(theme === "light" ? "dark" : "light") }
+    }
+  ], [theme, setTheme]);
+
+  // Filter actions based on input
+  const filteredActions = useMemo(() => {
+    if (!inputValue) return searchableActions;
+    const searchLower = inputValue.toLowerCase();
+    return searchableActions.filter(action =>
+      action.label.toLowerCase().includes(searchLower) ||
+      action.keywords.some(keyword => keyword.includes(searchLower))
+    );
+  }, [inputValue, searchableActions]);
+
+  // Create a map for quick lookup of items by their value (id)
+  const itemsById = useMemo(() => {
+    const map = new Map<string, BasicNode>();
+    recentSelections.forEach(item => map.set(item.id, item));
+    filteredSearchableItems.forEach(item => map.set(item.id, item));
+    return map;
+  }, [recentSelections, filteredSearchableItems]);
+
+  // Intercept keyboard events in capture phase before cmdk processes them
+  const handleKeyDownCapture = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Enter') return;
+
+    const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+    const isAlt = e.altKey;
+    const isShift = e.shiftKey;
+
+    // Only handle modified Enter keys
+    if (!isCmdOrCtrl && !isAlt && !isShift) return;
+
+    // Prevent cmdk from handling this event
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Find the currently selected item in the DOM (cmdk adds data-selected="true")
+    const selectedElement = document.querySelector('[cmdk-item][data-selected="true"]');
+    if (!selectedElement) return;
+
+    // Get the value attribute (which is the item ID)
+    const selectedValue = selectedElement.getAttribute('data-value');
+    if (!selectedValue) return;
+
+    // Look up the item by ID
+    const selectedItem = itemsById.get(selectedValue);
+    if (!selectedItem) return;
+
+    const isGenreItem = isGenre(selectedItem);
+
+    // Cmd/Ctrl + Enter: Go To
+    if (isCmdOrCtrl && !isAlt && !isShift) {
+      if (isGenreItem && onGenreGoTo) {
+        onGenreGoTo(selectedItem as Genre);
+      } else if (!isGenreItem && onArtistGoTo) {
+        onArtistGoTo(selectedItem as Artist);
+      }
+      addRecentSelection(selectedItem);
+      setOpen(false);
+    }
+    // Alt + Enter: View Similar
+    else if (isAlt && !isCmdOrCtrl && !isShift) {
+      if (isGenreItem && onGenreViewSimilar) {
+        onGenreViewSimilar(selectedItem as Genre);
+      } else if (!isGenreItem && onArtistViewSimilar) {
+        onArtistViewSimilar(selectedItem as Artist);
+      }
+      addRecentSelection(selectedItem);
+      setOpen(false);
+    }
+    // Shift + Enter: Play
+    else if (isShift && !isCmdOrCtrl && !isAlt) {
+      if (isGenreItem && onGenrePlay) {
+        onGenrePlay(selectedItem as Genre);
+      } else if (!isGenreItem && onArtistPlay) {
+        onArtistPlay(selectedItem as Artist);
+      }
+      addRecentSelection(selectedItem);
+      setOpen(false);
+    }
+  };
 
   return (
     <>
@@ -158,13 +372,14 @@ export function Search({
         </Button>
       </motion.div>
       <CommandDialog
-          key={filteredSearchableItems.length
-            ? filteredSearchableItems[filteredSearchableItems.length - 1].id
-            : filteredSearchableItems.length}
           open={open}
           onOpenChange={setOpen}
+          shouldFilter={false}
+          value={selectedValue}
+          onValueChange={setSelectedValue}
           className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full"
       >
+        <div onKeyDownCapture={handleKeyDownCapture} className="flex flex-col h-full">
         <CommandInput
             placeholder="Search..."
             value={inputValue}
@@ -173,8 +388,49 @@ export function Search({
         />
         <CommandList className="max-h-none flex-1 overflow-y-auto">
           {searchLoading && <Loading />}
-          <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>
-          {recentSelections.length > 0 && (
+          {!searchLoading && inputValue === query && <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>}
+          {hasSearchResults && (
+              <CommandGroup heading="Search Results">
+                {filteredSearchableItems.map((item, i) => {
+                  const meta = getIndicatorMeta(item);
+                  const isGenreItem = meta.type === 'genre';
+
+                  return (
+                    <CommandItem
+                        key={`${item.id}-${i}`}
+                        value={item.id}
+                        onSelect={() => handleItemAction(item)}
+                        className="flex items-center justify-between gap-2"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        {shiftHeld && selectedValue === item.id ? (
+                          <CirclePlay className="size-4 flex-shrink-0" />
+                        ) : (
+                          <BadgeIndicator
+                            type={meta.type}
+                            name={item.name}
+                            color={meta.color}
+                            imageUrl={meta.imageUrl}
+                            className={cn('flex-shrink-0', isGenreItem ? 'size-2' : undefined)}
+                          />
+                        )}
+                        <span className="truncate">{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {getActionHint(item, selectedValue === item.id) && (
+                          <span className="text-xs text-muted-foreground">
+                            {getActionHint(item, selectedValue === item.id)}
+                          </span>
+                        )}
+                        <Badge variant="secondary">{meta.type}</Badge>
+                      </div>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+          )}
+
+          {!inputValue && recentSelections.length > 0 && (
             <CommandGroup heading="Recent Selections">
               {recentSelections.map((selection) => {
                 const meta = getIndicatorMeta(selection);
@@ -183,78 +439,80 @@ export function Search({
                 return (
                   <CommandItem
                     key={selection.id}
-                    onSelect={() => onItemSelect(selection)}
+                    value={selection.id}
+                    onSelect={() => handleItemAction(selection)}
                     className="flex items-center justify-between gap-2"
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
-                        <BadgeIndicator
-                          type={meta.type}
-                          name={selection.name}
-                          color={meta.color}
-                          imageUrl={meta.imageUrl}
-                          className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
-                        />
-                      </div>
+                      {shiftHeld && selectedValue === selection.id ? (
+                        <CirclePlay className="size-4 flex-shrink-0" />
+                      ) : (
+                        <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
+                          <BadgeIndicator
+                            type={meta.type}
+                            name={selection.name}
+                            color={meta.color}
+                            imageUrl={meta.imageUrl}
+                            className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
+                          />
+                        </div>
+                      )}
                       <span className="truncate">{selection.name}</span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeRecentSelection(selection.id);
-                      }}
-                      className="-m-2"
-                    >
-                      <X />
-                    </Button>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {getActionHint(selection, selectedValue === selection.id) && (
+                        <span className="text-xs text-muted-foreground">
+                          {getActionHint(selection, selectedValue === selection.id)}
+                        </span>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeRecentSelection(selection.id);
+                        }}
+                        className="-m-2"
+                      >
+                        <X />
+                      </Button>
+                    </div>
                   </CommandItem>
                 );
               })}
             </CommandGroup>
           )}
+          {filteredActions.length > 0 && (
           <CommandGroup heading="Actions">
-            <CommandItem
-              key={"toggle-theme"}
-              onSelect={() => {
-                setTheme(theme === "light" ? "dark" : "light");
-              }}
-              className="flex items-center justify-between"
-            >
-              {theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            </CommandItem>
+            {filteredActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <CommandItem
+                  key={action.id}
+                  onSelect={action.onSelect}
+                >
+                  <Icon className="mr-2 size-4" />
+                  {action.label}
+                </CommandItem>
+              );
+            })}
           </CommandGroup>
-          {/* {recentSelections.length > 0 && <CommandSeparator />} */}
-          {inputValue && (
-              <CommandGroup heading="All Results">
-                {filteredSearchableItems.map((item, i) => {
-                  const meta = getIndicatorMeta(item);
-                  const isGenreItem = meta.type === 'genre';
-
-                  return (
-                    <CommandItem
-                        key={`${item.id}-${i}`}
-                        onSelect={() => onItemSelect(item)}
-                        className="flex items-center justify-between gap-2"
-                    >
-                      <div className="flex min-w-0 items-center gap-2">
-                        <BadgeIndicator
-                          type={meta.type}
-                          name={item.name}
-                          color={meta.color}
-                          imageUrl={meta.imageUrl}
-                          className={cn('flex-shrink-0', isGenreItem ? 'size-2' : undefined)}
-                        />
-                        <span className="truncate">{item.name}</span>
-                      </div>
-                      <Badge variant="secondary">{meta.type}</Badge>
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
           )}
+       
         </CommandList>
+        {/* Shortcut Legend */}
+        {!isMobile && <div className="w-full justify-end p-3 flex gap-3 bg-background border-t">
+            <span className="text-xs font-medium text-muted-foreground">Preview <Kbd>⏎</Kbd>
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">Go To / Explore Related Genres <Kbd>⌘⏎</Kbd>
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">View Similar <Kbd>⌥⏎</Kbd>
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">Play <Kbd>⇧⏎</Kbd>
+            </span>
+
+        </div>}
+        </div>
       </CommandDialog>
     </>
   )

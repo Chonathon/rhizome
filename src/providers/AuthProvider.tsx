@@ -26,6 +26,7 @@ interface AuthContextType {
     changePassword: (newPassword: string, oldPassword: string) => Promise<boolean>,
     deleteUser: (password?: string) => Promise<boolean>,
     updateUser: (name?: string, image?: string) => Promise<boolean>,
+    updateUserAppAccess: (appAccess: string) => Promise<boolean>,
     validSession: (userID?: string) => boolean,
     forgotPassword: (email: string) => Promise<boolean>,
     resetPassword: (newPassword: string, token: string) => Promise<boolean>,
@@ -44,6 +45,7 @@ const noUserContext = {
     changePassword: (newPassword: string, oldPassword: string) => new Promise<boolean>((resolve, reject) => {}),
     deleteUser: (password?: string) => new Promise<boolean>((resolve, reject) => {}),
     updateUser: (name?: string, image?: string) => new Promise<boolean>((resolve, reject) => {}),
+    updateUserAppAccess: (appAccess: string) => new Promise<boolean>((resolve, reject) => {}),
     validSession: (userID?: string) => false,
     forgotPassword: (email: string) => new Promise<boolean>((resolve, reject) => {}),
     resetPassword: (newPassword: string, token: string) => new Promise<boolean>((resolve, reject) => {}),
@@ -89,6 +91,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                     image: data.user.image || undefined,
                     liked: [],
                     preferences: { theme: DEFAULT_THEME, player: DEFAULT_PLAYER },
+                    //@ts-expect-error (type inference should work here but isn't currently)
+                    appAccess: data.user.appAccess,
                 });
             } else {
                 setError(`Error: unsuccessful account setup.`);
@@ -169,6 +173,20 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         return success;
     }
 
+    const updateUserAppAccess = async (appAccess: string) => {
+        let success = false;
+        if (user) {
+            success = await apiCall(async () => {
+                const result = await updateUserAccount(undefined, undefined, appAccess);
+                if (result !== true) {
+                    setError('Error: could not update user app access.');
+                    throw result;
+                }
+            });
+        }
+        return success;
+    }
+
     const forgotPassword = async (email: string) => {
         return await apiCall(async () => {
             const { data, error: resError } = await forgotUserPassword(email);
@@ -231,7 +249,6 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }, [error, sessionError]);
 
     const initializeFromSession = () => {
-        //console.log(session)
         if (session) {
             getUserData(session.user.id).then(userData => {
                 if (userData) {
@@ -243,6 +260,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                         preferences: userData.preferences,
                         socialUser: userData.socialUser,
                         image: userData.image,
+                        appAccess: session.user.appAccess,
                     });
                 } else {
                     setError(`Error: no user data found in db.`);
@@ -268,6 +286,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
             deleteUser,
             validSession,
             updateUser,
+            updateUserAppAccess,
             forgotPassword,
             resetPassword,
         }}>

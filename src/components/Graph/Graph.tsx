@@ -1,5 +1,7 @@
 import {
   forwardRef,
+  memo,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -77,6 +79,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   width?: number;
   height?: number;
   selectedId?: string;
+  hoverSelectedId?: string | null;
   dagMode?: boolean;
   autoFocus?: boolean;
   onNodeClick?: (node: T) => void;
@@ -84,6 +87,15 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   renderNode?: NodeRenderer<T>;
   renderSelection?: SelectionRenderer<T>;
   renderLabel?: LabelRenderer<T>;
+  // Display controls
+  nodeSize?: number;
+  linkThickness?: number;
+  linkCurvature?: number;
+  showLabels?: boolean;
+  labelSize?: 'Small' | 'Default' | 'Large';
+  textFadeThreshold?: number;
+  showNodes?: boolean;
+  showLinks?: boolean;
   disableDimming?: boolean;
 }
 
@@ -108,9 +120,9 @@ function defaultRenderSelection<T>(ctx: SelectionRenderContext<T>): void {
   canvas.restore();
 }
 
-function defaultRenderLabel<T>(ctx: LabelRenderContext<T>): void {
+function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE, customColor?: string): void {
   const { ctx: canvas, label, x, y, radius, theme, labelAlpha } = ctx;
-  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, LABEL_FONT_SIZE);
+  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize, 0, customColor);
 }
 
 const Graph = forwardRef(function GraphInner<
@@ -125,6 +137,7 @@ const Graph = forwardRef(function GraphInner<
     width,
     height,
     selectedId,
+    hoverSelectedId,
     dagMode = false,
     autoFocus = true,
     onNodeClick,
@@ -132,6 +145,14 @@ const Graph = forwardRef(function GraphInner<
     renderNode = defaultRenderNode,
     renderSelection = defaultRenderSelection,
     renderLabel = defaultRenderLabel,
+    nodeSize = 50,
+    linkThickness = 50,
+    linkCurvature = 50,
+    showLabels = true,
+    labelSize = 'Default',
+    textFadeThreshold = 50,
+    showNodes = true,
+    showLinks = true,
     disableDimming = false,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
@@ -139,11 +160,54 @@ const Graph = forwardRef(function GraphInner<
   const fgRef = useRef<ForceGraphMethods<PreparedNode<T>, L> | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const zoomRef = useRef<number>(1);
+  const showNodesRef = useRef<boolean>(showNodes);
+  const showLinksRef = useRef<boolean>(showLinks);
   const { resolvedTheme } = useTheme();
   const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
   const lastInitializedSignatureRef = useRef<string | undefined>(undefined);
   const shouldResetZoomRef = useRef(true);
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
+
+  // Update refs when showNodes/showLinks change
+  useEffect(() => {
+    showNodesRef.current = showNodes;
+    showLinksRef.current = showLinks;
+  }, [showNodes, showLinks]);
+
+  // Convert display control values to usable ranges (all centered at 50 = 1.0x)
+  const nodeScaleFactor = useMemo(() => {
+    return nodeSize <= 50
+      ? 0.5 + (nodeSize / 50) * 0.5  // 0-50 → 0.5-1.0
+      : 1.0 + ((nodeSize - 50) / 50) * 1.0; // 50-100 → 1.0-2.0
+  }, [nodeSize]);
+
+  const linkThicknessScale = useMemo(() => {
+    return linkThickness <= 50
+      ? 0.5 + (linkThickness / 50) * 0.5  // 0-50 → 0.5-1.0
+      : 1.0 + ((linkThickness - 50) / 50) * 1.0; // 50-100 → 1.0-2.0
+  }, [linkThickness]);
+
+  const linkCurvatureValue = useMemo(() => {
+    return linkCurvature / 100; // 0-100 → 0.0-1.0
+  }, [linkCurvature]);
+
+  const labelFontSize = useMemo(() => {
+    return labelSize === 'Small' ? 10 : labelSize === 'Large' ? 16 : 12;
+  }, [labelSize]);
+
+  const { labelFadeStart, labelFadeEnd } = useMemo(() => {
+    // Map textFadeThreshold (0-100, center at 50) to fade scale factor
+    // Higher threshold = lower zoom values needed = can zoom out more and see text
+    // Invert the threshold so higher values give lower fade thresholds
+    const inverted = 100 - textFadeThreshold;
+    const fadeScale = inverted <= 50
+      ? 0.5 + (inverted / 50) * 0.5  // 0-50 → 0.5x-1.0x
+      : 1.0 + ((inverted - 50) / 50) * 2.0; // 50-100 → 1.0x-3.0x
+    return {
+      labelFadeStart: DEFAULT_LABEL_FADE_START * fadeScale,
+      labelFadeEnd: DEFAULT_LABEL_FADE_END * fadeScale,
+    };
+  }, [textFadeThreshold]);
 
   // Dimming transition state (0 = fully dimmed/normal, 1 = fully undimmed)
   const dimmingTransitionRef = useRef<number>(disableDimming ? 1 : 0);
@@ -229,8 +293,9 @@ const Graph = forwardRef(function GraphInner<
 
   // Pre-calculate values that are constant across all nodes during a render
   const defaultColor = resolvedTheme === "dark" ? "#8a80ff" : "#4a4a4a";
-  const hasSelection = !!selectedId;
-  const selectedNeighbors = hasSelection && selectedId ? neighborsById.get(selectedId) : undefined;
+  const effectiveSelectedId = hoverSelectedId || selectedId;
+  const hasSelection = !!effectiveSelectedId;
+  const selectedNeighbors = hasSelection && effectiveSelectedId ? neighborsById.get(effectiveSelectedId) : undefined;
 
   useEffect(() => {
     if (preparedDataRef.current !== preparedData) {
@@ -381,7 +446,7 @@ const Graph = forwardRef(function GraphInner<
     return () => window.clearTimeout(timeout);
   }, [autoFocus, preparedData.nodes, selectedId, show]);
 
-  // Get hovered genre data
+  // Get hovered node data
   const hoveredNode = useMemo(() => {
       if (!hoveredId) return null;
       return preparedData.nodes.find(n => n.id === hoveredId) || null;
@@ -401,10 +466,60 @@ const Graph = forwardRef(function GraphInner<
   // Notify parent of hover state changes
   useEffect(() => {
       if (onNodeHover) {
-          onNodeHover(hoveredId || undefined, hoveredNodeScreenPos);
+          onNodeHover(hoveredNode?.data, hoveredNodeScreenPos);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hoveredId, hoveredNodeScreenPos]); // Don't include onNodeHover to avoid infinite loops
+
+  // Smooth transition for dimming state changes
+  useEffect(() => {
+    const target = disableDimming ? 1 : 0;
+    targetDimmingRef.current = target;
+
+    // Start animation loop if not already running
+    if (animationFrameRef.current === null) {
+      lastFrameTimeRef.current = performance.now();
+
+      // Resume graph rendering during transition (doesn't affect physics)
+      fgRef.current?.resumeAnimation?.();
+
+      const animate = () => {
+        const now = performance.now();
+        const deltaTime = (now - lastFrameTimeRef.current) / 1000; // Convert to seconds
+        lastFrameTimeRef.current = now;
+
+        const current = dimmingTransitionRef.current;
+        const target = targetDimmingRef.current;
+        const diff = target - current;
+
+        // Stop if converged (within 0.01)
+        if (Math.abs(diff) < 0.01) {
+          dimmingTransitionRef.current = target;
+          animationFrameRef.current = null;
+          // Graph will auto-pause due to autoPauseRedraw
+          return;
+        }
+
+        // Linear interpolation with speed factor (transition over ~300ms)
+        const speed = 3.5; // Higher = faster transition
+        const step = diff * speed * deltaTime;
+        dimmingTransitionRef.current = current + step;
+
+        // Continue animation (graph render loop handles the actual redraw)
+        animationFrameRef.current = requestAnimationFrame(animate);
+      };
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [disableDimming]);
 
   return (
     <div
@@ -438,16 +553,17 @@ const Graph = forwardRef(function GraphInner<
         nodeColor={() => "rgba(0,0,0,0)"}
         nodeCanvasObjectMode={() => "replace"}
         linkColor={(link) => {
+          if (!showLinksRef.current) return 'rgba(0,0,0,0)';
           const source =
             typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
           const target =
             typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
           const base = source ? colorById.get(String(source)) : undefined;
           const fallback = resolvedTheme === "dark" ? "#ffffff" : "#000000";
-          const selected = !!selectedId && (source === selectedId || target === selectedId);
+          const selected = !!effectiveSelectedId && (source === effectiveSelectedId || target === effectiveSelectedId);
 
           // Calculate base opacity (what it would be with normal dimming)
-          const baseOpacity = selectedId ? (selected ? 0xcc : 0x30) : 0x80;
+          const baseOpacity = effectiveSelectedId ? (selected ? 0xcc : 0x30) : 0x80;
           const undimmedOpacity = 0x80;
 
           // Interpolate between base and undimmed opacity
@@ -458,14 +574,17 @@ const Graph = forwardRef(function GraphInner<
           return `${base ?? fallback}${opacityHex}`;
         }}
         linkWidth={(link) => {
-          if (!selectedId) return 1;
-          const source =
-            typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
-          const target =
-            typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
-          return source === selectedId || target === selectedId ? 2.5 : 0.6;
+          if (!showLinksRef.current) return 0;
+          const baseWidth = effectiveSelectedId ? (
+            (() => {
+              const source = typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
+              const target = typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
+              return source === effectiveSelectedId || target === effectiveSelectedId ? 2.5 : 0.6;
+            })()
+          ) : 1;
+          return baseWidth * linkThicknessScale;
         }}
-        linkCurvature={dagMode ? 0 : 0.5}
+        linkCurvature={dagMode ? 0 : linkCurvatureValue}
         onZoom={({ k }) => {
           zoomRef.current = k;
         }}
@@ -482,9 +601,11 @@ const Graph = forwardRef(function GraphInner<
         nodeCanvasObject={(node, ctx) => {
           const x = node.x ?? 0;
           const y = node.y ?? 0;
-          const radius = node.radius;
+          const baseRadius = node.radius;
+          const radius = baseRadius * nodeScaleFactor; // Apply visual scaling from display controls
           const accent = colorById.get(node.id) ?? defaultColor;
-          const isSelected = selectedId === node.id;
+          const isSelected = effectiveSelectedId === node.id;
+          const isClickSelected = selectedId === node.id;
           const isNeighbor = hasSelection ? selectedNeighbors?.has(node.id) ?? false : false;
           const isHovered = hoveredId === node.id;
 
@@ -516,37 +637,49 @@ const Graph = forwardRef(function GraphInner<
             theme: resolvedTheme as 'light' | 'dark' | undefined,
           };
 
-          // Render node
-          renderNode(renderContext);
+          // Render node and selection ring if showNodes is true
+          if (showNodesRef.current) {
+            renderNode(renderContext);
 
-          // Render selection ring if selected
-          if (isSelected) {
-            renderSelection(renderContext);
+            // Render selection ring only for click-based selection (not hover-based)
+            if (isClickSelected) {
+              renderSelection(renderContext);
+            }
           }
 
           // Calculate and render label with smooth transition
-          const k = zoomRef.current || 1;
-          const zoomBasedAlpha = labelAlphaForZoom(k, DEFAULT_LABEL_FADE_START, DEFAULT_LABEL_FADE_END);
+          if (showLabels) {
+            const k = zoomRef.current || 1;
+            const zoomBasedAlpha = labelAlphaForZoom(k, labelFadeStart, labelFadeEnd);
 
-          // Calculate base label alpha (what it would be without dimming override)
-          let baseLabelAlpha = zoomBasedAlpha;
-          if (isSelected || isHovered) {
-            baseLabelAlpha = 1;
-          } else if (hasSelection && !isNeighbor) {
-            baseLabelAlpha = Math.min(zoomBasedAlpha, 0.25);
+            // Calculate base label alpha (what it would be without dimming override)
+            let baseLabelAlpha = zoomBasedAlpha;
+            if (isSelected || isHovered) {
+              baseLabelAlpha = 1;
+            } else if (hasSelection && !isNeighbor) {
+              baseLabelAlpha = Math.min(zoomBasedAlpha, 0.25);
+            }
+
+            // When transitioning to undimmed state, interpolate toward zoom-based alpha only
+            // (we don't want to boost labels to full brightness, just remove selection dimming)
+            const labelAlpha = baseLabelAlpha * (1 - transition) + zoomBasedAlpha * transition;
+
+            const labelContext: LabelRenderContext<T> = {
+              ...renderContext,
+              label: node.label,
+              labelAlpha,
+              zoomLevel: k,
+            };
+
+            // Pass fontSize if using default renderer
+            if (renderLabel === defaultRenderLabel) {
+              // When nodes are hidden, use node color for labels
+              const labelColor = !showNodesRef.current ? accent : undefined;
+              defaultRenderLabel(labelContext, labelFontSize, labelColor);
+            } else {
+              renderLabel(labelContext);
+            }
           }
-
-          // When transitioning to undimmed state, interpolate toward zoom-based alpha only
-          // (we don't want to boost labels to full brightness, just remove selection dimming)
-          const labelAlpha = baseLabelAlpha * (1 - transition) + zoomBasedAlpha * transition;
-
-          const labelContext: LabelRenderContext<T> = {
-            ...renderContext,
-            label: node.label,
-            labelAlpha,
-            zoomLevel: k,
-          };
-          renderLabel(labelContext);
         }}
         nodePointerAreaPaint={(node, color, ctx) => {
           ctx.fillStyle = color;
@@ -562,4 +695,4 @@ const Graph = forwardRef(function GraphInner<
   );
 });
 
-export default Graph;
+export default memo(Graph) as typeof Graph;

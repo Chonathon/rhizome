@@ -22,6 +22,9 @@ export function cn(...inputs: ClassValue[]) {
 
 export const formatDate = (dateString: string) => {
   const date = new Date(dateString);
+  // Take the locale of the user into effect to avoid discrepancies
+  const offset = date.getTimezoneOffset();
+  date.setTime(date.getTime() + offset * 60 * 1000);
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -46,7 +49,7 @@ export const serverUrl = () => {
   if (envBoolean(import.meta.env.VITE_USE_LOCAL_SERVER)) {
     return envBoolean(import.meta.env.VITE_FORWARD_FROM_NGROK) ? import.meta.env.VITE_LOCALHOST_NGROK : import.meta.env.VITE_LOCALHOST;
   }
-  if (envBoolean(import.meta.env.VITE_USE_LOCAL_CLIENT)) {
+  if (envBoolean(import.meta.env.VITE_USE_LOCAL_CLIENT) || envBoolean(import.meta.env.VITE_IS_VERCEL_PREVIEW)) {
     return import.meta.env.VITE_SERVER_DEV_URL || (import.meta.env.DEV ? '/api' : SERVER_DEVELOPMENT_URL);
   }
   return import.meta.env.VITE_SERVER_PROD_URL || (import.meta.env.DEV ? '/api' : SERVER_PRODUCTION_URL);
@@ -55,7 +58,9 @@ export const serverUrl = () => {
 export const clientUrl = () => {
   return envBoolean(import.meta.env.VITE_USE_LOCAL_CLIENT)
       ? import.meta.env.VITE_CLIENT_LOCALHOST
-      : (import.meta.env.VITE_CLIENT_URL || CLIENT_DEPLOYMENT_URL);
+      : import.meta.env.IS_VERCEL_PREVIEW
+          ? window.location.href.replace(/\/$/, '')
+          : (import.meta.env.VITE_CLIENT_URL || CLIENT_DEPLOYMENT_URL);
 }
 
 export const isOnPage = (pathname: string) => {
@@ -476,4 +481,9 @@ export const assignDegreesToArtists = (currentArtists: Artist[], likedArtists: s
   return currentArtists.map(a => {
     return {...a, degree: artistDegrees.get(a.id)}
   });
+}
+
+export const parseAppAccess = (appAccess: string) => {
+  const [phase, version] = appAccess.split('-');
+  return { phase, version };
 }
