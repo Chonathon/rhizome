@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward, Music2 } from "lucide-react";
+import { Pause, Play, ChevronsDown, ChevronsUp, X, SkipForward, Music2, Maximize2 } from "lucide-react";
 import { appendYoutubeWatchURL } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { AnimatePresence, motion } from "framer-motion";
 import RhizomeLogo from "@/components/RhizomeLogo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 declare global {
   interface Window {
@@ -73,9 +74,11 @@ export default function SidebarPlayer({
   const playerRef = useRef<any>(null);
   const mobileVideoAreaRef = useRef<HTMLDivElement | null>(null);
   const desktopVideoAreaRef = useRef<HTMLDivElement | null>(null);
+  const lightboxVideoAreaRef = useRef<HTMLDivElement | null>(null);
   const [iframePosition, setIframePosition] = useState({ left: -9999, top: -9999, width: 0, height: 0 });
   const [ready, setReady] = useState(false);
   const [playerCollapsed, setPlayerCollapsed] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -115,9 +118,22 @@ export default function SidebarPlayer({
   const isMinimalMode = isDesktop && sidebarCollapsed;
   const isMobileMode = !isDesktop;
   const isFullDesktopMode = isDesktop && !sidebarCollapsed;
+  const isLightboxMode = isFullDesktopMode && lightboxOpen;
 
   // Approx video height for different widths with 16:9 aspect ratio
   const videoHeight = isFullDesktopMode ? (208 * 9 / 16) : (375 * 9 / 16);
+
+  useEffect(() => {
+    if (!open) {
+      setLightboxOpen(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!isFullDesktopMode) {
+      setLightboxOpen(false);
+    }
+  }, [isFullDesktopMode]);
 
   // Find portal slot for desktop UI - use ref if provided, otherwise find by ID
   useEffect(() => {
@@ -175,7 +191,9 @@ export default function SidebarPlayer({
     const calculatePosition = () => {
       let targetRef: HTMLDivElement | null = null;
 
-      if (isMobileMode && mobileVideoAreaRef.current) {
+      if (isLightboxMode && lightboxVideoAreaRef.current) {
+        targetRef = lightboxVideoAreaRef.current;
+      } else if (isMobileMode && mobileVideoAreaRef.current) {
         targetRef = mobileVideoAreaRef.current;
       } else if (isFullDesktopMode && desktopVideoAreaRef.current) {
         targetRef = desktopVideoAreaRef.current;
@@ -227,6 +245,9 @@ export default function SidebarPlayer({
       if (desktopVideoAreaRef.current) {
         resizeObserver.observe(desktopVideoAreaRef.current);
       }
+      if (lightboxVideoAreaRef.current) {
+        resizeObserver.observe(lightboxVideoAreaRef.current);
+      }
     };
     observeRefs();
 
@@ -246,7 +267,7 @@ export default function SidebarPlayer({
       window.removeEventListener('scroll', handleResize, true);
       resizeObserver.disconnect();
     };
-  }, [isMinimalMode, isMobileMode, isFullDesktopMode, playerCollapsed, drawerExpanded, open, ready, desktopSlot]);
+  }, [isMinimalMode, isMobileMode, isFullDesktopMode, isLightboxMode, playerCollapsed, drawerExpanded, open, ready, desktopSlot]);
 
   const mountPlayer = useCallback(async () => {
     if (!containerRef.current || !open) return;
@@ -517,6 +538,7 @@ export default function SidebarPlayer({
   const onClose = () => {
     try { playerRef.current?.stopVideo?.(); } catch {}
     try { onLoadingChange?.(false); } catch {}
+    setLightboxOpen(false);
     onOpenChange(false);
   };
 
@@ -858,8 +880,17 @@ export default function SidebarPlayer({
             )}
           </div>
           <div className="group-hover/player:flex hidden items-center gap-[1px] shrink-0">
-            <Button variant="ghost" size="icon" onClick={() => setPlayerCollapsed((v) => !v)} title={playerCollapsed ? 'Expand' : 'Minimize'}>
+            {/* <Button variant="ghost" size="icon" onClick={() => setPlayerCollapsed((v) => !v)} title={playerCollapsed ? 'Expand' : 'Minimize'}>
               {playerCollapsed ? <ChevronsUp /> : <ChevronsDown />}
+            </Button> */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setLightboxOpen(true)}
+              title="Expand"
+              aria-label="Expand"
+            >
+              <Maximize2 size={18} />
             </Button>
             <Button variant="ghost" size="icon" onClick={onClose} title="Close">
               <X size={18}/>
@@ -956,6 +987,87 @@ export default function SidebarPlayer({
       </div>
         </motion.div>,
         desktopSlot
+      )}
+
+      {isDesktop && (
+        <ImageLightbox
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+          showCloseButton={false}
+          bodyClassName="flex justify-center px-4"
+        >
+          <div className="w-full max-w-[960px] rounded-3xl border border-border bg-popover shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+              <div className="min-w-0">
+                {onTitleClick ? (
+                  <button
+                    type="button"
+                    onClick={onTitleClick}
+                    title={headerDisplay}
+                    className={`text-left text-lg font-semibold truncate hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
+                  >
+                    {headerDisplay}
+                  </button>
+                ) : (
+                  <div className="text-lg font-semibold truncate" title={headerDisplay}>
+                    {headerDisplay}
+                  </div>
+                )}
+                {title && headerDisplay !== title && (
+                  <div className="text-sm text-muted-foreground truncate">{title}</div>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setLightboxOpen(false)}
+                title="Close"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </Button>
+            </div>
+            <div
+              ref={lightboxVideoAreaRef}
+              className="relative w-full bg-black"
+              style={{ aspectRatio: "16 / 9" }}
+              aria-busy={loading || !ready || !currentVideoId}
+            >
+              {(loading || !ready || !currentVideoId) && (
+                <div className="absolute inset-0 grid place-items-center">
+                  <RhizomeLogo className="h-10 w-10 text-muted-foreground" title="Loading" animated />
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-3 px-4 py-3">
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={togglePlay}
+                title={isPlaying ? 'Pause' : 'Play'}
+                aria-label={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+              </Button>
+              <Progress
+                value={percent}
+                className="h-2 flex-1"
+                onMouseDown={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
+                onClick={(e) => seekTo(e.clientX, e.currentTarget as HTMLElement)}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={next}
+                disabled={!hasPlaylist}
+                title="Next"
+                aria-label="Next"
+              >
+                <SkipForward size={18} />
+              </Button>
+            </div>
+          </div>
+        </ImageLightbox>
       )}
     </>
   );
