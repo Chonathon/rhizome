@@ -4,7 +4,6 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Spline, RotateCcw, Loader2 } from "lucide-react";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
-import { useState } from "react";
 import { ClusterResult } from "@/lib/ClusteringEngine";
 
 interface ClusteringPanelProps {
@@ -40,10 +39,8 @@ export default function ClusteringPanel({
     ];
 
     const artistOptions = [
-        { id: "genre", label: "Shared Genre", description: "Groups artists by shared genres using Jaccard similarity. Artists with similar genre profiles cluster together." },
-        { id: "tags", label: "Shared Tags", description: "Clusters artists based on Last.fm tags using cosine similarity. Reveals thematic and stylistic connections." },
         { id: "louvain", label: "Similar Artists", description: "Uses the existing artist network structure to find communities. Artists connected by similar artist links form clusters." },
-        { id: "hybrid", label: "Hybrid", description: "Combines genre similarity, tag similarity, and network structure for comprehensive clustering." },
+        { id: "hybrid", label: "Hybrid", description: "Combines vector-based similarity with the artist network to form more robust communities." },
         { id: "listeners", label: "Popularity", description: "Arranges artists in concentric rings by listener count. Popular artists at center, underground at outer ring." },
     ];
 

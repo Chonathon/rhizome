@@ -161,7 +161,10 @@ function App() {
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [artistClusterMethod, setArtistClusterMethod] = useState<ArtistClusterMode>(() => {
     const stored = localStorage.getItem('artistClusterMethod');
-    return (stored as ArtistClusterMode) || DEFAULT_ARTIST_CLUSTER_MODE;
+    if (stored === 'louvain' || stored === 'hybrid' || stored === 'listeners') {
+      return stored;
+    }
+    return DEFAULT_ARTIST_CLUSTER_MODE;
   });
   const [artistColorMode, setArtistColorMode] = useState<'genre' | 'cluster'>(() => {
     const stored = localStorage.getItem('artistColorMode');
@@ -643,7 +646,6 @@ function App() {
           const result = engine.cluster({
             method: artistClusterMethod,
             resolution: 1.0,
-            excludeGenres: artistGenreFilterIDs,  // Exclude filtered genres from Jaccard similarity
           });
           setArtistClusters(result);
         } catch (error) {
@@ -661,7 +663,7 @@ function App() {
         clearTimeout(clusteringTimeoutRef.current);
       }
     };
-  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod, artistGenreFilterIDs]);
+  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod]);
 
   // Use generated links from clustering (artists colored by parent genre)
   useEffect(() => {

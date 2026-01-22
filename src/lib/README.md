@@ -9,10 +9,10 @@ Artist[] + NodeLink[]
         ↓
 ┌───────────────────────────────────────┐
 │  ClusteringEngine                     │
-│  - Genre similarity (Jaccard)         │
-│  - Tag similarity (Cosine)            │
+│  - Vector similarity (Cosine)         │
 │  - Network structure (Louvain)        │
 │  - Hybrid (weighted combination)      │
+│  - Popularity tiers (listeners)       │
 └───────────────────────────────────────┘
         ↓
 ClusterResult { clusters, artistToCluster, links, stats }
@@ -38,10 +38,8 @@ Unified Louvain-based clustering with different similarity metrics.
 
 | Method | Similarity Metric | Description |
 |--------|------------------|-------------|
-| `genre` | Jaccard coefficient | Groups artists by shared genres |
-| `tags` | Cosine similarity | Groups artists by Last.fm tag vectors |
 | `louvain` | Network edges | Uses existing similar-artist links |
-| `hybrid` | Weighted combination | Blends all three metrics |
+| `hybrid` | Weighted combination | Blends vector similarity with network links |
 | `listeners` | Listener count thresholds | Groups artists into popularity tiers with radial layout |
 
 ### Listeners (Popularity Tiers)
@@ -66,11 +64,10 @@ import { ClusteringEngine, ClusteringOptions } from '@/lib/ClusteringEngine';
 const engine = new ClusteringEngine(artists, artistLinks);
 
 const result = engine.cluster({
-  method: 'genre',      // 'genre' | 'tags' | 'louvain' | 'hybrid'
+  method: 'hybrid',     // 'louvain' | 'hybrid' | 'listeners'
   resolution: 1.0,      // Louvain resolution (higher = more clusters)
   kNeighbors: 15,       // K-nearest neighbors to keep
   minSimilarity: 0.2,   // Minimum similarity threshold
-  excludeGenres: [],    // Genres to exclude from Jaccard calculation
 });
 ```
 
@@ -79,11 +76,9 @@ const result = engine.cluster({
 ```typescript
 interface ClusteringOptions {
   method: ClusteringMethod;
-  tagSimilarityThreshold?: number;
   resolution?: number;              // Louvain resolution parameter
   hybridWeights?: {                 // Only for 'hybrid' method
-    genre: number;
-    tags: number;
+    vectors: number;
     louvain: number;
   };
   kNeighbors?: number;              // Default: 15 (8-12 for large graphs)
@@ -126,7 +121,7 @@ The engine automatically adjusts parameters for large graphs:
 | > 1000 | 12 | 0.25 |
 | ≤ 1000 | 15 | 0.20 |
 
-For `tags` and `hybrid` methods on large graphs (>1000 artists), even more aggressive filtering is applied.
+For `hybrid` methods on large graphs (>1000 artists), even more aggressive filtering is applied.
 
 ### How It Works
 
