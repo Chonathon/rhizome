@@ -233,6 +233,84 @@ export class ClusteringEngine {
       }
     });
 
+    // Ensure each artist has at least one edge in the hybrid graph.
+    const degreeByArtist = new Map<string, number>();
+    this.artists.forEach(artist => {
+      degreeByArtist.set(artist.id, 0);
+    });
+    const bumpDegree = (id: string) => {
+      degreeByArtist.set(id, (degreeByArtist.get(id) ?? 0) + 1);
+    };
+    filteredCombinedSim.forEach((_weight, key) => {
+      const [source, target] = key.split('|');
+      bumpDegree(source);
+      bumpDegree(target);
+    });
+
+    const bestEdgeByArtist = new Map<string, { neighborId: string; weight: number }>();
+    const updateBestEdge = (artistId: string, neighborId: string, weight: number) => {
+      const existing = bestEdgeByArtist.get(artistId);
+      if (!existing || weight > existing.weight) {
+        bestEdgeByArtist.set(artistId, { neighborId, weight });
+      }
+    };
+    combinedSim.forEach((weight, key) => {
+      const [source, target] = key.split('|');
+      updateBestEdge(source, target, weight);
+      updateBestEdge(target, source, weight);
+    });
+
+    const isolatedArtistIds = this.artists
+      .map(artist => artist.id)
+      .filter(id => (degreeByArtist.get(id) ?? 0) === 0);
+
+    if (isolatedArtistIds.length > 0) {
+      const vectors = this.buildTagVectors();
+      const vectorIds = Array.from(vectors.keys());
+
+      isolatedArtistIds.forEach(artistId => {
+        if ((degreeByArtist.get(artistId) ?? 0) > 0) return;
+
+        let fallback = bestEdgeByArtist.get(artistId);
+
+        if (!fallback) {
+          const vectorA = vectors.get(artistId);
+          if (vectorA) {
+            let bestSim = -1;
+            let bestId: string | null = null;
+
+            for (let i = 0; i < vectorIds.length; i++) {
+              const otherId = vectorIds[i];
+              if (otherId === artistId) continue;
+              const vectorB = vectors.get(otherId);
+              if (!vectorB) continue;
+              const sim = this.cosineSimilarity(vectorA, vectorB);
+              if (sim > bestSim) {
+                bestSim = sim;
+                bestId = otherId;
+              }
+            }
+
+            if (bestId) {
+              fallback = { neighborId: bestId, weight: bestSim * weights.vectors };
+            }
+          }
+        }
+
+        if (fallback) {
+          const source = artistId < fallback.neighborId ? artistId : fallback.neighborId;
+          const target = artistId < fallback.neighborId ? fallback.neighborId : artistId;
+          const key = `${source}|${target}`;
+          if (!filteredCombinedSim.has(key)) {
+            const enforcedWeight = Math.max(fallback.weight, minCombinedWeight);
+            filteredCombinedSim.set(key, enforcedWeight);
+            bumpDegree(source);
+            bumpDegree(target);
+          }
+        }
+      });
+    }
+
     // Build weighted graph and run Louvain
     const graph = this.buildWeightedGraph(filteredCombinedSim);
     const communities = louvain(graph, { resolution, randomWalk: false });
