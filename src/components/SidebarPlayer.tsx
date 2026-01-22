@@ -994,9 +994,10 @@ export default function SidebarPlayer({
           open={lightboxOpen}
           onOpenChange={setLightboxOpen}
           showCloseButton={false}
+          contentClassName="w-[min(1200px,95vw)] min-w-[min(960px,95vw)] max-w-none"
           bodyClassName="flex justify-center px-4"
         >
-          <div className="w-full max-w-[960px] rounded-3xl border border-border bg-popover shadow-xl overflow-hidden">
+          <div className="w-full rounded-3xl border border-border bg-popover shadow-xl overflow-hidden">
             <div className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
                 {onTitleClick ? (
