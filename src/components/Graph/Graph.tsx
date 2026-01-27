@@ -589,9 +589,9 @@ const Graph = forwardRef(function GraphInner<
         // How quickly the simulation "cools down" (higher = faster settling, less movement)
         d3AlphaDecay={0.02}
         // Friction/damping on node velocity (higher = nodes slow down faster, less drift)
-        d3VelocityDecay={0.75}
-        // Maximum time (ms) the simulation runs before auto-stopping (12 seconds)
-        cooldownTime={12000}
+        d3VelocityDecay={0.8}
+        // Maximum time (ms) the simulation runs before auto-stopping
+        cooldownTime={8000}
         // Pause canvas redraws when simulation is idle (performance optimization)
         autoPauseRedraw={true}
         nodeColor={() => "rgba(0,0,0,0)"}
@@ -606,13 +606,17 @@ const Graph = forwardRef(function GraphInner<
           const fallback = resolvedTheme === "dark" ? "#ffffff" : "#000000";
           const selected = !!effectiveSelectedId && (source === effectiveSelectedId || target === effectiveSelectedId);
 
-          // Calculate base opacity (what it would be with normal dimming)
-          const baseOpacity = effectiveSelectedId ? (selected ? 0xcc : 0x30) : 0x80;
-          const undimmedOpacity = 0x80;
+          // Zoom-based fade: links become more transparent when zoomed out
+          const zoom = zoomRef.current || 1;
+          const zoomFade = Math.min(1, Math.max(0.15, zoom / 0.5)); // Fade below zoom 0.5, min 15% opacity
 
-          // Interpolate between base and undimmed opacity
+          // Calculate base opacity (reduced for less visual noise)
+          const baseOpacity = effectiveSelectedId ? (selected ? 0xcc : 0x20) : 0x50;
+          const undimmedOpacity = 0x50;
+
+          // Interpolate between base and undimmed opacity, then apply zoom fade
           const transition = dimmingTransitionRef.current;
-          const opacity = Math.round(baseOpacity * (1 - transition) + undimmedOpacity * transition);
+          const opacity = Math.round((baseOpacity * (1 - transition) + undimmedOpacity * transition) * zoomFade);
           const opacityHex = opacity.toString(16).padStart(2, '0');
 
           return `${base ?? fallback}${opacityHex}`;
@@ -623,9 +627,9 @@ const Graph = forwardRef(function GraphInner<
             (() => {
               const source = typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
               const target = typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
-              return source === effectiveSelectedId || target === effectiveSelectedId ? 2.5 : 0.6;
+              return source === effectiveSelectedId || target === effectiveSelectedId ? 2 : 0.3;
             })()
-          ) : 1;
+          ) : 0.5; // Reduced for less visual noise
           return baseWidth * linkThicknessScale;
         }}
         linkCurvature={dagMode ? 0 : linkCurvatureValue}
