@@ -86,6 +86,11 @@ export default function SidebarPlayer({
   const [videoTitle, setVideoTitle] = useState<string>("");
   const intervalRef = useRef<number | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const lastPositionRef = useRef<{ left: number; top: number; width: number; height: number } | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+  const trackUntilRef = useRef<number>(0);
+  const modeKeyRef = useRef<string>("");
+  const pendingModeRef = useRef<boolean>(false);
 
   // Track if bottom drawer is expanded beyond minimum snap on mobile
   const [drawerExpanded, setDrawerExpanded] = useState(false);
@@ -119,6 +124,7 @@ export default function SidebarPlayer({
   const isMobileMode = !isDesktop;
   const isFullDesktopMode = isDesktop && !sidebarCollapsed;
   const isLightboxMode = isFullDesktopMode && lightboxOpen;
+  const modeKey = isLightboxMode ? "lightbox" : isMobileMode ? "mobile" : isFullDesktopMode ? "desktop" : isMinimalMode ? "minimal" : "none";
 
   // Approx video height for different widths with 16:9 aspect ratio
   const videoHeight = isFullDesktopMode ? (208 * 9 / 16) : (375 * 9 / 16);
@@ -173,101 +179,124 @@ export default function SidebarPlayer({
     return () => clearInterval(interval);
   }, [desktopSlot, open, desktopSlotRef, isDesktop]);
 
+  const updateIframePosition = useCallback(() => {
+    if (!open || isMinimalMode || playerCollapsed) {
+      const offscreen = { left: -9999, top: -9999, width: 0, height: 0 };
+      const last = lastPositionRef.current;
+      if (!last || last.left !== offscreen.left || last.top !== offscreen.top || last.width !== offscreen.width || last.height !== offscreen.height) {
+        lastPositionRef.current = offscreen;
+        setIframePosition(offscreen);
+      }
+      return false;
+    }
+
+    let targetRef: HTMLDivElement | null = null;
+    if (isLightboxMode && lightboxVideoAreaRef.current) {
+      targetRef = lightboxVideoAreaRef.current;
+    } else if (isMobileMode && mobileVideoAreaRef.current) {
+      targetRef = mobileVideoAreaRef.current;
+    } else if (isFullDesktopMode && desktopVideoAreaRef.current) {
+      targetRef = desktopVideoAreaRef.current;
+    }
+
+    if (!targetRef) return false;
+
+    const rect = targetRef.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return false;
+
+    const next = {
+      left: rect.left + window.scrollX,
+      top: rect.top + window.scrollY,
+      width: rect.width,
+      height: rect.height,
+    };
+    const last = lastPositionRef.current;
+    const changed = !last
+      || Math.abs(last.left - next.left) > 0.5
+      || Math.abs(last.top - next.top) > 0.5
+      || Math.abs(last.width - next.width) > 0.5
+      || Math.abs(last.height - next.height) > 0.5;
+    if (changed) {
+      lastPositionRef.current = next;
+      setIframePosition(next);
+    }
+    pendingModeRef.current = false;
+    return true;
+  }, [open, isMinimalMode, playerCollapsed, isLightboxMode, isMobileMode, isFullDesktopMode]);
+
+  const tickPosition = useCallback(() => {
+    updateIframePosition();
+    if (performance.now() < trackUntilRef.current) {
+      rafIdRef.current = requestAnimationFrame(tickPosition);
+    } else {
+      rafIdRef.current = null;
+    }
+  }, [updateIframePosition]);
+
+  const startTrackingPosition = useCallback((durationMs = 700) => {
+    trackUntilRef.current = Math.max(trackUntilRef.current, performance.now() + durationMs);
+    if (rafIdRef.current === null) {
+      rafIdRef.current = requestAnimationFrame(tickPosition);
+    }
+  }, [tickPosition]);
+
+  useEffect(() => {
+    if (modeKeyRef.current === modeKey) return;
+    modeKeyRef.current = modeKey;
+    pendingModeRef.current = true;
+    lastPositionRef.current = null;
+    if (open && !isMinimalMode && !playerCollapsed) {
+      setIframePosition({ left: -9999, top: -9999, width: 0, height: 0 });
+    }
+    startTrackingPosition(1000);
+  }, [modeKey, open, isMinimalMode, playerCollapsed, startTrackingPosition]);
+
   // Calculate iframe position based on active video area (CSS-only positioning to preserve playback)
   useEffect(() => {
-    if (!open) {
-      setIframePosition({ left: -9999, top: -9999, width: 0, height: 0 });
+    updateIframePosition();
+    if (!open || isMinimalMode || playerCollapsed) {
       return;
     }
 
-    if (isMinimalMode || playerCollapsed) {
-      setIframePosition({ left: -9999, top: -9999, width: 0, height: 0 });
-      return;
-    }
-
-    let rafId: number;
-    let positionFound = false;
-
-    const calculatePosition = () => {
-      let targetRef: HTMLDivElement | null = null;
-
-      if (isLightboxMode && lightboxVideoAreaRef.current) {
-        targetRef = lightboxVideoAreaRef.current;
-      } else if (isMobileMode && mobileVideoAreaRef.current) {
-        targetRef = mobileVideoAreaRef.current;
-      } else if (isFullDesktopMode && desktopVideoAreaRef.current) {
-        targetRef = desktopVideoAreaRef.current;
-      }
-
-      if (targetRef) {
-        const rect = targetRef.getBoundingClientRect();
-
-        // If we have valid dimensions, update position
-        if (rect.width > 0 && rect.height > 0) {
-          setIframePosition({
-            left: rect.left + window.scrollX,
-            top: rect.top + window.scrollY,
-            width: rect.width,
-            height: rect.height,
-          });
-          positionFound = true;
-        }
-      }
-
-      // Keep polling until position is found
-      if (!positionFound) {
-        rafId = requestAnimationFrame(calculatePosition);
-      }
-    };
-
-    // Start the calculation loop
-    rafId = requestAnimationFrame(calculatePosition);
+    startTrackingPosition(700);
 
     // Also poll on an interval as backup (in case RAF stops)
     const pollInterval = setInterval(() => {
-      if (!positionFound) {
-        positionFound = false; // Reset to allow recalculation
-        rafId = requestAnimationFrame(calculatePosition);
-      }
+      startTrackingPosition(300);
     }, 100);
 
     // ResizeObserver to detect when video areas change size
     const resizeObserver = new ResizeObserver(() => {
-      positionFound = false;
-      rafId = requestAnimationFrame(calculatePosition);
+      startTrackingPosition(500);
     });
 
-    // Observe refs when available - also poll for refs
     const observeRefs = () => {
-      if (mobileVideoAreaRef.current) {
-        resizeObserver.observe(mobileVideoAreaRef.current);
-      }
-      if (desktopVideoAreaRef.current) {
-        resizeObserver.observe(desktopVideoAreaRef.current);
-      }
-      if (lightboxVideoAreaRef.current) {
-        resizeObserver.observe(lightboxVideoAreaRef.current);
-      }
+      if (mobileVideoAreaRef.current) resizeObserver.observe(mobileVideoAreaRef.current);
+      if (desktopVideoAreaRef.current) resizeObserver.observe(desktopVideoAreaRef.current);
+      if (lightboxVideoAreaRef.current) resizeObserver.observe(lightboxVideoAreaRef.current);
     };
     observeRefs();
+    const refInterval = setInterval(observeRefs, 200);
 
-    // Also recalculate on resize/scroll
     const handleResize = () => {
-      positionFound = false;
-      rafId = requestAnimationFrame(calculatePosition);
+      startTrackingPosition(500);
     };
 
     window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', handleResize, true);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
       clearInterval(pollInterval);
+      clearInterval(refInterval);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', handleResize, true);
       resizeObserver.disconnect();
     };
-  }, [isMinimalMode, isMobileMode, isFullDesktopMode, isLightboxMode, playerCollapsed, drawerExpanded, open, ready, desktopSlot]);
+  }, [isMinimalMode, isMobileMode, isFullDesktopMode, isLightboxMode, playerCollapsed, drawerExpanded, open, ready, desktopSlot, updateIframePosition, startTrackingPosition]);
 
   const mountPlayer = useCallback(async () => {
     if (!containerRef.current || !open) return;
@@ -572,26 +601,34 @@ export default function SidebarPlayer({
 
   if (!open) return null;
 
+  const iframeNode = (
+    <div
+      className="fixed overflow-hidden rounded-2xl"
+      style={{
+        left: `${iframePosition.left}px`,
+        top: `${iframePosition.top}px`,
+        width: `${iframePosition.width}px`,
+        height: `${iframePosition.height}px`,
+        // z-61 for mobile (above wrapper z-60), z-51 for desktop (above sidebar z-50)
+        zIndex: isMobileMode ? 61 : 51,
+        opacity: (isMinimalMode || playerCollapsed || iframePosition.width === 0) ? 0 : 1,
+        pointerEvents: (isMinimalMode || playerCollapsed || iframePosition.width === 0) ? 'none' : 'auto',
+        transition: 'opacity 0.15s ease-out',
+      }}
+      aria-hidden={isMinimalMode || playerCollapsed}
+    >
+      <div ref={containerRef} className="w-full h-full" />
+    </div>
+  );
+
+  const iframePortal = typeof document !== "undefined"
+    ? createPortal(iframeNode, document.body)
+    : iframeNode;
+
   return (
     <>
-      {/* YouTube iframe - SINGLE fixed container, CSS-positioned to preserve playback across breakpoints */}
-      <div
-        className="fixed overflow-hidden rounded-2xl"
-        style={{
-          left: `${iframePosition.left}px`,
-          top: `${iframePosition.top}px`,
-          width: `${iframePosition.width}px`,
-          height: `${iframePosition.height}px`,
-          // z-61 for mobile (above wrapper z-60), z-51 for desktop (above sidebar z-50)
-          zIndex: isMobileMode ? 61 : 51,
-          opacity: (isMinimalMode || playerCollapsed || iframePosition.width === 0) ? 0 : 1,
-          pointerEvents: (isMinimalMode || playerCollapsed || iframePosition.width === 0) ? 'none' : 'auto',
-          transition: 'opacity 0.15s ease-out',
-        }}
-        aria-hidden={isMinimalMode || playerCollapsed}
-      >
-        <div ref={containerRef} className="w-full h-full" />
-      </div>
+      {/* YouTube iframe - SINGLE fixed container, portaled to body to avoid transformed parents */}
+      {iframePortal}
 
       {/*
       * Minimal thumbnail mode (desktop + sidebar collapsed) - rendered into sidebar via portal
@@ -712,6 +749,7 @@ export default function SidebarPlayer({
         }}
         exit={{ opacity: 0, y: 12, scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 300, damping: 26, mass: 0.6 }}
+        onUpdate={() => startTrackingPosition(300)}
         ref={wrapperRef}
         aria-hidden={!isMobileMode}
       >
@@ -856,6 +894,7 @@ export default function SidebarPlayer({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
           transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+          onUpdate={() => startTrackingPosition(300)}
           aria-hidden={!isFullDesktopMode}
         >
       <div className="group/player rounded-xl border border-sidebar-border bg-popover shadow-lg overflow-hidden">
