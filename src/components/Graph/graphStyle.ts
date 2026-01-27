@@ -10,11 +10,11 @@ export const DEFAULT_LABEL_FADE_EXPONENT = 1.4;
 // Threshold curve exponent for delaying label visibility as you zoom in
 export const DEFAULT_LABEL_THRESHOLD_EXPONENT = 2;
 // Priority label cutoff for the top tier (0-1, lower = earlier visibility)
-export const DEFAULT_PRIORITY_LABEL_IMPORTANCE_THRESHOLD = 0.9;
+export const DEFAULT_PRIORITY_LABEL_IMPORTANCE_THRESHOLD = .9;
 // Zoom threshold scale for priority labels (lower = appear earlier)
 export const DEFAULT_PRIORITY_LABEL_ZOOM_SCALE = 0.6;
 // Share of nodes treated as priority labels for early visibility
-export const DEFAULT_PRIORITY_LABEL_PERCENT = 0.05;
+export const DEFAULT_PRIORITY_LABEL_PERCENT = 0.01;
 // Default upward screen-space offset (in px) to lift a focused node on mobile
 export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
 
