@@ -52,7 +52,7 @@ export function ImageLightbox({
             />
           </div>
         )}
-        {link && <div className="flex justify-center">{link}</div>}
+        {link && <div className="flexjustify-center">{link}</div>}
       </DialogContent>
     </Dialog>
   );

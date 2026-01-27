@@ -603,7 +603,7 @@ export default function SidebarPlayer({
 
   const iframeNode = (
     <div
-      className="fixed overflow-hidden rounded-2xl"
+      className={`fixed overflow-hidden ${isMobileMode && !playerCollapsed ? "rounded-2xl" : ""}`}
       style={{
         left: `${iframePosition.left}px`,
         top: `${iframePosition.top}px`,
