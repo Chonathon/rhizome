@@ -205,8 +205,10 @@ export default function SidebarPlayer({
     if (rect.width <= 0 || rect.height <= 0) return false;
 
     const next = {
-      left: rect.left + window.scrollX,
-      top: rect.top + window.scrollY,
+      // `iframeNode` is fixed-positioned, so viewport-relative rect values
+      // should be used directly without adding scroll offsets.
+      left: rect.left,
+      top: rect.top,
       width: rect.width,
       height: rect.height,
     };
@@ -774,8 +776,10 @@ export default function SidebarPlayer({
             ref={mobileVideoAreaRef}
             className={`relative w-full rounded-2xl bg-black overflow-hidden ${playerCollapsed ? '' : 'mb-2'}`}
             initial={false}
-            animate={{ height: playerCollapsed ? 0 : videoHeight, opacity: playerCollapsed ? 0 : 1 }}
+            // Let height follow the actual width via aspect-ratio to avoid YT letterboxing.
+            animate={{ height: playerCollapsed ? 0 : "auto", opacity: playerCollapsed ? 0 : 1 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+            style={{ aspectRatio: "16 / 9" }}
             aria-busy={loading || !ready || !currentVideoId}
           >
             {(loading || !ready || !currentVideoId) && (
