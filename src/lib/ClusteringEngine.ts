@@ -319,14 +319,17 @@ export class ClusteringEngine {
     return this.formatLouvainClusters(communities, 'hybrid', filteredCombinedSim, minCombinedWeight);
   }
 
-  // 4. LISTENERS CLUSTERING - Threshold-based popularity tiers
-  private clusterByListeners(tiers: ListenerTier[] = ARTIST_LISTENER_TIERS): ClusterResult {
+  // 4. LISTENERS CLUSTERING - Dynamic percentile-based popularity tiers
+  private clusterByListeners(): ClusterResult {
     const clusters = new Map<string, Cluster>();
     const artistToCluster = new Map<string, string>();
     const nodeToTier = new Map<string, number>();
 
-    // Initialize clusters for each tier using explicit tier colors for visual distinction
-    tiers.forEach(tier => {
+    // Build dynamic tiers based on actual listener distribution
+    const dynamicTiers = this.buildDynamicListenerTiers();
+
+    // Initialize clusters for each tier
+    dynamicTiers.forEach(tier => {
       const clusterId = `listeners-${tier.id}`;
       clusters.set(clusterId, {
         id: clusterId,
@@ -339,7 +342,8 @@ export class ClusteringEngine {
     // Assign each artist to a tier based on listener count
     this.artists.forEach(artist => {
       const listeners = artist.listeners || 0;
-      const tier = tiers.find(t => listeners >= t.min && listeners < t.max) || tiers[0];
+      // Find tier where listeners falls within range (tiers are sorted high-to-low by id)
+      const tier = dynamicTiers.find(t => listeners >= t.min && listeners < t.max) || dynamicTiers[dynamicTiers.length - 1];
 
       const clusterId = `listeners-${tier.id}`;
       clusters.get(clusterId)!.artistIds.push(artist.id);
@@ -354,7 +358,7 @@ export class ClusteringEngine {
       }
     });
 
-    console.log(`[listeners] Assigned ${this.artists.length} artists to ${clusters.size} popularity tiers`);
+    console.log(`[listeners] Assigned ${this.artists.length} artists to ${clusters.size} dynamic popularity tiers`);
 
     return {
       method: 'listeners',
@@ -364,9 +368,71 @@ export class ClusteringEngine {
       stats: this.calculateStats(clusters),
       tierData: {
         nodeToTier,
-        tiers,
+        tiers: dynamicTiers,
       },
     };
+  }
+
+  // Build dynamic tiers based on percentiles of actual listener data
+  private buildDynamicListenerTiers(): ListenerTier[] {
+    const TIER_COUNT = 5;
+
+    // Tier colors and radii (from most popular to least)
+    const TIER_CONFIG = [
+      { color: '#facc15', radius: 100 },  // yellow-400 - Mainstream
+      { color: '#4ade80', radius: 250 },  // green-400 - Popular
+      { color: '#38bdf8', radius: 400 },  // sky-400 - Established
+      { color: '#c084fc', radius: 550 },  // purple-400 - Emerging
+      { color: '#fb7185', radius: 700 },  // rose-400 - Underground
+    ];
+
+    // Sort artists by listeners ascending
+    const sorted = [...this.artists]
+      .map(a => a.listeners || 0)
+      .sort((a, b) => a - b);
+
+    if (sorted.length === 0) {
+      // Return default tiers if no artists
+      return ARTIST_LISTENER_TIERS;
+    }
+
+    const tierSize = Math.ceil(sorted.length / TIER_COUNT);
+    const tiers: ListenerTier[] = [];
+
+    for (let i = 0; i < TIER_COUNT; i++) {
+      const startIdx = i * tierSize;
+      const endIdx = Math.min((i + 1) * tierSize - 1, sorted.length - 1);
+
+      // Skip if we've run out of artists
+      if (startIdx >= sorted.length) break;
+
+      const min = sorted[startIdx];
+      const max = i === TIER_COUNT - 1 ? Infinity : sorted[endIdx];
+      const tierId = TIER_COUNT - i; // Reverse so tier 5 = most popular
+      const config = TIER_CONFIG[TIER_COUNT - 1 - i];
+
+      tiers.push({
+        id: tierId,
+        name: `${this.formatListenerCount(min)} – ${this.formatListenerCount(max)}`,
+        min,
+        max: max === Infinity ? Infinity : max + 1,
+        radius: config.radius,
+        color: config.color,
+      });
+    }
+
+    // Sort tiers by id descending (most popular first) for consistent lookup
+    tiers.sort((a, b) => b.id - a.id);
+
+    return tiers;
+  }
+
+  // Format listener count for display (e.g., 1500000 -> "1.5M")
+  private formatListenerCount(count: number): string {
+    if (count === Infinity) return '∞';
+    if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+    if (count >= 1_000) return `${(count / 1_000).toFixed(0)}K`;
+    return count.toString();
   }
 
   // HELPER: Build weighted graph from similarity map

@@ -44,15 +44,17 @@ Unified Louvain-based clustering with different similarity metrics.
 
 ### Listeners (Popularity Tiers)
 
-Unlike other methods, `listeners` clustering uses threshold-based categorization rather than community detection. Artists are assigned to tiers based on their listener count:
+Unlike other methods, `listeners` clustering uses percentile-based categorization rather than community detection. Artists are divided into 5 equal-sized tiers based on the **actual listener distribution** in the current view:
 
-| Tier | Name | Range | Radius |
-|------|------|-------|--------|
-| 5 | Mainstream | >1M listeners | 100 (center) |
-| 4 | Popular | 100K-1M | 250 |
-| 3 | Established | 10K-100K | 400 |
-| 2 | Emerging | 1K-10K | 550 |
-| 1 | Underground | <1K | 700 (outer) |
+| Tier | Position | Radius |
+|------|----------|--------|
+| 5 (top 20%) | Most popular in view | 100 (center) |
+| 4 | | 250 |
+| 3 | | 400 |
+| 2 | | 550 |
+| 1 (bottom 20%) | Least popular in view | 700 (outer) |
+
+**Dynamic Tiers**: Tier boundaries are calculated from percentiles of the current artist set. This ensures all 5 tiers are populated regardless of whether you're viewing underground artists (e.g., all <10K listeners) or mainstream artists (e.g., all >1M listeners). Tier names display the actual listener ranges (e.g., "50K – 120K").
 
 The result includes `tierData` for radial positioning, which arranges artists in concentric rings by popularity (popular at center, underground at outer ring).
 
