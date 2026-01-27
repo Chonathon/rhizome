@@ -262,12 +262,7 @@ function App() {
 
   // Fetch top artists for the currently displayed genre info or the active filter
   const [topArtistsGenreId, setTopArtistsGenreId] = useState<string | undefined>(undefined);
-  const {
-    topArtists,
-    loading: topArtistsLoading,
-    getTopArtistsFromApi,
-    resolvedGenreId: topArtistsResolvedGenreId,
-  } = useGenreTopArtists(topArtistsGenreId);
+  const { topArtists, loading: topArtistsLoading, getTopArtistsFromApi } = useGenreTopArtists(topArtistsGenreId);
   const { resolvedTheme } = useTheme();
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
@@ -640,13 +635,11 @@ function App() {
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
     if (topArtistsLoading) return;
-    // Ignore stale results that belong to a previous genre selection.
-    if (!topArtistsGenreId || topArtistsResolvedGenreId !== topArtistsGenreId) return;
     if (topArtistsGenreId && topArtists.length) {
       setGenreTopArtistsCache(prev => new Map(prev).set(topArtistsGenreId, topArtists));
     }
     updateGenrePlayerIDs();
-  }, [topArtists, topArtistsGenreId, topArtistsLoading, topArtistsResolvedGenreId]);
+  }, [topArtists, topArtistsGenreId, topArtistsLoading]);
 
   // Sets the genre ID for which to fetch top artists
   useEffect(() => {
@@ -714,7 +707,6 @@ function App() {
     const queueGenreID = genre ? genre.id : topArtistsGenreId;
     if (!queueGenreID) return;
     if (!genre && topArtistsLoading) return;
-    if (!genre && topArtistsResolvedGenreId !== queueGenreID) return;
 
     const cachedTracks = playerIDQueue.get(queueGenreID);
     if (cachedTracks && cachedTracks.length > 0) return;
@@ -893,8 +885,6 @@ function App() {
         await updateGenrePlayerIDs(genre);
         playerIDs = getSpecificPlayerIDs(genre.id);
       }
-      // Avoid stale async results overwriting a newer play request.
-      if (req !== playRequest.current) return;
       if (!playerIDs || playerIDs.length === 0) {
         toast.error('No tracks found for this genre');
         setPlayerLoading(false);

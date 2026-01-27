@@ -18,7 +18,15 @@ const useGenreTopArtists = (genreId: string | undefined, topAmount = TOP_ARTISTS
   const [topArtists, setTopArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<AxiosError>();
-  const [resolvedGenreId, setResolvedGenreId] = useState<string | undefined>(undefined);
+
+  const fetchTopArtists = async () => {
+    if (!genreId) {
+      setTopArtists([]);
+      return;
+    }
+    const artists = await getTopArtistsFromApi(genreId);
+    if (artists && artists.length) setTopArtists(artists);
+  };
 
   const getTopArtistsFromApi = async (genreID?: string) => {
     if (!genreID) return;
@@ -37,45 +45,7 @@ const useGenreTopArtists = (genreId: string | undefined, topAmount = TOP_ARTISTS
   }
 
   useEffect(() => {
-    if (!genreId) {
-      setTopArtists([]);
-      setResolvedGenreId(undefined);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    const currentGenreId = genreId;
-
-    // Clear stale artists immediately so consumers don't render the previous genre.
-    setTopArtists([]);
-    setResolvedGenreId(undefined);
-
-    const run = async () => {
-      setLoading(true);
-      setError(undefined);
-      try {
-        const response = await axios.get(`${url}/artists/top/${currentGenreId}/${topAmount}`);
-        if (!cancelled) {
-          setTopArtists(response.data || []);
-          setResolvedGenreId(currentGenreId);
-        }
-      } catch (err) {
-        if (!cancelled && err instanceof AxiosError) {
-          setError(err);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    run();
-
-    return () => {
-      cancelled = true;
-    };
+    fetchTopArtists();
   }, [genreId, topAmount]);
 
   return {
@@ -83,7 +53,6 @@ const useGenreTopArtists = (genreId: string | undefined, topAmount = TOP_ARTISTS
     loading,
     error,
     getTopArtistsFromApi,
-    resolvedGenreId,
   };
 };
 
