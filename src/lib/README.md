@@ -39,8 +39,30 @@ Unified Louvain-based clustering with different similarity metrics.
 | Method | Similarity Metric | Description |
 |--------|------------------|-------------|
 | `louvain` | Network edges | Uses existing similar-artist links |
-| `hybrid` | Weighted combination | Blends vector similarity with network links |
+| `hybrid` | Weighted combination | Blends vector similarity, network links, and location |
 | `listeners` | Listener count thresholds | Groups artists into popularity tiers with radial layout |
+
+### Hybrid Method Details
+
+The `hybrid` method combines two similarity metrics and applies a location-based penalty:
+
+| Metric | Default Weight | Description |
+|--------|---------------|-------------|
+| `vectors` | 0.6 | Tag-based TF-IDF cosine similarity |
+| `louvain` | 0.4 | Network structure from similar-artist links |
+
+**Location Penalty** (default strength: 0.3)
+
+Location acts as a **multiplier** that penalizes connections between geographically distant artists, helping prune weak cross-regional edges:
+
+| Geographic Relationship | Multiplier (at strength=0.3) |
+|------------------------|------------------------------|
+| Same country | 1.0 (no penalty) |
+| Same region (e.g., Western Europe) | 0.91 |
+| Different regions | 0.82 |
+| Unknown location | 1.0 (no penalty) |
+
+Location data is normalized from cities/regions to countries using [locationNormalization.ts](./locationNormalization.ts). Higher `location` weight = stronger penalty for cross-regional connections.
 
 ### Listeners (Popularity Tiers)
 
@@ -80,8 +102,9 @@ interface ClusteringOptions {
   method: ClusteringMethod;
   resolution?: number;              // Louvain resolution parameter
   hybridWeights?: {                 // Only for 'hybrid' method
-    vectors: number;
-    louvain: number;
+    vectors: number;                // Tag similarity weight (default: 0.6)
+    louvain: number;                // Network structure weight (default: 0.4)
+    location: number;               // Location penalty strength 0-1 (default: 0.3)
   };
   kNeighbors?: number;              // Default: 15 (8-12 for large graphs)
   minSimilarity?: number;           // Default: 0.2 (0.25-0.3 for large graphs)

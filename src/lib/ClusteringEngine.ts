@@ -2,6 +2,7 @@ import { Artist, NodeLink } from '@/types';
 import { CLUSTER_COLORS, ARTIST_LISTENER_TIERS, ListenerTier } from '@/constants';
 import Graph from 'graphology';
 import louvain from 'graphology-communities-louvain';
+import { buildNormalizedLocationMap, calculateLocationSimilarity } from './locationNormalization';
 
 export type ClusteringMethod = 'louvain' | 'hybrid' | 'listeners';
 
@@ -36,6 +37,7 @@ export interface ClusteringOptions {
   hybridWeights?: {
     vectors: number;
     louvain: number;
+    location: number;  // Weight for location-based similarity (default: 0.2)
   };
   kNeighbors?: number;  // Number of nearest neighbors to keep (default: 20)
   minSimilarity?: number;  // Minimum similarity threshold (0-1, default: 0.1)
@@ -196,15 +198,29 @@ export class ClusteringEngine {
   // 3. HYBRID CLUSTERING - Louvain with combined weighted edges
   private clusterHybrid(
     resolution: number,
-    weights = { vectors: 0.6, louvain: 0.4 },
+    weights = { vectors: 0.6, louvain: 0.4, location: 0.3 },
     kNeighbors: number = 15,
     minSimilarity: number = 0.2
   ): ClusterResult {
+    // Normalize vector/louvain weights to sum to 1.0 (location is a separate multiplier)
+    const baseTotal = weights.vectors + weights.louvain;
+    const normalizedWeights = {
+      vectors: weights.vectors / baseTotal,
+      louvain: weights.louvain / baseTotal,
+    };
+
+    // Location weight acts as a penalty strength (0 = no penalty, 1 = full penalty)
+    // Clamp between 0 and 1
+    const locationPenaltyStrength = Math.max(0, Math.min(1, weights.location));
+
     // Calculate vector similarity + network similarity
     const vectorSim = this.calculateTagSimilarities(kNeighbors, minSimilarity, false);
     const networkSim = this.calculateNetworkSimilarities();
 
-    // Combine with weights
+    // Build location map for penalty calculation
+    const locationMap = buildNormalizedLocationMap(this.artists);
+
+    // Combine vector + network similarities
     const combinedSim = new Map<string, number>();
 
     const addWeightedSim = (
@@ -217,21 +233,59 @@ export class ClusteringEngine {
       });
     };
 
-    addWeightedSim(vectorSim, weights.vectors);
-    addWeightedSim(networkSim, weights.louvain);
+    addWeightedSim(vectorSim, normalizedWeights.vectors);
+    addWeightedSim(networkSim, normalizedWeights.louvain);
 
-    // Filter out weak combined similarities to reduce graph complexity
+    // Apply location penalty: scale down connections between geographically distant artists
+    // Same country = 1.0 (no penalty), same region = 0.7, different/unknown = 0.4
+    const penalizedSim = new Map<string, number>();
+    let penaltyStats = { same: 0, region: 0, different: 0 };
+
+    combinedSim.forEach((sim, key) => {
+      const [sourceId, targetId] = key.split('|');
+      const locA = locationMap.get(sourceId);
+      const locB = locationMap.get(targetId);
+
+      let multiplier = 1.0;
+      if (locA && locB) {
+        const locSim = calculateLocationSimilarity(locA, locB);
+        if (locSim === 1.0) {
+          // Same country - no penalty
+          multiplier = 1.0;
+          penaltyStats.same++;
+        } else if (locSim === 0.5) {
+          // Same region - mild penalty
+          multiplier = 1.0 - (locationPenaltyStrength * 0.3);
+          penaltyStats.region++;
+        } else {
+          // Different regions - stronger penalty
+          multiplier = 1.0 - (locationPenaltyStrength * 0.6);
+          penaltyStats.different++;
+        }
+      }
+      // If either location is unknown, no penalty applied (multiplier stays 1.0)
+
+      penalizedSim.set(key, sim * multiplier);
+    });
+
+    console.log(`[hybrid] Combined similarities: vectors=${vectorSim.size}, network=${networkSim.size}`);
+    console.log(`[hybrid] Location penalties applied: same=${penaltyStats.same}, region=${penaltyStats.region}, different=${penaltyStats.different}`);
+
+    // Filter out weak similarities to reduce graph complexity
+    // After location penalty, more edges will fall below threshold
     const filteredCombinedSim = new Map<string, number>();
     const artistCount = this.artists.length;
     const minCombinedWeight = Math.max(
-      minSimilarity * weights.vectors,
+      minSimilarity * normalizedWeights.vectors,
       artistCount > 1000 ? 0.15 : 0.12
     );
-    combinedSim.forEach((weight, key) => {
+    penalizedSim.forEach((weight, key) => {
       if (weight >= minCombinedWeight) {
         filteredCombinedSim.set(key, weight);
       }
     });
+
+    console.log(`[hybrid] Filtered from ${penalizedSim.size} to ${filteredCombinedSim.size} edges (min weight: ${minCombinedWeight.toFixed(3)})`);
 
     // Ensure each artist has at least one edge in the hybrid graph.
     const degreeByArtist = new Map<string, number>();
@@ -254,7 +308,7 @@ export class ClusteringEngine {
         bestEdgeByArtist.set(artistId, { neighborId, weight });
       }
     };
-    combinedSim.forEach((weight, key) => {
+    penalizedSim.forEach((weight, key) => {
       const [source, target] = key.split('|');
       updateBestEdge(source, target, weight);
       updateBestEdge(target, source, weight);
