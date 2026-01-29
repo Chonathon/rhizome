@@ -12,7 +12,7 @@ Artist[] + NodeLink[]
 │  - Vector similarity (Cosine)         │
 │  - Network structure (Louvain)        │
 │  - Hybrid (weighted combination)      │
-│  - Popularity tiers (listeners)       │
+│  - Popularity tiers                   │
 └───────────────────────────────────────┘
         ↓
 ClusterResult { clusters, artistToCluster, links, stats }
@@ -38,9 +38,9 @@ Unified Louvain-based clustering with different similarity metrics.
 
 | Method | Similarity Metric | Description |
 |--------|------------------|-------------|
-| `louvain` | Network edges | Uses existing similar-artist links |
+| `similarArtists` | Network edges | Uses existing similar-artist links |
 | `hybrid` | Weighted combination | Blends vector similarity, network links, and location |
-| `listeners` | Listener count thresholds | Groups artists into popularity tiers with radial layout |
+| `popularity` | Listener count thresholds | Groups artists into popularity tiers with radial layout |
 
 ### Hybrid Method Details
 
@@ -64,9 +64,9 @@ Location acts as a **multiplier** that penalizes connections between geographica
 
 Location data is normalized from cities/regions to countries using [locationNormalization.ts](./locationNormalization.ts). Higher `location` weight = stronger penalty for cross-regional connections.
 
-### Listeners (Popularity Tiers)
+### Popularity Tiers
 
-Unlike other methods, `listeners` clustering uses percentile-based categorization rather than community detection. Artists are divided into 5 equal-sized tiers based on the **actual listener distribution** in the current view:
+Unlike other methods, `popularity` clustering uses percentile-based categorization rather than community detection. Artists are divided into 5 equal-sized tiers based on the **actual listener distribution** in the current view:
 
 | Tier | Position | Radius |
 |------|----------|--------|
@@ -88,7 +88,7 @@ import { ClusteringEngine, ClusteringOptions } from '@/lib/ClusteringEngine';
 const engine = new ClusteringEngine(artists, artistLinks);
 
 const result = engine.cluster({
-  method: 'hybrid',     // 'louvain' | 'hybrid' | 'listeners'
+  method: 'hybrid',     // 'similarArtists' | 'hybrid' | 'popularity'
   resolution: 1.0,      // Louvain resolution (higher = more clusters)
   kNeighbors: 15,       // K-nearest neighbors to keep
   minSimilarity: 0.2,   // Minimum similarity threshold
@@ -120,7 +120,7 @@ interface ClusterResult {
     avgClusterSize: number;
     largestCluster: number;
   };
-  // For 'listeners' method: tier metadata for Y-axis layout
+  // For 'popularity' method: tier metadata for Y-axis layout
   tierData?: {
     nodeToTier: Map<string, number>;  // nodeId -> tierId (1-5)
     tiers: ListenerTier[];

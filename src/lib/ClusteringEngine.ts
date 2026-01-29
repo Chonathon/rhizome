@@ -4,7 +4,7 @@ import Graph from 'graphology';
 import louvain from 'graphology-communities-louvain';
 import { buildNormalizedLocationMap, calculateLocationSimilarity } from './locationNormalization';
 
-export type ClusteringMethod = 'louvain' | 'hybrid' | 'listeners';
+export type ClusteringMethod = 'similarArtists' | 'hybrid' | 'popularity';
 
 export interface ClusterResult {
   method: ClusteringMethod;
@@ -16,7 +16,7 @@ export interface ClusterResult {
     avgClusterSize: number;
     largestCluster: number;
   };
-  // For listeners clustering: tier metadata for Y-axis layout
+  // For popularity clustering: tier metadata for Y-axis layout
   tierData?: {
     nodeToTier: Map<string, number>; // nodeId -> tierId (1-5)
     tiers: ListenerTier[];
@@ -90,11 +90,11 @@ export class ClusteringEngine {
     }
     
     switch (options.method) {
-      case 'louvain':
+      case 'similarArtists':
         return this.clusterByLouvain(options.resolution || 1.0);
       case 'hybrid':
         return this.clusterHybrid(options.resolution || 1.0, options.hybridWeights, kNeighbors, minSimilarity);
-      case 'listeners':
+      case 'popularity':
         return this.clusterByListeners();
       default:
         return this.clusterByLouvain(options.resolution || 1.0);
@@ -192,7 +192,7 @@ export class ClusteringEngine {
 
     const artistCount = this.artists.length;
     const minLinkWeight = artistCount > 1000 ? 0.2 : 0.15;
-    return this.formatLouvainClusters(communities, 'louvain', networkSim, minLinkWeight);
+    return this.formatLouvainClusters(communities, 'similarArtists', networkSim, minLinkWeight);
   }
 
   // 3. HYBRID CLUSTERING - Louvain with combined weighted edges
@@ -373,7 +373,7 @@ export class ClusteringEngine {
     return this.formatLouvainClusters(communities, 'hybrid', filteredCombinedSim, minCombinedWeight);
   }
 
-  // 4. LISTENERS CLUSTERING - Dynamic percentile-based popularity tiers
+  // 4. POPULARITY CLUSTERING - Dynamic percentile-based popularity tiers
   private clusterByListeners(): ClusterResult {
     const clusters = new Map<string, Cluster>();
     const artistToCluster = new Map<string, string>();
@@ -384,7 +384,7 @@ export class ClusteringEngine {
 
     // Initialize clusters for each tier
     dynamicTiers.forEach(tier => {
-      const clusterId = `listeners-${tier.id}`;
+      const clusterId = `popularity-${tier.id}`;
       clusters.set(clusterId, {
         id: clusterId,
         name: tier.name,
@@ -399,7 +399,7 @@ export class ClusteringEngine {
       // Find tier where listeners falls within range (tiers are sorted high-to-low by id)
       const tier = dynamicTiers.find(t => listeners >= t.min && listeners < t.max) || dynamicTiers[dynamicTiers.length - 1];
 
-      const clusterId = `listeners-${tier.id}`;
+      const clusterId = `popularity-${tier.id}`;
       clusters.get(clusterId)!.artistIds.push(artist.id);
       artistToCluster.set(artist.id, clusterId);
       nodeToTier.set(artist.id, tier.id);
@@ -412,10 +412,10 @@ export class ClusteringEngine {
       }
     });
 
-    console.log(`[listeners] Assigned ${this.artists.length} artists to ${clusters.size} dynamic popularity tiers`);
+    console.log(`[popularity] Assigned ${this.artists.length} artists to ${clusters.size} dynamic popularity tiers`);
 
     return {
-      method: 'listeners',
+      method: 'popularity',
       clusters,
       artistToCluster,
       links: [], // No relationship-based links for tier clustering
@@ -604,10 +604,10 @@ export class ClusteringEngine {
   // HELPER: Get user-friendly cluster label
   private getClusterLabel(method: ClusteringMethod): string {
     switch (method) {
-      case 'louvain': return 'Community';
-      case 'hybrid': return 'Hybrid Community';
-      case 'listeners': return 'Popularity Tier';
-      default: return 'Community';
+      case 'similarArtists': return 'Similar Artists';
+      case 'hybrid': return 'Hybrid';
+      case 'popularity': return 'Popularity';
+      default: return 'Similar Artists';
     }
   }
 

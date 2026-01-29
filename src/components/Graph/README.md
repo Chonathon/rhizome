@@ -190,7 +190,7 @@ For popularity-based stratification, nodes can be positioned in concentric rings
 />
 ```
 
-This is used with `listeners` clustering to arrange artists in concentric rings by popularity tier (popular at center, underground at outer ring).
+This is used with `popularity` clustering to arrange artists in concentric rings by popularity tier (popular at center, underground at outer ring).
 
 ## Custom Rendering
 

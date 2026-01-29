@@ -102,6 +102,11 @@ function SidebarLogoTrigger() {
   )
 }
 
+/**
+ * Extracts a node ID from a link endpoint, which can be either a string ID
+ * or a node object with an `id` property (force-graph libraries often resolve
+ * link references to actual node objects after initialization).
+ */
 const getLinkNodeId = (value: unknown): string | null => {
   if (typeof value === "string") return value;
   if (value && typeof value === "object" && "id" in value) {
@@ -111,6 +116,11 @@ const getLinkNodeId = (value: unknown): string | null => {
   return null;
 };
 
+/**
+ * Builds a map of node ID -> degree (number of connections).
+ * Only counts links where both endpoints are in the allowedIds set,
+ * ensuring we only consider connections within the visible/filtered graph.
+ */
 const buildDegreeMap = (links: NodeLink[], allowedIds: Set<string>) => {
   const degreeById = new Map<string, number>();
   links.forEach((link) => {
@@ -118,26 +128,41 @@ const buildDegreeMap = (links: NodeLink[], allowedIds: Set<string>) => {
     const target = getLinkNodeId(link.target);
     if (!source || !target) return;
     if (!allowedIds.has(source) || !allowedIds.has(target)) return;
+    // Increment degree for both endpoints of the link
     degreeById.set(source, (degreeById.get(source) ?? 0) + 1);
     degreeById.set(target, (degreeById.get(target) ?? 0) + 1);
   });
   return degreeById;
 };
 
+/**
+ * Selects the top N% of nodes by degree (number of connections).
+ * Uses a cutoff threshold so that ties at the boundary are included,
+ * which may result in slightly more than the requested percentage.
+ */
 const selectTopDegreeIds = (
   nodes: { id: string }[],
   degreeById: Map<string, number>,
   percent: number,
 ) => {
+  // Clamp percent to valid range [0, 1]
   const safePercent = Math.max(0, Math.min(1, percent));
   if (safePercent <= 0) return [];
+
+  // Filter to nodes that have at least one connection
   const entries = nodes
     .map((node) => ({ id: node.id, degree: degreeById.get(node.id) ?? 0 }))
     .filter((entry) => entry.degree > 0);
   if (!entries.length) return [];
+
+  // Calculate how many nodes we want (at least 1)
   const count = Math.max(1, Math.ceil(entries.length * safePercent));
+
+  // Sort by degree descending and find the cutoff threshold
   const sorted = [...entries].sort((a, b) => b.degree - a.degree);
   const cutoff = sorted[Math.min(count - 1, sorted.length - 1)].degree;
+
+  // Return all nodes that meet or exceed the cutoff (handles ties)
   return entries.filter((entry) => entry.degree >= cutoff).map((entry) => entry.id);
 };
 
@@ -201,7 +226,13 @@ function App() {
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [artistClusterMethod, setArtistClusterMethod] = useState<ArtistClusterMode>(() => {
     const stored = localStorage.getItem('artistClusterMethod');
-    if (stored === 'louvain' || stored === 'hybrid' || stored === 'listeners') {
+    if (stored === 'louvain') {
+      return 'similarArtists';
+    }
+    if (stored === 'listeners') {
+      return 'popularity';
+    }
+    if (stored === 'similarArtists' || stored === 'hybrid' || stored === 'popularity') {
       return stored;
     }
     return DEFAULT_ARTIST_CLUSTER_MODE;
@@ -771,7 +802,7 @@ function App() {
 
   // Compute radial layout from cluster tier data for popularity stratification
   const artistRadialLayout = useMemo(() => {
-    if (!artistClusters || artistClusters.method !== 'listeners' || !artistClusters.tierData) {
+    if (!artistClusters || artistClusters.method !== 'popularity' || !artistClusters.tierData) {
       return undefined;
     }
 
