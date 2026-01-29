@@ -158,9 +158,12 @@ For `hybrid` methods on large graphs (>1000 artists), even more aggressive filte
 
 ## CentralityMetrics
 
-Computes graph centrality measures using graphology-metrics.
+Graph centrality metrics and node selection utilities. Provides two approaches:
 
-### Metrics
+1. **Full analysis** (graphology-based): Degree, betweenness, eigenvector, PageRank
+2. **Lightweight helpers**: Fast degree calculation and top-N% selection for UI features like priority labels
+
+### Metrics (Full Analysis)
 
 | Metric | Description | Use Case |
 |--------|-------------|----------|
@@ -169,7 +172,7 @@ Computes graph centrality measures using graphology-metrics.
 | **Eigenvector** | Connection quality | Find artists connected to important artists |
 | **PageRank** | Recursive importance | Find influential artists |
 
-### Usage
+### Usage: Full Analysis
 
 ```typescript
 import { calculateCentrality, CentralityScores } from '@/lib/CentralityMetrics';
@@ -182,7 +185,24 @@ const topByPageRank = artists
   .slice(0, 10);
 ```
 
-### Interface
+### Usage: Lightweight Helpers (Priority Labels)
+
+```typescript
+import { getPriorityLabelIds, buildDegreeMap, selectTopDegreeIds } from '@/lib/CentralityMetrics';
+
+// High-level: get IDs for nodes that should have priority labels
+const labelIds = getPriorityLabelIds(nodes, links, 0.15);  // top 15%
+
+// With hierarchy override (e.g., subgenre mode uses root genres)
+const labelIds = getPriorityLabelIds(nodes, links, 0.15, rootGenreIds);
+
+// Low-level: build degree map and select manually
+const nodeIds = new Set(nodes.map(n => n.id));
+const degreeById = buildDegreeMap(links, nodeIds);
+const topIds = selectTopDegreeIds(nodes, degreeById, 0.15);
+```
+
+### Interfaces
 
 ```typescript
 interface CentralityScores {
@@ -191,6 +211,22 @@ interface CentralityScores {
   eigenvector: Map<string, number>;
   pagerank: Map<string, number>;
 }
+
+// Lightweight helpers
+function getPriorityLabelIds(
+  nodes: { id: string }[],
+  links: NodeLink[],
+  percent: number,
+  hierarchyRoots?: string[]
+): string[];
+
+function buildDegreeMap(links: NodeLink[], allowedIds: Set<string>): Map<string, number>;
+
+function selectTopDegreeIds(
+  nodes: { id: string }[],
+  degreeById: Map<string, number>,
+  percent: number
+): string[];
 ```
 
 ## Dependencies

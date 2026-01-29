@@ -11,7 +11,7 @@ import {
 export const PHASE_VERSION = `${import.meta.env.VITE_PRODUCT_PHASE}-${import.meta.env.VITE_PRODUCT_VERSION}`;
 export const DEFAULT_NODE_COUNT = 2000;
 export const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
-export const DEFAULT_ARTIST_CLUSTER_MODE: ArtistClusterMode = 'hybrid';
+export const DEFAULT_ARTIST_CLUSTER_MODE: ArtistClusterMode = 'similarArtists';
 export const DEFAULT_GENRE_LIMIT_TYPE: GenreNodeLimitType = 'artistCount';
 export const DEFAULT_ARTIST_LIMIT_TYPE: ArtistNodeLimitType = 'listeners';
 export const DEFAULT_PLAYER: PlayerType = 'youtube';

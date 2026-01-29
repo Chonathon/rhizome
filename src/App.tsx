@@ -42,6 +42,7 @@ import {
   isOnPage,
 } from "@/lib/utils";
 import { ClusteringEngine, ClusterResult } from '@/lib/ClusteringEngine';
+import { getPriorityLabelIds } from '@/lib/CentralityMetrics';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
@@ -102,69 +103,6 @@ function SidebarLogoTrigger() {
   )
 }
 
-/**
- * Extracts a node ID from a link endpoint, which can be either a string ID
- * or a node object with an `id` property (force-graph libraries often resolve
- * link references to actual node objects after initialization).
- */
-const getLinkNodeId = (value: unknown): string | null => {
-  if (typeof value === "string") return value;
-  if (value && typeof value === "object" && "id" in value) {
-    const id = (value as { id?: string }).id;
-    return id ? String(id) : null;
-  }
-  return null;
-};
-
-/**
- * Builds a map of node ID -> degree (number of connections).
- * Only counts links where both endpoints are in the allowedIds set,
- * ensuring we only consider connections within the visible/filtered graph.
- */
-const buildDegreeMap = (links: NodeLink[], allowedIds: Set<string>) => {
-  const degreeById = new Map<string, number>();
-  links.forEach((link) => {
-    const source = getLinkNodeId(link.source);
-    const target = getLinkNodeId(link.target);
-    if (!source || !target) return;
-    if (!allowedIds.has(source) || !allowedIds.has(target)) return;
-    // Increment degree for both endpoints of the link
-    degreeById.set(source, (degreeById.get(source) ?? 0) + 1);
-    degreeById.set(target, (degreeById.get(target) ?? 0) + 1);
-  });
-  return degreeById;
-};
-
-/**
- * Selects the top N% of nodes by degree (number of connections).
- * Uses a cutoff threshold so that ties at the boundary are included,
- * which may result in slightly more than the requested percentage.
- */
-const selectTopDegreeIds = (
-  nodes: { id: string }[],
-  degreeById: Map<string, number>,
-  percent: number,
-) => {
-  // Clamp percent to valid range [0, 1]
-  const safePercent = Math.max(0, Math.min(1, percent));
-  if (safePercent <= 0) return [];
-
-  // Filter to nodes that have at least one connection
-  const entries = nodes
-    .map((node) => ({ id: node.id, degree: degreeById.get(node.id) ?? 0 }))
-    .filter((entry) => entry.degree > 0);
-  if (!entries.length) return [];
-
-  // Calculate how many nodes we want (at least 1)
-  const count = Math.max(1, Math.ceil(entries.length * safePercent));
-
-  // Sort by degree descending and find the cutoff threshold
-  const sorted = [...entries].sort((a, b) => b.degree - a.degree);
-  const cutoff = sorted[Math.min(count - 1, sorted.length - 1)].degree;
-
-  // Return all nodes that meet or exceed the cutoff (handles ties)
-  return entries.filter((entry) => entry.degree >= cutoff).map((entry) => entry.id);
-};
 
 function App() {
   type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
@@ -833,27 +771,22 @@ function App() {
     return null;
   }, [graph, selectedGenres, selectedArtist]);
 
+  // Priority labels: show labels for the most connected nodes (or hierarchy roots in subgenre mode)
   const centralGenreLabelIds = useMemo(() => {
     if (priorityLabelMode !== 'central') return undefined;
     const nodes = currentGenres?.nodes ?? [];
-    if (!nodes.length) return [];
-    const nodeIds = new Set(nodes.map((node) => node.id));
-    const degreeById = buildDegreeMap(currentGenres?.links ?? [], nodeIds);
     const hasHierarchyMode = genreClusterMode.includes('subgenre') && genreRoots.length > 0;
-    if (hasHierarchyMode) {
-      return genreRoots.filter(
-        (id) => nodeIds.has(id) && (degreeById.get(id) ?? 0) > 0,
-      );
-    }
-    return selectTopDegreeIds(nodes, degreeById, DEFAULT_PRIORITY_LABEL_PERCENT);
+    return getPriorityLabelIds(
+      nodes,
+      currentGenres?.links ?? [],
+      DEFAULT_PRIORITY_LABEL_PERCENT,
+      hasHierarchyMode ? genreRoots : undefined,
+    );
   }, [priorityLabelMode, currentGenres, genreClusterMode, genreRoots]);
 
   const centralArtistLabelIds = useMemo(() => {
     if (priorityLabelMode !== 'central') return undefined;
-    if (!currentArtists.length) return [];
-    const nodeIds = new Set(currentArtists.map((node) => node.id));
-    const degreeById = buildDegreeMap(filteredArtistLinks, nodeIds);
-    return selectTopDegreeIds(currentArtists, degreeById, DEFAULT_PRIORITY_LABEL_PERCENT);
+    return getPriorityLabelIds(currentArtists, filteredArtistLinks, DEFAULT_PRIORITY_LABEL_PERCENT);
   }, [priorityLabelMode, currentArtists, filteredArtistLinks]);
 
   // Compute genres available in the collection (only includes genres from liked artists)
