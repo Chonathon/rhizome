@@ -637,7 +637,7 @@ function App() {
   const clusteringTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (graph !== 'artists' || !currentArtists.length) {
+    if ((graph !== 'artists' && graph !== 'similarArtists') || !currentArtists.length) {
       setArtistClusters(null);
       return;
     }
@@ -840,7 +840,7 @@ function App() {
       }
     };
 
-    if (graph === 'artists') {
+    if (graph === 'artists' || graph === 'similarArtists') {
       // Determine which genre IDs to use for the legend
       const filterGenreIds = collectionMode
         ? collectionFilters.genres
