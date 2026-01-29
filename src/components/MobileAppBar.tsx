@@ -94,7 +94,7 @@ function ToolbarButton({
   return (
     <Button
       variant="ghost"
-      size="default"
+      size="xl"
       onClick={onClick}
       className={cn(
         ButtonStyles,
@@ -135,7 +135,7 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
       }}
     >
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="lg" className={ButtonStyles}>
+        <Button variant="ghost" size="xl" className={ButtonStyles}>
           <TwoLines className="size-6" />
           {/* <span className="text-[10px] leading-tight">More</span> */}
         </Button>
