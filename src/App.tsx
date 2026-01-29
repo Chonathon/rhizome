@@ -2479,14 +2479,14 @@ function App() {
             {/* TODO: Consider replace with dismissible toast and adding reference to selected genre */}
               <div
                 className={`sm:hidden flex justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
-                  <ResetButton
+                  {/* <ResetButton
                     onClick={() => {
                       setGraph('genres')
                       // setSelectedArtist(undefined)
                     }
                     }
                     show={graph === 'artists' && artistGenreFilter.length > 0}
-                  />
+                  /> */}
                 <motion.div
                   layout
                   // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
