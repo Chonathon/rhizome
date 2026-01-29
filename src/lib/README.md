@@ -70,11 +70,11 @@ Unlike other methods, `popularity` clustering uses percentile-based categorizati
 
 | Tier | Position | Radius |
 |------|----------|--------|
-| 5 (top 20%) | Most popular in view | 100 (center) |
-| 4 | | 250 |
-| 3 | | 400 |
-| 2 | | 550 |
-| 1 (bottom 20%) | Least popular in view | 700 (outer) |
+| 5 (top 20%) | Most popular in view | 150 (center) |
+| 4 | | 350 |
+| 3 | | 550 |
+| 2 | | 750 |
+| 1 (bottom 20%) | Least popular in view | 950 (outer) |
 
 **Dynamic Tiers**: Tier boundaries are calculated from percentiles of the current artist set. This ensures all 5 tiers are populated regardless of whether you're viewing underground artists (e.g., all <10K listeners) or mainstream artists (e.g., all >1M listeners). Tier names display the actual listener ranges (e.g., "50K – 120K").
 

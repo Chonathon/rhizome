@@ -432,12 +432,13 @@ export class ClusteringEngine {
     const TIER_COUNT = 5;
 
     // Tier colors and radii (from most popular to least)
+    // Inner radius increased to 150 for more space in the mainstream tier
     const TIER_CONFIG = [
-      { color: '#facc15', radius: 100 },  // yellow-400 - Mainstream
-      { color: '#4ade80', radius: 250 },  // green-400 - Popular
-      { color: '#38bdf8', radius: 400 },  // sky-400 - Established
-      { color: '#c084fc', radius: 550 },  // purple-400 - Emerging
-      { color: '#fb7185', radius: 700 },  // rose-400 - Underground
+      { color: '#facc15', radius: 150 },  // yellow-400 - Mainstream
+      { color: '#4ade80', radius: 350 },  // green-400 - Popular
+      { color: '#38bdf8', radius: 550 },  // sky-400 - Established
+      { color: '#c084fc', radius: 750 },  // purple-400 - Emerging
+      { color: '#fb7185', radius: 950 },  // rose-400 - Underground
     ];
 
     // Sort artists by listeners ascending
