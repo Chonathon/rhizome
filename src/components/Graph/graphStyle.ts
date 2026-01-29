@@ -154,7 +154,7 @@ export function drawLabelBelow(
   ctx.font = `${fontPx}px Geist`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillStyle = customColor ?? (theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)');
+  ctx.fillStyle = customColor ?? (theme === 'dark' ? 'rgba(255, 255, 255, .87)' : 'rgba(0, 0, 0, .87)');
   ctx.fillText(label, x, y + r + 8 + yOffset);
   ctx.restore();
 }
