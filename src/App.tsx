@@ -2615,7 +2615,7 @@ function App() {
           {/* right controls */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               {/* <ModeToggle /> */}
-              {(graph === 'genres' || graph === 'artists') && (
+              {(graph === 'genres' || graph === 'artists' || graph === 'similarArtists') && (
                 <ClusteringPanel
                   graphType={graph === 'genres' ? 'genres' : 'artists'}
                   clusterMode={graph === 'genres' ? genreClusterMode[0] : artistClusterMethod}
@@ -2630,14 +2630,14 @@ function App() {
                   }}
                   dagMode={dagMode}
                   setDagMode={setDagMode}
-                  artistColorMode={graph === 'artists' ? artistColorMode : undefined}
-                  setArtistColorMode={graph === 'artists' ? (mode) => {
+                  artistColorMode={(graph === 'artists' || graph === 'similarArtists') ? artistColorMode : undefined}
+                  setArtistColorMode={(graph === 'artists' || graph === 'similarArtists') ? (mode) => {
                     setArtistColorMode(mode);
                     localStorage.setItem('artistColorMode', mode);
                   } : undefined}
-                  genreColorLegend={graph === 'artists' ? genreColorLegend : undefined}
-                  artistClusters={graph === 'artists' ? artistClusters : undefined}
-                  clusteringInProgress={graph === 'artists' ? clusteringInProgress : undefined}
+                  genreColorLegend={(graph === 'artists' || graph === 'similarArtists') ? genreColorLegend : undefined}
+                  artistClusters={(graph === 'artists' || graph === 'similarArtists') ? artistClusters : undefined}
+                  clusteringInProgress={(graph === 'artists' || graph === 'similarArtists') ? clusteringInProgress : undefined}
                 />
               )}
               <DisplayPanel
