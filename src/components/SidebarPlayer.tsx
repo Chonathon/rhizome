@@ -818,7 +818,7 @@ export default function SidebarPlayer({
             </motion.div>
           </TooltipTrigger>
           <TooltipContent side="right">
-            <p>{title || videoTitle}</p>
+            <p>{title || displayVideoTitle}</p>
           </TooltipContent>
         </Tooltip>,
         desktopSlot
@@ -936,16 +936,16 @@ export default function SidebarPlayer({
               <div className="flex flex-col leading-tight truncate min-w-0 flex-1 text-sm font-medium text-foreground">
                 {playerCollapsed
                 ? <div className="block text-left min-w-0 truncate">
-                    <span className="text-foreground">{videoTitle || 'Loading...'}</span>
+                    <span className="text-foreground">{displayVideoTitle || 'Loading...'}</span>
                   </div>
                 :
                 <button
                   type="button"
                   onClick={(e) => {e.stopPropagation(); onTitleClick?.()}}
-                  title={videoTitle}
+                  title={displayVideoTitle}
                   className={`block text-left min-w-0 truncate hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
                 >
-                  <span className="text-foreground">{videoTitle || 'Loading...'}</span>
+                  <span className="text-foreground">{displayVideoTitle || 'Loading...'}</span>
                 </button>
                 }
                 <span className="text-muted-foreground min-w-0 truncate leading-tight text-sm">{title || ''}</span>
