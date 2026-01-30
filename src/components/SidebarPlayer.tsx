@@ -176,8 +176,13 @@ export default function SidebarPlayer({
       return;
     }
 
-    // If already found, no need to search
-    if (desktopSlot) return;
+    // If already found AND still connected to DOM, no need to search
+    if (desktopSlot && desktopSlot.isConnected) return;
+
+    // Reset stale reference if element is no longer in DOM
+    if (desktopSlot && !desktopSlot.isConnected) {
+      setDesktopSlot(null);
+    }
 
     let found = false;
 
