@@ -87,10 +87,14 @@ export default function SidebarPlayer({
   const intervalRef = useRef<number | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const lastPositionRef = useRef<{ left: number; top: number; width: number; height: number } | null>(null);
+  const lastMeasuredRectRef = useRef<{ left: number; top: number; width: number; height: number } | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const trackUntilRef = useRef<number>(0);
   const modeKeyRef = useRef<string>("");
   const pendingModeRef = useRef<boolean>(false);
+  const desktopTransitionRef = useRef<boolean>(false);
+  const stableDesktopHitsRef = useRef<number>(0);
+  const prevSidebarCollapsedRef = useRef<boolean | null>(null);
 
   // Track if bottom drawer is expanded beyond minimum snap on mobile
   const [drawerExpanded, setDrawerExpanded] = useState(false);
@@ -209,12 +213,40 @@ export default function SidebarPlayer({
     const rect = targetRef.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return false;
 
-    // Avoid tiny intermediate sizes during desktop sidebar transitions.
-    if (isFullDesktopMode && !isLightboxMode) {
+    // Snap desktop moves: wait until the sidebar transition settles before moving the iframe.
+    if (isFullDesktopMode && !isLightboxMode && desktopTransitionRef.current) {
       const minDesktopWidth = 160;
       if (rect.width < minDesktopWidth) {
+        stableDesktopHitsRef.current = 0;
+        lastMeasuredRectRef.current = null;
         return false;
       }
+
+      const lastMeasured = lastMeasuredRectRef.current;
+      const isStable = !!lastMeasured
+        && Math.abs(lastMeasured.left - rect.left) < 0.5
+        && Math.abs(lastMeasured.top - rect.top) < 0.5
+        && Math.abs(lastMeasured.width - rect.width) < 0.5
+        && Math.abs(lastMeasured.height - rect.height) < 0.5;
+
+      if (isStable) {
+        stableDesktopHitsRef.current += 1;
+      } else {
+        stableDesktopHitsRef.current = 0;
+        lastMeasuredRectRef.current = {
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height
+        };
+        return false;
+      }
+
+      if (stableDesktopHitsRef.current < 1) {
+        return false;
+      }
+
+      desktopTransitionRef.current = false;
     }
 
     const next = {
@@ -271,6 +303,25 @@ export default function SidebarPlayer({
     }
     startTrackingPosition(1000);
   }, [modeKey, open, isMinimalMode, playerCollapsed, startTrackingPosition]);
+
+  useEffect(() => {
+    if (!open || !isDesktop) {
+      prevSidebarCollapsedRef.current = sidebarCollapsed;
+      desktopTransitionRef.current = false;
+      stableDesktopHitsRef.current = 0;
+      lastMeasuredRectRef.current = null;
+      return;
+    }
+
+    const prev = prevSidebarCollapsedRef.current;
+    prevSidebarCollapsedRef.current = sidebarCollapsed;
+    if (prev === null) return;
+    if (prev !== sidebarCollapsed) {
+      desktopTransitionRef.current = true;
+      stableDesktopHitsRef.current = 0;
+      lastMeasuredRectRef.current = null;
+    }
+  }, [sidebarCollapsed, isDesktop, open]);
 
 
   // Ensure we re-measure after sidebar transitions that can delay layout updates.
