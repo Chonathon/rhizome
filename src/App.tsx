@@ -2635,7 +2635,7 @@ function App() {
                     setArtistColorMode(mode);
                     localStorage.setItem('artistColorMode', mode);
                   } : undefined}
-                  genreColorLegend={(graph === 'artists' || graph === 'similarArtists') ? genreColorLegend : undefined}
+                  genreColorLegend={genreColorLegend}
                   artistClusters={(graph === 'artists' || graph === 'similarArtists') ? artistClusters : undefined}
                   clusteringInProgress={(graph === 'artists' || graph === 'similarArtists') ? clusteringInProgress : undefined}
                 />

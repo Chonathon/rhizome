@@ -173,13 +173,36 @@ export default function ClusteringPanel({
                     </>
                 )}
                 {graphType === 'genres' && (
-                    <div className="flex items-center justify-between w-full p-3">
-                        <div className="flex flex-col">
-                            <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">DAG Mode</span>
-                            <span className="text-sm text-muted-foreground mt-1">Display as a directed acyclic graph.</span>
+                    <>
+                        <div className="flex items-center justify-between w-full p-3">
+                            <div className="flex flex-col">
+                                <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">DAG Mode</span>
+                                <span className="text-sm text-muted-foreground mt-1">Display as a directed acyclic graph.</span>
+                            </div>
+                            <Switch checked={dagMode} onCheckedChange={setDagMode} />
                         </div>
-                        <Switch checked={dagMode} onCheckedChange={setDagMode} />
-                    </div>
+                        {genreColorLegend && genreColorLegend.length > 0 && (
+                            <div className="flex flex-col gap-2 w-full p-3 border-t border-border">
+                                <span className="text-md font-semibold text-foreground">Genre Color Legend</span>
+                                <div className="relative overflow-y-auto max-h-40 pr-1">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+                                        {genreColorLegend.map((genre) => (
+                                            <div key={genre.id} className="flex items-center gap-2 min-w-0">
+                                                <span
+                                                    className="h-3 w-3 rounded-full shrink-0"
+                                                    style={{ backgroundColor: genre.color }}
+                                                />
+                                                <span className="text-sm text-foreground truncate">
+                                                    {genre.name}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <span className="text-xs text-muted-foreground mt-4">Multi-root genres blend colors.</span>
+                            </div>
+                        )}
+                    </>
                 )}
             </RadioGroup>
         </ResponsivePanel>
