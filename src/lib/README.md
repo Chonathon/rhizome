@@ -1,242 +1,47 @@
-# Graph Algorithms Library
+# Graph Algorithms (lib)
 
-This module contains graph analysis algorithms for clustering artists and computing centrality metrics.
+This folder holds the clustering and centrality logic used by the artists/genres graphs.
 
-## Overview
+## What This Module Contains
+
+- `ClusteringEngine.ts` - artist clustering methods (similarArtists, hybrid, popularity).
+- `CentralityMetrics.ts` - graph centrality + lightweight helpers for priority labels.
+- `locationNormalization.ts` - normalizes location strings for clustering penalties.
+- `fixedOrderedMap.ts` - small utility used by graph data handling.
+
+## How It Fits Together
 
 ```
 Artist[] + NodeLink[]
-        ↓
-┌───────────────────────────────────────┐
-│  ClusteringEngine                     │
-│  - Vector similarity (Cosine)         │
-│  - Network structure (Louvain)        │
-│  - Hybrid (weighted combination)      │
-│  - Popularity tiers                   │
-└───────────────────────────────────────┘
-        ↓
-ClusterResult { clusters, artistToCluster, links, stats }
+  -> ClusteringEngine
+  -> ClusterResult (clusters, artistToCluster, links, stats, tierData?)
 
 Artist[] + NodeLink[]
-        ↓
-┌───────────────────────────────────────┐
-│  CentralityMetrics                    │
-│  - Degree                             │
-│  - Betweenness                        │
-│  - Eigenvector                        │
-│  - PageRank                           │
-└───────────────────────────────────────┘
-        ↓
-CentralityScores { degree, betweenness, eigenvector, pagerank }
+  -> CentralityMetrics
+  -> CentralityScores + priority label IDs
 ```
 
-## ClusteringEngine
+## Clustering Methods (high level)
 
-Unified Louvain-based clustering with different similarity metrics.
+- `similarArtists`: Louvain community detection on the existing similar-artist network.
+- `hybrid`: weighted blend of tag-vector similarity + network links, with an optional location penalty.
+- `popularity`: percentile-based listener tiers (used for radial layout in the UI).
 
-### Clustering Methods
+`popularity` returns `tierData` for concentric-ring layouts. `hybrid` uses normalized locations to penalize cross-region edges.
 
-| Method | Similarity Metric | Description |
-|--------|------------------|-------------|
-| `similarArtists` | Network edges | Uses existing similar-artist links |
-| `hybrid` | Weighted combination | Blends vector similarity, network links, and location |
-| `popularity` | Listener count thresholds | Groups artists into popularity tiers with radial layout |
+## Centrality
 
-### Hybrid Method Details
+- Full metrics: degree, betweenness, eigenvector, PageRank.
+- Lightweight helpers: build degree maps and select top-N% nodes for priority labels.
 
-The `hybrid` method combines two similarity metrics and applies a location-based penalty:
+## Integration Points
 
-| Metric | Default Weight | Description |
-|--------|---------------|-------------|
-| `vectors` | 0.6 | Tag-based TF-IDF cosine similarity |
-| `louvain` | 0.4 | Network structure from similar-artist links |
-
-**Location Penalty** (default strength: 0.3)
-
-Location acts as a **multiplier** that penalizes connections between geographically distant artists, helping prune weak cross-regional edges:
-
-| Geographic Relationship | Multiplier (at strength=0.3) |
-|------------------------|------------------------------|
-| Same country | 1.0 (no penalty) |
-| Same region (e.g., Western Europe) | 0.91 |
-| Different regions | 0.82 |
-| Unknown location | 1.0 (no penalty) |
-
-Location data is normalized from cities/regions to countries using [locationNormalization.ts](./locationNormalization.ts). Higher `location` weight = stronger penalty for cross-regional connections.
-
-### Popularity Tiers
-
-Unlike other methods, `popularity` clustering uses percentile-based categorization rather than community detection. Artists are divided into 5 equal-sized tiers based on the **actual listener distribution** in the current view:
-
-| Tier | Position | Radius |
-|------|----------|--------|
-| 5 (top 20%) | Most popular in view | 150 (center) |
-| 4 | | 350 |
-| 3 | | 550 |
-| 2 | | 750 |
-| 1 (bottom 20%) | Least popular in view | 950 (outer) |
-
-**Dynamic Tiers**: Tier boundaries are calculated from percentiles of the current artist set. This ensures all 5 tiers are populated regardless of whether you're viewing underground artists (e.g., all <10K listeners) or mainstream artists (e.g., all >1M listeners). Tier names display the actual listener ranges (e.g., "50K – 120K").
-
-The result includes `tierData` for radial positioning, which arranges artists in concentric rings by popularity (popular at center, underground at outer ring).
-
-### Usage
-
-```typescript
-import { ClusteringEngine, ClusteringOptions } from '@/lib/ClusteringEngine';
-
-const engine = new ClusteringEngine(artists, artistLinks);
-
-const result = engine.cluster({
-  method: 'hybrid',     // 'similarArtists' | 'hybrid' | 'popularity'
-  resolution: 1.0,      // Louvain resolution (higher = more clusters)
-  kNeighbors: 15,       // K-nearest neighbors to keep
-  minSimilarity: 0.2,   // Minimum similarity threshold
-});
-```
-
-### Interfaces
-
-```typescript
-interface ClusteringOptions {
-  method: ClusteringMethod;
-  resolution?: number;              // Louvain resolution parameter
-  hybridWeights?: {                 // Only for 'hybrid' method
-    vectors: number;                // Tag similarity weight (default: 0.6)
-    louvain: number;                // Network structure weight (default: 0.4)
-    location: number;               // Location penalty strength 0-1 (default: 0.3)
-  };
-  kNeighbors?: number;              // Default: 15 (8-12 for large graphs)
-  minSimilarity?: number;           // Default: 0.2 (0.25-0.3 for large graphs)
-}
-
-interface ClusterResult {
-  method: ClusteringMethod;
-  clusters: Map<string, Cluster>;
-  artistToCluster: Map<string, string>;  // artistId -> clusterId
-  links?: Array<{ source: string; target: string; weight: number }>;
-  stats: {
-    clusterCount: number;
-    avgClusterSize: number;
-    largestCluster: number;
-  };
-  // For 'popularity' method: tier metadata for Y-axis layout
-  tierData?: {
-    nodeToTier: Map<string, number>;  // nodeId -> tierId (1-5)
-    tiers: ListenerTier[];
-  };
-}
-
-interface Cluster {
-  id: string;
-  name: string;
-  artistIds: string[];
-  color: string;
-  centroid?: { x: number; y: number };
-}
-```
-
-### Performance Optimizations
-
-The engine automatically adjusts parameters for large graphs:
-
-| Artist Count | kNeighbors | minSimilarity |
-|-------------|------------|---------------|
-| > 2000 | 8 | 0.30 |
-| > 1000 | 12 | 0.25 |
-| ≤ 1000 | 15 | 0.20 |
-
-For `hybrid` methods on large graphs (>1000 artists), even more aggressive filtering is applied.
-
-### How It Works
-
-1. **Similarity Calculation**: For each artist, compute similarity to all others using the chosen metric
-2. **K-NN Filtering**: Keep only top-K most similar neighbors per artist
-3. **Graph Building**: Create weighted graph from filtered similarities
-4. **Community Detection**: Run Louvain algorithm to find clusters
-5. **Link Generation**: Extract intra-community links above weight threshold
-
-## CentralityMetrics
-
-Graph centrality metrics and node selection utilities. Provides two approaches:
-
-1. **Full analysis** (graphology-based): Degree, betweenness, eigenvector, PageRank
-2. **Lightweight helpers**: Fast degree calculation and top-N% selection for UI features like priority labels
-
-### Metrics (Full Analysis)
-
-| Metric | Description | Use Case |
-|--------|-------------|----------|
-| **Degree** | Number of connections | Find most connected artists |
-| **Betweenness** | Bridge importance | Find artists connecting communities |
-| **Eigenvector** | Connection quality | Find artists connected to important artists |
-| **PageRank** | Recursive importance | Find influential artists |
-
-### Usage: Full Analysis
-
-```typescript
-import { calculateCentrality, CentralityScores } from '@/lib/CentralityMetrics';
-
-const scores: CentralityScores = calculateCentrality(artists, links);
-
-// Get top artists by PageRank
-const topByPageRank = artists
-  .sort((a, b) => (scores.pagerank.get(b.id) ?? 0) - (scores.pagerank.get(a.id) ?? 0))
-  .slice(0, 10);
-```
-
-### Usage: Lightweight Helpers (Priority Labels)
-
-```typescript
-import { getPriorityLabelIds, buildDegreeMap, selectTopDegreeIds } from '@/lib/CentralityMetrics';
-
-// High-level: get IDs for nodes that should have priority labels
-const labelIds = getPriorityLabelIds(nodes, links, 0.15);  // top 15%
-
-// With hierarchy override (e.g., subgenre mode uses root genres)
-const labelIds = getPriorityLabelIds(nodes, links, 0.15, rootGenreIds);
-
-// Low-level: build degree map and select manually
-const nodeIds = new Set(nodes.map(n => n.id));
-const degreeById = buildDegreeMap(links, nodeIds);
-const topIds = selectTopDegreeIds(nodes, degreeById, 0.15);
-```
-
-### Interfaces
-
-```typescript
-interface CentralityScores {
-  degree: Map<string, number>;
-  betweenness: Map<string, number>;
-  eigenvector: Map<string, number>;
-  pagerank: Map<string, number>;
-}
-
-// Lightweight helpers
-function getPriorityLabelIds(
-  nodes: { id: string }[],
-  links: NodeLink[],
-  percent: number,
-  hierarchyRoots?: string[]
-): string[];
-
-function buildDegreeMap(links: NodeLink[], allowedIds: Set<string>): Map<string, number>;
-
-function selectTopDegreeIds(
-  nodes: { id: string }[],
-  degreeById: Map<string, number>,
-  percent: number
-): string[];
-```
+- UI selection lives in `ClusteringPanel.tsx`.
+- Clustering is executed in `App.tsx` via `ClusteringEngine`.
+- Priority labels feed into the graph render logic for visibility.
 
 ## Dependencies
 
-- `graphology` - Graph data structure
-- `graphology-communities-louvain` - Louvain community detection
-- `graphology-metrics` - Centrality algorithms
-
-## Integration with UI
-
-These algorithms integrate with:
-- [ClusteringPanel.tsx](../components/ClusteringPanel.tsx) - UI for selecting clustering method and color mode
-- [ArtistsForceGraph](../components/Graph/ArtistsForceGraph.tsx) - Renders clustered artists with colors
+- `graphology`
+- `graphology-communities-louvain`
+- `graphology-metrics`
