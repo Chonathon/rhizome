@@ -803,7 +803,7 @@ export default function SidebarPlayer({
             </motion.div>
           </TooltipTrigger>
           <TooltipContent side="right">
-            <p>{videoTitle}</p>
+            <p>{title || videoTitle}</p>
           </TooltipContent>
         </Tooltip>,
         desktopSlot
@@ -1001,11 +1001,10 @@ export default function SidebarPlayer({
             ) : onTitleClick ? (
               <span
                 onClick={onTitleClick}
-                title={videoTitle || 'Loading...'}
+                title={title || 'Loading...'}
                 className="block w-full text-left text-sm font-medium truncate cursor-pointer hover:underline"
               >
-                {videoTitle || 'Loading...'}
-                {/* {headerDisplay} */}
+                {title || 'Loading...'}
               </span>
             ) : (
               <div className="w-full text-sm font-medium truncate" title={headerDisplay}>{headerDisplay}</div>
@@ -1046,7 +1045,7 @@ export default function SidebarPlayer({
         </motion.div>
         {/* Controls */}
         <div className="pl-2 flex items-center gap-2">
-          <div className="w-full flex items-center gap-2">
+          <div className="flex-1 min-w-0 flex items-center gap-2">
             <div
               className="relative w-6 h-6 flex-none rounded-sm overflow-hidden cursor-pointer bg-muted/20"
               onClick={onArtworkClick}
@@ -1081,21 +1080,8 @@ export default function SidebarPlayer({
                 </button>
               )}
             </div>
-            <div className="flex flex-col w-full">
-              <div className="flex items-center gap-1 pb-1 min-w-0 overflow-hidden">
-                {onTitleClick && title ? (
-                  <button
-                    type="button"
-                    onClick={onTitleClick}
-                    title={title}
-                    className={`text-left flex-1 leading-none text-sm font-medium text-foreground hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
-                  >
-                    {title}
-                  </button>
-                ) : (
-                  <span className="text-sm font-medium text-foreground">{headerDisplay}</span>
-                )}
-              </div>
+            <div className="flex flex-col flex-1 min-w-0">
+              <span className="text-foreground min-w-0 truncate leading-tight text-sm pb-1" title={videoTitle}>{videoTitle || ''}</span>
               <Progress
                 value={percent}
                 className="group-hover/player:h-2"
