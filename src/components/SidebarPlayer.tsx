@@ -123,6 +123,21 @@ export default function SidebarPlayer({
     return videoTitle || title || 'Player';
   }, [headerPreferProvidedTitle, title, videoTitle]);
 
+  // Strip artist name from video title if it's redundant with the header title
+  const displayVideoTitle = useMemo(() => {
+    if (!videoTitle || !title) return videoTitle;
+    const separators = [' - ', ' – ', ' — ', ' | ', ': '];
+    const lowerVideoTitle = videoTitle.toLowerCase();
+    const lowerTitle = title.toLowerCase();
+    for (const sep of separators) {
+      const prefix = lowerTitle + sep.toLowerCase();
+      if (lowerVideoTitle.startsWith(prefix)) {
+        return videoTitle.slice(prefix.length).trim();
+      }
+    }
+    return videoTitle;
+  }, [videoTitle, title]);
+
   // Display modes (must be defined early for use in effects)
   const isMinimalMode = isDesktop && sidebarCollapsed;
   const isMobileMode = !isDesktop;
@@ -1081,7 +1096,7 @@ export default function SidebarPlayer({
               )}
             </div>
             <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-foreground min-w-0 truncate leading-tight text-sm pb-1" title={videoTitle}>{videoTitle || ''}</span>
+              <span className="text-foreground min-w-0 truncate leading-tight text-sm pb-1" title={videoTitle}>{displayVideoTitle || ''}</span>
               <Progress
                 value={percent}
                 className="group-hover/player:h-2"
