@@ -180,13 +180,18 @@ export default function SidebarPlayer({
   }, [desktopSlot, open, desktopSlotRef, isDesktop]);
 
   const updateIframePosition = useCallback(() => {
-    if (!open || isMinimalMode || playerCollapsed) {
+    if (!open) {
       const offscreen = { left: -9999, top: -9999, width: 0, height: 0 };
       const last = lastPositionRef.current;
       if (!last || last.left !== offscreen.left || last.top !== offscreen.top || last.width !== offscreen.width || last.height !== offscreen.height) {
         lastPositionRef.current = offscreen;
         setIframePosition(offscreen);
       }
+      return false;
+    }
+
+    if (isMinimalMode || playerCollapsed) {
+      // Keep the last known position and just hide via opacity/pointer-events.
       return false;
     }
 
@@ -203,6 +208,14 @@ export default function SidebarPlayer({
 
     const rect = targetRef.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return false;
+
+    // Avoid tiny intermediate sizes during desktop sidebar transitions.
+    if (isFullDesktopMode && !isLightboxMode) {
+      const minDesktopWidth = 160;
+      if (rect.width < minDesktopWidth) {
+        return false;
+      }
+    }
 
     const next = {
       // `iframeNode` is fixed-positioned, so viewport-relative rect values
@@ -221,6 +234,8 @@ export default function SidebarPlayer({
     if (changed) {
       lastPositionRef.current = next;
       setIframePosition(next);
+      // Nudge the YouTube player to re-measure after size changes (e.g. sidebar collapse/expand).
+      try { playerRef.current?.setSize?.(Math.round(next.width), Math.round(next.height)); } catch {}
     }
     pendingModeRef.current = false;
     return true;
@@ -244,14 +259,36 @@ export default function SidebarPlayer({
 
   useEffect(() => {
     if (modeKeyRef.current === modeKey) return;
+    const prevMode = modeKeyRef.current;
     modeKeyRef.current = modeKey;
     pendingModeRef.current = true;
     lastPositionRef.current = null;
-    if (open && !isMinimalMode && !playerCollapsed) {
+    const isDesktopMinimalTransition =
+      (prevMode === "desktop" && modeKey === "minimal") ||
+      (prevMode === "minimal" && modeKey === "desktop");
+    if (open && !isMinimalMode && !playerCollapsed && !isDesktopMinimalTransition) {
       setIframePosition({ left: -9999, top: -9999, width: 0, height: 0 });
     }
     startTrackingPosition(1000);
   }, [modeKey, open, isMinimalMode, playerCollapsed, startTrackingPosition]);
+
+
+  // Ensure we re-measure after sidebar transitions that can delay layout updates.
+  useEffect(() => {
+    if (!open || isMinimalMode || playerCollapsed) return;
+    const rafId = requestAnimationFrame(() => {
+      updateIframePosition();
+      startTrackingPosition(600);
+    });
+    const timeoutId = window.setTimeout(() => {
+      updateIframePosition();
+      startTrackingPosition(600);
+    }, 250);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [sidebarCollapsed, isFullDesktopMode, isLightboxMode, isMobileMode, open, isMinimalMode, playerCollapsed, updateIframePosition, startTrackingPosition]);
 
   // Calculate iframe position based on active video area (CSS-only positioning to preserve playback)
   useEffect(() => {
@@ -533,6 +570,7 @@ export default function SidebarPlayer({
       }
     };
   }, []);
+
 
   const percent = useMemo(() => {
     if (!duration || duration <= 0) return 0;
