@@ -136,7 +136,7 @@ export default function ClusteringPanel({
                         {artistColorMode === 'genre' && genreColorLegend && genreColorLegend.length > 0 && (
                             <div className="flex flex-col gap-2 w-full p-3 border-t border-border">
                                 <span className="text-md font-semibold text-foreground">Genre Color Legend</span>
-                                <div className=" overflow-y-auto pr-1">
+                                <div className="relative overflow-y-auto max-h-40 pr-1">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
                                         {genreColorLegend.map((genre) => (
                                             <div key={genre.id} className="flex items-center gap-2 min-w-0">
