@@ -154,6 +154,14 @@ export default function SidebarPlayer({
     }
   }, [open]);
 
+  // Reset playerCollapsed when switching from mobile to desktop
+  // (playerCollapsed is only meaningful for mobile mode)
+  useEffect(() => {
+    if (isDesktop && playerCollapsed) {
+      setPlayerCollapsed(false);
+    }
+  }, [isDesktop, playerCollapsed]);
+
   useEffect(() => {
     if (!isFullDesktopMode) {
       setLightboxOpen(false);
