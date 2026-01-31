@@ -194,7 +194,7 @@ export function AppSidebar({
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent side="right" align="end">
+              <DropdownMenuContent side="right" align="end" className="z-[70]">
                 {signedInUser ? (
                   <>
                                 <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'General' } }))}><Cog />
@@ -218,7 +218,7 @@ export function AppSidebar({
                               <SunMoon className="mr-2 text-muted-foreground h-4 w-4" />
                             </span>  Appearance</DropdownMenuSubTrigger>
                             <DropdownMenuPortal>
-                              <DropdownMenuSubContent>
+                              <DropdownMenuSubContent className="z-[70]">
                                 <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
