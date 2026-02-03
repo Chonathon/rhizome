@@ -97,6 +97,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   showNodes?: boolean;
   showLinks?: boolean;
   disableDimming?: boolean;
+  onZoomChange?: (zoom: number) => void;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -154,6 +155,7 @@ const Graph = forwardRef(function GraphInner<
     showNodes = true,
     showLinks = true,
     disableDimming = false,
+    onZoomChange,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -587,6 +589,7 @@ const Graph = forwardRef(function GraphInner<
         linkCurvature={dagMode ? 0 : linkCurvatureValue}
         onZoom={({ k }) => {
           zoomRef.current = k;
+          onZoomChange?.(k);
         }}
         onNodeHover={(node) => {
           const id = node?.id as string | undefined;

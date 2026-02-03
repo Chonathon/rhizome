@@ -28,6 +28,7 @@ interface ArtistsForceGraphProps {
   showNodes?: boolean;
   showLinks?: boolean;
   disableDimming?: boolean;
+  onZoomChange?: (zoom: number) => void;
 }
 
 const MIN_RADIUS = 6;
@@ -57,6 +58,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       showNodes,
       showLinks,
       disableDimming,
+      onZoomChange,
     },
     ref,
   ) => {
@@ -124,6 +126,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         showNodes={showNodes}
         showLinks={showLinks}
         disableDimming={disableDimming}
+        onZoomChange={onZoomChange}
       />
     );
   },

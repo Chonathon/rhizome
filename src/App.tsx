@@ -103,6 +103,9 @@ function App() {
   type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
   const genresGraphRef = useRef<GraphHandle | null>(null);
   const artistsGraphRef = useRef<GraphHandle | null>(null);
+  const [currentZoom, setCurrentZoom] = useState<number | null>(null);
+  const defaultZoom = typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches ? 0.12 : 0.14;
+  const isDefaultZoom = currentZoom !== null && Math.abs(currentZoom - defaultZoom) < 0.01;
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
   const [artistGenreFilter, setArtistGenreFilter] = useState<Genre[]>([]);
@@ -504,11 +507,15 @@ function App() {
       const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
       ref?.zoomOut?.();
     },
+    onZoomReset: () => {
+      const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+      ref?.zoomTo?.(defaultZoom);
+    },
     onOpenFind: () => {
       if (findPanelDisabled) return;
       setIsFindFilterOpen(true);
     },
-  }, [graph, findPanelDisabled]);
+  }, [graph, findPanelDisabled, defaultZoom]);
 
   // Export graph handler
   const handleExportGraph = useCallback(() => {
@@ -2184,6 +2191,7 @@ function App() {
                   showNodes={showNodes}
                   showLinks={showLinks}
                   disableDimming={isUserDraggingGenreCanvas || isGenreDrawerAtMinSnap}
+                  onZoomChange={setCurrentZoom}
                 />
                 <ArtistsForceGraph
                   ref={artistsGraphRef}
@@ -2212,6 +2220,7 @@ function App() {
                   showNodes={showNodes}
                   showLinks={showLinks}
                   disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
+                  onZoomChange={setCurrentZoom}
                 />
 
           {/* Genre hover preview */}
@@ -2264,6 +2273,11 @@ function App() {
                   const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
                   ref?.zoomOut();
                 }}
+                onZoomReset={() => {
+                  const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+                  ref?.zoomTo?.(defaultZoom);
+                }}
+                isDefaultZoom={isDefaultZoom}
               />
             </div>
           {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
@@ -2345,6 +2359,11 @@ function App() {
                     const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
                     ref?.zoomOut();
                   }}
+                  onZoomReset={() => {
+                    const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
+                    ref?.zoomTo?.(defaultZoom);
+                  }}
+                  isDefaultZoom={isDefaultZoom}
                 />
               </div>
           </div>

@@ -29,6 +29,7 @@ interface GenresForceGraphProps {
   showNodes?: boolean;
   showLinks?: boolean;
   disableDimming?: boolean;
+  onZoomChange?: (zoom: number) => void;
 }
 
 const MIN_RADIUS = 6;
@@ -60,6 +61,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       showNodes,
       showLinks,
       disableDimming,
+      onZoomChange,
     },
     ref,
   ) => {
@@ -131,6 +133,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         showNodes={showNodes}
         showLinks={showLinks}
         disableDimming={disableDimming}
+        onZoomChange={onZoomChange}
       />
     );
   },
