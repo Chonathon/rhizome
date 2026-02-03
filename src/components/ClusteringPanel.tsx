@@ -40,7 +40,7 @@ export default function ClusteringPanel({
 
     const artistOptions = [
         { id: "similarArtists", label: "Similar Artists", description: "Uses the existing artist network structure to find communities. Artists connected by similar artist links form clusters." },
-        { id: "hybrid", label: "Hybrid", description: "Combines vector-based similarity with the artist network to form more robust communities." },
+        // { id: "hybrid", label: "Hybrid", description: "Combines vector-based similarity with the artist network to form more robust communities." },
         { id: "popularity", label: "Popularity", description: "Arranges artists in concentric rings by listener count. Popular artists at center, underground at outer ring." },
     ];
 
