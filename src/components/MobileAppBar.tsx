@@ -1,7 +1,7 @@
 import React, { useState } from "react"
-import {  CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown, Cog } from "lucide-react"
+import { BookOpen, Search as SearchIcon, Telescope, CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown } from "lucide-react"
+import { TwoLines } from "./Icon"
 import { Button } from "@/components/ui/button"
-import { Search as SearchIcon, BookOpen, Telescope, TwoLines } from "./Icon"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +26,8 @@ type MobileAppBarProps = {
   onCollectionClick: () => void;
   isCollectionMode: boolean;
 }
-
+const ButtonStyles = "w-full rounded-full py-3 max-w-[80px] text-muted-foreground"
+const buttonContainerStyles = "bg-sidebar pointer-events-auto rounded-full h-full border border-accent inset-shadow-white shadow-xs backdrop-blur-[2px] flex items-center justify-center"
 /**
  * Floating bottom app bar for small screens.
  * Provides quick access to Search, Collection, Genres, Artists, and a More menu.
@@ -34,32 +35,29 @@ type MobileAppBarProps = {
  */
 export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, isCollectionMode }: MobileAppBarProps) {
   return (
-    <div className="pointer-events-none fixed flex justify-center gap-3 inset-x-0 bottom-3 z-50 md:hidden"
-    style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <div
+  className="w-[calc(100%-2rem)] max-w-[280px] pointer-events-none fixed left-1/2 -translate-x-1/2 inset-x-8 bottom-3 z-50 md:hidden flex gap-3 place-items-center "
+  style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+>
+  {/* Search */}
       <div
-        className="pointer-events-auto rounded-full w-fit
-         border border-border bg-sidebar backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
-        
+        className={`${buttonContainerStyles} shrink-0 aspect-square`}
+
       >
-        <div className="w-fit grid grid-cols-1">
+        <div className="p-.5 w-full h-full flex items-center justify-center">
           <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
-            icon={<SearchIcon className="size-6" />}
+            className="aspect-square !max-w-none !w-auto !h-full"
+            icon={<SearchIcon className="size-6 " />}
           />
         </div>
-      </div>
+      </div>     
       <div
-        className="pointer-events-auto rounded-full w-fit
-         border border-border bg-sidebar backdrop-blur-md shadow-md items-center flex supports-[backdrop-filter]:bg-popover/60"
+        className={`w-full ${buttonContainerStyles}`}
         
       >
-        <div className="w-fit grid grid-cols-3">
-          {/* <ToolbarButton
-            label="Search"
-            onClick={onOpenSearch}
-            icon={<SearchIcon className="size-6" />}
-          /> */}
+        <div className="p-1   w-full grid grid-cols-3 place-items-center">
           <ToolbarButton
             label="Collection"
             onClick={onCollectionClick}
@@ -72,21 +70,10 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
             onClick={resetAppState}
             icon={<Telescope className="size-6" />}
           />
-          {/* <ToolbarButton
-            label="Genres"
-            active={graph === "genres"}
-            onClick={() => onGraphChange("genres")}
-            icon={<Tag className="size-6" />}
-          /> */}
-          {/* <ToolbarButton
-            label="Artists"
-            active={graph === "artists" || graph === "similarArtists"}
-            onClick={() => onGraphChange("artists")}
-            icon={<Mic className="size-6" />}
-          /> */}
           <MoreMenu signedInUser={signedInUser} onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />
         </div>
       </div>
+     
     </div>
   )
 }
@@ -96,18 +83,24 @@ function ToolbarButton({
   icon,
   onClick,
   active,
+  className,
 }: {
   label: string
   icon: React.ReactNode
   onClick: () => void
   active?: boolean
+  className?: string
 }) {
   return (
     <Button
       variant="ghost"
       size="xl"
       onClick={onClick}
-      className={`font-regular max-w-[56px] rounded-full ${active ? "text-foreground font-semibold" : "text-muted-foreground"}`}
+      className={cn(
+        ButtonStyles,
+        active ? "text-foreground font-semibold" : "text-muted-foreground",
+        className
+      )}
     >
       {icon}
       {/* <span className="text-[10px] leading-tight">{label}</span> */}
@@ -142,24 +135,25 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
       }}
     >
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="xl" className="w-full rounded-full py-4 text-muted-foreground">
+        <Button variant="ghost" size="xl" className={ButtonStyles}>
           <TwoLines className="size-6" />
           {/* <span className="text-[10px] leading-tight">More</span> */}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="end">
+      <DropdownMenuContent side="top" align="end" className="z-99">
         {signedInUser ? (
           <>
-            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'General' } }))}><Cog />
-              General
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Account' } }))}><CircleUserRound />
-              Account
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Profile' } }))}><CircleUserRound />
+              Profile
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'Connections' } }))}><Cable />
               Connections
             </DropdownMenuItem>
-        </>
+            <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open'))}><Settings />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
         ) : (
           <>
             <AccountMenuGuestSection onSignUp={handleSignUp} onLogin={handleLogin} className="" />
@@ -218,7 +212,6 @@ function MoreMenu({ signedInUser, onSignUpClick, onLoginClick }: { signedInUser:
             </DropdownMenuItem>
           </div>
         </div>
-        <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={(e) => {
           e.preventDefault();
           window.open('https://ko-fi.com/rhizomefyi', '_blank');
