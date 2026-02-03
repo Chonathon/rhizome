@@ -635,7 +635,7 @@ function App() {
   // Use async computation for large graphs to avoid blocking UI
   const [artistClusters, setArtistClusters] = useState<ClusterResult | null>(null);
   const [clusteringInProgress, setClusteringInProgress] = useState(false);
-  const clusteringTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const clusteringTimeoutRef = useRef<any | null>(null);
 
   useEffect(() => {
     if ((graph !== 'artists' && graph !== 'similarArtists') || !currentArtists.length) {
