@@ -100,7 +100,7 @@ function SidebarLogoTrigger() {
 }
 
 function App() {
-  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
+  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; resetView: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
   const genresGraphRef = useRef<GraphHandle | null>(null);
   const artistsGraphRef = useRef<GraphHandle | null>(null);
   const [currentZoom, setCurrentZoom] = useState<number | null>(null);
@@ -509,7 +509,7 @@ function App() {
     },
     onZoomReset: () => {
       const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-      ref?.zoomTo?.(defaultZoom);
+      ref?.resetView?.(defaultZoom);
     },
     onOpenFind: () => {
       if (findPanelDisabled) return;
@@ -2275,7 +2275,7 @@ function App() {
                 }}
                 onZoomReset={() => {
                   const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                  ref?.zoomTo?.(defaultZoom);
+                  ref?.resetView?.(defaultZoom);
                 }}
                 isDefaultZoom={isDefaultZoom}
               />
@@ -2361,7 +2361,7 @@ function App() {
                   }}
                   onZoomReset={() => {
                     const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                    ref?.zoomTo?.(defaultZoom);
+                    ref?.resetView?.(defaultZoom);
                   }}
                   isDefaultZoom={isDefaultZoom}
                 />
