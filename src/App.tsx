@@ -518,24 +518,6 @@ function App() {
     exportGraphAsImage(canvas, { graphType, theme: resolvedTheme });
   }, [graph, resolvedTheme]);
 
-  // Restore standalone Escape handling (deselect)
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if (graph === 'genres' && selectedGenres.length){
-          deselectGenre();
-          return;
-        }
-        if (selectedArtist) {
-          deselectArtist();
-          return;
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [graph, selectedArtist, selectedGenres]);
-
   // Restore Cmd/Ctrl+K handling (search)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
