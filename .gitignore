@@ -13,6 +13,7 @@ dist-ssr
 *.local
 *.zip
 
+.mcp.json
 .env
 .claude
 .pr-notes.md

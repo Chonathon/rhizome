@@ -17,7 +17,15 @@ export interface ResponsiveDrawerProps {
   contentClassName?: string;
   bodyClassName?: string;
   directionDesktop?: Extract<DrawerDirection, "left" | "right">;
+  /**
+   * Fractional snap points for mobile/coarse-pointer devices (default bottom-sheet behavior).
+   */
   snapPoints?: number[];
+  /**
+   * Alternate snap points for fine-pointer devices that still render the sheet (e.g., desktop browser emulating mobile).
+   * Helps keep the drawer from flying too high on tall viewports.
+   */
+  desktopSnapPoints?: number[];
   clickToCycleSnap?: boolean;
   desktopQuery?: string;
   showMobileHandle?: boolean;
@@ -60,6 +68,11 @@ export interface ResponsiveDrawerProps {
    * Useful for triggering expansion from external actions (e.g., header button clicks).
    */
   expandToMiddleTrigger?: number;
+  /**
+   * Called when the active snap point changes (mobile only).
+   * Receives the index of the current snap point (0 = min, 1 = middle, 2 = max for default snaps).
+   */
+  onSnapChange?: (snapIndex: number) => void;
 }
 
 /**
@@ -73,7 +86,8 @@ export function ResponsiveDrawer({
   contentClassName,
   bodyClassName,
   directionDesktop = "left",
-  snapPoints = [0.08, 0.50, 0.9],
+  snapPoints: mobileSnapPoints = [0.11, 0.50, 0.97],
+  desktopSnapPoints = [0.07, 0.40, 0.90],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 768px)",
   showMobileHandle = false,
@@ -88,8 +102,15 @@ export function ResponsiveDrawer({
   onCanvasDragStart,
   contentKey,
   expandToMiddleTrigger,
+  onSnapChange,
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
+  // Detect pointer type so we can keep snap targets lower on tall desktop browsers.
+  const hasCoarsePointer = useMediaQuery("(pointer: coarse)");
+  const snapPoints = useMemo(
+    () => (hasCoarsePointer ? mobileSnapPoints : desktopSnapPoints),
+    [hasCoarsePointer, mobileSnapPoints, desktopSnapPoints],
+  );
   const { state: sidebarState } = useSidebar();
   const [open, setOpen] = useState(false);
   // Default to middle snap point (index 1) if available, otherwise first snap point
@@ -193,9 +214,33 @@ export function ResponsiveDrawer({
     return activeSnapIndex === snapPoints.length - 1;
   }, [activeSnapIndex, snapPoints.length]);
 
+  const isAtMiddleSnap = activeSnapIndex === 1;
+
   const isAtMinSnap = useMemo(() => {
     return activeSnapIndex === 0;
   }, [activeSnapIndex]);
+
+  // Notify parent when snap changes (mobile only)
+  useEffect(() => {
+    if (!isDesktop && open && activeSnapIndex >= 0) {
+      // Call the callback if provided
+      onSnapChange?.(activeSnapIndex);
+
+      // Also dispatch a global event for components that need to react to drawer snaps
+      const event = new CustomEvent('responsiveDrawerSnapChange', {
+        detail: { snapIndex: activeSnapIndex, snapPoints }
+      });
+      window.dispatchEvent(event);
+    }
+
+    // When drawer closes on mobile, notify with snapIndex -1 to indicate closed
+    if (!isDesktop && !open) {
+      const event = new CustomEvent('responsiveDrawerSnapChange', {
+        detail: { snapIndex: -1, snapPoints }
+      });
+      window.dispatchEvent(event);
+    }
+  }, [activeSnapIndex, isDesktop, open, onSnapChange, snapPoints]);
 
   const cycleSnap = () => {
     if (isDesktop || !clickToCycleSnap) return;
@@ -239,12 +284,10 @@ export function ResponsiveDrawer({
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance >= 5) {
-          console.log('[ResponsiveDrawer] Canvas drag detected, distance:', distance);
           // Notify parent immediately (e.g., to undim the graph)
           canvasDragStartRef.current = null;
           onCanvasDragStart?.();
           // Then minimize drawer (mobile only)
-          console.log('[ResponsiveDrawer] Calling minimizeToFirstSnap, isDesktop:', isDesktop, 'minimizeOnCanvasTouch:', minimizeOnCanvasTouch);
           minimizeToFirstSnap();
         }
       }
@@ -366,9 +409,9 @@ export function ResponsiveDrawer({
       direction={isDesktop ? directionDesktop : "bottom"}
       // Reduce velocity-driven jumps between distant snap points
       snapToSequentialPoint
-      // Conservative: on mobile, only the handle can drag between snaps.
+      // On mobile, only the handle can drag between snaps at the max snap position
       // This eliminates unintended cycles from content taps/drags.
-      handleOnly={!isDesktop && lockDragToHandleWhenScrolled}
+      handleOnly={!isDesktop && !isAtMiddleSnap && !isAtMinSnap && lockDragToHandleWhenScrolled}
       dismissible={true}
       modal={false}
       {...(!isDesktop
