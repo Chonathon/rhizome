@@ -11,7 +11,7 @@ import {
 import {
   PARENT_FIELD_MAP,
   CHILD_FIELD_MAP,
-  CLUSTER_COLORS,
+  getClusterColor,
   SINGLETON_PARENT_GENRE,
   SINGLETON_PARENT_COLOR, SERVER_PRODUCTION_URL, CLIENT_DEPLOYMENT_URL, SERVER_DEVELOPMENT_URL
 } from "@/constants";
@@ -262,8 +262,7 @@ export const assignRootGenreColors = (rootIDs: string[]) => {
   if (!rootIDs.length) return colorMap;
   const sortedRoots = [...rootIDs].sort((a, b) => a.localeCompare(b));
   sortedRoots.forEach((n, i) => {
-    const color = CLUSTER_COLORS[i % CLUSTER_COLORS.length];
-    colorMap.set(n, color);
+    colorMap.set(n, getClusterColor(i));
   });
   return colorMap;
 }
@@ -304,7 +303,7 @@ export const buildGenreColorMap = (genres: Genre[], rootIDs: string[]) => {
 }
 
 export const getSingletonColor = (count: number) => {
-  return CLUSTER_COLORS[count % CLUSTER_COLORS.length];
+  return getClusterColor(count);
 }
 
 // --- Color utilities ---
