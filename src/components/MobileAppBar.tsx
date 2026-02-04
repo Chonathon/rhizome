@@ -41,7 +41,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
 >
   {/* Search */}
       <div
-        className={`${buttonContainerStyles} shrink-0 aspect-square !h-12`}
+        className={`${buttonContainerStyles} shrink-0 aspect-square`}
 
       >
         <div className="p-0.5 w-full h-full flex items-center justify-center">
