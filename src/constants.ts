@@ -84,8 +84,8 @@ export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
 // Returns hex format for compatibility with opacity suffixes used in graph rendering.
 export const getClusterColor = (index: number): string => {
     const hue = (index * 137.5) % 360;
-    const saturation = 70;
-    const lightness = 55 + (index % 3) * 10; // alternates between 55%, 65%, 75%
+    const saturation = 85;
+    const lightness = 70 + (index % 3) * 5; // 70%, 75%, 80% range
     return hslToHex(hue, saturation, lightness);
 };
 
