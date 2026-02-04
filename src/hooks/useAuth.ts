@@ -2,7 +2,7 @@ import {useContext, useEffect, useState} from "react";
 import {Preferences} from "@/types";
 import {AuthContext} from "@/providers/AuthProvider";
 import {likeArtistUser, unlikeArtistUser, updateUserPreferences} from "@/apis/usersApi";
-import {DEFAULT_PREFERENCES} from "@/constants";
+import {DEFAULT_PREFERENCES, PHASE_VERSION} from "@/constants";
 
 const useAuth = () => {
     const [userID, setUserID] = useState<string>();
@@ -40,7 +40,10 @@ const useAuth = () => {
         setPreferences(user ? user.preferences : DEFAULT_PREFERENCES);
         setLikedArtists(user && user.liked ? user.liked.map(l => l.id) : []);
         setIsSocialUser(user ? user.socialUser : false);
-        setUserAccess(user ? user.appAccess : undefined)
+        setUserAccess(user ? user.appAccess : undefined);
+        if (user && !localStorage.getItem('versionLastAccessed')) {
+            localStorage.setItem('versionLastAccessed', PHASE_VERSION);
+        }
     }, [user]);
 
     const likeArtist = async (artistID: string) => {
