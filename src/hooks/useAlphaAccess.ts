@@ -26,7 +26,7 @@ export function useAlphaAccess(userAccess?: string) {
 
   // Automatically validates if user has an account with the current version flag
   useEffect(() => {
-    if (userAccess && userAccess === PHASE_VERSION) {
+    if (userAccess && (userAccess === PHASE_VERSION || userAccess.includes(import.meta.env.VITE_PRODUCT_PHASE))) {
       setValidated(true);
     }
   }, [userAccess]);

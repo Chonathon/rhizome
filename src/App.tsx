@@ -24,7 +24,7 @@ import { ArtistInfo } from './components/ArtistInfo'
 import { Gradient } from './components/Gradient';
 import GenrePreview from './components/GenrePreview';
 import ArtistPreview from './components/ArtistPreview';
-import Player from "@/components/Player";
+// import Player from "@/components/Player"; // Now using SidebarPlayer instead
 import { Search } from './components/Search';
 import FindFilter from "@/components/FindFilter";
 import {
@@ -69,7 +69,8 @@ import {
   ALPHA_SURVEY_TIME_MS,
   DEFAULT_PREFERENCES,
   ALPHA_SURVEY_ADDED_ARTISTS,
-  NODE_AMOUNT_PRESETS
+  NODE_AMOUNT_PRESETS,
+  PHASE_VERSION,
 } from "@/constants";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
@@ -131,6 +132,7 @@ function App() {
   const [selectedArtistFromSearch, setSelectedArtistFromSearch] = useState<boolean>(false);
   const [artistPreviewStack, setArtistPreviewStack] = useState<Artist[]>([]);
   const [artistInfoDrawerVersion, setArtistInfoDrawerVersion] = useState(0);
+  // used for tracking artist info drawer state
   const [artistInfoToShow, setArtistInfoToShow] = useState<Artist | undefined>(undefined);
   const [showArtistCard, setShowArtistCard] = useState(false);
   const [cursorHoveredGenre, setCursorHoveredGenre] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
@@ -260,7 +262,12 @@ function App() {
 
   // Fetch top artists for the currently displayed genre info or the active filter
   const [topArtistsGenreId, setTopArtistsGenreId] = useState<string | undefined>(undefined);
-  const { topArtists, loading: topArtistsLoading, getTopArtistsFromApi } = useGenreTopArtists(topArtistsGenreId);
+  const {
+    topArtists,
+    loading: topArtistsLoading,
+    getTopArtistsFromApi,
+    resolvedGenreId: topArtistsResolvedGenreId,
+  } = useGenreTopArtists(topArtistsGenreId);
   const { resolvedTheme } = useTheme();
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playerVideoIds, setPlayerVideoIds] = useState<string[]>([]);
@@ -356,6 +363,18 @@ function App() {
       clearTimeout(timer);
     }
   }, []);
+
+  // Show release notes notification, set in localStorage to avoid repeats
+  useEffect(() => {
+    if (
+        userAccess !== PHASE_VERSION
+        && localStorage.getItem('versionLastAccessed')
+        && localStorage.getItem('versionLastAccessed') !== PHASE_VERSION
+    ) {
+      showNotiToast('release-notes');
+      localStorage.setItem('versionLastAccessed', PHASE_VERSION);
+    }
+  }, [userAccess]);
 
   // Do any actions requested before login
   useEffect(() => {
@@ -505,24 +524,6 @@ function App() {
     exportGraphAsImage(canvas, { graphType, theme: resolvedTheme });
   }, [graph, resolvedTheme]);
 
-  // Restore standalone Escape handling (deselect)
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if (graph === 'genres' && selectedGenres.length){
-          deselectGenre();
-          return;
-        }
-        if (selectedArtist) {
-          deselectArtist();
-          return;
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [graph, selectedArtist, selectedGenres]);
-
   // Restore Cmd/Ctrl+K handling (search)
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -620,11 +621,14 @@ function App() {
 
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
+    if (topArtistsLoading) return;
+    // Ignore stale results that belong to a previous genre selection.
+    if (!topArtistsGenreId || topArtistsResolvedGenreId !== topArtistsGenreId) return;
     if (topArtistsGenreId && topArtists.length) {
       setGenreTopArtistsCache(prev => new Map(prev).set(topArtistsGenreId, topArtists));
     }
     updateGenrePlayerIDs();
-  }, [topArtists, topArtistsGenreId]);
+  }, [topArtists, topArtistsGenreId, topArtistsLoading, topArtistsResolvedGenreId]);
 
   // Sets the genre ID for which to fetch top artists
   useEffect(() => {
@@ -689,68 +693,105 @@ function App() {
   // Allows for manual fetching of top artists if passed a genre (i.e. search)
   // Only pass a genre if needed to play outside of the graph or info drawer
   const updateGenrePlayerIDs = async (genre?: Genre) => {
-    const queueGenreID = genre? genre.id : topArtistsGenreId;
+    const queueGenreID = genre ? genre.id : topArtistsGenreId;
+    if (!queueGenreID) return;
+    if (!genre && topArtistsLoading) return;
+    if (!genre && topArtistsResolvedGenreId !== queueGenreID) return;
+
+    const cachedTracks = playerIDQueue.get(queueGenreID);
+    if (cachedTracks && cachedTracks.length > 0) return;
+
     let genreTopArtists: Artist[] = [];
     if (genre) {
       genreTopArtists = await getTopArtistsFromApi(queueGenreID);
     } else {
-      genreTopArtists = topArtists
+      if (!topArtists || topArtists.length === 0) return;
+      genreTopArtists = topArtists;
     }
-    if (genreTopArtists && genreTopArtists.length && queueGenreID && !playerIDQueue.has(queueGenreID)) {
-      const genreTracks: TopTrack[] = [];
-      for (const artist of genreTopArtists) {
-        if (!artist.noTopTracks) {
-          if (artist.topTracks) {
-            for (const track of artist.topTracks) {
+    if (!genreTopArtists || genreTopArtists.length === 0) return;
+
+    const genreTracks: TopTrack[] = [];
+    for (const artist of genreTopArtists) {
+      if (!artist.noTopTracks) {
+        if (artist.topTracks) {
+          for (const track of artist.topTracks) {
+            if (track[DEFAULT_PLAYER]) {
+              genreTracks.push(track);
+              break;
+            }
+          }
+        } else {
+          // Shouldn't reach this (every genre top artist has been pre-fetched) but fetches tracks just in case
+          console.log(`${artist.name} might have tracks, fetching from web...`);
+          const artistTopTracks = await fetchArtistTopTracks(artist.id, artist.name);
+          if (artistTopTracks) {
+            for (const track of artistTopTracks) {
               if (track[DEFAULT_PLAYER]) {
                 genreTracks.push(track);
                 break;
               }
             }
-          } else {
-            // Shouldn't reach this (every genre top artist has been pre-fetched) but fetches tracks just in case
-            console.log(`${artist.name} might have tracks, fetching from web...`);
-            const artistTopTracks = await fetchArtistTopTracks(artist.id, artist.name);
-            if (artistTopTracks) {
-              for (const track of artistTopTracks) {
-                if (track[DEFAULT_PLAYER]) {
-                  genreTracks.push(track);
-                  break;
-                }
-              }
-            }
           }
         }
       }
-      playerIDQueue.set(queueGenreID, genreTracks);
     }
+    playerIDQueue.set(queueGenreID, genreTracks);
   }
 
   // Add artist play IDs to the playerIDQueue on genre click
   const updateArtistPlayerIDs = async (artist: Artist) => {
-    if (artist && !playerIDQueue.has(artist.id)) {
-      const currentSelectedArtist = {
-        id: artist.id,
-        name: artist.name,
-        noTopTracks: artist.noTopTracks,
-        topTracks: artist.topTracks
-      };
-      // If we haven't already tried and failed to fetch tracks for this artist
-      if (!currentSelectedArtist.noTopTracks) {
-        if (currentSelectedArtist.topTracks) {
-          playerIDQueue.set(currentSelectedArtist.id, currentSelectedArtist.topTracks);
-        } else {
-          const artistTracks = await fetchArtistTopTracks(currentSelectedArtist.id, currentSelectedArtist.name);
-          if (artistTracks) {
-            playerIDQueue.set(currentSelectedArtist.id, artistTracks);
-            // Update the selectedArtist state so the UI reflects the newly fetched tracks
-            setSelectedArtist(prev => {
-              if (prev && prev.id === currentSelectedArtist.id) {
-                return { ...prev, topTracks: artistTracks };
-              }
-              return prev;
-            });
-          }
+    if (!artist) return;
+
+    // Check if we already have tracks cached in the queue
+    const cachedTracks = playerIDQueue.get(artist.id);
+
+    if (cachedTracks) {
+      // We have cached tracks, update the states with them immediately
+      setSelectedArtist(prev => {
+        if (prev && prev.id === artist.id && !prev.topTracks) {
+          return { ...prev, topTracks: cachedTracks };
+        }
+        return prev;
+      });
+      setArtistInfoToShow(prev => {
+        if (prev && prev.id === artist.id && !prev.topTracks) {
+          return { ...prev, topTracks: cachedTracks };
+        }
+        return prev;
+      });
+      return;
+    }
+
+    // Not in cache, need to fetch or add to queue
+    const currentSelectedArtist = {
+      id: artist.id,
+      name: artist.name,
+      noTopTracks: artist.noTopTracks,
+      topTracks: artist.topTracks
+    };
+
+    // If we haven't already tried and failed to fetch tracks for this artist
+    if (!currentSelectedArtist.noTopTracks) {
+      if (currentSelectedArtist.topTracks) {
+        playerIDQueue.set(currentSelectedArtist.id, currentSelectedArtist.topTracks);
+      } else {
+        const artistTracks = await fetchArtistTopTracks(currentSelectedArtist.id, currentSelectedArtist.name);
+        if (artistTracks) {
+          playerIDQueue.set(currentSelectedArtist.id, artistTracks);
+          // Update the selectedArtist state so the UI reflects the newly fetched tracks
+          setSelectedArtist(prev => {
+            if (prev && prev.id === currentSelectedArtist.id) {
+              return { ...prev, topTracks: artistTracks };
+            }
+            return prev;
+          });
+          // Also update artistInfoToShow so the drawer dropdown reflects the newly fetched tracks
+          setArtistInfoToShow(prev => {
+            if (prev && prev.id === currentSelectedArtist.id) {
+              return { ...prev, topTracks: artistTracks };
+            }
+            return prev;
+          });
         }
       }
     }
@@ -834,6 +875,8 @@ function App() {
         await updateGenrePlayerIDs(genre);
         playerIDs = getSpecificPlayerIDs(genre.id);
       }
+      // Avoid stale async results overwriting a newer play request.
+      if (req !== playRequest.current) return;
       if (!playerIDs || playerIDs.length === 0) {
         toast.error('No tracks found for this genre');
         setPlayerLoading(false);
@@ -1985,6 +2028,16 @@ function App() {
         signedInUser={!!userID}
         isCollectionMode={collectionMode}
         searchOpen={searchOpen}
+        playerOpen={playerOpen}
+        onPlayerOpenChange={setPlayerOpen}
+        playerVideoIds={playerVideoIds}
+        playerTitle={playerTitle}
+        playerArtworkUrl={playerArtworkUrl}
+        playerLoading={playerLoading}
+        onPlayerLoadingChange={handlePlayerLoadingChange}
+        playerHeaderPreferProvidedTitle={playerSource === 'genre'}
+        onPlayerTitleClick={handlePlayerTitleClick}
+        playerStartIndex={playerStartIndex}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -2365,7 +2418,7 @@ function App() {
                 onPlayGenre={onPlayGenre}
                 onFocusInGenresView={focusGenreInCurrentView}
                 playLoading={isPlayerLoadingGenre()}
-                genreTracks={selectedGenres.length > 0 ? playerIDQueue.get(selectedGenres[0].id) : undefined}
+                genreTracks={genreInfoToShow ? playerIDQueue.get(genreInfoToShow.id) : undefined}
                 onPlayTrack={onPlayGenreTrack}
                 onDrawerSnapChange={setIsGenreDrawerAtMinSnap}
                 onCanvasDragStart={handleGenreCanvasDragStart}
@@ -2408,14 +2461,14 @@ function App() {
             {/* TODO: Consider replace with dismissible toast and adding reference to selected genre */}
               <div
                 className={`sm:hidden flex justify-center gap-3 ${graph !== "genres" ? "w-full" : ""}`}>
-                  <ResetButton
+                  {/* <ResetButton
                     onClick={() => {
                       setGraph('genres')
                       // setSelectedArtist(undefined)
                     }
                     }
                     show={graph === 'artists' && artistGenreFilter.length > 0}
-                  />
+                  /> */}
                 <motion.div
                   layout
                   // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
@@ -2460,7 +2513,8 @@ function App() {
               </div>
             </motion.div>
           </AnimatePresence>
-          <Player
+          {/* Player has been moved to AppSidebar component */}
+          {/* <Player
             open={playerOpen}
             onOpenChange={setPlayerOpen}
             videoIds={playerVideoIds}
@@ -2473,7 +2527,7 @@ function App() {
             headerPreferProvidedTitle={playerSource === 'genre'}
             onTitleClick={handlePlayerTitleClick}
             startIndex={playerStartIndex}
-          />
+          /> */}
         </div>
       </AppSidebar>
       <SettingsOverlay

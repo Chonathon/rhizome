@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import React, { useCallback } from "react"
+import React, { useCallback, useRef } from "react"
 import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog } from "lucide-react"
 import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
 import { Genre, GraphType } from "@/types"
@@ -30,6 +30,8 @@ import {
 } from "./ui/dropdown-menu"
 import { useTheme } from "next-themes"
 import KofiLogo from "@/assets/kofi_symbol.svg"
+import SidebarPlayer from "@/components/SidebarPlayer"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -47,11 +49,50 @@ interface AppSidebarProps {
   onLoginClick?: () => void;
   isCollectionMode: boolean;
   searchOpen?: boolean;
+  // Player props
+  playerOpen: boolean;
+  onPlayerOpenChange: (open: boolean) => void;
+  playerVideoIds: string[];
+  playerTitle?: string;
+  playerArtworkUrl?: string;
+  playerLoading?: boolean;
+  onPlayerLoadingChange?: (loading: boolean) => void;
+  playerHeaderPreferProvidedTitle?: boolean;
+  onPlayerTitleClick?: () => void;
+  playerStartIndex?: number;
 }
 
-export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, onLinkedGenreClick, graph, onGraphChange, resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, onExploreClick, isCollectionMode, searchOpen }: AppSidebarProps) {
+export function AppSidebar({
+  children,
+  onClick,
+  selectedGenre,
+  setSearchOpen,
+  onLinkedGenreClick,
+  graph,
+  onGraphChange,
+  resetAppState,
+  signedInUser,
+  onSignUpClick,
+  onLoginClick,
+  onCollectionClick,
+  onExploreClick,
+  isCollectionMode,
+  searchOpen,
+  playerOpen,
+  onPlayerOpenChange,
+  playerVideoIds,
+  playerTitle,
+  playerArtworkUrl,
+  playerLoading,
+  onPlayerLoadingChange,
+  playerHeaderPreferProvidedTitle,
+  onPlayerTitleClick,
+  playerStartIndex
+}: AppSidebarProps) {
   const { setTheme } = useTheme()
   const { toggleSidebar, state } = useSidebar()
+  const isDesktop = useMediaQuery("(min-width: 768px)")
+  const desktopPlayerSlotRef = useRef<HTMLDivElement>(null)
 
   const isCollapsed = state === "collapsed"
 
@@ -140,6 +181,10 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
             />
           </SidebarContent>}
         </SidebarContent>
+
+        {/* Portal slot for desktop player UI - SidebarPlayer renders into this */}
+        <div id="sidebar-player-slot" ref={desktopPlayerSlotRef} />
+
         <SidebarFooter className="mt-auto flex p-1 pb-3">
           <SidebarMenu className={isCollapsed ? "mx-auto gap-4" : "flex w-full flex-row justify-between gap-4"}>
             <DropdownMenu modal={false}>
@@ -149,7 +194,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent side="right" align="end">
+              <DropdownMenuContent side="right" align="end" className="z-[70]">
                 {signedInUser ? (
                   <>
                                 <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('settings:open', { detail: { view: 'General' } }))}><Cog />
@@ -173,7 +218,7 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
                               <SunMoon className="mr-2 text-muted-foreground h-4 w-4" />
                             </span>  Appearance</DropdownMenuSubTrigger>
                             <DropdownMenuPortal>
-                              <DropdownMenuSubContent>
+                              <DropdownMenuSubContent className="z-[70]">
                                 <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
@@ -201,6 +246,24 @@ export function AppSidebar({ children, onClick, selectedGenre, setSearchOpen, on
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
+
+      {/* Player - single stable instance outside Sidebar to avoid containing block issues */}
+      <SidebarPlayer
+        open={playerOpen}
+        onOpenChange={onPlayerOpenChange}
+        videoIds={playerVideoIds}
+        title={playerTitle}
+        autoplay
+        artworkUrl={playerArtworkUrl}
+        loading={playerLoading}
+        onLoadingChange={onPlayerLoadingChange}
+        headerPreferProvidedTitle={playerHeaderPreferProvidedTitle}
+        onTitleClick={onPlayerTitleClick}
+        startIndex={playerStartIndex}
+        sidebarCollapsed={isCollapsed}
+        isDesktop={isDesktop}
+        desktopSlotRef={desktopPlayerSlotRef}
+      />
 
       <SidebarInset>{children}</SidebarInset>
 
