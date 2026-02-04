@@ -44,7 +44,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
         className={`${buttonContainerStyles} shrink-0 aspect-square`}
 
       >
-        <div className=" w-full h-full flex items-center justify-center">
+        <div className=" w-full h-14 flex items-center justify-center">
           <ToolbarButton
             label="Search"
             onClick={onOpenSearch}
