@@ -251,10 +251,10 @@ export function ResponsiveDrawer({
 
   const minimizeToFirstSnap = () => {
     if (isDesktop || !minimizeOnCanvasTouch) {
-      console.log('[ResponsiveDrawer] minimizeToFirstSnap returning early, isDesktop:', isDesktop, 'minimizeOnCanvasTouch:', minimizeOnCanvasTouch);
+      //console.log('[ResponsiveDrawer] minimizeToFirstSnap returning early, isDesktop:', isDesktop, 'minimizeOnCanvasTouch:', minimizeOnCanvasTouch);
       return;
     }
-    console.log('[ResponsiveDrawer] Setting activeSnap to:', snapPoints[0]);
+    //console.log('[ResponsiveDrawer] Setting activeSnap to:', snapPoints[0]);
     setActiveSnap(snapPoints[0]);
   };
 
@@ -272,7 +272,7 @@ export function ResponsiveDrawer({
       const card = cardRef.current;
       if (card && !card.contains(e.target as Node)) {
         canvasDragStartRef.current = { x: e.clientX, y: e.clientY };
-        console.log('[ResponsiveDrawer] Canvas pointer down detected');
+        //console.log('[ResponsiveDrawer] Canvas pointer down detected');
       }
     };
 

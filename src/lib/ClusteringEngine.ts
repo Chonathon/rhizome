@@ -268,8 +268,8 @@ export class ClusteringEngine {
       penalizedSim.set(key, sim * multiplier);
     });
 
-    console.log(`[hybrid] Combined similarities: vectors=${vectorSim.size}, network=${networkSim.size}`);
-    console.log(`[hybrid] Location penalties applied: same=${penaltyStats.same}, region=${penaltyStats.region}, different=${penaltyStats.different}`);
+    //console.log(`[hybrid] Combined similarities: vectors=${vectorSim.size}, network=${networkSim.size}`);
+    //console.log(`[hybrid] Location penalties applied: same=${penaltyStats.same}, region=${penaltyStats.region}, different=${penaltyStats.different}`);
 
     // Filter out weak similarities to reduce graph complexity
     // After location penalty, more edges will fall below threshold
@@ -285,7 +285,7 @@ export class ClusteringEngine {
       }
     });
 
-    console.log(`[hybrid] Filtered from ${penalizedSim.size} to ${filteredCombinedSim.size} edges (min weight: ${minCombinedWeight.toFixed(3)})`);
+    //console.log(`[hybrid] Filtered from ${penalizedSim.size} to ${filteredCombinedSim.size} edges (min weight: ${minCombinedWeight.toFixed(3)})`);
 
     // Ensure each artist has at least one edge in the hybrid graph.
     const degreeByArtist = new Map<string, number>();
@@ -412,7 +412,7 @@ export class ClusteringEngine {
       }
     });
 
-    console.log(`[popularity] Assigned ${this.artists.length} artists to ${clusters.size} dynamic popularity tiers`);
+    //console.log(`[popularity] Assigned ${this.artists.length} artists to ${clusters.size} dynamic popularity tiers`);
 
     return {
       method: 'popularity',
@@ -545,7 +545,7 @@ export class ClusteringEngine {
       communityMap.get(communityId)!.push(artistId);
     });
 
-    console.log(`[${method}] Found ${communityMap.size} communities, generating links...`);
+    //console.log(`[${method}] Found ${communityMap.size} communities, generating links...`);
 
     // Convert to Cluster format
     const clusters = new Map<string, Cluster>();
@@ -591,7 +591,7 @@ export class ClusteringEngine {
       }
     });
 
-    console.log(`[${method}] Generated ${links.length} intra-community links (from ${similarities.size} similarities, min weight: ${minLinkWeight})`);
+    //console.log(`[${method}] Generated ${links.length} intra-community links (from ${similarities.size} similarities, min weight: ${minLinkWeight})`);
 
     return {
       method,
