@@ -853,8 +853,8 @@ export default function SidebarPlayer({
         />
       )}
 
-      {/* 
-      Mobile mode (floating above MobileAppBar) 
+      {/*
+      Mobile mode (floating above MobileAppBar)
       */}
       <motion.div
         key="player-mobile"
@@ -864,10 +864,20 @@ export default function SidebarPlayer({
           opacity: 1,
           y: 0,
           scale: 1,
+          x: 0,
           bottom: calculateBottomPosition()
         }}
-        exit={{ opacity: 0, y: 12, scale: 0.98 }}
+        exit={{ opacity: 0, x: -200, scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 300, damping: 26, mass: 0.6 }}
+        drag={isMobileMode ? "x" : false}
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={{ left: 0.5, right: 0.1 }}
+        onDragEnd={(_, info) => {
+          // Dismiss if swiped left far enough or with enough velocity
+          if (info.offset.x < -100 || info.velocity.x < -500) {
+            onClose();
+          }
+        }}
         onUpdate={() => startTrackingPosition(300)}
         ref={wrapperRef}
         aria-hidden={!isMobileMode}
