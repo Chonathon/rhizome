@@ -86,7 +86,7 @@ export function ResponsiveDrawer({
   contentClassName,
   bodyClassName,
   directionDesktop = "left",
-  snapPoints: mobileSnapPoints = [0.9, 0.50, 0.97],
+  snapPoints: mobileSnapPoints = [0.09, 0.50, 0.97],
   desktopSnapPoints = [0.07, 0.40, 0.90],
   clickToCycleSnap = true,
   desktopQuery = "(min-width: 768px)",
