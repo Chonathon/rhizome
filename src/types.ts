@@ -63,6 +63,8 @@ export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'parentGenre';
 
 export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion';
 
+export type ArtistClusterMode = 'similarArtists' | 'hybrid' | 'popularity';
+
 export type LinkType = GenreClusterMode | 'similar';
 
 export interface GenreGraphData {
