@@ -1,5 +1,5 @@
 import { Artist, NodeLink } from '@/types';
-import { CLUSTER_COLORS, ARTIST_LISTENER_TIERS, ListenerTier } from '@/constants';
+import { getClusterColor, ARTIST_LISTENER_TIERS, ListenerTier } from '@/constants';
 import Graph from 'graphology';
 import louvain from 'graphology-communities-louvain';
 import { buildNormalizedLocationMap, calculateLocationSimilarity } from './locationNormalization';
@@ -717,6 +717,6 @@ export class ClusteringEngine {
       0
     );
 
-    return CLUSTER_COLORS[hash % CLUSTER_COLORS.length];
+    return getClusterColor(hash);
   }
 }

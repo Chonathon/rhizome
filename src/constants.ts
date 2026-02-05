@@ -81,48 +81,28 @@ export const DEFAULT_THEME: Theme = 'system';
 export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER, enableGraphCards: true, previewTrigger: 'modifier'};
 export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
 export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
-// Tailwind default color palette (lighter/less saturated variants)
-// Uses -300 and -400 shades across hues for good visibility on dark backgrounds
-// while staying softer than 500/600.
-export const CLUSTER_COLORS = [
-    // 300 shades
-    "#fca5a5", // red-300
-    "#fdba74", // orange-300
-    "#fcd34d", // amber-300
-    "#fde047", // yellow-300
-    "#bef264", // lime-300
-    "#86efac", // green-300
-    "#6ee7b7", // emerald-300
-    "#5eead4", // teal-300
-    "#67e8f9", // cyan-300
-    "#7dd3fc", // sky-300
-    "#93c5fd", // blue-300
-    "#a5b4fc", // indigo-300
-    "#c4b5fd", // violet-300
-    "#d8b4fe", // purple-300
-    "#f0abfc", // fuchsia-300
-    "#f9a8d4", // pink-300
-    "#fda4af", // rose-300
 
-    // 400 shades (slightly stronger, still soft)
-    "#f87171", // red-400
-    "#fb923c", // orange-400
-    "#fbbf24", // amber-400
-    "#facc15", // yellow-400
-    "#a3e635", // lime-400
-    "#4ade80", // green-400
-    "#34d399", // emerald-400
-    "#2dd4bf", // teal-400
-    "#22d3ee", // cyan-400
-    "#38bdf8", // sky-400
-    "#60a5fa", // blue-400
-    "#818cf8", // indigo-400
-    "#a78bfa", // violet-400
-    "#c084fc", // purple-400
-    "#e879f9", // fuchsia-400
-    "#f472b6", // pink-400
-    "#fb7185", // rose-400
-];
+// Generates distinct cluster colors using the golden angle (137.5°) to maximize
+// hue separation between adjacent indices. Supports unlimited colors for legends.
+// Returns hex format for compatibility with opacity suffixes used in graph rendering.
+export const getClusterColor = (index: number): string => {
+    const hue = (index * 137.5) % 360;
+    const saturation = 85;
+    const lightness = 70 + (index % 3) * 5; // 70%, 75%, 80% range
+    return hslToHex(hue, saturation, lightness);
+};
+
+const hslToHex = (h: number, s: number, l: number): string => {
+    s /= 100;
+    l /= 100;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n: number) => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+};
 
 export const SINGLETON_PARENT_COLOR = "#c4b5fd"; // violet-300 (arbitrary)
 
