@@ -308,38 +308,44 @@ export const getSingletonColor = (count: number) => {
 }
 
 // --- Color utilities ---
-const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+export const isValidHexColor = (hexColor: string) => {
+  let regex = /^#?([a-f0-9]{6}|[a-f0-9]{3})$/i
+  return regex.test(hexColor);
+}
+
+export const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
   let h = hex.trim();
   if (h.startsWith('#')) h = h.slice(1);
-  if (h.length === 8) h = h.slice(0, 6); // ignore alpha
+  if (h.length === 8) h = h.slice(0, 6); // ignore alpha (#RRGGBBAA)
+  if (h.length === 4) h = h.slice(0, 3); // ignore alpha (#RGBA)
+  if (!isValidHexColor(h)) return null;
   if (h.length === 3) {
     const r = parseInt(h[0] + h[0], 16);
     const g = parseInt(h[1] + h[1], 16);
     const b = parseInt(h[2] + h[2], 16);
     return { r, g, b };
   }
-  if (h.length !== 6) return null;
   const r = parseInt(h.slice(0, 2), 16);
   const g = parseInt(h.slice(2, 4), 16);
   const b = parseInt(h.slice(4, 6), 16);
   return { r, g, b };
 };
 
-const rgbToHex = (r: number, g: number, b: number): string => {
+export const rgbToHex = (r: number, g: number, b: number): string => {
   const toHex = (n: number) => n.toString(16).padStart(2, '0');
   const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
   const cr = clamp(r), cg = clamp(g), cb = clamp(b);
   return `#${toHex(cr)}${toHex(cg)}${toHex(cb)}`;
 };
 
-const relLuminance = (hex: string): number => {
+export const relLuminance = (hex: string): number => {
   const rgb = hexToRgb(hex);
   if (!rgb) return 0;
   const srgb = [rgb.r, rgb.g, rgb.b].map(v => v / 255).map(v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
   return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
 };
 
-const contrastRatio = (hex1: string, hex2: string): number => {
+export const contrastRatio = (hex1: string, hex2: string): number => {
   const L1 = relLuminance(hex1);
   const L2 = relLuminance(hex2);
   const lighter = Math.max(L1, L2);
@@ -348,7 +354,7 @@ const contrastRatio = (hex1: string, hex2: string): number => {
 };
 
 // Darken a color by blending with black by a factor in [0,1]
-const darken = (hex: string, factor: number): string => {
+export const darken = (hex: string, factor: number): string => {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
   return rgbToHex(rgb.r * (1 - factor), rgb.g * (1 - factor), rgb.b * (1 - factor));
@@ -383,9 +389,9 @@ const mixTwoColorsAverage = (color1: string, color2: string) => {
   const rgb2 = hexToRgb(color2);
   if (rgb1 && rgb2) {
     const mixRGB = {
-      r: Math.round(rgb1.r + rgb2.r / 2),
-      g: Math.round(rgb1.g + rgb2.g / 2),
-      b: Math.round(rgb1.b + rgb2.b / 2),
+      r: Math.round((rgb1.r + rgb2.r) / 2),
+      g: Math.round((rgb1.g + rgb2.g) / 2),
+      b: Math.round((rgb1.b + rgb2.b) / 2),
     }
     return rgbToHex(mixRGB.r, mixRGB.g, mixRGB.b);
   }
