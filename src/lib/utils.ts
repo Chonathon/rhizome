@@ -33,13 +33,13 @@ export const formatDate = (dateString: string) => {
 };
 
 export const formatNumber = (value: number) =>
-  new Intl.NumberFormat('en-US').format(value);
+    new Intl.NumberFormat('en-US').format(value);
 
 export const formatNumberCompact = (value: number) =>
-  new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    compactDisplay: 'short'
-  }).format(value);
+    new Intl.NumberFormat('en-US', {
+      notation: 'compact',
+      compactDisplay: 'short'
+    }).format(value);
 
 export const envBoolean = (value: string) => {
   return value && (value.toLowerCase() === 'true' || parseInt(value) === 1);
@@ -313,17 +313,18 @@ export const isValidHexColor = (hexColor: string) => {
   return regex.test(hexColor);
 }
 
-export const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
   let h = hex.trim();
   if (h.startsWith('#')) h = h.slice(1);
-  if (h.length === 8) h = h.slice(0, 6); // ignore alpha
+  if (h.length === 8) h = h.slice(0, 6); // ignore alpha (#RRGGBBAA)
+  if (h.length === 4) h = h.slice(0, 3); // ignore alpha (#RGBA)
+  if (!isValidHexColor(h)) return null;
   if (h.length === 3) {
     const r = parseInt(h[0] + h[0], 16);
     const g = parseInt(h[1] + h[1], 16);
     const b = parseInt(h[2] + h[2], 16);
     return { r, g, b };
   }
-  if (h.length !== 6) return null;
   const r = parseInt(h.slice(0, 2), 16);
   const g = parseInt(h.slice(2, 4), 16);
   const b = parseInt(h.slice(4, 6), 16);
@@ -388,9 +389,9 @@ const mixTwoColorsAverage = (color1: string, color2: string) => {
   const rgb2 = hexToRgb(color2);
   if (rgb1 && rgb2) {
     const mixRGB = {
-      r: Math.round(rgb1.r + rgb2.r / 2),
-      g: Math.round(rgb1.g + rgb2.g / 2),
-      b: Math.round(rgb1.b + rgb2.b / 2),
+      r: Math.round((rgb1.r + rgb2.r) / 2),
+      g: Math.round((rgb1.g + rgb2.g) / 2),
+      b: Math.round((rgb1.b + rgb2.b) / 2),
     }
     return rgbToHex(mixRGB.r, mixRGB.g, mixRGB.b);
   }
