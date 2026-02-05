@@ -331,21 +331,21 @@ const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
   return { r, g, b };
 };
 
-const rgbToHex = (r: number, g: number, b: number): string => {
+export const rgbToHex = (r: number, g: number, b: number): string => {
   const toHex = (n: number) => n.toString(16).padStart(2, '0');
   const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
   const cr = clamp(r), cg = clamp(g), cb = clamp(b);
   return `#${toHex(cr)}${toHex(cg)}${toHex(cb)}`;
 };
 
-const relLuminance = (hex: string): number => {
+export const relLuminance = (hex: string): number => {
   const rgb = hexToRgb(hex);
   if (!rgb) return 0;
   const srgb = [rgb.r, rgb.g, rgb.b].map(v => v / 255).map(v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
   return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
 };
 
-const contrastRatio = (hex1: string, hex2: string): number => {
+export const contrastRatio = (hex1: string, hex2: string): number => {
   const L1 = relLuminance(hex1);
   const L2 = relLuminance(hex2);
   const lighter = Math.max(L1, L2);
@@ -354,7 +354,7 @@ const contrastRatio = (hex1: string, hex2: string): number => {
 };
 
 // Darken a color by blending with black by a factor in [0,1]
-const darken = (hex: string, factor: number): string => {
+export const darken = (hex: string, factor: number): string => {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
   return rgbToHex(rgb.r * (1 - factor), rgb.g * (1 - factor), rgb.b * (1 - factor));
