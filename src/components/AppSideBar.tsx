@@ -140,6 +140,16 @@ export function AppSidebar({
                       </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={!isCollectionMode} tooltip="Explore" size="xl">
+                      <button onClick={onExploreClick}>
+                        <Telescope />
+                        {/* {!isCollectionMode ? <TelescopeFilled /> : <Telescope />} */}
+                        <span>Explore</span>
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
 
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Collection" size="xl" isActive={isCollectionMode}>
@@ -153,17 +163,6 @@ export function AppSidebar({
                 </SidebarMenu>
               </SidebarGroup>
               <SidebarGroup>
-                <SidebarMenu className="gap-4">
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={!isCollectionMode} tooltip="Explore" size="xl">
-                      <button onClick={onExploreClick}>
-                        <Telescope />
-                        {/* {!isCollectionMode ? <TelescopeFilled /> : <Telescope />} */}
-                        <span>Explore</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
               </SidebarGroup>
             </SidebarGroupContent>
           </SidebarContent>
