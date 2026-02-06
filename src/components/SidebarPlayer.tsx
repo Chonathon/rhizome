@@ -603,12 +603,14 @@ export default function SidebarPlayer({
     // Trigger notes when:
     // 1. Entering minimal mode while already playing (collapsed sidebar after selecting content)
     // 2. New content selected while already in minimal mode and playing
+    // 3. Playback starts while already in minimal mode
     if (isMinimalMode && isPlaying) {
       const justEnteredMinimalMode = !wasMinimalMode && isMinimalMode;
+      const justStartedPlaying = !wasPlaying && isPlaying;
       const videoIdsChanged = prevVideoIds.length > 0 &&
         (prevVideoIds.length !== videoIds.length || prevVideoIds[0] !== videoIds[0]);
 
-      if (justEnteredMinimalMode || (wasMinimalMode && videoIdsChanged)) {
+      if (justEnteredMinimalMode || justStartedPlaying || (wasMinimalMode && videoIdsChanged)) {
         activateNotesForDuration();
       }
     }
