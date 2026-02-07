@@ -17,6 +17,11 @@ export const DEFAULT_PRIORITY_LABEL_ZOOM_SCALE = 0.6;
 export const DEFAULT_PRIORITY_LABEL_PERCENT = 0.01;
 // Default upward screen-space offset (in px) to lift a focused node on mobile
 export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
+// Desktop drawer + sidebar offset constants for centering
+export const DESKTOP_DRAWER_WIDTH_PX = 384; // max-w-sm
+export const SIDEBAR_EXPANDED_WIDTH_PX = 224; // 14rem
+export const SIDEBAR_COLLAPSED_WIDTH_PX = 56; // 3.5rem
+export const DESKTOP_OFFSET_MAX_WIDTH_PX = 1800; // Disable X offset above this screen width
 
 export const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
@@ -68,6 +73,21 @@ export function applyMobileDrawerYOffset(
 ): number {
   if (!isMobile || !offsetPx) return y;
   return y + worldOffsetForScreenOffset(offsetPx, k);
+}
+
+// Apply leftward offset to viewport center so node appears rightward on screen (drawer + sidebar on left)
+// Disabled on large screens (>1800px) where there's enough space without offset
+export function applyDesktopDrawerXOffset(
+  x: number,
+  k: number,
+  isDesktop: boolean,
+  sidebarExpanded: boolean
+): number {
+  if (!isDesktop) return x;
+  if (window.innerWidth > DESKTOP_OFFSET_MAX_WIDTH_PX) return x;
+  const sidebarWidth = sidebarExpanded ? SIDEBAR_EXPANDED_WIDTH_PX : SIDEBAR_COLLAPSED_WIDTH_PX;
+  const offsetPx = (DESKTOP_DRAWER_WIDTH_PX + sidebarWidth) / 2;
+  return x - worldOffsetForScreenOffset(offsetPx, k);
 }
 
 export function estimateLabelWidth(name: string, fontPx = LABEL_FONT_SIZE): number {
