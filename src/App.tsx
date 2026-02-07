@@ -428,17 +428,33 @@ function App() {
   const defaultGraphZoom = useMemo(() => getDefaultGraphZoom(dagMode, isMobile), [dagMode, isMobile]);
   const [isGenresZoomDefault, setIsGenresZoomDefault] = useState(true);
   const [isArtistsZoomDefault, setIsArtistsZoomDefault] = useState(true);
+  const [genresZoomDirection, setGenresZoomDirection] = useState<'in' | 'out' | 'default'>('default');
+  const [artistsZoomDirection, setArtistsZoomDirection] = useState<'in' | 'out' | 'default'>('default');
+  const [isGenresZoomResetting, setIsGenresZoomResetting] = useState(false);
+  const [isArtistsZoomResetting, setIsArtistsZoomResetting] = useState(false);
+  const genresZoomResetTimeoutRef = useRef<number | null>(null);
+  const artistsZoomResetTimeoutRef = useRef<number | null>(null);
   const zoomResetEpsilon = 0.001;
+  const getZoomDirection = useCallback((k: number) => {
+    if (Math.abs(k - defaultGraphZoom) <= zoomResetEpsilon) return 'default';
+    return k > defaultGraphZoom ? 'in' : 'out';
+  }, [defaultGraphZoom, zoomResetEpsilon]);
 
   const handleGenresZoomChange = useCallback((k: number) => {
-    const isDefault = Math.abs(k - defaultGraphZoom) <= zoomResetEpsilon;
+    if (isGenresZoomResetting && Math.abs(k - defaultGraphZoom) > zoomResetEpsilon) return;
+    const direction = getZoomDirection(k);
+    const isDefault = direction === 'default';
     setIsGenresZoomDefault((prev) => (prev === isDefault ? prev : isDefault));
-  }, [defaultGraphZoom, zoomResetEpsilon]);
+    setGenresZoomDirection((prev) => (prev === direction ? prev : direction));
+  }, [defaultGraphZoom, getZoomDirection, isGenresZoomResetting, zoomResetEpsilon]);
 
   const handleArtistsZoomChange = useCallback((k: number) => {
-    const isDefault = Math.abs(k - defaultGraphZoom) <= zoomResetEpsilon;
+    if (isArtistsZoomResetting && Math.abs(k - defaultGraphZoom) > zoomResetEpsilon) return;
+    const direction = getZoomDirection(k);
+    const isDefault = direction === 'default';
     setIsArtistsZoomDefault((prev) => (prev === isDefault ? prev : isDefault));
-  }, [defaultGraphZoom, zoomResetEpsilon]);
+    setArtistsZoomDirection((prev) => (prev === direction ? prev : direction));
+  }, [defaultGraphZoom, getZoomDirection, isArtistsZoomResetting, zoomResetEpsilon]);
 
   useEffect(() => {
     const genresZoom = genresGraphRef.current?.getZoom?.();
@@ -453,6 +469,48 @@ function App() {
 
   const activeGraphRef = graph === 'genres' ? genresGraphRef : artistsGraphRef;
   const isActiveZoomDefault = graph === 'genres' ? isGenresZoomDefault : isArtistsZoomDefault;
+  const activeZoomDirection = graph === 'genres' ? genresZoomDirection : artistsZoomDirection;
+  const isActiveZoomResetting = graph === 'genres' ? isGenresZoomResetting : isArtistsZoomResetting;
+
+  const startZoomReset = useCallback((target: 'genres' | 'artists') => {
+    const resetDurationMs = 420;
+    if (target === 'genres') {
+      if (genresZoomResetTimeoutRef.current) {
+        window.clearTimeout(genresZoomResetTimeoutRef.current);
+      }
+      setIsGenresZoomResetting(true);
+      setIsGenresZoomDefault(true);
+      setGenresZoomDirection('default');
+      genresZoomResetTimeoutRef.current = window.setTimeout(() => {
+        setIsGenresZoomResetting(false);
+        const zoom = genresGraphRef.current?.getZoom?.();
+        if (typeof zoom === 'number') handleGenresZoomChange(zoom);
+      }, resetDurationMs);
+    } else {
+      if (artistsZoomResetTimeoutRef.current) {
+        window.clearTimeout(artistsZoomResetTimeoutRef.current);
+      }
+      setIsArtistsZoomResetting(true);
+      setIsArtistsZoomDefault(true);
+      setArtistsZoomDirection('default');
+      artistsZoomResetTimeoutRef.current = window.setTimeout(() => {
+        setIsArtistsZoomResetting(false);
+        const zoom = artistsGraphRef.current?.getZoom?.();
+        if (typeof zoom === 'number') handleArtistsZoomChange(zoom);
+      }, resetDurationMs);
+    }
+  }, [handleArtistsZoomChange, handleGenresZoomChange]);
+
+  useEffect(() => {
+    return () => {
+      if (genresZoomResetTimeoutRef.current) {
+        window.clearTimeout(genresZoomResetTimeoutRef.current);
+      }
+      if (artistsZoomResetTimeoutRef.current) {
+        window.clearTimeout(artistsZoomResetTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // refs and effects for checking current loading play ids
   const artistsPlayIDsLoadingRef = useRef(artistsPlayIDsLoading);
@@ -2664,9 +2722,11 @@ function App() {
                   activeGraphRef.current?.zoomOut();
                 }}
                 onResetZoom={() => {
+                  startZoomReset(graph === 'genres' ? 'genres' : 'artists');
                   activeGraphRef.current?.zoomTo(defaultGraphZoom, 400);
                 }}
-                showResetZoom={!isActiveZoomDefault}
+                showResetZoom={!isActiveZoomDefault && !isActiveZoomResetting}
+                resetZoomDirection={isActiveZoomResetting ? 'default' : activeZoomDirection}
               />
             </div>
           {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
@@ -2770,9 +2830,11 @@ function App() {
                     activeGraphRef.current?.zoomOut();
                   }}
                   onResetZoom={() => {
+                    startZoomReset(graph === 'genres' ? 'genres' : 'artists');
                     activeGraphRef.current?.zoomTo(defaultGraphZoom, 400);
                   }}
-                  showResetZoom={!isActiveZoomDefault}
+                  showResetZoom={!isActiveZoomDefault && !isActiveZoomResetting}
+                  resetZoomDirection={isActiveZoomResetting ? 'default' : activeZoomDirection}
                 />
               </div>
           </div>

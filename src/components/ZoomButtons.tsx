@@ -6,6 +6,7 @@ type ZoomButtonsProps = {
   onZoomOut?: () => void
   onResetZoom?: () => void
   showResetZoom?: boolean
+  resetZoomDirection?: 'in' | 'out' | 'default'
 }
 
 const ZoomButtons: React.FC<ZoomButtonsProps> = ({
@@ -13,7 +14,15 @@ const ZoomButtons: React.FC<ZoomButtonsProps> = ({
   onZoomOut,
   onResetZoom,
   showResetZoom = false,
+  resetZoomDirection = 'default',
 }) => {
+  const resetIconClass =
+    resetZoomDirection === 'in'
+      ? 'size-[22px]'
+      : resetZoomDirection === 'out'
+        ? 'size-[14px]'
+        : 'size-[18px]'
+
   return (
     <div className='flex flex-col w-fit border overflow-hidden rounded-full bg-background/80 shadow-xs focus-within:ring-2 focus-within:ring-ring/40 focus-within:ring-offset-2 focus-within:ring-offset-background'>
       <Button
@@ -36,7 +45,7 @@ const ZoomButtons: React.FC<ZoomButtonsProps> = ({
         title='Reset zoom'
         disabled={!showResetZoom}
       >
-        <Scan />
+        <Scan className={resetIconClass} />
         <span className='sr-only'>Reset zoom</span>
       </Button>
       <Button
