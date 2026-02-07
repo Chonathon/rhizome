@@ -136,9 +136,9 @@ function defaultRenderSelection<T>(ctx: SelectionRenderContext<T>): void {
   canvas.restore();
 }
 
-function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE, customColor?: string, bold = false): void {
+function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE, customColor?: string, bold = false, showBackground = false): void {
   const { ctx: canvas, label, x, y, radius, theme, labelAlpha } = ctx;
-  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize, 0, customColor, bold);
+  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize, 0, customColor, bold, showBackground);
 }
 
 const Graph = forwardRef(function GraphInner<
@@ -776,7 +776,7 @@ const Graph = forwardRef(function GraphInner<
                 const labelPx = isPriorityLabel
                   ? Math.max(labelFontSize, fontPxForZoom(labelFontSize, k))
                   : labelFontSize;
-                defaultRenderLabel(labelContext, labelPx, labelColor, isPriorityLabel);
+                defaultRenderLabel(labelContext, labelPx, labelColor, isPriorityLabel, isClickSelected);
               } else {
                 renderLabel(labelContext);
               }

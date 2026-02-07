@@ -147,23 +147,45 @@ export function drawLabelBelow(
   fontPx = LABEL_FONT_SIZE,
   yOffset = 0,
   customColor?: string,
-  bold = false
+  bold = false,
+  showBackground = false
 ) {
   if (alpha <= 0) return;
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.font = `${bold ? '600 ' : ''}${fontPx}px Geist`;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
+  ctx.textBaseline = 'middle';
 
-  // Add subtle shadow for contrast against nodes and edges
   const isDark = theme === 'dark';
-  ctx.shadowColor = isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)';
-  ctx.shadowBlur = 4;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 0;
+  const textY = y + r + 8 + yOffset + fontPx / 2;
 
-  ctx.fillStyle = customColor ?? (isDark ? 'rgba(255, 255, 255, .87)' : 'rgba(0, 0, 0, .87)');
-  ctx.fillText(label, x, y + r + 8 + yOffset);
+  // Draw pill-shaped background for selected nodes
+  if (showBackground) {
+    const textMetrics = ctx.measureText(label);
+    const paddingX = 8;
+    const paddingY = 4;
+    const pillWidth = textMetrics.width + paddingX * 2;
+    const pillHeight = fontPx + paddingY * 2;
+    const pillRadius = pillHeight / 2;
+
+    ctx.fillStyle = isDark ? 'oklch(0.922 0 0)' : 'oklch(0.205 0 0)';
+    ctx.beginPath();
+    ctx.roundRect(x - pillWidth / 2, textY - pillHeight / 2, pillWidth, pillHeight, pillRadius);
+    ctx.fill();
+  } else {
+    // Add subtle shadow for contrast against nodes and edges (only when no background)
+    ctx.shadowColor = isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+  }
+
+  // Invert text color when background is shown (pill uses primary color)
+  const textColor = showBackground
+    ? (isDark ? 'rgba(0, 0, 0, .87)' : 'rgba(255, 255, 255, .87)')
+    : (isDark ? 'rgba(255, 255, 255, .87)' : 'rgba(0, 0, 0, .87)');
+  ctx.fillStyle = customColor ?? textColor;
+  ctx.fillText(label, x, textY);
   ctx.restore();
 }
