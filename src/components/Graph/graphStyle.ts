@@ -5,6 +5,7 @@ import { fixWikiImageURL } from "@/lib/utils";
 // Image cache for canvas rendering
 const imageCache = new Map<string, HTMLImageElement>();
 const loadingImages = new Set<string>();
+const failedImages = new Set<string>();
 const imageLoadCallbacks = new Set<() => void>();
 const imageLoadStartCallbacks = new Set<() => void>();
 
@@ -40,6 +41,9 @@ export function getOrLoadImage(rawUrl: string): HTMLImageElement | null {
   };
   img.onerror = () => {
     loadingImages.delete(url);
+    failedImages.add(url);
+    // Notify listeners so UI can update to show fallback
+    imageLoadCallbacks.forEach(cb => cb());
   };
   img.src = url;
   return null;
@@ -48,6 +52,11 @@ export function getOrLoadImage(rawUrl: string): HTMLImageElement | null {
 export function isImageLoading(rawUrl: string): boolean {
   const url = fixWikiImageURL(rawUrl);
   return loadingImages.has(url);
+}
+
+export function isImageFailed(rawUrl: string): boolean {
+  const url = fixWikiImageURL(rawUrl);
+  return failedImages.has(url);
 }
 
 export function hasLoadingImages(): boolean {
@@ -205,23 +214,29 @@ export function drawSelectedNodeFill(
     }
   }
 
-  // Apply pulsing opacity while image is loading
+  // Check if image is currently loading
   const loading = imageUrl && isImageLoading(imageUrl);
+  const failed = imageUrl && isImageFailed(imageUrl);
+
+  // Apply pulsing opacity while image is loading
   if (loading) {
     ctx.globalAlpha = getPulseOpacity();
   }
 
-  // No image - draw normal node with letter overlay
+  // Draw the node circle
   drawCircleNode(ctx, x, y, r, nodeColor);
 
-  // Draw first letter on top (lowercase for genres, uppercase for artists)
-  const letter = isArtist ? label.charAt(0).toUpperCase() : label.charAt(0).toLowerCase();
-  const fontSize = Math.max(12, r * 1.2);
-  ctx.font = `600 ${fontSize}px/1 Geist`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = textColor;
-  ctx.fillText(letter, x, y);
+  // Only show letter if: no imageUrl (genre) OR image failed to load
+  // Don't show letter during loading - just the pulsing circle
+  if (!imageUrl || failed) {
+    const letter = isArtist ? label.charAt(0).toUpperCase() : label.charAt(0).toLowerCase();
+    const fontSize = Math.max(12, r * 1.2);
+    ctx.font = `600 ${fontSize}px/1 Geist`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = textColor;
+    ctx.fillText(letter, x, y);
+  }
 
   ctx.restore();
   return false;
