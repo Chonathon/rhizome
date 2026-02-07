@@ -22,6 +22,7 @@ const ZoomButtons: React.FC<ZoomButtonsProps> = ({
       : resetZoomDirection === 'out'
         ? 'size-[14px]'
         : 'size-[18px]'
+  const resetIconTransitionClass = 'transition-[width,height] duration-300 ease-out motion-reduce:transition-none'
 
   return (
     <div className='flex flex-col w-fit border overflow-hidden rounded-full bg-background/80 shadow-xs focus-within:ring-2 focus-within:ring-ring/40 focus-within:ring-offset-2 focus-within:ring-offset-background'>
@@ -45,7 +46,7 @@ const ZoomButtons: React.FC<ZoomButtonsProps> = ({
         title='Reset zoom'
         disabled={!showResetZoom}
       >
-        <Scan className={resetIconClass} />
+        <Scan className={`${resetIconClass} ${resetIconTransitionClass}`} />
         <span className='sr-only'>Reset zoom</span>
       </Button>
       <Button
