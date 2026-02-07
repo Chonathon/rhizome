@@ -622,10 +622,10 @@ const Graph = forwardRef(function GraphInner<
         dagLevelDistance={dagMode ? 200 : undefined}
         // How quickly the simulation "cools down" (D3 default is 0.0228)
         // Higher = faster settling but less accurate layout, Lower = slower but more precise
-        d3AlphaDecay={0.0228}
+        d3AlphaDecay={0.05}
         // Friction/damping on node velocity (D3 default is 0.4, using slightly higher for stability)
         // Higher = nodes stop faster/less drift, Lower = more fluid movement
-        d3VelocityDecay={0.6}
+        d3VelocityDecay={0.45}
         // Maximum time (ms) the simulation runs before auto-stopping
         // Higher = continues animating longer, Lower = freezes layout sooner
         cooldownTime={8000}
