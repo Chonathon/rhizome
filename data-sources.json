@@ -1,0 +1,32 @@
+{
+  "email_network": {
+    "description": "Email network data extracted from PDF documents via the epstein-email-extraction pipeline",
+    "tool": "../epstein-email-extraction",
+    "input_format": "PDF files (scanned or text-based)",
+    "output_files": {
+      "network": "output/network.json",
+      "emails": "output/emails.json",
+      "entities": "output/entities.json"
+    },
+    "network_schema": {
+      "nodes": [
+        {
+          "id": "string (url-safe slug)",
+          "name": "string (canonical name)",
+          "email_count": "number (total emails sent + received)",
+          "sent_count": "number",
+          "received_count": "number",
+          "aliases": "string[] (name variations)"
+        }
+      ],
+      "links": [
+        {
+          "source": "string (node id)",
+          "target": "string (node id)",
+          "linkType": "string ('sent_to' | 'cc')",
+          "weight": "number (email count)"
+        }
+      ]
+    }
+  }
+}
