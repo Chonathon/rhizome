@@ -413,7 +413,7 @@ const Graph = forwardRef(function GraphInner<
     // Charge force: nodes repel each other (D3 default is -30)
     // More negative = stronger repulsion/more spread out, Less negative = nodes closer together
     // KEY FIX: Reducing from -200 to -100 greatly reduced the "floating outward" drag effect
-    fg.d3Force("charge")?.strength(dagMode ? -1230 : -80);
+    fg.d3Force("charge")?.strength(dagMode ? -1230 : -120);
 
     // Link force: connected nodes attract each other
     const linkForce = fg.d3Force("link") as d3.ForceLink<PreparedNode<T>, L> | undefined;
