@@ -158,7 +158,7 @@ export function drawLabelBelow(
   ctx.textBaseline = 'middle';
 
   const isDark = theme === 'dark';
-  const textY = y + r + 8 + yOffset + fontPx / 2;
+  const textY = y + r + 6 + yOffset + fontPx / 2;
 
   // Draw pill-shaped background for selected nodes
   if (showBackground) {
