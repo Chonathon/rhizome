@@ -126,11 +126,12 @@ function defaultRenderNode<T>(ctx: NodeRenderContext<T>): void {
 }
 
 function defaultRenderSelection<T>(ctx: SelectionRenderContext<T>): void {
-  const { ctx: canvas, x, y, radius, color } = ctx;
+  const { ctx: canvas, x, y, radius, theme } = ctx;
   canvas.save();
   canvas.beginPath();
   canvas.arc(x, y, radius + 4, 0, 2 * Math.PI);
-  canvas.strokeStyle = color;
+  // Use same color as label pill background
+  canvas.strokeStyle = theme === 'dark' ? 'oklch(0.922 0 0)' : 'oklch(0.205 0 0)';
   canvas.lineWidth = 3;
   canvas.stroke();
   canvas.restore();
