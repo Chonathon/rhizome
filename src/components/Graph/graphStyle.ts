@@ -183,10 +183,11 @@ export function drawSelectedNodeFill(
   // No image - draw normal node with letter overlay
   drawCircleNode(ctx, x, y, r, nodeColor);
 
-  // Draw first letter on top
-  const letter = label.charAt(0).toUpperCase();
+  // Draw first letter on top (lowercase for genres, uppercase for artists without images)
+  const isGenre = !imageUrl;
+  const letter = isGenre ? label.charAt(0).toLowerCase() : label.charAt(0).toUpperCase();
   const fontSize = Math.max(12, r * 1.2);
-  ctx.font = `600 ${fontSize}px Geist`;
+  ctx.font = `600 ${fontSize}px/1 Geist`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = textColor;
