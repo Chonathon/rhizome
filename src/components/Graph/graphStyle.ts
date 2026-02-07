@@ -1,5 +1,42 @@
 // Shared helpers for graph styling and label behavior
 
+import { fixWikiImageURL } from "@/lib/utils";
+
+// Image cache for canvas rendering
+const imageCache = new Map<string, HTMLImageElement>();
+const loadingImages = new Set<string>();
+const imageLoadCallbacks = new Set<() => void>();
+
+export function onImageLoad(callback: () => void): () => void {
+  imageLoadCallbacks.add(callback);
+  return () => imageLoadCallbacks.delete(callback);
+}
+
+export function getOrLoadImage(rawUrl: string): HTMLImageElement | null {
+  // Transform wiki URLs to loadable format
+  const url = fixWikiImageURL(rawUrl);
+
+  if (imageCache.has(url)) {
+    return imageCache.get(url)!;
+  }
+  if (loadingImages.has(url)) {
+    return null; // Still loading
+  }
+  loadingImages.add(url);
+  const img = new Image();
+  img.onload = () => {
+    imageCache.set(url, img);
+    loadingImages.delete(url);
+    // Notify all listeners that an image loaded
+    imageLoadCallbacks.forEach(cb => cb());
+  };
+  img.onerror = () => {
+    loadingImages.delete(url);
+  };
+  img.src = url;
+  return null;
+}
+
 export const LABEL_FONT_SIZE = 12;
 export const DEFAULT_LABEL_FADE_START = .1;
 export const DEFAULT_LABEL_FADE_END = .3;
@@ -108,6 +145,55 @@ export function drawCircleNode(
   ctx.lineWidth = 0.5;
   ctx.fill();
   ctx.stroke();
+}
+
+/**
+ * Draw a selected node with image (artist) or letter (genre) fill.
+ * Returns true if image was drawn, false otherwise (caller should draw normal node).
+ */
+export function drawSelectedNodeFill(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  label: string,
+  nodeColor: string,
+  imageUrl?: string,
+  theme?: string
+): boolean {
+  const isDark = theme === 'dark';
+  const textColor = isDark ? 'rgba(0, 0, 0, .87)' : 'rgba(255, 255, 255, .87)';
+
+  ctx.save();
+
+  // Only show image fill if we have an image URL and it's loaded
+  if (imageUrl) {
+    const img = getOrLoadImage(imageUrl);
+    if (img) {
+      // Draw image clipped to circle
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, 2 * Math.PI);
+      ctx.clip();
+      ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
+      ctx.restore();
+      return true;
+    }
+  }
+
+  // No image - draw normal node with letter overlay
+  drawCircleNode(ctx, x, y, r, nodeColor);
+
+  // Draw first letter on top
+  const letter = label.charAt(0).toUpperCase();
+  const fontSize = Math.max(12, r * 1.2);
+  ctx.font = `600 ${fontSize}px Geist`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = textColor;
+  ctx.fillText(letter, x, y);
+
+  ctx.restore();
+  return false;
 }
 
 // Default node radius bounds

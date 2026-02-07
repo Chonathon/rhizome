@@ -30,10 +30,12 @@ import {
   DEFAULT_PRIORITY_LABEL_ZOOM_SCALE,
   DEFAULT_PRIORITY_LABEL_PERCENT,
   drawCircleNode,
+  drawSelectedNodeFill,
   drawLabelBelow,
   applyMobileDrawerYOffset,
   DEFAULT_MOBILE_CENTER_OFFSET_PX,
   estimateLabelWidth,
+  onImageLoad,
 } from "@/components/Graph/graphStyle";
 import type {BasicNode, GraphHandle} from "@/types";
 
@@ -62,6 +64,7 @@ export interface NodeRenderContext<T> {
   radius: number;
   color: string;
   isSelected: boolean;
+  isClickSelected: boolean;
   isNeighbor: boolean;
   isHovered: boolean;
   alpha: number;
@@ -118,10 +121,19 @@ export interface GraphProps<T, L extends SharedGraphLink> {
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
 
 function defaultRenderNode<T>(ctx: NodeRenderContext<T>): void {
-  const { ctx: canvas, x, y, radius, color, alpha } = ctx;
+  const { ctx: canvas, node, x, y, radius, color, alpha, isClickSelected, theme } = ctx;
   canvas.save();
   canvas.globalAlpha = alpha;
-  drawCircleNode(canvas, x, y, radius, color);
+
+  // For click-selected nodes, draw image (artist) or letter (genre) fill
+  if (isClickSelected) {
+    const data = node.data as { image?: string } | undefined;
+    const imageUrl = data?.image;
+    drawSelectedNodeFill(canvas, x, y, radius, node.label, color, imageUrl, theme);
+  } else {
+    drawCircleNode(canvas, x, y, radius, color);
+  }
+
   canvas.restore();
 }
 
@@ -397,6 +409,15 @@ const Graph = forwardRef(function GraphInner<
     if (show) fgRef.current.resumeAnimation();
     else fgRef.current.pauseAnimation();
   }, [show]);
+
+  // Trigger redraw when images load (for selected node image display)
+  useEffect(() => {
+    return onImageLoad(() => {
+      // Force a redraw by zooming to current level
+      const currentZoom = zoomRef.current || 1;
+      fgRef.current?.zoom?.(currentZoom, 0);
+    });
+  }, []);
 // oi
   useEffect(() => {
     if (!show || !fgRef.current) return;
@@ -707,6 +728,7 @@ const Graph = forwardRef(function GraphInner<
             radius,
             color: accent,
             isSelected,
+            isClickSelected,
             isNeighbor,
             isHovered,
             alpha,
