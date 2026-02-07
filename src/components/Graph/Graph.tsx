@@ -36,6 +36,8 @@ import {
   DEFAULT_MOBILE_CENTER_OFFSET_PX,
   estimateLabelWidth,
   onImageLoad,
+  onImageLoadStart,
+  hasLoadingImages,
 } from "@/components/Graph/graphStyle";
 import type {BasicNode, GraphHandle} from "@/types";
 
@@ -411,13 +413,49 @@ const Graph = forwardRef(function GraphInner<
     else fgRef.current.pauseAnimation();
   }, [show]);
 
-  // Trigger redraw when images load (for selected node image display)
+  // Trigger redraw when images load and animate pulse during loading
   useEffect(() => {
-    return onImageLoad(() => {
-      // Force a redraw by zooming to current level
+    let animationFrame: number | null = null;
+
+    const animate = () => {
+      if (hasLoadingImages()) {
+        // Keep animating for pulse effect while loading
+        fgRef.current?.resumeAnimation?.();
+        animationFrame = requestAnimationFrame(animate);
+      } else {
+        animationFrame = null;
+      }
+    };
+
+    const startAnimation = () => {
+      if (animationFrame === null) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    const unsubscribeLoad = onImageLoad(() => {
+      // Force a redraw when image finishes loading
       const currentZoom = zoomRef.current || 1;
       fgRef.current?.zoom?.(currentZoom, 0);
     });
+
+    const unsubscribeStart = onImageLoadStart(() => {
+      // Start animation loop when image starts loading
+      startAnimation();
+    });
+
+    // Start animation loop if images are already loading
+    if (hasLoadingImages()) {
+      startAnimation();
+    }
+
+    return () => {
+      unsubscribeLoad();
+      unsubscribeStart();
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
   }, []);
 // oi
   useEffect(() => {

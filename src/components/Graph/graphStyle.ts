@@ -6,10 +6,16 @@ import { fixWikiImageURL } from "@/lib/utils";
 const imageCache = new Map<string, HTMLImageElement>();
 const loadingImages = new Set<string>();
 const imageLoadCallbacks = new Set<() => void>();
+const imageLoadStartCallbacks = new Set<() => void>();
 
 export function onImageLoad(callback: () => void): () => void {
   imageLoadCallbacks.add(callback);
   return () => imageLoadCallbacks.delete(callback);
+}
+
+export function onImageLoadStart(callback: () => void): () => void {
+  imageLoadStartCallbacks.add(callback);
+  return () => imageLoadStartCallbacks.delete(callback);
 }
 
 export function getOrLoadImage(rawUrl: string): HTMLImageElement | null {
@@ -23,6 +29,8 @@ export function getOrLoadImage(rawUrl: string): HTMLImageElement | null {
     return null; // Still loading
   }
   loadingImages.add(url);
+  // Notify listeners that an image started loading
+  imageLoadStartCallbacks.forEach(cb => cb());
   const img = new Image();
   img.onload = () => {
     imageCache.set(url, img);
@@ -35,6 +43,22 @@ export function getOrLoadImage(rawUrl: string): HTMLImageElement | null {
   };
   img.src = url;
   return null;
+}
+
+export function isImageLoading(rawUrl: string): boolean {
+  const url = fixWikiImageURL(rawUrl);
+  return loadingImages.has(url);
+}
+
+export function hasLoadingImages(): boolean {
+  return loadingImages.size > 0;
+}
+
+// Get pulsing opacity for loading state (matches Tailwind's pulse: 1 -> 0.5 -> 1 over 2s)
+export function getPulseOpacity(): number {
+  const t = (performance.now() % 2000) / 2000; // 0-1 over 2 seconds
+  // Tailwind pulse: opacity 1 at 0% and 100%, opacity 0.5 at 50%
+  return 0.75 + 0.25 * Math.cos(t * 2 * Math.PI);
 }
 
 export const LABEL_FONT_SIZE = 12;
@@ -179,6 +203,12 @@ export function drawSelectedNodeFill(
       ctx.restore();
       return true;
     }
+  }
+
+  // Apply pulsing opacity while image is loading
+  const loading = imageUrl && isImageLoading(imageUrl);
+  if (loading) {
+    ctx.globalAlpha = getPulseOpacity();
   }
 
   // No image - draw normal node with letter overlay
