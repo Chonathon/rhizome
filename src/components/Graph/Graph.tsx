@@ -34,6 +34,7 @@ import {
   applyMobileDrawerYOffset,
   DEFAULT_MOBILE_CENTER_OFFSET_PX,
   estimateLabelWidth,
+  getDefaultGraphZoom,
 } from "@/components/Graph/graphStyle";
 import type {BasicNode, GraphHandle} from "@/types";
 
@@ -93,6 +94,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   autoFocus?: boolean;
   onNodeClick?: (node: T) => void;
   onNodeHover?: (node: T | undefined, screenPosition: { x: number; y: number } | null) => void;
+  onZoomChange?: (zoom: number) => void;
   renderNode?: NodeRenderer<T>;
   renderSelection?: SelectionRenderer<T>;
   renderLabel?: LabelRenderer<T>;
@@ -158,6 +160,7 @@ const Graph = forwardRef(function GraphInner<
     autoFocus = true,
     onNodeClick,
     onNodeHover,
+    onZoomChange,
     renderNode = defaultRenderNode,
     renderSelection = defaultRenderSelection,
     renderLabel = defaultRenderLabel,
@@ -185,6 +188,11 @@ const Graph = forwardRef(function GraphInner<
   const lastInitializedSignatureRef = useRef<string | undefined>(undefined);
   const shouldResetZoomRef = useRef(true);
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
+  const onZoomChangeRef = useRef<((zoom: number) => void) | undefined>(onZoomChange);
+
+  useEffect(() => {
+    onZoomChangeRef.current = onZoomChange;
+  }, [onZoomChange]);
 
   // Update refs when showNodes/showLinks change
   useEffect(() => {
@@ -240,15 +248,21 @@ const Graph = forwardRef(function GraphInner<
         const cur = zoomRef.current || 1;
         const target = Math.min(20, cur * 2);
         fgRef.current?.zoom?.(target, 400);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
       },
       zoomOut: () => {
         const cur = zoomRef.current || 1;
         const target = Math.max(0.03, cur / 2);
         fgRef.current?.zoom?.(target, 400);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
       },
       zoomTo: (k: number, ms = 400) => {
         const target = Math.max(0.03, Math.min(20, k));
         fgRef.current?.zoom?.(target, ms);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
       },
       getZoom: () => zoomRef.current || 1,
       getCanvas: () => {
@@ -474,10 +488,12 @@ const Graph = forwardRef(function GraphInner<
     fg.d3ReheatSimulation?.();
     if (shouldResetZoomRef.current) {
       const isMobile = window.matchMedia('(max-width: 640px)').matches;
+      const defaultZoom = getDefaultGraphZoom(dagMode, isMobile);
       // Reset both zoom level and center position
       fg.centerAt(0, 0, 0);
-      fg.zoom(dagMode ? 0.25 : (isMobile ? 0.12 : 0.14), 0);
-      zoomRef.current = dagMode ? 0.25 : (isMobile ? 0.12 : 0.18);
+      fg.zoom(defaultZoom, 0);
+      zoomRef.current = defaultZoom;
+      onZoomChangeRef.current?.(defaultZoom);
       shouldResetZoomRef.current = false;
     }
     if (signature) {
@@ -662,6 +678,7 @@ const Graph = forwardRef(function GraphInner<
         linkCurvature={dagMode ? 0 : linkCurvatureValue}
         onZoom={({ k }) => {
           zoomRef.current = k;
+          onZoomChangeRef.current?.(k);
         }}
         onNodeHover={(node) => {
           const id = node?.id as string | undefined;

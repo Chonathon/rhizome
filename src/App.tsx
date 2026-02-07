@@ -90,7 +90,7 @@ import SettingsOverlay, {ChangePasswordDialog} from '@/components/SettingsOverla
 import {submitFeedback} from "@/apis/feedbackApi";
 import {useNavigate} from "react-router";
 import { exportGraphAsImage } from "@/utils/exportGraph";
-import { DEFAULT_PRIORITY_LABEL_PERCENT } from "@/components/Graph/graphStyle";
+import { DEFAULT_PRIORITY_LABEL_PERCENT, getDefaultGraphZoom } from "@/components/Graph/graphStyle";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -425,6 +425,34 @@ function App() {
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
+  const defaultGraphZoom = useMemo(() => getDefaultGraphZoom(dagMode, isMobile), [dagMode, isMobile]);
+  const [isGenresZoomDefault, setIsGenresZoomDefault] = useState(true);
+  const [isArtistsZoomDefault, setIsArtistsZoomDefault] = useState(true);
+  const zoomResetEpsilon = 0.001;
+
+  const handleGenresZoomChange = useCallback((k: number) => {
+    const isDefault = Math.abs(k - defaultGraphZoom) <= zoomResetEpsilon;
+    setIsGenresZoomDefault((prev) => (prev === isDefault ? prev : isDefault));
+  }, [defaultGraphZoom, zoomResetEpsilon]);
+
+  const handleArtistsZoomChange = useCallback((k: number) => {
+    const isDefault = Math.abs(k - defaultGraphZoom) <= zoomResetEpsilon;
+    setIsArtistsZoomDefault((prev) => (prev === isDefault ? prev : isDefault));
+  }, [defaultGraphZoom, zoomResetEpsilon]);
+
+  useEffect(() => {
+    const genresZoom = genresGraphRef.current?.getZoom?.();
+    if (typeof genresZoom === 'number') {
+      handleGenresZoomChange(genresZoom);
+    }
+    const artistsZoom = artistsGraphRef.current?.getZoom?.();
+    if (typeof artistsZoom === 'number') {
+      handleArtistsZoomChange(artistsZoom);
+    }
+  }, [defaultGraphZoom, handleGenresZoomChange, handleArtistsZoomChange]);
+
+  const activeGraphRef = graph === 'genres' ? genresGraphRef : artistsGraphRef;
+  const isActiveZoomDefault = graph === 'genres' ? isGenresZoomDefault : isArtistsZoomDefault;
 
   // refs and effects for checking current loading play ids
   const artistsPlayIDsLoadingRef = useRef(artistsPlayIDsLoading);
@@ -2539,6 +2567,7 @@ function App() {
                   loading={genresLoading}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
+                  onZoomChange={handleGenresZoomChange}
                   nodeSize={nodeSize}
                   linkThickness={linkThickness}
                   linkCurvature={linkCurvature}
@@ -2572,6 +2601,7 @@ function App() {
                   loading={((graph === 'artists' || graph === 'similarArtists') && artistsLoading) || (graph === 'artists' && !artistClusters)}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
+                  onZoomChange={handleArtistsZoomChange}
                   nodeSize={nodeSize}
                   linkThickness={linkThickness}
                   linkCurvature={linkCurvature}
@@ -2628,13 +2658,15 @@ function App() {
             <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
               <ZoomButtons
                 onZoomIn={() => {
-                  const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                  ref?.zoomIn();
+                  activeGraphRef.current?.zoomIn();
                 }}
                 onZoomOut={() => {
-                  const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                  ref?.zoomOut();
+                  activeGraphRef.current?.zoomOut();
                 }}
+                onResetZoom={() => {
+                  activeGraphRef.current?.zoomTo(defaultGraphZoom, 400);
+                }}
+                showResetZoom={!isActiveZoomDefault}
               />
             </div>
           {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
@@ -2732,13 +2764,15 @@ function App() {
               <div className='pt-6 hidden sm:block'>
                 <ZoomButtons
                   onZoomIn={() => {
-                    const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                    ref?.zoomIn();
+                    activeGraphRef.current?.zoomIn();
                   }}
                   onZoomOut={() => {
-                    const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                    ref?.zoomOut();
+                    activeGraphRef.current?.zoomOut();
                   }}
+                  onResetZoom={() => {
+                    activeGraphRef.current?.zoomTo(defaultGraphZoom, 400);
+                  }}
+                  showResetZoom={!isActiveZoomDefault}
                 />
               </div>
           </div>

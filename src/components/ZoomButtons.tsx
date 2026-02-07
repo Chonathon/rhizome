@@ -1,12 +1,19 @@
-import { ZoomInIcon, ZoomOutIcon } from 'lucide-react'
+import { Scan, ZoomInIcon, ZoomOutIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 type ZoomButtonsProps = {
   onZoomIn?: () => void
   onZoomOut?: () => void
+  onResetZoom?: () => void
+  showResetZoom?: boolean
 }
 
-const ZoomButtons: React.FC<ZoomButtonsProps> = ({ onZoomIn, onZoomOut }) => {
+const ZoomButtons: React.FC<ZoomButtonsProps> = ({
+  onZoomIn,
+  onZoomOut,
+  onResetZoom,
+  showResetZoom = false,
+}) => {
   return (
     <div className='flex flex-col w-fit border overflow-hidden rounded-full bg-background/80 shadow-xs focus-within:ring-2 focus-within:ring-ring/40 focus-within:ring-offset-2 focus-within:ring-offset-background'>
       <Button
@@ -19,6 +26,18 @@ const ZoomButtons: React.FC<ZoomButtonsProps> = ({ onZoomIn, onZoomOut }) => {
       >
         <ZoomInIcon />
         <span className='sr-only'>Zoom in</span>
+      </Button>
+      <Button
+        variant='outline'
+        size='icon'
+        className='rounded-none border-0 border-b shadow-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-none focus-visible:border-transparent'
+        onClick={onResetZoom}
+        aria-label='Reset zoom'
+        title='Reset zoom'
+        disabled={!showResetZoom}
+      >
+        <Scan />
+        <span className='sr-only'>Reset zoom</span>
       </Button>
       <Button
         variant='outline'
