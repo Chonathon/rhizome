@@ -146,12 +146,13 @@ export function drawLabelBelow(
   alpha = 1,
   fontPx = LABEL_FONT_SIZE,
   yOffset = 0,
-  customColor?: string
+  customColor?: string,
+  bold = false
 ) {
   if (alpha <= 0) return;
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.font = `${fontPx}px Geist`;
+  ctx.font = `${bold ? '600 ' : ''}${fontPx}px Geist`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
 
