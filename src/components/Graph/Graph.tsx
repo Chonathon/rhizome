@@ -413,16 +413,16 @@ const Graph = forwardRef(function GraphInner<
     // Charge force: nodes repel each other (D3 default is -30)
     // More negative = stronger repulsion/more spread out, Less negative = nodes closer together
     // KEY FIX: Reducing from -200 to -100 greatly reduced the "floating outward" drag effect
-    fg.d3Force("charge")?.strength(dagMode ? -1230 : -100);
+    fg.d3Force("charge")?.strength(dagMode ? -1230 : -80);
 
     // Link force: connected nodes attract each other
     const linkForce = fg.d3Force("link") as d3.ForceLink<PreparedNode<T>, L> | undefined;
     // Link distance: target spacing between connected nodes
     // Higher = more spread out, Lower = tighter clusters
-    linkForce?.distance(dagMode ? 150 : 120);
+    linkForce?.distance(dagMode ? 150 : 200);
     // Link strength: how strongly links pull nodes together
     // Higher = tighter/more rigid connections, Lower = more flexible/natural layout
-    linkForce?.strength(dagMode ? 1 : 1);
+    linkForce?.strength(dagMode ? 1 : 1.2);
     linkForce?.id((node: any) => node.id);
 
     // Centering forces: pull graph toward origin (D3 forceX/forceY default is 0.1)
@@ -622,13 +622,13 @@ const Graph = forwardRef(function GraphInner<
         dagLevelDistance={dagMode ? 200 : undefined}
         // How quickly the simulation "cools down" (D3 default is 0.0228)
         // Higher = faster settling but less accurate layout, Lower = slower but more precise
-        d3AlphaDecay={0.05}
+        d3AlphaDecay={0.01}
         // Friction/damping on node velocity (D3 default is 0.4, using slightly higher for stability)
         // Higher = nodes stop faster/less drift, Lower = more fluid movement
-        d3VelocityDecay={0.45}
+        d3VelocityDecay={0.4}
         // Maximum time (ms) the simulation runs before auto-stopping
         // Higher = continues animating longer, Lower = freezes layout sooner
-        cooldownTime={8000}
+        cooldownTime={12000}
         // Pause canvas redraws when simulation is idle (performance optimization)
         autoPauseRedraw={true}
         nodeColor={() => "rgba(0,0,0,0)"}
