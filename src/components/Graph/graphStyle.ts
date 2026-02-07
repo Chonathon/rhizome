@@ -154,7 +154,15 @@ export function drawLabelBelow(
   ctx.font = `${fontPx}px Geist`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillStyle = customColor ?? (theme === 'dark' ? 'rgba(255, 255, 255, .87)' : 'rgba(0, 0, 0, .87)');
+
+  // Add subtle shadow for contrast against nodes and edges
+  const isDark = theme === 'dark';
+  ctx.shadowColor = isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+
+  ctx.fillStyle = customColor ?? (isDark ? 'rgba(255, 255, 255, .87)' : 'rgba(0, 0, 0, .87)');
   ctx.fillText(label, x, y + r + 8 + yOffset);
   ctx.restore();
 }
