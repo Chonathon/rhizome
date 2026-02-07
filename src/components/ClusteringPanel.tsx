@@ -14,7 +14,7 @@ interface ClusteringPanelProps {
     setDagMode: (enabled: boolean) => void;
     artistColorMode?: 'genre' | 'cluster';
     setArtistColorMode?: (mode: 'genre' | 'cluster') => void;
-    genreColorLegend?: { id: string; name: string; color: string }[];
+    genreColorLegend?: { id: string; name: string; color: string; isBlended?: boolean }[];
     artistClusters?: ClusterResult | null;
     clusteringInProgress?: boolean;
 }
@@ -151,8 +151,7 @@ export default function ClusteringPanel({
                                         ))}
                                     </div>
                                 </div>
-                                <span className="text-xs text-muted-foreground mt-4">Multi-root genres blend colors.</span>
-                            </div>
+                                                            </div>
                         )}
                         {clusteringInProgress && (
                             <div className="flex items-center gap-2 w-full p-3 border-t border-border">
@@ -199,8 +198,7 @@ export default function ClusteringPanel({
                                         ))}
                                     </div>
                                 </div>
-                                <span className="text-xs text-muted-foreground mt-4">Multi-root genres blend colors.</span>
-                            </div>
+                                                            </div>
                         )}
                     </>
                 )}
