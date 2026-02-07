@@ -256,38 +256,38 @@ export const filterOutGenreTree = (genreGraphData: GenreGraphData, parent: Genre
   return { nodes: filteredNodes, links: filteredLinks };
 }
 
-export const assignRootGenreColors = (rootIDs: string[]) => {
+export const assignRootGenreColors = (rootIDs: string[], isDark = true) => {
   const colorMap = new Map<string, string>();
   colorMap.set(SINGLETON_PARENT_GENRE.id, SINGLETON_PARENT_COLOR);
   if (!rootIDs.length) return colorMap;
   const sortedRoots = [...rootIDs].sort((a, b) => a.localeCompare(b));
   sortedRoots.forEach((n, i) => {
-    colorMap.set(n, getClusterColor(i));
+    colorMap.set(n, getClusterColor(i, isDark));
   });
   return colorMap;
 }
 
-export const buildGenreColorMap = (genres: Genre[], rootIDs: string[]) => {
-  const rootColorMap = assignRootGenreColors(rootIDs);
+export const buildGenreColorMap = (genres: Genre[], rootIDs: string[], isDark = true) => {
+  const rootColorMap = assignRootGenreColors(rootIDs, isDark);
   const colorMap = new Map<string, string>();
   let singletonCount = 0;
   genres.forEach(genre => {
     switch (genre.rootGenres.length) {
       case 0:
-        colorMap.set(genre.id, getSingletonColor(singletonCount));
+        colorMap.set(genre.id, getSingletonColor(singletonCount, isDark));
         singletonCount++;
         break;
       case 1:
         const color = rootColorMap.get(genre.rootGenres[0]);
         if (color) colorMap.set(genre.id, color);
         else {
-          colorMap.set(genre.id, getSingletonColor(singletonCount));
+          colorMap.set(genre.id, getSingletonColor(singletonCount, isDark));
           singletonCount++;
         }
         break;
       default:
         if (!genre.rootGenres || genre.rootGenres.length < 2) {
-          colorMap.set(genre.id, getSingletonColor(singletonCount));
+          colorMap.set(genre.id, getSingletonColor(singletonCount, isDark));
           singletonCount++;
         } else {
           const colors: string[] = [];
@@ -302,8 +302,8 @@ export const buildGenreColorMap = (genres: Genre[], rootIDs: string[]) => {
   return colorMap;
 }
 
-export const getSingletonColor = (count: number) => {
-  return getClusterColor(count);
+export const getSingletonColor = (count: number, isDark = true) => {
+  return getClusterColor(count, isDark);
 }
 
 // --- Color utilities ---

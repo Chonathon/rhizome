@@ -49,10 +49,12 @@ export class ClusteringEngine {
   private allTags: string[];
   private tagIndexMap: Map<string, number>;
   private artistNameToId: Map<string, string>;
+  private isDark: boolean;
 
-  constructor(artists: Artist[], artistLinks: NodeLink[]) {
+  constructor(artists: Artist[], artistLinks: NodeLink[], isDark = true) {
     this.artists = artists;
     this.artistLinks = artistLinks;
+    this.isDark = isDark;
     this.artistNameToId = new Map(artists.map(a => [a.name, a.id]));
     this.allTags = this.extractAllTags();
     // Build tag index map for O(1) lookups instead of O(m) indexOf
@@ -717,6 +719,6 @@ export class ClusteringEngine {
       0
     );
 
-    return getClusterColor(hash);
+    return getClusterColor(hash, this.isDark);
   }
 }

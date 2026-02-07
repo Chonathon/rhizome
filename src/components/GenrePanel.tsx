@@ -6,6 +6,7 @@ import { Genre, GenreClusterMode } from "@/types";
 import {getClusterColor, isRootGenre} from "@/lib/utils";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
 import {useEffect, useState} from "react";
+import {useTheme} from "next-themes";
 
 export default function GenrePanel({
   genres = [],
@@ -23,6 +24,8 @@ export default function GenrePanel({
   show: boolean;
 }) {
   const [checked, setChecked] = useState<boolean[]>([]);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
   useEffect(() => {
     if (genres){
@@ -91,7 +94,7 @@ export default function GenrePanel({
                       p-2 w-4 h-4 shrink-0
                       rounded-full inline-block"
                     style={{
-                      backgroundColor: getClusterColor(index),
+                      backgroundColor: getClusterColor(index, isDark),
                     }}
                   />
                 </Button>

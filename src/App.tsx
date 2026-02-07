@@ -663,7 +663,8 @@ function App() {
 
       scheduleClustering(() => {
         try {
-          const engine = new ClusteringEngine(currentArtists, currentArtistLinks);
+          const isDark = resolvedTheme === 'dark';
+          const engine = new ClusteringEngine(currentArtists, currentArtistLinks, isDark);
           const result = engine.cluster({
             method: artistClusterMethod,
             resolution: 1.0,
@@ -684,7 +685,7 @@ function App() {
         clearTimeout(clusteringTimeoutRef.current);
       }
     };
-  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod]);
+  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod, resolvedTheme]);
 
   // Use generated links from clustering (artists colored by parent genre)
   useEffect(() => {
@@ -921,7 +922,8 @@ function App() {
     if (genres) {
       const nodeCount = genres.length;
       onGenreNodeCountChange(nodeCount);
-      const colorMap = buildGenreColorMap(genres, genreRoots);
+      const isDark = resolvedTheme === 'dark';
+      const colorMap = buildGenreColorMap(genres, genreRoots, isDark);
       // console.log('[App Debug] Building genreColorMap');
       // console.log('  genres.length:', genres.length);
       // console.log('  genreRoots:', genreRoots);
@@ -929,7 +931,7 @@ function App() {
       // console.log('  first 5 colorMap entries:', Array.from(colorMap.entries()).slice(0, 5));
       setGenreColorMap(colorMap);
     }
-  }, [genres, genreLinks, genreRoots]);
+  }, [genres, genreLinks, genreRoots, resolvedTheme]);
 
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
