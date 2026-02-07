@@ -127,9 +127,10 @@ function defaultRenderNode<T>(ctx: NodeRenderContext<T>): void {
 
   // For click-selected nodes, draw image (artist) or letter (genre) fill
   if (isClickSelected) {
-    const data = node.data as { image?: string } | undefined;
+    const data = node.data as { image?: string; listeners?: number } | undefined;
     const imageUrl = data?.image;
-    drawSelectedNodeFill(canvas, x, y, radius, node.label, color, imageUrl, theme);
+    const isArtist = typeof data?.listeners === 'number';
+    drawSelectedNodeFill(canvas, x, y, radius, node.label, color, imageUrl, theme, isArtist);
   } else {
     drawCircleNode(canvas, x, y, radius, color);
   }

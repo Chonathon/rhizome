@@ -159,7 +159,8 @@ export function drawSelectedNodeFill(
   label: string,
   nodeColor: string,
   imageUrl?: string,
-  theme?: string
+  theme?: string,
+  isArtist = false
 ): boolean {
   const isDark = theme === 'dark';
   const textColor = isDark ? 'rgba(0, 0, 0, .87)' : 'rgba(255, 255, 255, .87)';
@@ -183,9 +184,8 @@ export function drawSelectedNodeFill(
   // No image - draw normal node with letter overlay
   drawCircleNode(ctx, x, y, r, nodeColor);
 
-  // Draw first letter on top (lowercase for genres, uppercase for artists without images)
-  const isGenre = !imageUrl;
-  const letter = isGenre ? label.charAt(0).toLowerCase() : label.charAt(0).toUpperCase();
+  // Draw first letter on top (lowercase for genres, uppercase for artists)
+  const letter = isArtist ? label.charAt(0).toUpperCase() : label.charAt(0).toLowerCase();
   const fontSize = Math.max(12, r * 1.2);
   ctx.font = `600 ${fontSize}px/1 Geist`;
   ctx.textAlign = 'center';
