@@ -204,11 +204,29 @@ export function drawSelectedNodeFill(
   if (imageUrl) {
     const img = getOrLoadImage(imageUrl);
     if (img) {
-      // Draw image clipped to circle
+      // Draw image clipped to circle with cover behavior (maintain aspect ratio)
       ctx.beginPath();
       ctx.arc(x, y, r, 0, 2 * Math.PI);
       ctx.clip();
-      ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
+
+      // Calculate cover dimensions (like CSS object-fit: cover)
+      const imgW = img.naturalWidth;
+      const imgH = img.naturalHeight;
+      const targetSize = r * 2;
+      const imgAspect = imgW / imgH;
+
+      let srcX = 0, srcY = 0, srcW = imgW, srcH = imgH;
+      if (imgAspect > 1) {
+        // Image is wider than tall - crop horizontally
+        srcW = imgH;
+        srcX = (imgW - srcW) / 2;
+      } else if (imgAspect < 1) {
+        // Image is taller than wide - crop vertically
+        srcH = imgW;
+        srcY = (imgH - srcH) / 2;
+      }
+
+      ctx.drawImage(img, srcX, srcY, srcW, srcH, x - r, y - r, targetSize, targetSize);
       ctx.restore();
       return true;
     }
