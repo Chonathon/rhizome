@@ -183,6 +183,7 @@ const Graph = forwardRef(function GraphInner<
   const showNodesRef = useRef<boolean>(showNodes);
   const showLinksRef = useRef<boolean>(showLinks);
   const { resolvedTheme } = useTheme();
+  const resetCenterTimeoutRef = useRef<number | null>(null);
   const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
   const lastInitializedSignatureRef = useRef<string | undefined>(undefined);
   const shouldResetZoomRef = useRef(true);
@@ -192,6 +193,14 @@ const Graph = forwardRef(function GraphInner<
   useEffect(() => {
     onZoomChangeRef.current = onZoomChange;
   }, [onZoomChange]);
+
+  useEffect(() => {
+    return () => {
+      if (resetCenterTimeoutRef.current) {
+        window.clearTimeout(resetCenterTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Update refs when showNodes/showLinks change
   useEffect(() => {
@@ -269,6 +278,9 @@ const Graph = forwardRef(function GraphInner<
         fgRef.current?.zoom?.(target, ms);
         zoomRef.current = target;
         onZoomChangeRef.current?.(target);
+        if (resetCenterTimeoutRef.current) {
+          window.clearTimeout(resetCenterTimeoutRef.current);
+        }
       },
       getZoom: () => zoomRef.current || 1,
       getCanvas: () => {
