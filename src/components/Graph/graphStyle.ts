@@ -21,6 +21,7 @@ export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
 export const DESKTOP_DRAWER_WIDTH_PX = 384; // max-w-sm
 export const SIDEBAR_EXPANDED_WIDTH_PX = 224; // 14rem
 export const SIDEBAR_COLLAPSED_WIDTH_PX = 56; // 3.5rem
+export const DESKTOP_OFFSET_MAX_WIDTH_PX = 1800; // Disable X offset above this screen width
 
 export const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
@@ -75,6 +76,7 @@ export function applyMobileDrawerYOffset(
 }
 
 // Apply leftward offset to viewport center so node appears rightward on screen (drawer + sidebar on left)
+// Disabled on large screens (>1800px) where there's enough space without offset
 export function applyDesktopDrawerXOffset(
   x: number,
   k: number,
@@ -82,6 +84,7 @@ export function applyDesktopDrawerXOffset(
   sidebarExpanded: boolean
 ): number {
   if (!isDesktop) return x;
+  if (window.innerWidth > DESKTOP_OFFSET_MAX_WIDTH_PX) return x;
   const sidebarWidth = sidebarExpanded ? SIDEBAR_EXPANDED_WIDTH_PX : SIDEBAR_COLLAPSED_WIDTH_PX;
   const offsetPx = (DESKTOP_DRAWER_WIDTH_PX + sidebarWidth) / 2;
   return x - worldOffsetForScreenOffset(offsetPx, k);
