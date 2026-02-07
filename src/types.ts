@@ -163,6 +163,7 @@ export interface GraphHandle {
   zoomIn: () => void;
   zoomOut: () => void;
   zoomTo: (k: number, ms?: number) => void;
+  resetView: (k: number, ms?: number) => void;
   getZoom: () => number;
   getCanvas: () => HTMLCanvasElement | null;
 }

@@ -264,6 +264,13 @@ const Graph = forwardRef(function GraphInner<
         zoomRef.current = target;
         onZoomChangeRef.current?.(target);
       },
+      resetView: (k: number, ms = 400) => {
+        const target = Math.max(0.03, Math.min(20, k));
+        fgRef.current?.centerAt?.(0, 0, ms);
+        fgRef.current?.zoom?.(target, ms);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
+      },
       getZoom: () => zoomRef.current || 1,
       getCanvas: () => {
         // Access the canvas element from the container div
