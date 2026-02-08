@@ -82,7 +82,7 @@ export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: D
 export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
 export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
 
-// Curated Tailwind colors for cluster visualization
+// Curated Tailwind colors
 // 300 shades for dark mode (lighter, more visible on dark backgrounds)
 export const CLUSTER_COLORS_DARK = [
     "#fca5a5", // red-300
