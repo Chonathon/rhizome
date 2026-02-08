@@ -1266,12 +1266,13 @@ function App() {
     }
   };
 
-  const onPlayGenreTrack = async (tracks: TopTrack[], startIndex: number) => {
+  const onPlayGenreTrack = async (tracks: TopTrack[], startIndex: number, options?: { preview?: boolean }) => {
     if (!tracks || tracks.length === 0) {
       toast.error('No tracks available');
       return;
     }
     const req = ++playRequest.current;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerSource('genre');
     // Extract video IDs based on DEFAULT_PLAYER preference
