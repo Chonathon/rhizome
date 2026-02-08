@@ -826,14 +826,29 @@ function App() {
   const genreColorLegend = useMemo(() => {
     if (!genreRoots.length || !genres.length) return [];
     const isDark = resolvedTheme === 'dark';
-    const rootColorMap = assignRootGenreColors(genreRoots, isDark);
     const genreNameById = new Map(genres.map((genre) => [genre.id, genre.name]));
     const genreById = new Map(genres.map((genre) => [genre.id, genre]));
     const rootIdLookup = new Set(genreRoots);
     const rootIdSet = new Set<string>();
     const multiRootGenresInView = new Set<string>(); // Track multi-root genres for blended colors
 
-    // Track artist counts per root genre
+    // Calculate global root artist counts (from all genres, for consistent color assignment)
+    const globalRootArtistCount = new Map<string, number>();
+    genres.forEach(genre => {
+      if (genre.rootGenres?.length) {
+        genre.rootGenres.forEach(rootId => {
+          globalRootArtistCount.set(rootId, (globalRootArtistCount.get(rootId) ?? 0) + genre.artistCount);
+        });
+      }
+      if (rootIdLookup.has(genre.id)) {
+        globalRootArtistCount.set(genre.id, (globalRootArtistCount.get(genre.id) ?? 0) + genre.artistCount);
+      }
+    });
+
+    // Assign colors based on global artist counts (matches buildGenreColorMap)
+    const rootColorMap = assignRootGenreColors(genreRoots, isDark, globalRootArtistCount);
+
+    // Track in-view artist counts per root genre (for legend sorting)
     const rootArtistCount = new Map<string, number>();
     // Track artist counts for blended (multi-root) genres
     const blendedArtistCount = new Map<string, number>();

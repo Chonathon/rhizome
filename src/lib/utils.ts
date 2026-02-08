@@ -256,11 +256,25 @@ export const filterOutGenreTree = (genreGraphData: GenreGraphData, parent: Genre
   return { nodes: filteredNodes, links: filteredLinks };
 }
 
-export const assignRootGenreColors = (rootIDs: string[], isDark = true) => {
+export const assignRootGenreColors = (
+  rootIDs: string[],
+  isDark = true,
+  rootArtistCounts?: Map<string, number>
+) => {
   const colorMap = new Map<string, string>();
   colorMap.set(SINGLETON_PARENT_GENRE.id, SINGLETON_PARENT_COLOR);
   if (!rootIDs.length) return colorMap;
-  const sortedRoots = [...rootIDs].sort((a, b) => a.localeCompare(b));
+
+  // Sort by artist count (descending) if provided, otherwise alphabetically
+  const sortedRoots = [...rootIDs].sort((a, b) => {
+    if (rootArtistCounts) {
+      const countA = rootArtistCounts.get(a) ?? 0;
+      const countB = rootArtistCounts.get(b) ?? 0;
+      if (countA !== countB) return countB - countA; // descending
+    }
+    return a.localeCompare(b); // fallback to alphabetical for ties
+  });
+
   sortedRoots.forEach((n, i) => {
     colorMap.set(n, getClusterColor(i, isDark));
   });
@@ -268,7 +282,21 @@ export const assignRootGenreColors = (rootIDs: string[], isDark = true) => {
 }
 
 export const buildGenreColorMap = (genres: Genre[], rootIDs: string[], isDark = true) => {
-  const rootColorMap = assignRootGenreColors(rootIDs, isDark);
+  // Calculate total artist count per root genre
+  const rootArtistCounts = new Map<string, number>();
+  genres.forEach(genre => {
+    if (genre.rootGenres?.length) {
+      genre.rootGenres.forEach(rootId => {
+        rootArtistCounts.set(rootId, (rootArtistCounts.get(rootId) ?? 0) + genre.artistCount);
+      });
+    }
+    // Root genres themselves contribute their own artist count
+    if (rootIDs.includes(genre.id)) {
+      rootArtistCounts.set(genre.id, (rootArtistCounts.get(genre.id) ?? 0) + genre.artistCount);
+    }
+  });
+
+  const rootColorMap = assignRootGenreColors(rootIDs, isDark, rootArtistCounts);
   const colorMap = new Map<string, string>();
   genres.forEach(genre => {
     switch (genre.rootGenres.length) {
