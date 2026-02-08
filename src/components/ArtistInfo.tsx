@@ -287,10 +287,10 @@ export function ArtistInfo({
                                      className="cursor-pointer"
                                    >
                                      {previewModeEnabled ? (
-                                       <>
+                                       <DropdownMenuItem>
                                          <CirclePlay className="size-4" />
                                          <span>Switch to Play Mode</span>
-                                       </>
+                                       </DropdownMenuItem>
                                      ) : (
                                        <>
                                          <Disc3 className="size-4" />
