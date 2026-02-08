@@ -1,8 +1,9 @@
-import { Artist, NodeLink } from '@/types';
-import { getClusterColor, ARTIST_LISTENER_TIERS, ListenerTier } from '@/constants';
+import {Artist, ListenerTier, NodeLink} from '@/types';
+import { ARTIST_LISTENER_TIERS } from '@/constants';
 import Graph from 'graphology';
 import louvain from 'graphology-communities-louvain';
 import { buildNormalizedLocationMap, calculateLocationSimilarity } from './locationNormalization';
+import {getClusterColor} from "@/lib/colors";
 
 export type ClusteringMethod = 'similarArtists' | 'hybrid' | 'popularity';
 

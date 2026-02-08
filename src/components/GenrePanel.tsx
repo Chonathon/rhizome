@@ -3,10 +3,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tag } from "lucide-react";
 import { Genre, GenreClusterMode } from "@/types";
-import {getClusterColor, isRootGenre} from "@/lib/utils";
+import {isRootGenre} from "@/lib/utils";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
 import {useEffect, useState} from "react";
 import {useTheme} from "next-themes";
+import {getClusterColor} from "@/lib/colors";
 
 export default function GenrePanel({
   genres = [],

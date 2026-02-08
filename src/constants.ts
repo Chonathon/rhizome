@@ -5,7 +5,10 @@ import {
     GenreClusterMode,
     GenreNodeLimitType,
     InitialGenreFilter,
-    PlayerType, Preferences, Theme
+    ListenerTier,
+    PlayerType,
+    Preferences,
+    Theme
 } from "@/types";
 
 export const PHASE_VERSION = `${import.meta.env.VITE_PRODUCT_PHASE}-${import.meta.env.VITE_PRODUCT_VERSION}`;
@@ -79,97 +82,6 @@ export const MAX_YTID_QUEUE_SIZE = 200;
 
 export const DEFAULT_THEME: Theme = 'system';
 export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER, enableGraphCards: true, previewTrigger: 'modifier'};
-export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
-export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
-
-// Curated Tailwind colors
-// 300 shades for dark mode (lighter, more visible on dark backgrounds)
-export const CLUSTER_COLORS_DARK = [
-    "#fca5a5", // red-300
-    "#fdba74", // orange-300
-    "#fcd34d", // amber-300
-    "#fde047", // yellow-300
-    "#bef264", // lime-300
-    "#86efac", // green-300
-    "#6ee7b7", // emerald-300
-    "#5eead4", // teal-300
-    "#67e8f9", // cyan-300
-    "#7dd3fc", // sky-300
-    "#93c5fd", // blue-300
-    "#a5b4fc", // indigo-300
-    "#c4b5fd", // violet-300
-    "#d8b4fe", // purple-300
-    "#f0abfc", // fuchsia-300
-    "#f9a8d4", // pink-300
-    "#fda4af", // rose-300
-];
-
-// 400 shades for light mode (slightly stronger, better contrast on light backgrounds)
-export const CLUSTER_COLORS_LIGHT = [
-    "#f87171", // red-400
-    "#fb923c", // orange-400
-    "#fbbf24", // amber-400
-    "#facc15", // yellow-400
-    "#a3e635", // lime-400
-    "#4ade80", // green-400
-    "#34d399", // emerald-400
-    "#2dd4bf", // teal-400
-    "#22d3ee", // cyan-400
-    "#38bdf8", // sky-400
-    "#60a5fa", // blue-400
-    "#818cf8", // indigo-400
-    "#a78bfa", // violet-400
-    "#c084fc", // purple-400
-    "#e879f9", // fuchsia-400
-    "#f472b6", // pink-400
-    "#fb7185", // rose-400
-];
-
-// Returns cluster color from curated palette based on theme.
-// When index exceeds palette size (17), generates variations using golden angle hue rotation.
-export const getClusterColor = (index: number, isDark = true): string => {
-    const palette = isDark ? CLUSTER_COLORS_DARK : CLUSTER_COLORS_LIGHT;
-
-    if (index < palette.length) {
-        return palette[index];
-    }
-
-    // Beyond curated palette: generate using golden angle for max hue separation
-    const extraIndex = index - palette.length;
-    return generateColor(extraIndex, isDark);
-};
-
-// Generates colors using golden angle (137.5°) for maximum hue separation
-const generateColor = (index: number, isDark: boolean): string => {
-    const hue = (index * 137.5) % 360;
-    const saturation = 75;
-    const lightness = isDark ? 70 : 55; // Lighter for dark mode, darker for light mode
-    return hslToHex(hue, saturation, lightness);
-};
-
-const hslToHex = (h: number, s: number, l: number): string => {
-    s /= 100;
-    l /= 100;
-    const a = s * Math.min(l, 1 - l);
-    const f = (n: number) => {
-        const k = (n + h / 30) % 12;
-        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-        return Math.round(255 * color).toString(16).padStart(2, '0');
-    };
-    return `#${f(0)}${f(8)}${f(4)}`;
-};
-
-export const SINGLETON_PARENT_COLOR = "#c4b5fd"; // violet-300 (arbitrary)
-
-// Listener-based popularity tiers for radial stratification
-export interface ListenerTier {
-    id: number;
-    name: string;
-    min: number;
-    max: number;
-    radius: number; // Distance from center (popular = inner, underground = outer)
-    color: string; // Explicit color for visual distinction
-}
 
 export const ARTIST_LISTENER_TIERS: ListenerTier[] = [
     { id: 5, name: 'Mainstream', min: 1_000_000, max: Infinity, radius: 100, color: '#facc15' },    // yellow-400
