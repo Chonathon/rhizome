@@ -441,42 +441,48 @@ const Graph = forwardRef(function GraphInner<
     const fg = fgRef.current;
 
     // ===========================================
-    // Standardized force configuration
-    // These forces apply to ALL graph types (Artists, Genres, etc.)
+    // Simplified force configuration matching D3 defaults
+    // D3's defaults are well-tuned for predictable behavior
     // dagMode adjusts values for hierarchical layouts
     // ===========================================
 
-    // Charge force: nodes repel each other (negative = repulsion)
-    // Higher magnitude = stronger repulsion = more spread out
-    fg.d3Force("charge")?.strength(dagMode ? -1230 : -200);
+    // Charge force: nodes repel each other (D3 default is -30)
+    // More negative = stronger repulsion/more spread out, Less negative = nodes closer together
+    // KEY FIX: Reducing from -200 to -100 greatly reduced the "floating outward" drag effect
+    fg.d3Force("charge")?.strength(dagMode ? -1230 : -120);
 
     // Link force: connected nodes attract each other
     const linkForce = fg.d3Force("link") as d3.ForceLink<PreparedNode<T>, L> | undefined;
-    // Target distance between linked nodes (pixels)
-    linkForce?.distance(dagMode ? 150 : 90);
-    // How strongly links pull nodes together (higher = tighter clusters)
-    linkForce?.strength(dagMode ? 1 : 1.6);
+    // Link distance: target spacing between connected nodes
+    // Higher = more spread out, Lower = tighter clusters
+    linkForce?.distance(dagMode ? 150 : 200);
+    // Link strength: how strongly links pull nodes together
+    // Higher = tighter/more rigid connections, Lower = more flexible/natural layout
+    linkForce?.strength(dagMode ? 1 : 1.2);
     linkForce?.id((node: any) => node.id);
 
-    // Center force: pulls entire graph toward origin (prevents drift)
-    fg.d3Force("center", d3.forceCenter(0, 0).strength(dagMode ? 0.01 : 0.05));
+    // Centering forces: pull graph toward origin (D3 forceX/forceY default is 0.1)
+    // Higher = stronger pull to center, Lower = allows more drift
+    fg.d3Force("x", d3.forceX(0).strength(dagMode ? 0.01 : 0.03));
+    fg.d3Force("y", d3.forceY(0).strength(dagMode ? 0.01 : 0.03));
+    // Remove center force in favor of separate x/y forces for better control
+    fg.d3Force("center", null);
 
     // Collision force: prevents nodes from overlapping
+    // Higher strength/iterations = more rigid spacing but can cause bouncing
+    // Lower = allows some overlap but smoother movement
     fg.d3Force(
       "collide",
       d3
         .forceCollide((node: any) => {
           const n = node as PreparedNode<T>;
-          // Include label dimensions in collision radius to prevent label overlap
+          // Use partial label width to give some spacing without being too aggressive
           const labelWidth = estimateLabelWidth(n.label, LABEL_FONT_SIZE);
-          const labelHeight = LABEL_FONT_SIZE;
-          const labelDiagonal = Math.sqrt(labelWidth * labelWidth + labelHeight * labelHeight) / 2;
-          const padding = 10;
-          // Use the larger of node radius or label dimensions
-          return Math.max(n.radius + padding, labelDiagonal + padding);
+          const effectiveRadius = n.radius + (labelWidth * 0.4); // Only 40% of label width
+          return effectiveRadius;
         })
-        .iterations(2) // Collision detection passes per tick (higher = more accurate but slower)
-        .strength(dagMode ? 0.02 : 0.7), // How rigidly collisions are enforced
+        .iterations(1) // Single pass to minimize bouncing (higher = more accurate but can bounce)
+        .strength(dagMode ? 0.02 : 0.2), // Very weak to prevent bouncing while still providing some spacing
     );
     if (selectedId) {
       // Pull only the selected node toward the origin to keep it in view
@@ -652,13 +658,17 @@ const Graph = forwardRef(function GraphInner<
         // Enables hierarchical radial layout (nodes arranged in concentric rings from center)
         dagMode={dagMode ? 'radialin' : undefined}
         // Pixel distance between hierarchy levels in DAG mode
+        // Higher = more spread out layers, Lower = more compact hierarchy
         dagLevelDistance={dagMode ? 200 : undefined}
-        // How quickly the simulation "cools down" (higher = faster settling, less movement)
-        d3AlphaDecay={0.02}
-        // Friction/damping on node velocity (higher = nodes slow down faster, less drift)
-        d3VelocityDecay={0.8}
+        // How quickly the simulation "cools down" (D3 default is 0.0228)
+        // Higher = faster settling but less accurate layout, Lower = slower but more precise
+        d3AlphaDecay={0.01}
+        // Friction/damping on node velocity (D3 default is 0.4, using slightly higher for stability)
+        // Higher = nodes stop faster/less drift, Lower = more fluid movement
+        d3VelocityDecay={0.4}
         // Maximum time (ms) the simulation runs before auto-stopping
-        cooldownTime={8000}
+        // Higher = continues animating longer, Lower = freezes layout sooner
+        cooldownTime={12000}
         // Pause canvas redraws when simulation is idle (performance optimization)
         autoPauseRedraw={true}
         nodeColor={() => "rgba(0,0,0,0)"}
