@@ -47,6 +47,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
+import { useUrlState } from './hooks/useUrlState';
+import { toSlug } from './lib/urlUtils';
 import DisplayPanel from './components/DisplayPanel';
 import SharePanel from './components/SharePanel';
 import NodeLimiter from './components/NodeLimiter'
@@ -365,6 +367,67 @@ function App() {
     };
   }, []);
   const navigate = useNavigate();
+
+  // URL State Sync: Lookup functions to find entities by slug
+  const findGenreBySlug = useCallback((slug: string): Genre | undefined => {
+    return genres.find(g => toSlug(g.name) === slug);
+  }, [genres]);
+
+  const findArtistBySlug = useCallback((slug: string): Artist | undefined => {
+    return currentArtists.find(a => toSlug(a.name) === slug);
+  }, [currentArtists]);
+
+  // URL State Sync: Bidirectional sync between URL and app state
+  const { pendingArtistSlug, setPendingArtistSlug } = useUrlState({
+    findGenreBySlug,
+    findArtistBySlug,
+    graph,
+    selectedGenres,
+    selectedArtist,
+    similarArtistAnchor,
+    collectionMode,
+    artistFilterGenres,
+    setGraph,
+    setSelectedGenres,
+    setSelectedArtist,
+    setSimilarArtistAnchor,
+    setCollectionMode,
+    setArtistFilterGenres,
+    onGenreSelected: (genre) => {
+      setGenreInfoToShow(genre);
+      setShowGenreCard(true);
+      addRecentSelection(genre);
+    },
+    onArtistSelected: (artist) => {
+      setArtistInfoToShow(artist);
+      setShowArtistCard(true);
+      addRecentSelection(artist);
+    },
+    onGenreDeselected: () => {
+      setShowGenreCard(false);
+      setGenreInfoToShow(undefined);
+    },
+    onArtistDeselected: () => {
+      setShowArtistCard(false);
+      setArtistInfoToShow(undefined);
+    },
+    genresLoaded: genres.length > 0 && !genresLoading,
+    artistsLoaded: !artistsLoading,
+  });
+
+  // URL State Sync: Handle pending artist selection when artists load
+  useEffect(() => {
+    if (pendingArtistSlug && currentArtists.length > 0) {
+      const artist = findArtistBySlug(pendingArtistSlug);
+      if (artist) {
+        setSelectedArtist(artist);
+        setArtistInfoToShow(artist);
+        setShowArtistCard(true);
+        addRecentSelection(artist);
+        setPendingArtistSlug(null);
+      }
+    }
+  }, [currentArtists, pendingArtistSlug, findArtistBySlug, setPendingArtistSlug, addRecentSelection]);
 
   const artistsAddedRef = useRef(0);
 
