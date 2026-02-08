@@ -174,3 +174,13 @@ export interface FindOption {
     entityType: 'artist' | 'genre';
     subtitle?: string;
 }
+
+// Listener-based popularity tiers for radial stratification
+export interface ListenerTier {
+    id: number;
+    name: string;
+    min: number;
+    max: number;
+    radius: number; // Distance from center (popular = inner, underground = outer)
+    color: string; // Explicit color for visual distinction
+}

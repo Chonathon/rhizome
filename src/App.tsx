@@ -28,12 +28,9 @@ import ArtistPreview from './components/ArtistPreview';
 import { Search } from './components/Search';
 import FindFilter from "@/components/FindFilter";
 import {
-  buildGenreColorMap,
   generateSimilarLinks,
   isRootGenre,
   isSingletonGenre,
-  mixColors,
-  assignRootGenreColors,
   primitiveArraysEqual,
   fixWikiImageURL,
   assignDegreesToArtists,
@@ -57,13 +54,11 @@ import GenresFilter from './components/GenresFilter';
 import DecadesFilter from './components/DecadesFilter';
 import {useTheme} from "next-themes";
 import {
-  DEFAULT_DARK_NODE_COLOR,
   DEFAULT_ARTIST_CLUSTER_MODE,
   DEFAULT_ARTIST_LIMIT_TYPE,
   DEFAULT_CLUSTER_MODE,
   DEFAULT_GENRE_LIMIT_TYPE,
   DEFAULT_NODE_COUNT,
-  DEFAULT_LIGHT_NODE_COLOR,
   TOP_ARTISTS_TO_FETCH,
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
@@ -91,6 +86,13 @@ import {submitFeedback} from "@/apis/feedbackApi";
 import {useNavigate} from "react-router";
 import { exportGraphAsImage } from "@/utils/exportGraph";
 import { DEFAULT_PRIORITY_LABEL_PERCENT, getDefaultGraphZoom } from "@/components/Graph/graphStyle";
+import {
+  assignRootGenreColors,
+  buildGenreColorMap,
+  DEFAULT_DARK_NODE_COLOR,
+  DEFAULT_LIGHT_NODE_COLOR,
+  mixColors
+} from "@/lib/colors";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
