@@ -29,12 +29,16 @@ import {
   DEFAULT_PRIORITY_LABEL_ZOOM_SCALE,
   DEFAULT_PRIORITY_LABEL_PERCENT,
   drawCircleNode,
+  drawSelectedNodeFill,
   drawLabelBelow,
   applyMobileDrawerYOffset,
   DEFAULT_MOBILE_CENTER_OFFSET_PX,
   applyDesktopDrawerXOffset,
   estimateLabelWidth,
   getDefaultGraphZoom,
+  onImageLoad,
+  onImageLoadStart,
+  hasLoadingImages,
 } from "@/components/Graph/graphStyle";
 import { useSidebar } from "@/components/ui/sidebar";
 import type {BasicNode, GraphHandle} from "@/types";
@@ -64,6 +68,7 @@ export interface NodeRenderContext<T> {
   radius: number;
   color: string;
   isSelected: boolean;
+  isClickSelected: boolean;
   isNeighbor: boolean;
   isHovered: boolean;
   alpha: number;
@@ -121,27 +126,38 @@ export interface GraphProps<T, L extends SharedGraphLink> {
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
 
 function defaultRenderNode<T>(ctx: NodeRenderContext<T>): void {
-  const { ctx: canvas, x, y, radius, color, alpha } = ctx;
+  const { ctx: canvas, node, x, y, radius, color, alpha, isClickSelected, theme } = ctx;
   canvas.save();
   canvas.globalAlpha = alpha;
-  drawCircleNode(canvas, x, y, radius, color);
+
+  // For click-selected nodes, draw image (artist) or letter (genre) fill
+  if (isClickSelected) {
+    const data = node.data as { image?: string; listeners?: number } | undefined;
+    const imageUrl = data?.image;
+    const isArtist = typeof data?.listeners === 'number';
+    drawSelectedNodeFill(canvas, x, y, radius, node.label, color, imageUrl, theme, isArtist);
+  } else {
+    drawCircleNode(canvas, x, y, radius, color);
+  }
+
   canvas.restore();
 }
 
 function defaultRenderSelection<T>(ctx: SelectionRenderContext<T>): void {
-  const { ctx: canvas, x, y, radius, color } = ctx;
+  const { ctx: canvas, x, y, radius, theme } = ctx;
   canvas.save();
   canvas.beginPath();
   canvas.arc(x, y, radius + 4, 0, 2 * Math.PI);
-  canvas.strokeStyle = color;
-  canvas.lineWidth = 3;
+  // Use same color as label pill background
+  canvas.strokeStyle = theme === 'dark' ? 'oklch(0.922 0 0)' : 'oklch(0.205 0 0)';
+  canvas.lineWidth = 4;
   canvas.stroke();
   canvas.restore();
 }
 
-function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE, customColor?: string): void {
+function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE, customColor?: string, bold = false, showBackground = false): void {
   const { ctx: canvas, label, x, y, radius, theme, labelAlpha } = ctx;
-  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize, 0, customColor);
+  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize, 0, customColor, bold, showBackground);
 }
 
 const Graph = forwardRef(function GraphInner<
@@ -432,6 +448,51 @@ const Graph = forwardRef(function GraphInner<
     if (show) fgRef.current.resumeAnimation();
     else fgRef.current.pauseAnimation();
   }, [show]);
+
+  // Trigger redraw when images load and animate pulse during loading
+  useEffect(() => {
+    let animationFrame: number | null = null;
+
+    const animate = () => {
+      if (hasLoadingImages()) {
+        // Keep animating for pulse effect while loading
+        fgRef.current?.resumeAnimation?.();
+        animationFrame = requestAnimationFrame(animate);
+      } else {
+        animationFrame = null;
+      }
+    };
+
+    const startAnimation = () => {
+      if (animationFrame === null) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    const unsubscribeLoad = onImageLoad(() => {
+      // Force a redraw when image finishes loading
+      const currentZoom = zoomRef.current || 1;
+      fgRef.current?.zoom?.(currentZoom, 0);
+    });
+
+    const unsubscribeStart = onImageLoadStart(() => {
+      // Start animation loop when image starts loading
+      startAnimation();
+    });
+
+    // Start animation loop if images are already loading
+    if (hasLoadingImages()) {
+      startAnimation();
+    }
+
+    return () => {
+      unsubscribeLoad();
+      unsubscribeStart();
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, []);
 // oi
   useEffect(() => {
     if (!show || !fgRef.current) return;
@@ -757,6 +818,7 @@ const Graph = forwardRef(function GraphInner<
             radius,
             color: accent,
             isSelected,
+            isClickSelected,
             isNeighbor,
             isHovered,
             alpha,
@@ -827,7 +889,7 @@ const Graph = forwardRef(function GraphInner<
                 const labelPx = isPriorityLabel
                   ? Math.max(labelFontSize, fontPxForZoom(labelFontSize, k))
                   : labelFontSize;
-                defaultRenderLabel(labelContext, labelPx, labelColor);
+                defaultRenderLabel(labelContext, labelPx, labelColor, isPriorityLabel, isClickSelected);
               } else {
                 renderLabel(labelContext);
               }
