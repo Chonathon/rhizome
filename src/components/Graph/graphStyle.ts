@@ -17,6 +17,14 @@ export const DEFAULT_PRIORITY_LABEL_ZOOM_SCALE = 0.6;
 export const DEFAULT_PRIORITY_LABEL_PERCENT = 0.01;
 // Default upward screen-space offset (in px) to lift a focused node on mobile
 export const DEFAULT_MOBILE_CENTER_OFFSET_PX = 140;
+// Default zoom levels
+export const DEFAULT_DAG_ZOOM = 0.25;
+export const DEFAULT_MOBILE_ZOOM = 0.12;
+export const DEFAULT_DESKTOP_ZOOM = 0.14;
+
+export function getDefaultGraphZoom(dagMode: boolean, isMobile: boolean): number {
+  return dagMode ? DEFAULT_DAG_ZOOM : (isMobile ? DEFAULT_MOBILE_ZOOM : DEFAULT_DESKTOP_ZOOM);
+}
 
 export const smoothstep = (t: number) => t * t * (3 - 2 * t);
 

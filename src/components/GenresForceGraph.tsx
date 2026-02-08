@@ -10,6 +10,7 @@ interface GenresForceGraphProps {
   graphData?: GenreGraphData;
   onNodeClick: (genre: Genre) => void;
   onNodeHover?: (genreId: string | null, screenPosition: { x: number; y: number } | null) => void;
+  onZoomChange?: (zoom: number) => void;
   loading: boolean;
   show: boolean;
   dag: boolean;
@@ -48,6 +49,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       graphData,
       onNodeClick,
       onNodeHover,
+      onZoomChange,
       loading,
       show,
       dag,
@@ -135,6 +137,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
         onNodeHover={onNodeHover ? (genre, screenPosition) => onNodeHover((genre as Genre | undefined)?.id ?? null, screenPosition) : undefined}
+        onZoomChange={onZoomChange}
         nodeSize={nodeSize}
         linkThickness={linkThickness}
         linkCurvature={linkCurvature}
