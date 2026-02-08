@@ -748,7 +748,8 @@ function App() {
 
       scheduleClustering(() => {
         try {
-          const engine = new ClusteringEngine(currentArtists, currentArtistLinks);
+          const isDark = resolvedTheme === 'dark';
+          const engine = new ClusteringEngine(currentArtists, currentArtistLinks, isDark);
           const result = engine.cluster({
             method: artistClusterMethod,
             resolution: 1.0,
@@ -769,7 +770,7 @@ function App() {
         clearTimeout(clusteringTimeoutRef.current);
       }
     };
-  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod]);
+  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod, resolvedTheme]);
 
   // Use generated links from clustering (artists colored by parent genre)
   useEffect(() => {
@@ -909,64 +910,69 @@ function App() {
 
   const genreColorLegend = useMemo(() => {
     if (!genreRoots.length || !genres.length) return [];
-    const rootColorMap = assignRootGenreColors(genreRoots);
+    const isDark = resolvedTheme === 'dark';
     const genreNameById = new Map(genres.map((genre) => [genre.id, genre.name]));
     const genreById = new Map(genres.map((genre) => [genre.id, genre]));
     const rootIdLookup = new Set(genreRoots);
     const rootIdSet = new Set<string>();
+    const multiRootGenresInView = new Set<string>(); // Track multi-root genres for blended colors
 
-    // Helper to add root genres from a genre ID
-    const addRootsFromGenreId = (genreId: string) => {
-      const genre = genreById.get(genreId);
-      if (genre?.rootGenres?.length) {
-        genre.rootGenres.forEach((rootId) => rootIdSet.add(rootId));
+    // Calculate global root artist counts (from all genres, for consistent color assignment)
+    const globalRootArtistCount = new Map<string, number>();
+    genres.forEach(genre => {
+      if (genre.rootGenres?.length) {
+        genre.rootGenres.forEach(rootId => {
+          globalRootArtistCount.set(rootId, (globalRootArtistCount.get(rootId) ?? 0) + genre.artistCount);
+        });
       }
-      if (rootIdLookup.has(genreId)) {
-        rootIdSet.add(genreId);
+      if (rootIdLookup.has(genre.id)) {
+        globalRootArtistCount.set(genre.id, (globalRootArtistCount.get(genre.id) ?? 0) + genre.artistCount);
       }
-    };
+    });
+
+    // Assign colors based on global artist counts (matches buildGenreColorMap)
+    const rootColorMap = assignRootGenreColors(genreRoots, isDark, globalRootArtistCount);
+
+    // Track in-view artist counts per root genre (for legend sorting)
+    const rootArtistCount = new Map<string, number>();
+    // Track artist counts for blended (multi-root) genres
+    const blendedArtistCount = new Map<string, number>();
 
     if (graph === 'artists' || graph === 'similarArtists') {
-      // Determine which genre IDs to use for the legend
-      const filterGenreIds = collectionMode
-        ? collectionFilters.genres
-        : artistFilterGenreIDs;
-
-      // Helper to get root genres from artist's top tag (matches getArtistColor logic)
-      const getTopGenreRoots = (artist: Artist): string[] => {
+      // Helper to get top genre from artist's tags (matches getArtistColor logic)
+      const getTopGenre = (artist: Artist): Genre | null => {
         if (artist.tags?.length) {
-          // Find tags that match known genres, sorted by count (highest first)
           const genreTags = artist.tags
             .filter(t => genres.some(g => g.name === t.name))
             .sort((a, b) => b.count - a.count);
           if (genreTags.length > 0) {
             const bestTag = genreTags[0];
-            const tagGenre = genres.find(g => g.name === bestTag.name);
-            if (tagGenre?.rootGenres?.length) {
-              return tagGenre.rootGenres;
-            }
+            return genres.find(g => g.name === bestTag.name) ?? null;
           }
         }
-        // Fallback to first genre if no matching tag
         if (artist.genres?.length) {
-          const firstGenre = genreById.get(artist.genres[0]);
-          if (firstGenre?.rootGenres?.length) {
-            return firstGenre.rootGenres;
-          }
+          return genreById.get(artist.genres[0]) ?? null;
         }
-        return [];
+        return null;
       };
 
-      if (filterGenreIds.length > 0) {
-        // When a genre filter is active, use only the filtered genres for the legend
-        filterGenreIds.forEach(addRootsFromGenreId);
-      } else if (currentArtists.length) {
-        // Use each artist's TOP genre (by tag count) for the legend - matches coloring logic
+      // Always use actual artists' top genres for the legend (not just filter genres)
+      // This ensures we show all colors that appear in the graph
+      if (currentArtists.length) {
         currentArtists.forEach((artist) => {
-          const topRoots = getTopGenreRoots(artist);
-          topRoots.forEach(rootId => {
-            rootIdSet.add(rootId);
-          });
+          const topGenre = getTopGenre(artist);
+          if (topGenre?.rootGenres?.length) {
+            topGenre.rootGenres.forEach(rootId => {
+              rootIdSet.add(rootId);
+              // Count artists per root genre (each artist counts once per root)
+              rootArtistCount.set(rootId, (rootArtistCount.get(rootId) ?? 0) + 1);
+            });
+            if (topGenre.rootGenres.length >= 2) {
+              multiRootGenresInView.add(topGenre.id);
+              // Count artists for blended genre
+              blendedArtistCount.set(topGenre.id, (blendedArtistCount.get(topGenre.id) ?? 0) + 1);
+            }
+          }
         });
       }
     } else {
@@ -975,20 +981,27 @@ function App() {
       if (!legendSource.length) return [];
       legendSource.forEach((genre) => {
         if (genre.rootGenres?.length) {
-          genre.rootGenres.forEach((rootId) => rootIdSet.add(rootId));
+          genre.rootGenres.forEach((rootId) => {
+            rootIdSet.add(rootId);
+            // Sum up total artist count from genres that belong to each root
+            rootArtistCount.set(rootId, (rootArtistCount.get(rootId) ?? 0) + genre.artistCount);
+          });
+          if (genre.rootGenres.length >= 2) {
+            multiRootGenresInView.add(genre.id);
+            // Use genre's artist count for blended entries
+            blendedArtistCount.set(genre.id, (blendedArtistCount.get(genre.id) ?? 0) + genre.artistCount);
+          }
         }
         if (rootIdLookup.has(genre.id)) {
           rootIdSet.add(genre.id);
+          // Root genres themselves contribute their own artist count
+          rootArtistCount.set(genre.id, (rootArtistCount.get(genre.id) ?? 0) + genre.artistCount);
         }
       });
     }
 
-    const sortedRootIds = [...rootIdSet].sort((a, b) => {
-      const nameA = genreNameById.get(a) ?? a;
-      const nameB = genreNameById.get(b) ?? b;
-      return nameA.localeCompare(nameB);
-    });
-    return sortedRootIds
+    // Build root genre entries
+    const rootEntries = [...rootIdSet]
       .map((id) => {
         const color = rootColorMap.get(id);
         if (!color) return null;
@@ -996,17 +1009,42 @@ function App() {
           id,
           name: genreNameById.get(id) ?? id,
           color,
+          isBlended: false,
+          artistCount: rootArtistCount.get(id) ?? 0,
         };
       })
-      .filter((entry): entry is { id: string; name: string; color: string } => Boolean(entry));
-  }, [graph, currentArtists, collectionMode, collectionFilters.genres, artistFilterGenreIDs, collectionGenresInView, genresInView, genres, genreRoots]);
+      .filter((entry): entry is { id: string; name: string; color: string; isBlended: boolean; artistCount: number } => Boolean(entry));
+
+    // Build blended genre entries
+    const blendedEntries = [...multiRootGenresInView]
+      .map((genreId) => {
+        const genre = genreById.get(genreId);
+        if (!genre?.rootGenres?.length) return null;
+        const rootColors = genre.rootGenres
+          .map(rootId => rootColorMap.get(rootId))
+          .filter((c): c is string => Boolean(c));
+        if (rootColors.length < 2) return null;
+        return {
+          id: genreId,
+          name: genreNameById.get(genreId) ?? genreId,
+          color: mixColors(rootColors),
+          isBlended: true,
+          artistCount: blendedArtistCount.get(genreId) ?? 0,
+        };
+      })
+      .filter((entry): entry is { id: string; name: string; color: string; isBlended: boolean; artistCount: number } => Boolean(entry));
+
+    // Combine and sort by artist count descending
+    return [...rootEntries, ...blendedEntries].sort((a, b) => b.artistCount - a.artistCount);
+  }, [graph, currentArtists, collectionMode, collectionGenresInView, genresInView, genres, genreRoots, resolvedTheme]);
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
     if (genres) {
       const nodeCount = genres.length;
       onGenreNodeCountChange(nodeCount);
-      const colorMap = buildGenreColorMap(genres, genreRoots);
+      const isDark = resolvedTheme === 'dark';
+      const colorMap = buildGenreColorMap(genres, genreRoots, isDark);
       // console.log('[App Debug] Building genreColorMap');
       // console.log('  genres.length:', genres.length);
       // console.log('  genreRoots:', genreRoots);
@@ -1014,7 +1052,7 @@ function App() {
       // console.log('  first 5 colorMap entries:', Array.from(colorMap.entries()).slice(0, 5));
       setGenreColorMap(colorMap);
     }
-  }, [genres, genreLinks, genreRoots]);
+  }, [genres, genreLinks, genreRoots, resolvedTheme]);
 
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {

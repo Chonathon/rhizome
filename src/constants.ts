@@ -81,11 +81,10 @@ export const DEFAULT_THEME: Theme = 'system';
 export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER, enableGraphCards: true, previewTrigger: 'modifier'};
 export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
 export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
-// Tailwind default color palette (lighter/less saturated variants)
-// Uses -300 and -400 shades across hues for good visibility on dark backgrounds
-// while staying softer than 500/600.
-export const CLUSTER_COLORS = [
-    // 300 shades
+
+// Curated Tailwind colors
+// 300 shades for dark mode (lighter, more visible on dark backgrounds)
+export const CLUSTER_COLORS_DARK = [
     "#fca5a5", // red-300
     "#fdba74", // orange-300
     "#fcd34d", // amber-300
@@ -103,8 +102,10 @@ export const CLUSTER_COLORS = [
     "#f0abfc", // fuchsia-300
     "#f9a8d4", // pink-300
     "#fda4af", // rose-300
+];
 
-    // 400 shades (slightly stronger, still soft)
+// 400 shades for light mode (slightly stronger, better contrast on light backgrounds)
+export const CLUSTER_COLORS_LIGHT = [
     "#f87171", // red-400
     "#fb923c", // orange-400
     "#fbbf24", // amber-400
@@ -123,6 +124,40 @@ export const CLUSTER_COLORS = [
     "#f472b6", // pink-400
     "#fb7185", // rose-400
 ];
+
+// Returns cluster color from curated palette based on theme.
+// When index exceeds palette size (17), generates variations using golden angle hue rotation.
+export const getClusterColor = (index: number, isDark = true): string => {
+    const palette = isDark ? CLUSTER_COLORS_DARK : CLUSTER_COLORS_LIGHT;
+
+    if (index < palette.length) {
+        return palette[index];
+    }
+
+    // Beyond curated palette: generate using golden angle for max hue separation
+    const extraIndex = index - palette.length;
+    return generateColor(extraIndex, isDark);
+};
+
+// Generates colors using golden angle (137.5°) for maximum hue separation
+const generateColor = (index: number, isDark: boolean): string => {
+    const hue = (index * 137.5) % 360;
+    const saturation = 75;
+    const lightness = isDark ? 70 : 55; // Lighter for dark mode, darker for light mode
+    return hslToHex(hue, saturation, lightness);
+};
+
+const hslToHex = (h: number, s: number, l: number): string => {
+    s /= 100;
+    l /= 100;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n: number) => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+};
 
 export const SINGLETON_PARENT_COLOR = "#c4b5fd"; // violet-300 (arbitrary)
 

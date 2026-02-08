@@ -11,7 +11,7 @@ import {
 import {
   PARENT_FIELD_MAP,
   CHILD_FIELD_MAP,
-  CLUSTER_COLORS,
+  getClusterColor,
   SINGLETON_PARENT_GENRE,
   SINGLETON_PARENT_COLOR, SERVER_PRODUCTION_URL, CLIENT_DEPLOYMENT_URL, SERVER_DEVELOPMENT_URL
 } from "@/constants";
@@ -256,40 +256,61 @@ export const filterOutGenreTree = (genreGraphData: GenreGraphData, parent: Genre
   return { nodes: filteredNodes, links: filteredLinks };
 }
 
-export const assignRootGenreColors = (rootIDs: string[]) => {
+export const assignRootGenreColors = (
+  rootIDs: string[],
+  isDark = true,
+  rootArtistCounts?: Map<string, number>
+) => {
   const colorMap = new Map<string, string>();
   colorMap.set(SINGLETON_PARENT_GENRE.id, SINGLETON_PARENT_COLOR);
   if (!rootIDs.length) return colorMap;
-  const sortedRoots = [...rootIDs].sort((a, b) => a.localeCompare(b));
+
+  // Sort by artist count (descending) if provided, otherwise alphabetically
+  const sortedRoots = [...rootIDs].sort((a, b) => {
+    if (rootArtistCounts) {
+      const countA = rootArtistCounts.get(a) ?? 0;
+      const countB = rootArtistCounts.get(b) ?? 0;
+      if (countA !== countB) return countB - countA; // descending
+    }
+    return a.localeCompare(b); // fallback to alphabetical for ties
+  });
+
   sortedRoots.forEach((n, i) => {
-    const color = CLUSTER_COLORS[i % CLUSTER_COLORS.length];
-    colorMap.set(n, color);
+    colorMap.set(n, getClusterColor(i, isDark));
   });
   return colorMap;
 }
 
-export const buildGenreColorMap = (genres: Genre[], rootIDs: string[]) => {
-  const rootColorMap = assignRootGenreColors(rootIDs);
+export const buildGenreColorMap = (genres: Genre[], rootIDs: string[], isDark = true) => {
+  // Calculate total artist count per root genre
+  const rootArtistCounts = new Map<string, number>();
+  genres.forEach(genre => {
+    if (genre.rootGenres?.length) {
+      genre.rootGenres.forEach(rootId => {
+        rootArtistCounts.set(rootId, (rootArtistCounts.get(rootId) ?? 0) + genre.artistCount);
+      });
+    }
+    // Root genres themselves contribute their own artist count
+    if (rootIDs.includes(genre.id)) {
+      rootArtistCounts.set(genre.id, (rootArtistCounts.get(genre.id) ?? 0) + genre.artistCount);
+    }
+  });
+
+  const rootColorMap = assignRootGenreColors(rootIDs, isDark, rootArtistCounts);
   const colorMap = new Map<string, string>();
-  let singletonCount = 0;
   genres.forEach(genre => {
     switch (genre.rootGenres.length) {
       case 0:
-        colorMap.set(genre.id, getSingletonColor(singletonCount));
-        singletonCount++;
+        colorMap.set(genre.id, getSingletonColor());
         break;
       case 1:
         const color = rootColorMap.get(genre.rootGenres[0]);
         if (color) colorMap.set(genre.id, color);
-        else {
-          colorMap.set(genre.id, getSingletonColor(singletonCount));
-          singletonCount++;
-        }
+        else colorMap.set(genre.id, getSingletonColor());
         break;
       default:
         if (!genre.rootGenres || genre.rootGenres.length < 2) {
-          colorMap.set(genre.id, getSingletonColor(singletonCount));
-          singletonCount++;
+          colorMap.set(genre.id, getSingletonColor());
         } else {
           const colors: string[] = [];
           genre.rootGenres.forEach((g) => {
@@ -303,9 +324,7 @@ export const buildGenreColorMap = (genres: Genre[], rootIDs: string[]) => {
   return colorMap;
 }
 
-export const getSingletonColor = (count: number) => {
-  return CLUSTER_COLORS[count % CLUSTER_COLORS.length];
-}
+export const getSingletonColor = () => SINGLETON_PARENT_COLOR;
 
 // --- Color utilities ---
 export const isValidHexColor = (hexColor: string) => {
@@ -493,3 +512,5 @@ export const parseAppAccess = (appAccess: string) => {
   const [phase, version] = appAccess.split('-');
   return { phase, version };
 }
+
+export { getClusterColor };
