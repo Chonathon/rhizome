@@ -155,7 +155,7 @@ export const isValidHexColor = (hexColor: string) => {
     return regex.test(hexColor);
 }
 
-const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+export const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
     let h = hex.trim();
     if (h.startsWith('#')) h = h.slice(1);
     if (h.length === 8) h = h.slice(0, 6); // ignore alpha (#RRGGBBAA)
