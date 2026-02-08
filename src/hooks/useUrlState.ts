@@ -1,3 +1,33 @@
+/**
+ * useUrlState - Bidirectional sync between React state and URL query parameters
+ *
+ * ADDING A NEW URL PARAMETER:
+ *
+ * 1. urlUtils.ts - Add to parse/build functions:
+ *    // parseUrlState: extract from URL
+ *    const newParam = searchParams.get('newParam');
+ *
+ *    // buildUrlParams: add to URL
+ *    if (state.newThing) {
+ *      params.set('newParam', state.newThing);
+ *    }
+ *
+ * 2. useUrlState.ts - Add to options interface + sync logic:
+ *    // Interface: add state + setter
+ *    newThing: string | undefined;
+ *    setNewThing: (val: string | undefined) => void;
+ *
+ *    // URL→State effect: apply from URL
+ *    if (urlState.newParam !== currentState.newThing) {
+ *      setNewThing(urlState.newParam);
+ *    }
+ *
+ * 3. App.tsx - Pass the new state/setter to the hook (~2 lines)
+ *
+ * TIP: Only sync state that's meaningful to share/bookmark.
+ * Display preferences (node size, etc.) are fine in localStorage.
+ */
+
 import { useSearchParams } from 'react-router';
 import { useCallback, useEffect, useRef, useMemo } from 'react';
 import {
