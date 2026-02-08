@@ -246,9 +246,11 @@ export function drawSelectedNodeFill(
 
   // Only show letter if: no imageUrl (genre) OR image failed to load
   // Don't show letter during loading - just the pulsing circle
-  if (!imageUrl || failed) {
+  // Skip letter for small nodes (radius < 10) where text won't fit legibly
+  const minRadiusForLetter = 10;
+  if ((!imageUrl || failed) && r >= minRadiusForLetter) {
     const letter = isArtist ? label.charAt(0).toUpperCase() : label.charAt(0).toLowerCase();
-    const fontSize = Math.max(12, r * 1.2);
+    const fontSize = r * 1.2;
     ctx.font = `600 ${fontSize}px/1 Geist`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
