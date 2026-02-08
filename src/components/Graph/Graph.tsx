@@ -32,9 +32,11 @@ import {
   drawLabelBelow,
   applyMobileDrawerYOffset,
   DEFAULT_MOBILE_CENTER_OFFSET_PX,
+  applyDesktopDrawerXOffset,
   estimateLabelWidth,
   getDefaultGraphZoom,
 } from "@/components/Graph/graphStyle";
+import { useSidebar } from "@/components/ui/sidebar";
 import type {BasicNode, GraphHandle} from "@/types";
 
 export type { GraphHandle };
@@ -183,6 +185,8 @@ const Graph = forwardRef(function GraphInner<
   const showNodesRef = useRef<boolean>(showNodes);
   const showLinksRef = useRef<boolean>(showLinks);
   const { resolvedTheme } = useTheme();
+  const { state: sidebarState } = useSidebar();
+  const sidebarExpanded = sidebarState === "expanded";
   const resetCenterTimeoutRef = useRef<number | null>(null);
   const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
   const lastInitializedSignatureRef = useRef<string | undefined>(undefined);
@@ -527,6 +531,7 @@ const Graph = forwardRef(function GraphInner<
       const x = node.x ?? 0;
       const y = node.y ?? 0;
       const isMobile = window.matchMedia("(max-width: 640px)").matches;
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
       const currentZoom = zoomRef.current || 1;
       const yAdjusted = applyMobileDrawerYOffset(
         y,
@@ -534,14 +539,15 @@ const Graph = forwardRef(function GraphInner<
         isMobile,
         DEFAULT_MOBILE_CENTER_OFFSET_PX,
       );
-      fgRef.current!.centerAt(x, yAdjusted, 600);
+      const xAdjusted = applyDesktopDrawerXOffset(x, currentZoom, isDesktop, sidebarExpanded);
+      fgRef.current!.centerAt(xAdjusted, yAdjusted, 600);
       const targetZoom = Math.max(0.8, Math.min(2.2, currentZoom < 1 ? 1.1 : currentZoom));
       fgRef.current!.zoom(targetZoom, 600);
     };
     centerToNode();
     const timeout = window.setTimeout(centerToNode, 300);
     return () => window.clearTimeout(timeout);
-  }, [autoFocus, preparedData.nodes, selectedId, show]);
+  }, [autoFocus, preparedData.nodes, selectedId, show, sidebarExpanded]);
 
   // Get hovered node data
   const hoveredNode = useMemo(() => {
