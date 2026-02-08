@@ -1164,9 +1164,10 @@ function App() {
     await onPlayArtist(artist, { preview: true });
   };
 
-  const onPlayGenre = async (genre: Genre) => {
+  const onPlayGenre = async (genre: Genre, options?: { preview?: boolean }) => {
     const req = ++playRequest.current;
     const genreLoadingKey = `genre:${genre.id}`;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerLoadingKey(genreLoadingKey);
     setPlayerSource('genre');

@@ -41,7 +41,7 @@ interface GenreInfoProps {
   getArtistImageByName?: (name: string) => string | undefined;
   genreColorMap?: Map<string, string>;
   getArtistColor: (artist: Artist) => string;
-  onPlayGenre?: (genre: Genre) => void;
+  onPlayGenre?: (genre: Genre, options?: { preview?: boolean }) => void;
   playLoading?: boolean;
   onFocusInGenresView?: (genre: Genre, options?: { forceRefocus?: boolean }) => void;
   genreTracks?: TopTrack[];
@@ -371,7 +371,7 @@ export function GenreInfo({
                           <SplitButtonAction
                             aria-busy={genreArtistsLoading || !!playLoading}
                             className="disabled:opacity-100"
-                            onClick={() => selectedGenre && onPlayGenre?.(selectedGenre)}
+                            onClick={() => selectedGenre && onPlayGenre?.(selectedGenre, { preview: previewModeEnabled })}
                           >
                             {playLoading ? (
                               <Loader2 className="animate-spin" aria-hidden />
