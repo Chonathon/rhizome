@@ -48,7 +48,8 @@ interface ArtistInfoProps {
   playLoading?: boolean;
   onArtistToggle: (id: string | undefined) => void;
   isInCollection: boolean;
-  onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
+  collectionMode: boolean;
+  onPlayTrack?: (tracks: TopTrack[], startIndex: number, options?: { preview?: boolean }) => void;
   viewRelatedArtistsLoading?: boolean;
   shouldShowChevron?: boolean;
   onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
@@ -80,6 +81,7 @@ export function ArtistInfo({
   playLoading,
   onArtistToggle,
   isInCollection,
+  collectionMode,
   onPlayTrack,
   viewRelatedArtistsLoading,
   shouldShowChevron,
@@ -91,7 +93,9 @@ export function ArtistInfo({
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [previewModeEnabled, setPreviewModeEnabled] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1200px)");
+
 
   const artistReasons = useMemo(
     () => [
@@ -236,7 +240,7 @@ export function ArtistInfo({
                 <div className={`flex  flex-col gap-6
                     ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
                      <div className="flex gap-3 w-full">
-                           {/* Desktop: Split button with play action and track dropdown */}
+                           {/* Desktop: Split button with play/preview action and track dropdown */}
                            {isDesktop ? (
                              <SplitButton
                                variant="default"
@@ -246,37 +250,76 @@ export function ArtistInfo({
                                <SplitButtonAction
                                  aria-busy={!!playLoading}
                                  className="disabled:opacity-100"
-                                 onClick={() => selectedArtist && onPlay?.(selectedArtist)}
+                                 onClick={() => {
+                                   if (selectedArtist) {
+                                     if (previewModeEnabled) {
+                                       onPreview?.(selectedArtist);
+                                     } else {
+                                       onPlay?.(selectedArtist);
+                                     }
+                                   }
+                                 }}
                                >
-                                 {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
-                                 Play
+                                 {playLoading ? (
+                                   <Loader2 className="animate-spin size-4" aria-hidden />
+                                 ) : previewModeEnabled ? (
+                                   <Disc3 />
+                                 ) : (
+                                   <CirclePlay />
+                                 )}
+                                 {previewModeEnabled ? 'Preview' : 'Play'}
                                </SplitButtonAction>
 
                                <DropdownMenu>
                                  <DropdownMenuTrigger asChild>
                                    <SplitButtonTrigger
                                      className="disabled:opacity-100"
-                                     disabled={!!playLoading || !selectedArtist?.topTracks || selectedArtist.topTracks.length === 0}
-                                     aria-label="Select track"
+                                     disabled={!!playLoading}
+                                     aria-label="Select track or toggle preview mode"
                                    >
                                      <ChevronDown className="size-4" />
                                    </SplitButtonTrigger>
                                  </DropdownMenuTrigger>
                                  <DropdownMenuContent align="start" className="w-[280px]">
+                                   {/* Preview mode toggle */}
+                                   <DropdownMenuItem
+                                     onClick={() => setPreviewModeEnabled(!previewModeEnabled)}
+                                     className="cursor-pointer"
+                                   >
+                                     {previewModeEnabled ? (
+                                       <>
+                                         <CirclePlay className="size-4" />
+                                         <span>Switch to Play Mode</span>
+                                       </>
+                                     ) : (
+                                       <>
+                                         <Disc3 className="size-4" />
+                                         <span>Switch to Preview Mode</span>
+                                       </>
+                                     )}
+                                   </DropdownMenuItem>
+                                   <DropdownMenuSeparator />
                                    <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
                                    <DropdownMenuSeparator />
                                    {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 ? (
                                      selectedArtist.topTracks.map((track, index) => (
                                        <DropdownMenuItem
                                          key={`${track.title}-${index}`}
-                                         onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
+                                         onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index, { preview: previewModeEnabled })}
                                          className="cursor-pointer group"
                                        >
                                          <span className="relative grid place-items-center size-4">
-                                           <CirclePlay
-                                             className="absolute opacity-0 group-hover:opacity-100 size-4"
-                                             aria-hidden
-                                           />
+                                           {previewModeEnabled ? (
+                                             <Disc3
+                                               className="absolute opacity-0 group-hover:opacity-100 size-4"
+                                               aria-hidden
+                                             />
+                                           ) : (
+                                             <CirclePlay
+                                               className="absolute opacity-0 group-hover:opacity-100 size-4"
+                                               aria-hidden
+                                             />
+                                           )}
                                            <span className="text-sm text-muted-foreground text-center leading-none opacity-100 group-hover:opacity-0">
                                              {index + 1}
                                            </span>
@@ -309,17 +352,6 @@ export function ArtistInfo({
                                Play
                              </Button>
                            )}
-                            {/* Preview button - plays 30s sample from middle of track */}
-                            <Button
-                              size={isDesktop ? "lg" : "xl"}
-                              variant="secondary"
-                              onClick={() => selectedArtist && onPreview?.(selectedArtist)}
-                              disabled={!!playLoading}
-                              title="Play 30-second preview"
-                            >
-                              <Disc3 />
-                              <span className="sr-only sm:not-sr-only">Preview</span>
-                            </Button>
                             <AddButton
                               isDesktop={isDesktop}
                               onToggle={() => onArtistToggle(selectedArtist?.id)}

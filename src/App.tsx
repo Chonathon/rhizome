@@ -1217,12 +1217,13 @@ function App() {
     }
   };
 
-  const onPlayArtistTrack = async (tracks: TopTrack[], startIndex: number) => {
+  const onPlayArtistTrack = async (tracks: TopTrack[], startIndex: number, options?: { preview?: boolean }) => {
     if (!tracks || tracks.length === 0) {
       toast.error('No tracks available');
       return;
     }
     const req = ++playRequest.current;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerSource('artist');
     // Extract video IDs based on DEFAULT_PLAYER preference
@@ -2813,6 +2814,7 @@ function App() {
                 viewRelatedArtistsLoading={!!pendingArtistGenreGraph}
                 onArtistToggle={onAddArtistButtonToggle}
                 isInCollection={isInCollection(artistInfoToShow?.id)}
+                collectionMode={collectionMode}
                 onPlayTrack={onPlayArtistTrack}
                 shouldShowChevron={showArtistGoTo}
                 onDrawerSnapChange={setIsArtistDrawerAtMinSnap}
