@@ -83,7 +83,17 @@ export function GenreInfo({
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string; artist: Artist } | null>(null)
-  const [previewModeEnabled, setPreviewModeEnabled] = useState(false)
+  const [previewModeEnabled, setPreviewModeEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('previewModeEnabled') === 'true';
+    }
+    return false;
+  })
+
+  // Persist preview mode preference
+  useEffect(() => {
+    localStorage.setItem('previewModeEnabled', String(previewModeEnabled));
+  }, [previewModeEnabled]);
 
 
   const onDismiss = () => {

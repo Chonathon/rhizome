@@ -93,8 +93,18 @@ export function ArtistInfo({
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [previewModeEnabled, setPreviewModeEnabled] = useState(false);
+  const [previewModeEnabled, setPreviewModeEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('previewModeEnabled') === 'true';
+    }
+    return false;
+  });
   const isDesktop = useMediaQuery("(min-width: 1200px)");
+
+  // Persist preview mode preference
+  useEffect(() => {
+    localStorage.setItem('previewModeEnabled', String(previewModeEnabled));
+  }, [previewModeEnabled]);
 
 
   const artistReasons = useMemo(
