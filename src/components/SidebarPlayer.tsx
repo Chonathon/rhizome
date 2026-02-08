@@ -616,6 +616,16 @@ export default function SidebarPlayer({
     }
   }, [previewMode, open]);
 
+  // Reset preview seek when changing tracks (so new track gets the 30% seek)
+  useEffect(() => {
+    previewSeekAppliedRef.current = false;
+    setIsPreviewActive(false);
+    if (previewTimeoutRef.current) {
+      window.clearTimeout(previewTimeoutRef.current);
+      previewTimeoutRef.current = null;
+    }
+  }, [currentVideoId]);
+
   // Cleanup preview timeout on unmount
   useEffect(() => {
     return () => {

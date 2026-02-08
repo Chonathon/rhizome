@@ -287,10 +287,10 @@ export function ArtistInfo({
                                      className="cursor-pointer"
                                    >
                                      {previewModeEnabled ? (
-                                       <DropdownMenuItem>
+                                       <>
                                          <CirclePlay className="size-4" />
                                          <span>Switch to Play Mode</span>
-                                       </DropdownMenuItem>
+                                       </>
                                      ) : (
                                        <>
                                          <Disc3 className="size-4" />
@@ -300,7 +300,7 @@ export function ArtistInfo({
                                    </DropdownMenuItem>
                                    <DropdownMenuSeparator />
                                    <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
-                                   <DropdownMenuSeparator />
+                                   {/* <DropdownMenuSeparator /> */}
                                    {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 ? (
                                      selectedArtist.topTracks.map((track, index) => (
                                        <DropdownMenuItem
