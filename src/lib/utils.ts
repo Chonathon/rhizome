@@ -270,25 +270,19 @@ export const assignRootGenreColors = (rootIDs: string[], isDark = true) => {
 export const buildGenreColorMap = (genres: Genre[], rootIDs: string[], isDark = true) => {
   const rootColorMap = assignRootGenreColors(rootIDs, isDark);
   const colorMap = new Map<string, string>();
-  let singletonCount = 0;
   genres.forEach(genre => {
     switch (genre.rootGenres.length) {
       case 0:
-        colorMap.set(genre.id, getSingletonColor(singletonCount, isDark));
-        singletonCount++;
+        colorMap.set(genre.id, getSingletonColor());
         break;
       case 1:
         const color = rootColorMap.get(genre.rootGenres[0]);
         if (color) colorMap.set(genre.id, color);
-        else {
-          colorMap.set(genre.id, getSingletonColor(singletonCount, isDark));
-          singletonCount++;
-        }
+        else colorMap.set(genre.id, getSingletonColor());
         break;
       default:
         if (!genre.rootGenres || genre.rootGenres.length < 2) {
-          colorMap.set(genre.id, getSingletonColor(singletonCount, isDark));
-          singletonCount++;
+          colorMap.set(genre.id, getSingletonColor());
         } else {
           const colors: string[] = [];
           genre.rootGenres.forEach((g) => {
@@ -302,9 +296,7 @@ export const buildGenreColorMap = (genres: Genre[], rootIDs: string[], isDark = 
   return colorMap;
 }
 
-export const getSingletonColor = (count: number, isDark = true) => {
-  return getClusterColor(count, isDark);
-}
+export const getSingletonColor = () => SINGLETON_PARENT_COLOR;
 
 // --- Color utilities ---
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
