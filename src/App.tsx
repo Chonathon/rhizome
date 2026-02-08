@@ -310,6 +310,7 @@ function App() {
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
   const [playerStartIndex, setPlayerStartIndex] = useState<number>(0);
+  const [playerPreviewMode, setPlayerPreviewMode] = useState<boolean>(false);
   // TODO: prob need to make playerIDQueue an array or update state differently as it sometimes is out of sync with the ui
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
   const [autoFocusGraph, setAutoFocusGraph] = useState<boolean>(true);
@@ -1110,9 +1111,10 @@ function App() {
   }
 
   // Play handlers using embedded YouTube player
-  const onPlayArtist = async (artist: Artist) => {
+  const onPlayArtist = async (artist: Artist, options?: { preview?: boolean }) => {
     const req = ++playRequest.current;
     const artistLoadingKey = `artist:${artist.id}`;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerLoadingKey(artistLoadingKey);
     setPlayerSource('artist');
@@ -1155,6 +1157,11 @@ function App() {
         setPlayerOpen(false);
       }
     }
+  };
+
+  // Preview mode: plays from ~30% into track for 30 seconds
+  const onPreviewArtist = async (artist: Artist) => {
+    await onPlayArtist(artist, { preview: true });
   };
 
   const onPlayGenre = async (genre: Genre) => {
@@ -2362,6 +2369,7 @@ function App() {
         playerHeaderPreferProvidedTitle={playerSource === 'genre'}
         onPlayerTitleClick={handlePlayerTitleClick}
         playerStartIndex={playerStartIndex}
+        playerPreviewMode={playerPreviewMode}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -2611,6 +2619,7 @@ function App() {
                       getGenreNameById={getGenreNameById}
                       onNavigate={(artist) => onArtistNodeClick(artist)}
                       onPlay={onPlayArtist}
+                      onPreview={onPreviewArtist}
                       onToggle={onAddArtistButtonToggle}
                       playLoading={playerLoading}
                       isInCollection={isInCollection(hoveredArtistData.id)}
@@ -2796,6 +2805,7 @@ function App() {
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
                 onPlay={onPlayArtist}
+                onPreview={onPreviewArtist}
                 onFocusInArtistsView={focusArtistInCurrentView}
                 onViewArtistGraph={focusArtistRelatedGenres}
                 onViewSimilarArtistGraph={createSimilarArtistGraph}

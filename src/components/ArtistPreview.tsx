@@ -2,7 +2,7 @@ import { Artist } from '@/types'
 import { fixWikiImageURL, formatNumberCompact, formatDate } from '@/lib/utils'
 import { useMemo } from 'react'
 import { Button } from './ui/button'
-import { CirclePlay, ArrowRight, SquarePlus, Loader2, Check } from 'lucide-react'
+import { CirclePlay, ArrowRight, SquarePlus, Loader2, Check, Disc3 } from 'lucide-react'
 import GenreBadge from '@/components/GenreBadge'
 import GraphCard from './GraphCard'
 import ArtistBadge from './ArtistBadge'
@@ -13,6 +13,7 @@ interface ArtistPreviewProps {
   getGenreNameById?: (id: string) => string | undefined
   onNavigate?: (artist: Artist) => void
   onPlay?: (artist: Artist) => void
+  onPreview?: (artist: Artist) => void
   onToggle?: (artistId: string) => void
   playLoading?: boolean
   isInCollection?: boolean
@@ -34,6 +35,7 @@ export function ArtistPreview({
   getGenreNameById,
   onNavigate,
   onPlay,
+  onPreview,
   onToggle,
   playLoading,
   isInCollection,
@@ -179,6 +181,15 @@ export function ArtistPreview({
                 <CirclePlay />
               )}
               Play
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => onPreview?.(artist)}
+              disabled={playLoading}
+              title="Play 30-second preview"
+            >
+              <Disc3 />
             </Button>
             <Button
               size="sm"

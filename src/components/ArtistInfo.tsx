@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, EyeOff } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, EyeOff, Disc3 } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -41,6 +41,7 @@ interface ArtistInfoProps {
   getArtistColor: (artist: Artist) => string;
   getGenreNameById?: (id: string) => string | undefined;
   onPlay?: (artist: Artist) => void;
+  onPreview?: (artist: Artist) => void;
   onFocusInArtistsView?: (artist: Artist, options?: { forceRefocus?: boolean }) => void;
   onViewArtistGraph?: (artist: Artist) => void;
   onViewSimilarArtistGraph?: (artist: Artist) => void;
@@ -72,6 +73,7 @@ export function ArtistInfo({
   getArtistColor,
   getGenreNameById,
   onPlay,
+  onPreview,
   onFocusInArtistsView,
   onViewArtistGraph,
   onViewSimilarArtistGraph,
@@ -307,6 +309,17 @@ export function ArtistInfo({
                                Play
                              </Button>
                            )}
+                            {/* Preview button - plays 30s sample from middle of track */}
+                            <Button
+                              size={isDesktop ? "lg" : "xl"}
+                              variant="secondary"
+                              onClick={() => selectedArtist && onPreview?.(selectedArtist)}
+                              disabled={!!playLoading}
+                              title="Play 30-second preview"
+                            >
+                              <Disc3 />
+                              <span className="sr-only sm:not-sr-only">Preview</span>
+                            </Button>
                             <AddButton
                               isDesktop={isDesktop}
                               onToggle={() => onArtistToggle(selectedArtist?.id)}
