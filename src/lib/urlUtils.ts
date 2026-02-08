@@ -5,7 +5,8 @@ import type { Artist, Genre, GraphType } from "@/types";
  * "Hip Hop" -> "hip-hop"
  * "Rock & Roll" -> "rock-and-roll"
  */
-export function toSlug(name: string): string {
+export function toSlug(name: string | undefined | null): string {
+  if (!name) return '';
   return name
     .toLowerCase()
     .replace(/&/g, 'and')
@@ -85,7 +86,12 @@ export function buildUrlParams(state: UrlStateInput): URLSearchParams {
   // Genre filter (for artists/similar views)
   if ((state.graph === 'artists' || state.graph === 'similarArtists')
       && state.artistFilterGenres.length > 0) {
-    params.set('genres', state.artistFilterGenres.map(g => toSlug(g.name)).join(','));
+    const slugs = state.artistFilterGenres
+      .map(g => toSlug(g?.name))
+      .filter(Boolean);
+    if (slugs.length > 0) {
+      params.set('genres', slugs.join(','));
+    }
   }
 
   // Artist selection
