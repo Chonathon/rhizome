@@ -848,6 +848,11 @@ function App() {
       }
     };
 
+    // Track artist counts per root genre
+    const rootArtistCount = new Map<string, number>();
+    // Track artist counts for blended (multi-root) genres
+    const blendedArtistCount = new Map<string, number>();
+
     if (graph === 'artists' || graph === 'similarArtists') {
       // Determine which genre IDs to use for the legend
       const filterGenreIds = collectionMode
@@ -877,9 +882,15 @@ function App() {
         currentArtists.forEach((artist) => {
           const topGenre = getTopGenre(artist);
           if (topGenre?.rootGenres?.length) {
-            topGenre.rootGenres.forEach(rootId => rootIdSet.add(rootId));
+            topGenre.rootGenres.forEach(rootId => {
+              rootIdSet.add(rootId);
+              // Count artists per root genre (each artist counts once per root)
+              rootArtistCount.set(rootId, (rootArtistCount.get(rootId) ?? 0) + 1);
+            });
             if (topGenre.rootGenres.length >= 2) {
               multiRootGenresInView.add(topGenre.id);
+              // Count artists for blended genre
+              blendedArtistCount.set(topGenre.id, (blendedArtistCount.get(topGenre.id) ?? 0) + 1);
             }
           }
         });
@@ -890,13 +901,21 @@ function App() {
       if (!legendSource.length) return [];
       legendSource.forEach((genre) => {
         if (genre.rootGenres?.length) {
-          genre.rootGenres.forEach((rootId) => rootIdSet.add(rootId));
+          genre.rootGenres.forEach((rootId) => {
+            rootIdSet.add(rootId);
+            // Sum up total artist count from genres that belong to each root
+            rootArtistCount.set(rootId, (rootArtistCount.get(rootId) ?? 0) + genre.artistCount);
+          });
           if (genre.rootGenres.length >= 2) {
             multiRootGenresInView.add(genre.id);
+            // Use genre's artist count for blended entries
+            blendedArtistCount.set(genre.id, (blendedArtistCount.get(genre.id) ?? 0) + genre.artistCount);
           }
         }
         if (rootIdLookup.has(genre.id)) {
           rootIdSet.add(genre.id);
+          // Root genres themselves contribute their own artist count
+          rootArtistCount.set(genre.id, (rootArtistCount.get(genre.id) ?? 0) + genre.artistCount);
         }
       });
     }
@@ -911,9 +930,10 @@ function App() {
           name: genreNameById.get(id) ?? id,
           color,
           isBlended: false,
+          artistCount: rootArtistCount.get(id) ?? 0,
         };
       })
-      .filter((entry): entry is { id: string; name: string; color: string; isBlended: boolean } => Boolean(entry));
+      .filter((entry): entry is { id: string; name: string; color: string; isBlended: boolean; artistCount: number } => Boolean(entry));
 
     // Build blended genre entries
     const blendedEntries = [...multiRootGenresInView]
@@ -929,12 +949,13 @@ function App() {
           name: genreNameById.get(genreId) ?? genreId,
           color: mixColors(rootColors),
           isBlended: true,
+          artistCount: blendedArtistCount.get(genreId) ?? 0,
         };
       })
-      .filter((entry): entry is { id: string; name: string; color: string; isBlended: boolean } => Boolean(entry));
+      .filter((entry): entry is { id: string; name: string; color: string; isBlended: boolean; artistCount: number } => Boolean(entry));
 
-    // Combine and sort alphabetically
-    return [...rootEntries, ...blendedEntries].sort((a, b) => a.name.localeCompare(b.name));
+    // Combine and sort by artist count descending
+    return [...rootEntries, ...blendedEntries].sort((a, b) => b.artistCount - a.artistCount);
   }, [graph, currentArtists, collectionMode, collectionFilters.genres, artistFilterGenreIDs, collectionGenresInView, genresInView, genres, genreRoots, resolvedTheme]);
 
   // Initializes the genre graph data after fetching genres from DB

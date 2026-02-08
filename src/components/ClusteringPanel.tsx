@@ -14,7 +14,7 @@ interface ClusteringPanelProps {
     setDagMode: (enabled: boolean) => void;
     artistColorMode?: 'genre' | 'cluster';
     setArtistColorMode?: (mode: 'genre' | 'cluster') => void;
-    genreColorLegend?: { id: string; name: string; color: string; isBlended?: boolean }[];
+    genreColorLegend?: { id: string; name: string; color: string; isBlended?: boolean; artistCount?: number }[];
     artistClusters?: ClusterResult | null;
     clusteringInProgress?: boolean;
 }
