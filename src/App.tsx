@@ -833,32 +833,12 @@ function App() {
     const rootIdSet = new Set<string>();
     const multiRootGenresInView = new Set<string>(); // Track multi-root genres for blended colors
 
-    // Helper to add root genres from a genre ID
-    const addRootsFromGenreId = (genreId: string) => {
-      const genre = genreById.get(genreId);
-      if (genre?.rootGenres?.length) {
-        genre.rootGenres.forEach((rootId) => rootIdSet.add(rootId));
-        // Track multi-root genres
-        if (genre.rootGenres.length >= 2) {
-          multiRootGenresInView.add(genreId);
-        }
-      }
-      if (rootIdLookup.has(genreId)) {
-        rootIdSet.add(genreId);
-      }
-    };
-
     // Track artist counts per root genre
     const rootArtistCount = new Map<string, number>();
     // Track artist counts for blended (multi-root) genres
     const blendedArtistCount = new Map<string, number>();
 
     if (graph === 'artists' || graph === 'similarArtists') {
-      // Determine which genre IDs to use for the legend
-      const filterGenreIds = collectionMode
-        ? collectionFilters.genres
-        : artistFilterGenreIDs;
-
       // Helper to get top genre from artist's tags (matches getArtistColor logic)
       const getTopGenre = (artist: Artist): Genre | null => {
         if (artist.tags?.length) {
@@ -876,9 +856,9 @@ function App() {
         return null;
       };
 
-      if (filterGenreIds.length > 0) {
-        filterGenreIds.forEach(addRootsFromGenreId);
-      } else if (currentArtists.length) {
+      // Always use actual artists' top genres for the legend (not just filter genres)
+      // This ensures we show all colors that appear in the graph
+      if (currentArtists.length) {
         currentArtists.forEach((artist) => {
           const topGenre = getTopGenre(artist);
           if (topGenre?.rootGenres?.length) {
@@ -956,7 +936,7 @@ function App() {
 
     // Combine and sort by artist count descending
     return [...rootEntries, ...blendedEntries].sort((a, b) => b.artistCount - a.artistCount);
-  }, [graph, currentArtists, collectionMode, collectionFilters.genres, artistFilterGenreIDs, collectionGenresInView, genresInView, genres, genreRoots, resolvedTheme]);
+  }, [graph, currentArtists, collectionMode, collectionGenresInView, genresInView, genres, genreRoots, resolvedTheme]);
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
