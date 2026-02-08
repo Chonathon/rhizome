@@ -403,6 +403,14 @@ function App() {
       setShowArtistCard(true);
       addRecentSelection(artist);
     },
+    onGenreDeselected: () => {
+      setShowGenreCard(false);
+      setGenreInfoToShow(undefined);
+    },
+    onArtistDeselected: () => {
+      setShowArtistCard(false);
+      setArtistInfoToShow(undefined);
+    },
     genresLoaded: genres.length > 0 && !genresLoading,
     artistsLoaded: !artistsLoading,
   });
