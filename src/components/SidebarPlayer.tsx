@@ -1233,21 +1233,26 @@ export default function SidebarPlayer({
         >
           <div className="w-full rounded-3xl border border-border bg-popover shadow-xl overflow-hidden">
             <div className="flex items-center justify-between gap-3 px-4 py-3">
-              <div className="min-w-0">
-                {onTitleClick ? (
-                  <button
-                    type="button"
-                    onClick={onTitleClick}
-                    title={headerDisplay}
-                    className={`text-left text-lg font-semibold truncate hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
-                  >
-                    {headerDisplay}
-                  </button>
-                ) : (
-                  <div className="text-lg font-semibold truncate" title={headerDisplay}>
-                    {headerDisplay}
-                  </div>
-                )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  {onTitleClick ? (
+                    <button
+                      type="button"
+                      onClick={onTitleClick}
+                      title={headerDisplay}
+                      className={`text-left text-lg font-semibold truncate hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
+                    >
+                      {headerDisplay}
+                    </button>
+                  ) : (
+                    <div className="text-lg font-semibold truncate" title={headerDisplay}>
+                      {headerDisplay}
+                    </div>
+                  )}
+                  {isPreviewActive && (
+                    <span className="shrink-0 text-xs font-medium text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded">Preview</span>
+                  )}
+                </div>
                 {title && headerDisplay !== title && (
                   <div className="text-sm text-muted-foreground truncate">{title}</div>
                 )}
