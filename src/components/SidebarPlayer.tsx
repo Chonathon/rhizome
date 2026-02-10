@@ -1201,7 +1201,9 @@ export default function SidebarPlayer({
             <div className="flex flex-col flex-1 min-w-0">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="text-foreground min-w-0 truncate leading-tight text-sm" title={videoTitle}>{displayVideoTitle || ''}</span>
-                {isPreviewActive && <PreviewBadge />}
+                {isPreviewActive && <div className="pb-1">
+                  <PreviewBadge />
+                </div>}
               </div>
               <Progress
                 value={percent}
