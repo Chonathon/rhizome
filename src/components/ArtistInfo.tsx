@@ -294,7 +294,6 @@ export function ArtistInfo({
                                    {/* Preview mode toggle */}
                                    <DropdownMenuItem
                                      onClick={() => setPreviewModeEnabled(!previewModeEnabled)}
-                                     className="cursor-pointer"
                                    >
                                      {previewModeEnabled ? (
                                        <>
@@ -316,7 +315,7 @@ export function ArtistInfo({
                                        <DropdownMenuItem
                                          key={`${track.title}-${index}`}
                                          onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index, { preview: previewModeEnabled })}
-                                         className="cursor-pointer group"
+                                         className=" group"
                                        >
                                          <span className="relative grid place-items-center size-4">
                                            {previewModeEnabled ? (
