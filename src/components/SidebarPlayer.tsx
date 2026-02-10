@@ -10,6 +10,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { ImageLightbox } from "@/components/ImageLightbox";
 
+function PreviewBadge({ size = "sm" }: { size?: "sm" | "md" }) {
+  const sizeClasses = size === "sm"
+    ? "text-[10px] px-1 py-0.5"
+    : "text-xs px-1.5 py-0.5";
+  return (
+    <span className={`shrink-0 font-medium text-destructive bg-accent rounded ${sizeClasses}`}>
+      Preview
+    </span>
+  );
+}
+
 declare global {
   interface Window {
     YT: any;
@@ -1025,9 +1036,7 @@ export default function SidebarPlayer({
                 {playerCollapsed
                 ? <div className="flex items-center gap-1.5 text-left min-w-0">
                     <span className="text-foreground truncate">{displayVideoTitle || 'Loading...'}</span>
-                    {isPreviewActive && (
-                      <span className="shrink-0 text-[10px] font-medium text-primary/80 bg-primary/10 px-1 py-0.5 rounded">Preview</span>
-                    )}
+                    {isPreviewActive && <PreviewBadge />}
                   </div>
                 :
                 <div className="flex items-center gap-1.5 min-w-0">
@@ -1039,9 +1048,7 @@ export default function SidebarPlayer({
                   >
                     <span className="text-foreground">{displayVideoTitle || 'Loading...'}</span>
                   </button>
-                  {isPreviewActive && (
-                    <span className="shrink-0 text-[10px] font-medium text-primary/80 bg-primary/10 px-1 py-0.5 rounded">Preview</span>
-                  )}
+                  {isPreviewActive && <PreviewBadge />}
                 </div>
                 }
                 <span className="text-muted-foreground min-w-0 truncate leading-tight text-sm">{title || ''}</span>
@@ -1194,9 +1201,7 @@ export default function SidebarPlayer({
             <div className="flex flex-col flex-1 min-w-0">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="text-foreground min-w-0 truncate leading-tight text-sm" title={videoTitle}>{displayVideoTitle || ''}</span>
-                {isPreviewActive && (
-                  <span className="shrink-0 text-[10px] font-medium text-primary/80 bg-primary/10 px-1 py-0.5 rounded">Preview</span>
-                )}
+                {isPreviewActive && <PreviewBadge />}
               </div>
               <Progress
                 value={percent}
@@ -1249,9 +1254,7 @@ export default function SidebarPlayer({
                       {headerDisplay}
                     </div>
                   )}
-                  {isPreviewActive && (
-                    <span className="shrink-0 text-xs font-medium text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded">Preview</span>
-                  )}
+                  {isPreviewActive && <PreviewBadge size="md" />}
                 </div>
                 {title && headerDisplay !== title && (
                   <div className="text-sm text-muted-foreground truncate">{title}</div>
