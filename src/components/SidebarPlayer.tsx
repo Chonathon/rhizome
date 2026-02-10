@@ -112,7 +112,7 @@ export default function SidebarPlayer({
   const prevPlayingRef = useRef<boolean>(false);
   const prevVideoIdsRef = useRef<string[]>([]);
 
-  // Preview mode: seek to 30% and auto-pause after 30 seconds
+  // Preview mode: seek to 30% and auto-skip to next track after 30 seconds
   const previewTimeoutRef = useRef<number | null>(null);
   const previewSeekAppliedRef = useRef<boolean>(false);
   const previewModeRef = useRef<boolean>(previewMode);
@@ -505,14 +505,19 @@ export default function SidebarPlayer({
               playerRef.current?.seekTo?.(seekPosition, true);
               setIsPreviewActive(true);
 
-              // Auto-pause after 30 seconds
+              // Auto-skip to next track after 30 seconds
               if (previewTimeoutRef.current) {
                 window.clearTimeout(previewTimeoutRef.current);
               }
               previewTimeoutRef.current = window.setTimeout(() => {
                 try {
-                  playerRef.current?.pauseVideo?.();
-                  setIsPlaying(false);
+                  if (hasPlaylist) {
+                    playerRef.current?.nextVideo?.();
+                  } else {
+                    // No playlist - just pause
+                    playerRef.current?.pauseVideo?.();
+                    setIsPlaying(false);
+                  }
                 } catch {}
                 setIsPreviewActive(false);
                 previewTimeoutRef.current = null;
