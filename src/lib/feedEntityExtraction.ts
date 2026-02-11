@@ -192,9 +192,58 @@ export function getTopTrending(
 }
 
 /**
+ * Filter feed items that match a given entity
+ */
+export function getItemsForEntity(items: FeedItem[], entity: ExtractedEntity): FeedItem[] {
+    const pattern = new RegExp(`\\b${escapeRegex(entity.name)}\\b`, 'i');
+    return items.filter(item => pattern.test(getItemText(item)));
+}
+
+/**
+ * Find entities that co-occur with a given entity in the same articles
+ */
+export function getCooccurringEntities(
+    items: FeedItem[],
+    entity: ExtractedEntity,
+    limit: number = 6
+): ExtractedEntity[] {
+    // Get items containing the target entity
+    const matchingItems = getItemsForEntity(items, entity);
+    if (matchingItems.length === 0) return [];
+
+    // Count other entities across those items
+    const cooccurrenceCounts = new Map<string, { type: ExtractedEntity['type']; count: number }>();
+    const entityNameLower = entity.name.toLowerCase();
+
+    for (const item of matchingItems) {
+        const found = extractEntitiesFromItem(item);
+        for (const name of found) {
+            if (name.toLowerCase() === entityNameLower) continue;
+            const existing = cooccurrenceCounts.get(name);
+            if (existing) {
+                existing.count++;
+            } else {
+                // Determine type by checking which set it belongs to
+                const nameLower = name.toLowerCase();
+                const type: ExtractedEntity['type'] =
+                    GENRES.has(nameLower) ? 'genre' :
+                    LABELS.has(nameLower) ? 'label' :
+                    CITIES.has(nameLower) ? 'city' : 'artist';
+                cooccurrenceCounts.set(name, { type, count: 1 });
+            }
+        }
+    }
+
+    return Array.from(cooccurrenceCounts.entries())
+        .map(([name, { type, count }]) => ({ name, type, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, limit);
+}
+
+/**
  * Extract entities found in a single feed item
  */
-function extractEntitiesFromItem(item: FeedItem): Set<string> {
+export function extractEntitiesFromItem(item: FeedItem): Set<string> {
     const text = getItemText(item);
     const found = new Set<string>();
 

@@ -6,6 +6,7 @@ import { formatDate } from "@/lib/utils";
 
 interface FeedItemProps {
     item: FeedItemType;
+    variant?: 'default' | 'compact';
     showFollowButton?: boolean;
     isFollowing?: boolean;
     onToggleFollow?: () => void;
@@ -20,9 +21,7 @@ function getFaviconUrl(link: string): string | null {
     }
 }
 
-export function FeedItem({ item, showFollowButton, isFollowing, onToggleFollow }: FeedItemProps) {
-    const initial =
-        item.title?.[0]?.toUpperCase() ?? item.source?.[0]?.toUpperCase() ?? "?";
+export function FeedItem({ item, variant = 'default', showFollowButton, isFollowing, onToggleFollow }: FeedItemProps) {
     const faviconUrl = getFaviconUrl(item.link);
 
     const handleFollowClick = (e: React.MouseEvent) => {
@@ -30,6 +29,47 @@ export function FeedItem({ item, showFollowButton, isFollowing, onToggleFollow }
         e.stopPropagation();
         onToggleFollow?.();
     };
+
+    if (variant === 'compact') {
+        return (
+            <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block group"
+            >
+                <Card className="bg-card rounded-xl border-border transition-colors hover:bg-accent/50 overflow-hidden">
+                    <div className="flex items-center gap-3 p-2.5">
+                        {item.imageUrl && (
+                            <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0">
+                                <img
+                                    src={item.imageUrl}
+                                    alt={item.title}
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                />
+                            </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-medium line-clamp-2 leading-tight group-hover:text-primary">
+                                {item.title}
+                            </h3>
+                            <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+                                {faviconUrl && (
+                                    <div className="w-3.5 h-3.5 rounded-full bg-white dark:bg-white/90 p-px flex items-center justify-center">
+                                        <img src={faviconUrl} alt="" className="w-3 h-3 rounded-full" loading="lazy" />
+                                    </div>
+                                )}
+                                <span>{item.source}</span>
+                                <span>·</span>
+                                <span>{formatDate(item.pubDate)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+            </a>
+        );
+    }
 
     return (
         <a

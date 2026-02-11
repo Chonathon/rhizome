@@ -1,58 +1,20 @@
 import { useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BadgeIndicator, BadgeIndicatorType } from "@/components/BadgeIndicator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { FeedItem } from "@/types";
 import { extractFeedEntities, getTopTrending, ExtractedEntity } from "@/lib/feedEntityExtraction";
 import { TrendingTagsGraph } from "./TrendingTagsGraph";
+import { EntityBadge } from "./EntityBadge";
 
 interface FeedTrendingTagsProps {
     items: FeedItem[];
     maxTags?: number;
-    onEntityClick?: (entity: ExtractedEntity) => void;
+    selectedEntity: ExtractedEntity | null;
+    onEntityClick: (entity: ExtractedEntity) => void;
 }
 
-// Default colors for entity types (will be replaced with DB-driven colors)
-const ENTITY_TYPE_COLORS: Record<ExtractedEntity['type'], string> = {
-    artist: '#60a5fa', // blue-400
-    genre: '#c084fc',  // purple-400
-    label: '#fbbf24',  // amber-400
-    city: '#34d399',   // emerald-400
-};
-
-function EntityBadge({
-    entity,
-    onClick
-}: {
-    entity: ExtractedEntity;
-    onClick?: () => void;
-}) {
-    const color = ENTITY_TYPE_COLORS[entity.type];
-    const badgeType: BadgeIndicatorType = entity.type;
-
-    return (
-        <Badge asChild variant="outline" title={`${entity.type}: ${entity.name}`}>
-            <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClick}
-                className="cursor-pointer inline-flex items-center gap-1.5 h-auto py-0.5 px-2"
-            >
-                <BadgeIndicator
-                    type={badgeType}
-                    name={entity.name}
-                    color={color}
-                    className="size-2"
-                />
-                {entity.name}
-            </Button>
-        </Badge>
-    );
-}
-
-export function FeedTrendingTags({ items, maxTags = 8, onEntityClick }: FeedTrendingTagsProps) {
+export function FeedTrendingTags({ items, maxTags = 8, selectedEntity, onEntityClick }: FeedTrendingTagsProps) {
     const [isGraphOpen, setIsGraphOpen] = useState(false);
 
     const trending = useMemo(() => {
@@ -85,7 +47,8 @@ export function FeedTrendingTags({ items, maxTags = 8, onEntityClick }: FeedTren
                                 <EntityBadge
                                     key={`${entity.type}-${entity.name}`}
                                     entity={entity}
-                                    onClick={onEntityClick ? () => onEntityClick(entity) : undefined}
+                                    isActive={selectedEntity?.name === entity.name}
+                                    onClick={() => onEntityClick(entity)}
                                 />
                             ))}
                         </div>
@@ -113,7 +76,8 @@ export function FeedTrendingTags({ items, maxTags = 8, onEntityClick }: FeedTren
                             <EntityBadge
                                 key={`${entity.type}-${entity.name}`}
                                 entity={entity}
-                                onClick={onEntityClick ? () => onEntityClick(entity) : undefined}
+                                isActive={selectedEntity?.name === entity.name}
+                                onClick={() => onEntityClick(entity)}
                             />
                         ))}
                     </div>

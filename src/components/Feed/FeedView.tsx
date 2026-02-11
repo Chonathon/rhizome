@@ -2,15 +2,18 @@ import { useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FeedCategory } from "@/types";
+import { ExtractedEntity } from "@/lib/feedEntityExtraction";
 import { useFollowedFeeds } from "@/hooks/useFollowedFeeds";
 import useMultipleFeeds from "@/hooks/useMultipleFeeds";
 import { FollowingFeedView } from "./FollowingFeedView";
 import { EverythingFeedsView } from "./EverythingFeedsView";
 import { FeedTrendingTags } from "./FeedTrendingTags";
+import { TrendingEntityDrawer } from "./TrendingEntityDrawer";
 
 export function FeedView() {
     const followedFeeds = useFollowedFeeds();
     const [selectedCategory, setSelectedCategory] = useState<FeedCategory | "all">("all");
+    const [selectedTrendingEntity, setSelectedTrendingEntity] = useState<ExtractedEntity | null>(null);
     const { items: trendingItems, loading: trendingLoading } = useMultipleFeeds({});
     const {
         items: followingItems,
@@ -91,15 +94,25 @@ export function FeedView() {
             </div>
 
             {/* Trending Panel */}
-            <div className={panelStyles}>
+            <div className={`${panelStyles} relative`}>
                 <div className="px-4 py-3 border-b">
                     <h2 className="text-sm font-medium">Trending</h2>
                 </div>
                 <div className="flex-1 overflow-auto">
                     {!trendingLoading && trendingItems.length > 0 && (
-                        <FeedTrendingTags items={trendingItems} />
+                        <FeedTrendingTags
+                            items={trendingItems}
+                            selectedEntity={selectedTrendingEntity}
+                            onEntityClick={setSelectedTrendingEntity}
+                        />
                     )}
                 </div>
+                <TrendingEntityDrawer
+                    entity={selectedTrendingEntity}
+                    items={trendingItems}
+                    onClose={() => setSelectedTrendingEntity(null)}
+                    onEntityClick={setSelectedTrendingEntity}
+                />
             </div>
         </div>
     );
