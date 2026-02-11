@@ -9,9 +9,21 @@ interface FeedListProps {
     error: boolean;
     hasSelection: boolean;
     onRetry?: () => void;
+    showFollowButton?: boolean;
+    isFollowing?: (feedId: string) => boolean;
+    onToggleFollow?: (feedId: string) => void;
 }
 
-export function FeedList({ items, loading, error, hasSelection, onRetry }: FeedListProps) {
+export function FeedList({
+    items,
+    loading,
+    error,
+    hasSelection,
+    onRetry,
+    showFollowButton = false,
+    isFollowing,
+    onToggleFollow,
+}: FeedListProps) {
     if (!hasSelection) {
         return <FeedEmptyState type="no-selection" />;
     }
@@ -37,7 +49,13 @@ export function FeedList({ items, loading, error, hasSelection, onRetry }: FeedL
     return (
         <div className="flex flex-col gap-3 px-2 py-4 overflow-y-auto flex-1">
             {items.map(item => (
-                <FeedItem key={item.id} item={item} />
+                <FeedItem
+                    key={item.id}
+                    item={item}
+                    showFollowButton={showFollowButton}
+                    isFollowing={isFollowing?.(item.sourceId)}
+                    onToggleFollow={onToggleFollow ? () => onToggleFollow(item.sourceId) : undefined}
+                />
             ))}
         </div>
     );

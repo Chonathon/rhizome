@@ -4,3 +4,5 @@ export { FeedList } from './FeedList';
 export { FeedItem } from './FeedItem';
 export { FeedItemSkeleton } from './FeedItemSkeleton';
 export { FeedEmptyState } from './FeedEmptyState';
+export { AllFeedsView } from './AllFeedsView';
+export { FollowingFeedView } from './FollowingFeedView';

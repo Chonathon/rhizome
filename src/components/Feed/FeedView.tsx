@@ -1,44 +1,43 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router";
-import useFeed from "@/hooks/useFeed";
-import { FeedHeader } from "./FeedHeader";
-import { FeedList } from "./FeedList";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useFollowedFeeds } from "@/hooks/useFollowedFeeds";
+import { FollowingFeedView } from "./FollowingFeedView";
+import { AllFeedsView } from "./AllFeedsView";
+
+type FeedTab = "following" | "all";
 
 export function FeedView() {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const feedId = searchParams.get('feed');
-
-    const [aiSummaryEnabled, setAiSummaryEnabled] = useState(false);
-
-    const { items, loading, error, refresh } = useFeed(feedId);
-
-    const handleFeedChange = (newFeedId: string) => {
-        setSearchParams({ feed: newFeedId });
-    };
+    const [activeTab, setActiveTab] = useState<FeedTab>("all");
+    const followedFeeds = useFollowedFeeds();
 
     return (
         <div className="flex flex-col h-full bg-background">
-            <FeedHeader
-                selectedFeedId={feedId}
-                onFeedChange={handleFeedChange}
-                onRefresh={refresh}
-                isRefreshing={loading}
-                aiSummaryEnabled={aiSummaryEnabled}
-                onAiSummaryToggle={setAiSummaryEnabled}
-            />
-            <FeedList
-                items={items}
-                loading={loading}
-                error={!!error}
-                hasSelection={!!feedId}
-                onRetry={refresh}
-            />
-            {aiSummaryEnabled && feedId && (
-                <div className="p-4 border-t bg-muted/30">
-                    <p className="text-sm text-muted-foreground italic">
-                        AI summaries coming soon...
-                    </p>
-                </div>
+            <div className="p-4 border-b">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as FeedTab)}>
+                    <TabsList>
+                        <TabsTrigger value="following">
+                            Following
+                            {followedFeeds.followedFeedIds.length > 0 && (
+                                <span className="ml-1.5 text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                                    {followedFeeds.followedFeedIds.length}
+                                </span>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="all">All</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            </div>
+
+            {activeTab === "following" ? (
+                <FollowingFeedView
+                    followedFeedIds={followedFeeds.followedFeedIds}
+                    onUnfollow={followedFeeds.unfollowFeed}
+                />
+            ) : (
+                <AllFeedsView
+                    isFollowing={followedFeeds.isFollowing}
+                    onToggleFollow={followedFeeds.toggleFollow}
+                />
             )}
         </div>
     );

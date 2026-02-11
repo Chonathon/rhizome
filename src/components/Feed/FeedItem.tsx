@@ -1,13 +1,23 @@
 import { FeedItem as FeedItemType } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ExternalLink, Heart } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 interface FeedItemProps {
     item: FeedItemType;
+    showFollowButton?: boolean;
+    isFollowing?: boolean;
+    onToggleFollow?: () => void;
 }
 
-export function FeedItem({ item }: FeedItemProps) {
+export function FeedItem({ item, showFollowButton, isFollowing, onToggleFollow }: FeedItemProps) {
+    const handleFollowClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onToggleFollow?.();
+    };
+
     return (
         <a
             href={item.link}
@@ -33,7 +43,26 @@ export function FeedItem({ item }: FeedItemProps) {
                                 <CardTitle className="text-base font-medium line-clamp-2 group-hover:text-primary">
                                     {item.title}
                                 </CardTitle>
-                                <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="flex items-center gap-1 shrink-0">
+                                    {showFollowButton && onToggleFollow && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7"
+                                            onClick={handleFollowClick}
+                                            title={isFollowing ? "Unfollow feed" : "Follow feed"}
+                                        >
+                                            <Heart
+                                                className={`h-4 w-4 ${
+                                                    isFollowing
+                                                        ? "fill-red-500 text-red-500"
+                                                        : "text-muted-foreground"
+                                                }`}
+                                            />
+                                        </Button>
+                                    )}
+                                    <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent className="p-4 pt-0">

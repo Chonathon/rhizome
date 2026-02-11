@@ -57,6 +57,7 @@ export const fetchFeed = async (feedId: string): Promise<FeedResponse | null> =>
             link: item.link,
             pubDate: item.pubDate,
             source: source.name,
+            sourceId: source.id,
             excerpt: truncateText(stripHtml(item.description)),
             imageUrl: item.thumbnail || undefined,
             author: item.author || undefined,

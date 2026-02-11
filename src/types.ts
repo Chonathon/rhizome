@@ -202,6 +202,7 @@ export interface FeedItem {
     link: string;
     pubDate: string;
     source: string;
+    sourceId: string;
     excerpt?: string;
     imageUrl?: string;
     author?: string;

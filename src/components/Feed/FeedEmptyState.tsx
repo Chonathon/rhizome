@@ -1,12 +1,25 @@
-import { Rss, AlertCircle } from "lucide-react";
+import { Rss, AlertCircle, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FeedEmptyStateProps {
-    type: 'empty' | 'error' | 'no-selection';
+    type: 'empty' | 'error' | 'no-selection' | 'no-following';
+    message?: string;
     onRetry?: () => void;
 }
 
-export function FeedEmptyState({ type, onRetry }: FeedEmptyStateProps) {
+export function FeedEmptyState({ type, message, onRetry }: FeedEmptyStateProps) {
+    if (type === 'no-following') {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                <Heart className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Followed Feeds</h3>
+                <p className="text-muted-foreground text-sm max-w-xs">
+                    {message || "You're not following any feeds yet."}
+                </p>
+            </div>
+        );
+    }
+
     if (type === 'no-selection') {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
