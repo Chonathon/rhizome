@@ -2501,6 +2501,43 @@ function App() {
       >
         <SidebarLogoTrigger />
         <Toaster />
+        {/* Keep Search dialog mounted so sidebar shortcut works in all modes */}
+        <div className="hidden">
+          <Search
+            onGenreSelect={onSearchGenreSelect}
+            onArtistSelect={onSearchArtistSelect}
+            currentArtists={currentArtists}
+            genres={currentGenres?.nodes}
+            graphState={graph}
+            selectedGenres={selectedGenres}
+            selectedArtist={selectedArtist}
+            open={searchOpen}
+            setOpen={setSearchOpen}
+            genreColorMap={genreColorMap}
+            getArtistColor={getArtistColor}
+            onArtistPlay={onPlayArtist}
+            onGenrePlay={onPlayGenre}
+            onArtistGoTo={(artist) => {
+              // For artists: Explore Related Genres (since artist might not be in current view)
+              focusArtistRelatedGenres(artist);
+              setArtistInfoToShow(artist);
+              setShowArtistCard(true);
+            }}
+            onGenreGoTo={(genre) => {
+              // For genres: Go To (switches to genres view and focuses the genre)
+              focusGenreInCurrentView(genre, { forceRefocus: true });
+            }}
+            onArtistViewSimilar={async (artist) => {
+              await createSimilarArtistGraph(artist);
+              setArtistInfoToShow(artist);
+              setShowArtistCard(true);
+            }}
+            onGenreViewSimilar={(genre) => {
+              // For genres: View Similar also navigates to genres view
+              focusGenreInCurrentView(genre, { forceRefocus: true });
+            }}
+          />
+        </div>
         {feedMode ? (
           <div className="fixed inset-y-0 right-0 z-0 overflow-auto" style={{ left: "var(--sidebar-gap)" }}>
             <FeedView />
@@ -2979,41 +3016,6 @@ function App() {
                   // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
                   className='hidden'
                 >
-                  <Search
-                    onGenreSelect={onSearchGenreSelect}
-                    onArtistSelect={onSearchArtistSelect}
-                    currentArtists={currentArtists}
-                    genres={currentGenres?.nodes}
-                    graphState={graph}
-                    selectedGenres={selectedGenres}
-                    selectedArtist={selectedArtist}
-                    open={searchOpen}
-                    setOpen={setSearchOpen}
-                    genreColorMap={genreColorMap}
-                    getArtistColor={getArtistColor}
-                    onArtistPlay={onPlayArtist}
-                    onGenrePlay={onPlayGenre}
-                    onArtistGoTo={(artist) => {
-                      // For artists: Explore Related Genres (since artist might not be in current view)
-                      focusArtistRelatedGenres(artist);
-                      setArtistInfoToShow(artist);
-                      setShowArtistCard(true);
-                    }}
-                    onGenreGoTo={(genre) => {
-                      // For genres: Go To (switches to genres view and focuses the genre)
-                      focusGenreInCurrentView(genre, { forceRefocus: true });
-                    }}
-                    onArtistViewSimilar={async (artist) => {
-                      await createSimilarArtistGraph(artist);
-                      setArtistInfoToShow(artist);
-                      setShowArtistCard(true);
-                    }}
-                    onGenreViewSimilar={(genre) => {
-                      // For genres: View Similar also navigates to genres view
-                      focusGenreInCurrentView(genre, { forceRefocus: true });
-                    }}
-                  />
-
                 </motion.div>
               </div>
             </motion.div>

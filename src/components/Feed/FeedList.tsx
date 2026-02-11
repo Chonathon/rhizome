@@ -35,7 +35,7 @@ export function FeedList({ items, loading, error, hasSelection, onRetry }: FeedL
     }
 
     return (
-        <div className="flex flex-col gap-3 p-4 overflow-y-auto flex-1">
+        <div className="flex flex-col gap-3 px-2 py-4 overflow-y-auto flex-1">
             {items.map(item => (
                 <FeedItem key={item.id} item={item} />
             ))}
