@@ -1,16 +1,38 @@
+import { useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FeedCategory } from "@/types";
 import { useFollowedFeeds } from "@/hooks/useFollowedFeeds";
+import useMultipleFeeds from "@/hooks/useMultipleFeeds";
 import { FollowingFeedView } from "./FollowingFeedView";
 import { AllFeedsView } from "./AllFeedsView";
+import { FeedTrendingTags } from "./FeedTrendingTags";
 
 export function FeedView() {
     const followedFeeds = useFollowedFeeds();
-    const panelStyles = "border flex flex-col max-w-[540px] flex-1 shadow-xl rounded-3xl min-w-0"
+    const [selectedCategory, setSelectedCategory] = useState<FeedCategory | "all">("all");
+    const { items: trendingItems, loading: trendingLoading } = useMultipleFeeds({});
+    const {
+        items: followingItems,
+        loading: followingLoading,
+        error: followingError,
+        refresh: refreshFollowing,
+    } = useMultipleFeeds({ feedIds: followedFeeds.followedFeedIds });
+    const {
+        items: allItems,
+        loading: allLoading,
+        error: allError,
+        refresh: refreshAll,
+    } = useMultipleFeeds({
+        category: selectedCategory === "all" ? null : selectedCategory,
+    });
+    const panelStyles = "border flex flex-col min-w-[375px] max-w-[440px] flex-1 shadow-xl rounded-3xl min-w-0 overflow-hidden";
 
     return (
         <div className="flex h-full justify-center bg-background pt-3 gap-4">
             {/* Following Panel */}
             <div className={panelStyles}>
-                <div className="px-4 py-3 border-b">
+                <div className="px-4 py-3 border-b flex items-center justify-between">
                     <h2 className="text-sm font-medium">
                         Following
                         {followedFeeds.followedFeedIds.length > 0 && (
@@ -19,22 +41,63 @@ export function FeedView() {
                             </span>
                         )}
                     </h2>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={refreshFollowing}
+                        disabled={followingLoading}
+                        className="h-8 w-8"
+                    >
+                        <RefreshCw
+                            className={`h-4 w-4 ${followingLoading ? "animate-spin" : ""}`}
+                        />
+                    </Button>
                 </div>
                 <FollowingFeedView
                     followedFeedIds={followedFeeds.followedFeedIds}
-                    onUnfollow={followedFeeds.unfollowFeed}
+                    items={followingItems}
+                    loading={followingLoading}
+                    error={!!followingError}
+                    onRetry={refreshFollowing}
                 />
             </div>
 
             {/* All Feeds Panel */}
             <div className={panelStyles}>
-                <div className="px-4 py-3 border-b">
+                <div className="px-4 py-3 border-b flex items-center justify-between">
                     <h2 className="text-sm font-medium">For You</h2>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={refreshAll}
+                        disabled={allLoading}
+                        className="h-8 w-8"
+                    >
+                        <RefreshCw className={`h-4 w-4 ${allLoading ? "animate-spin" : ""}`} />
+                    </Button>
                 </div>
                 <AllFeedsView
                     isFollowing={followedFeeds.isFollowing}
                     onToggleFollow={followedFeeds.toggleFollow}
+                    items={allItems}
+                    loading={allLoading}
+                    error={!!allError}
+                    onRetry={refreshAll}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
                 />
+            </div>
+
+            {/* Trending Panel */}
+            <div className={panelStyles}>
+                <div className="px-4 py-3 border-b">
+                    <h2 className="text-sm font-medium">Trending</h2>
+                </div>
+                <div className="flex-1 overflow-auto">
+                    {!trendingLoading && trendingItems.length > 0 && (
+                        <FeedTrendingTags items={trendingItems} />
+                    )}
+                </div>
             </div>
         </div>
     );

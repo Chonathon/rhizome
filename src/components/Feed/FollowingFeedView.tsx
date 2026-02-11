@@ -1,20 +1,22 @@
-import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import useMultipleFeeds from "@/hooks/useMultipleFeeds";
+import { FeedItem as FeedItemType } from "@/types";
 import { FeedList } from "./FeedList";
 import { FeedEmptyState } from "./FeedEmptyState";
-import { FeedTrendingTags } from "./FeedTrendingTags";
 
 interface FollowingFeedViewProps {
     followedFeedIds: string[];
-    onUnfollow: (feedId: string) => void;
+    items: FeedItemType[];
+    loading: boolean;
+    error: boolean;
+    onRetry?: () => void;
 }
 
-export function FollowingFeedView({ followedFeedIds, onUnfollow }: FollowingFeedViewProps) {
-    const { items, loading, error, refresh } = useMultipleFeeds({
-        feedIds: followedFeedIds,
-    });
-
+export function FollowingFeedView({
+    followedFeedIds,
+    items,
+    loading,
+    error,
+    onRetry,
+}: FollowingFeedViewProps) {
     if (followedFeedIds.length === 0) {
         return (
             <FeedEmptyState
@@ -26,27 +28,17 @@ export function FollowingFeedView({ followedFeedIds, onUnfollow }: FollowingFeed
 
     return (
         <div className="flex flex-col flex-1 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b">
+            <div className="flex items-center px-4 py-2">
                 <span className="text-sm text-muted-foreground">
                     {followedFeedIds.length} feed{followedFeedIds.length !== 1 ? "s" : ""}
                 </span>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={refresh}
-                    disabled={loading}
-                    className="h-8 w-8"
-                >
-                    <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                </Button>
             </div>
-            {!loading && items.length > 0 && <FeedTrendingTags items={items} />}
             <FeedList
                 items={items}
                 loading={loading}
-                error={!!error}
+                error={error}
                 hasSelection={true}
-                onRetry={refresh}
+                onRetry={onRetry}
                 showFollowButton={false}
             />
         </div>

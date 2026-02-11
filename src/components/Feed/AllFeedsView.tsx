@@ -1,6 +1,3 @@
-import { useState } from "react";
-import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
     Select,
     SelectContent,
@@ -8,32 +5,39 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { FeedCategory } from "@/types";
+import { FeedCategory, FeedItem as FeedItemType } from "@/types";
 import { FEED_CATEGORIES } from "@/constants";
-import useMultipleFeeds from "@/hooks/useMultipleFeeds";
 import { FeedList } from "./FeedList";
-import { FeedTrendingTags } from "./FeedTrendingTags";
 
 interface AllFeedsViewProps {
     isFollowing: (feedId: string) => boolean;
     onToggleFollow: (feedId: string) => void;
+    items: FeedItemType[];
+    loading: boolean;
+    error: boolean;
+    onRetry?: () => void;
+    selectedCategory: FeedCategory | "all";
+    onCategoryChange: (category: FeedCategory | "all") => void;
 }
 
-export function AllFeedsView({ isFollowing, onToggleFollow }: AllFeedsViewProps) {
-    const [selectedCategory, setSelectedCategory] = useState<FeedCategory | "all">("all");
-
-    const { items, loading, error, refresh } = useMultipleFeeds({
-        category: selectedCategory === "all" ? null : selectedCategory,
-    });
-
+export function AllFeedsView({
+    isFollowing,
+    onToggleFollow,
+    items,
+    loading,
+    error,
+    onRetry,
+    selectedCategory,
+    onCategoryChange,
+}: AllFeedsViewProps) {
     return (
         <div className="flex flex-col flex-1 overflow-hidden">
             <div className="flex items-center justify-between gap-4 px-4 py-2 border-b">
                 <Select
                     value={selectedCategory}
-                    onValueChange={(v) => setSelectedCategory(v as FeedCategory | "all")}
+                    onValueChange={(v) => onCategoryChange(v as FeedCategory | "all")}
                 >
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger size="sm" className="m-w-[160px]">
                         <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
@@ -45,24 +49,13 @@ export function AllFeedsView({ isFollowing, onToggleFollow }: AllFeedsViewProps)
                         ))}
                     </SelectContent>
                 </Select>
-
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={refresh}
-                    disabled={loading}
-                    className="h-8 w-8"
-                >
-                    <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                </Button>
             </div>
-            {!loading && items.length > 0 && <FeedTrendingTags items={items} />}
             <FeedList
                 items={items}
                 loading={loading}
-                error={!!error}
+                error={error}
                 hasSelection={true}
-                onRetry={refresh}
+                onRetry={onRetry}
                 showFollowButton={true}
                 isFollowing={isFollowing}
                 onToggleFollow={onToggleFollow}
