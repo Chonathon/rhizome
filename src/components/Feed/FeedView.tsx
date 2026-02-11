@@ -4,10 +4,10 @@ import { AllFeedsView } from "./AllFeedsView";
 
 export function FeedView() {
     const followedFeeds = useFollowedFeeds();
-    const panelStyles = "border flex flex-col max-w-[540px] flex-1 shadow-xl rounded-2xl min-w-0"
+    const panelStyles = "border flex flex-col max-w-[540px] flex-1 shadow-xl rounded-3xl min-w-0"
 
     return (
-        <div className="flex h-full justify-center bg-background gap-4">
+        <div className="flex h-full justify-center bg-background pt-3 gap-4">
             {/* Following Panel */}
             <div className={panelStyles}>
                 <div className="px-4 py-3 border-b">
