@@ -2894,7 +2894,7 @@ function App() {
                 selectedGenre={genreInfoToShow}
                 onLinkedGenreClick={onLinkedGenreClick}
                 show={showGenreCard && !showArtistCard}
-                genreArtistsLoading={topArtistsLoading}
+                genreArtistsLoading={topArtistsLoading && topArtistsGenreId === genreInfoToShow?.id}
                 onTopArtistClick={onTopArtistClick}
                 deselectGenre={onGenreInfoDismiss}
                 onSelectGenre={onLinkedGenreClick}
