@@ -39,19 +39,15 @@ export function FeedItem({ item, showFollowButton, isFollowing, onToggleFollow }
             className="block group"
         >
             <Card className="bg-card backdrop-blur-xs shadow-lg rounded-3xl border-border transition-colors hover:bg-accent/50 overflow-hidden">
-                <div className="flex items-center gap-3 p-3 pb-4">
-                    {item.imageUrl ? (
-                        <div className="shrink-0 overflow-hidden rounded-xl border border-border aspect-video h-36">
+                <div className="flex items-center gap-3 p-3">
+                    {item.imageUrl && (
+                        <div className="shrink-0 overflow-hidden rounded-2xl border border-border aspect-square sm:aspect-video h-36">
                             <img
                                 src={item.imageUrl}
                                 alt={item.title}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                             />
-                        </div>
-                    ) : (
-                        <div className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
-                            <span className="text-4xl font-semibold">{initial}</span>
                         </div>
                     )}
                     <div className="flex-1 min-w-0 flex flex-col items-stretch gap-1">
