@@ -38,7 +38,7 @@ export function FeedItem({ item, showFollowButton, isFollowing, onToggleFollow }
             rel="noopener noreferrer"
             className="block group"
         >
-            <Card className="bg-card backdrop-blur-xs shadow-lg rounded-3xl border-border transition-colors hover:bg-accent/50 overflow-hidden">
+            <Card className="bg-card backdrop-blur-xs rounded-3xl border-border transition-colors hover:bg-accent/50 overflow-hidden">
                 <div className="flex flex-col sm:flex-row sm:items-stretch">
                     {item.imageUrl && (
                         <div className="overflow-hidden border-b border-border sm:border-b-0 sm:border-r sm:border-border sm:w-56 sm:shrink-0">
