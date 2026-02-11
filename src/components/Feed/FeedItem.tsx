@@ -39,10 +39,10 @@ export function FeedItem({ item, showFollowButton, isFollowing, onToggleFollow }
             className="block group"
         >
             <Card className="bg-card backdrop-blur-xs rounded-3xl border-border transition-colors hover:bg-accent/50 overflow-hidden">
-                <div className="flex flex-col sm:flex-row sm:items-stretch">
+                <div className="flex flex-col">
                     {item.imageUrl && (
-                        <div className="overflow-hidden border-b border-border sm:border-b-0 sm:border-r sm:border-border sm:w-56 sm:shrink-0">
-                            <div className="aspect-video w-full sm:aspect-square sm:h-full">
+                        <div className="overflow-hidden border-b border-border">
+                            <div className="aspect-video w-full">
                                 <img
                                     src={item.imageUrl}
                                     alt={item.title}
@@ -52,7 +52,7 @@ export function FeedItem({ item, showFollowButton, isFollowing, onToggleFollow }
                             </div>
                         </div>
                     )}
-                    <div className="flex-1 min-w-0 flex flex-col items-stretch gap-2 p-4 sm:p-5">
+                    <div className="flex-1 min-w-0 flex flex-col items-stretch gap-2 p-4">
                         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                             {faviconUrl && (
                                 <div className="w-5 h-5 rounded-full bg-white dark:bg-white/90 p-0.5 flex items-center justify-center">
