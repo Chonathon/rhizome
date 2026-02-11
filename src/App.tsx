@@ -2502,7 +2502,7 @@ function App() {
         <SidebarLogoTrigger />
         <Toaster />
         {feedMode ? (
-          <div className="fixed inset-0 z-0 overflow-hidden">
+          <div className="fixed inset-y-0 right-0 z-0 overflow-auto" style={{ left: "var(--sidebar-gap)" }}>
             <FeedView />
           </div>
         ) : (
