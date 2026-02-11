@@ -96,12 +96,12 @@ export function FeedView() {
             {/* Trending Panel */}
             <div className={`${panelStyles} relative`}>
                 {/* Black backdrop for iOS depth effect */}
-                <div className={`absolute inset-0 bg-black rounded-4xl transition-opacity duration-300 ${
+                <div className={`absolute inset-0 bg-white dark:bg-black rounded-4xl transition-opacity duration-300 ${
                     selectedTrendingEntity ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`} />
                 {/* Background content — scales down and slides down iOS-style when drawer is open */}
-                <div className={`flex flex-col flex-1 min-h-0 transition-all duration-300 ease-out origin-top ${
-                    selectedTrendingEntity ? 'scale-[0.90] translate-y-2 opacity-50 overflow-hidden' : ''
+                <div className={`flex flex-col flex-1 min-h-0 rounded-3xl transition-all duration-300 ease-out origin-top ${
+                    selectedTrendingEntity ? 'scale-[0.90] translate-y-6 opacity-60 overflow-hidden ring-1 ring-border' : ''
                 }`}>
                     <div className="px-4 py-3 border-b">
                         <h2 className="text-sm font-medium">Trending</h2>
