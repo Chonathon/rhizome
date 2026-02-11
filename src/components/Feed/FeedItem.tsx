@@ -81,7 +81,7 @@ export function FeedItem({ item, showFollowButton, isFollowing, onToggleFollow }
                             <ExternalLink className="mt-0.5 h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                         </div>
                         {item.excerpt && (
-                            <p className="break-words text-sm text-muted-foreground line-clamp-2">
+                            <p className="break-words text-sm text-muted-foreground ">
                                 {item.excerpt}
                             </p>
                         )}

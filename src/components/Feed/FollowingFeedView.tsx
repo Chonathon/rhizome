@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import useMultipleFeeds from "@/hooks/useMultipleFeeds";
 import { FeedList } from "./FeedList";
 import { FeedEmptyState } from "./FeedEmptyState";
+import { FeedTrendingTags } from "./FeedTrendingTags";
 
 interface FollowingFeedViewProps {
     followedFeedIds: string[];
@@ -39,6 +40,7 @@ export function FollowingFeedView({ followedFeedIds, onUnfollow }: FollowingFeed
                     <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 </Button>
             </div>
+            {!loading && items.length > 0 && <FeedTrendingTags items={items} />}
             <FeedList
                 items={items}
                 loading={loading}

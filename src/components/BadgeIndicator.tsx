@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
 
-export type BadgeIndicatorType = 'artist' | 'genre';
+export type BadgeIndicatorType = 'artist' | 'genre' | 'label' | 'city';
 
 interface BadgeIndicatorProps {
   type: BadgeIndicatorType;
@@ -23,7 +23,8 @@ export function BadgeIndicator({
   className,
   icon: Icon,
 }: BadgeIndicatorProps) {
-  if (type === 'genre') {
+  // Genre, label, and city use colored dots
+  if (type === 'genre' || type === 'label' || type === 'city') {
     return (
       <span
         aria-hidden="true"

@@ -12,6 +12,7 @@ import { FeedCategory } from "@/types";
 import { FEED_CATEGORIES } from "@/constants";
 import useMultipleFeeds from "@/hooks/useMultipleFeeds";
 import { FeedList } from "./FeedList";
+import { FeedTrendingTags } from "./FeedTrendingTags";
 
 interface AllFeedsViewProps {
     isFollowing: (feedId: string) => boolean;
@@ -55,6 +56,7 @@ export function AllFeedsView({ isFollowing, onToggleFollow }: AllFeedsViewProps)
                     <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 </Button>
             </div>
+            {!loading && items.length > 0 && <FeedTrendingTags items={items} />}
             <FeedList
                 items={items}
                 loading={loading}
