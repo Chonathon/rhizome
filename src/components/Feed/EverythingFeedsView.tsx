@@ -9,7 +9,7 @@ import { FeedCategory, FeedItem as FeedItemType } from "@/types";
 import { FEED_CATEGORIES } from "@/constants";
 import { FeedList } from "./FeedList";
 
-interface AllFeedsViewProps {
+interface EverythingFeedsViewProps {
     isFollowing: (feedId: string) => boolean;
     onToggleFollow: (feedId: string) => void;
     items: FeedItemType[];
@@ -20,7 +20,7 @@ interface AllFeedsViewProps {
     onCategoryChange: (category: FeedCategory | "all") => void;
 }
 
-export function AllFeedsView({
+export function EverythingFeedsView({
     isFollowing,
     onToggleFollow,
     items,
@@ -29,7 +29,7 @@ export function AllFeedsView({
     onRetry,
     selectedCategory,
     onCategoryChange,
-}: AllFeedsViewProps) {
+}: EverythingFeedsViewProps) {
     return (
         <div className="flex flex-col flex-1 overflow-hidden">
             <div className="flex items-center justify-between gap-4 px-4 py-2 border-b">

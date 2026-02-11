@@ -5,7 +5,7 @@ import { FeedCategory } from "@/types";
 import { useFollowedFeeds } from "@/hooks/useFollowedFeeds";
 import useMultipleFeeds from "@/hooks/useMultipleFeeds";
 import { FollowingFeedView } from "./FollowingFeedView";
-import { AllFeedsView } from "./AllFeedsView";
+import { EverythingFeedsView } from "./EverythingFeedsView";
 import { FeedTrendingTags } from "./FeedTrendingTags";
 
 export function FeedView() {
@@ -19,10 +19,10 @@ export function FeedView() {
         refresh: refreshFollowing,
     } = useMultipleFeeds({ feedIds: followedFeeds.followedFeedIds });
     const {
-        items: allItems,
-        loading: allLoading,
-        error: allError,
-        refresh: refreshAll,
+        items: everythingItems,
+        loading: everythingLoading,
+        error: everythingError,
+        refresh: refreshEverything,
     } = useMultipleFeeds({
         category: selectedCategory === "all" ? null : selectedCategory,
     });
@@ -62,27 +62,29 @@ export function FeedView() {
                 />
             </div>
 
-            {/* All Feeds Panel */}
+            {/* Everything Panel */}
             <div className={panelStyles}>
                 <div className="px-4 py-3 border-b flex items-center justify-between">
-                    <h2 className="text-sm font-medium">For You</h2>
+                    <h2 className="text-sm font-medium">Everything</h2>
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={refreshAll}
-                        disabled={allLoading}
+                        onClick={refreshEverything}
+                        disabled={everythingLoading}
                         className="h-8 w-8"
                     >
-                        <RefreshCw className={`h-4 w-4 ${allLoading ? "animate-spin" : ""}`} />
+                        <RefreshCw
+                            className={`h-4 w-4 ${everythingLoading ? "animate-spin" : ""}`}
+                        />
                     </Button>
                 </div>
-                <AllFeedsView
+                <EverythingFeedsView
                     isFollowing={followedFeeds.isFollowing}
                     onToggleFollow={followedFeeds.toggleFollow}
-                    items={allItems}
-                    loading={allLoading}
-                    error={!!allError}
-                    onRetry={refreshAll}
+                    items={everythingItems}
+                    loading={everythingLoading}
+                    error={!!everythingError}
+                    onRetry={refreshEverything}
                     selectedCategory={selectedCategory}
                     onCategoryChange={setSelectedCategory}
                 />
