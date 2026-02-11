@@ -26,7 +26,7 @@ export function FeedView() {
     } = useMultipleFeeds({
         category: selectedCategory === "all" ? null : selectedCategory,
     });
-    const panelStyles = "border flex flex-col min-w-[375px] max-w-[440px] max-h-calc(100% - 64px) flex-1 shadow-xl rounded-3xl min-w-0 overflow-hidden";
+    const panelStyles = "border flex flex-col min-w-[375px] max-w-[440px] max-h-[calc(100dvh-32px)] flex-1 shadow-xl rounded-4xl min-w-0 overflow-hidden";
 
     return (
         <div className="flex h-full justify-center bg-background pt-3 gap-4">
