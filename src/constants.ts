@@ -1,6 +1,8 @@
 import {
     ArtistClusterMode,
     ArtistNodeLimitType,
+    FeedCategory,
+    FeedSource,
     Genre,
     GenreClusterMode,
     GenreNodeLimitType,
@@ -97,4 +99,20 @@ export const GENRE_LISTENER_TIERS: ListenerTier[] = [
     { id: 3, name: 'Medium', min: 100_000, max: 1_000_000, radius: 400, color: '#38bdf8' },        // sky-400
     { id: 2, name: 'Small', min: 10_000, max: 100_000, radius: 550, color: '#c084fc' },            // purple-400
     { id: 1, name: 'Niche', min: 0, max: 10_000, radius: 700, color: '#fb7185' },                  // rose-400
+];
+
+// RSS Feed sources
+export const RSS_FEEDS: FeedSource[] = [
+    { id: 'pitchfork', name: 'Pitchfork', url: 'https://pitchfork.com/feed/feed-news/rss', category: 'music-news', description: 'Music news and reviews' },
+    { id: 'stereogum', name: 'Stereogum', url: 'https://www.stereogum.com/feed/', category: 'indie', description: 'Indie music news and features' },
+    { id: 'consequence', name: 'Consequence', url: 'https://consequence.net/feed/', category: 'music-news', description: 'Music and entertainment news' },
+    { id: 'resident-advisor', name: 'Resident Advisor', url: 'https://ra.co/xml/news.xml', category: 'electronic', description: 'Electronic music news' },
+    { id: 'brooklynvegan', name: 'Brooklyn Vegan', url: 'https://www.brooklynvegan.com/feed/', category: 'indie', description: 'Indie and alternative music' },
+];
+
+export const FEED_CATEGORIES: { id: FeedCategory; label: string }[] = [
+    { id: 'music-news', label: 'Music News' },
+    { id: 'indie', label: 'Indie' },
+    { id: 'electronic', label: 'Electronic' },
+    { id: 'industry', label: 'Industry' },
 ];

@@ -184,3 +184,31 @@ export interface ListenerTier {
     radius: number; // Distance from center (popular = inner, underground = outer)
     color: string; // Explicit color for visual distinction
 }
+
+// RSS Feed types
+export type FeedCategory = 'music-news' | 'indie' | 'industry' | 'electronic';
+
+export interface FeedSource {
+    id: string;
+    name: string;
+    url: string;
+    category: FeedCategory;
+    description?: string;
+}
+
+export interface FeedItem {
+    id: string;
+    title: string;
+    link: string;
+    pubDate: string;
+    source: string;
+    excerpt?: string;
+    imageUrl?: string;
+    author?: string;
+}
+
+export interface FeedResponse {
+    items: FeedItem[];
+    source: FeedSource;
+    status: 'ok' | 'error';
+}

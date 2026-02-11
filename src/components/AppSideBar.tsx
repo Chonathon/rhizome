@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import React, { useCallback, useRef } from "react"
-import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog } from "lucide-react"
+import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog, Rss } from "lucide-react"
 import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
 import { Genre, GraphType } from "@/types"
 import RhizomeLogo from "@/components/RhizomeLogo"
@@ -44,6 +44,8 @@ interface AppSidebarProps {
   resetAppState: () => void;
   onCollectionClick: () => void;
   onExploreClick: () => void;
+  onFeedClick: () => void;
+  isFeedMode: boolean;
   signedInUser: boolean;
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
@@ -76,6 +78,8 @@ export function AppSidebar({
   onLoginClick,
   onCollectionClick,
   onExploreClick,
+  onFeedClick,
+  isFeedMode,
   isCollectionMode,
   searchOpen,
   playerOpen,
@@ -142,7 +146,7 @@ export function AppSidebar({
                   </SidebarMenuItem>
                   
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={!isCollectionMode} tooltip="Explore" size="xl">
+                    <SidebarMenuButton asChild isActive={!isCollectionMode && !isFeedMode} tooltip="Explore" size="xl">
                       <button onClick={onExploreClick}>
                         <Telescope />
                         {/* {!isCollectionMode ? <TelescopeFilled /> : <Telescope />} */}
@@ -157,6 +161,15 @@ export function AppSidebar({
                         <BookOpen />
                         {/* {isCollectionMode ? <BookOpenFilled /> : <BookOpen />} */}
                         <span className="truncate">Collection</span>
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Feed" size="xl" isActive={isFeedMode}>
+                      <button onClick={onFeedClick}>
+                        <Rss />
+                        <span className="truncate">Feed</span>
                       </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -276,6 +289,8 @@ export function AppSidebar({
         onLoginClick={handleLogin}
         onCollectionClick={onCollectionClick}
         isCollectionMode={isCollectionMode}
+        onFeedClick={onFeedClick}
+        isFeedMode={isFeedMode}
       />
     </>
   )

@@ -84,6 +84,7 @@ import useAuth from "@/hooks/useAuth";
 import SettingsOverlay, {ChangePasswordDialog} from '@/components/SettingsOverlay';
 import {submitFeedback} from "@/apis/feedbackApi";
 import {useNavigate} from "react-router";
+import { FeedView } from "@/components/Feed";
 import { exportGraphAsImage } from "@/utils/exportGraph";
 import { DEFAULT_PRIORITY_LABEL_PERCENT, getDefaultGraphZoom } from "@/components/Graph/graphStyle";
 import {
@@ -262,6 +263,7 @@ function App() {
   const [artistNodeCount, setArtistNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
   const [collectionMode, setCollectionMode] = useState<boolean>(false);
+  const [feedMode, setFeedMode] = useState<boolean>(false);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
   const { addRecentSelection } = useRecentSelections();
@@ -1843,6 +1845,7 @@ function App() {
     setSimilarArtistAnchor(undefined);
     setGenreClusterMode(DEFAULT_CLUSTER_MODE);
     setCollectionMode(false);
+    setFeedMode(false);
     // Clear collection mode filters when exiting to explore mode
     setCollectionFilters({ genres: [], decades: [] });
   }
@@ -2392,6 +2395,7 @@ function App() {
   const onCollectionClick = async () => {
     if (userID) {
       setCollectionMode(true);
+      setFeedMode(false);
       // Clear explore mode filters when entering collection mode
       setArtistGenreFilter([]);
       setArtistFilterGenres([]);
@@ -2411,6 +2415,11 @@ function App() {
 
   const onExploreClick = () => {
     resetAppState();
+  }
+
+  const onFeedClick = () => {
+    setFeedMode(true);
+    setCollectionMode(false);
   }
 
   const setDegrees = (value: number) => {
@@ -2474,6 +2483,8 @@ function App() {
         resetAppState={resetAppState}
         onCollectionClick={onCollectionClick}
         onExploreClick={onExploreClick}
+        onFeedClick={onFeedClick}
+        isFeedMode={feedMode}
         signedInUser={!!userID}
         isCollectionMode={collectionMode}
         searchOpen={searchOpen}
@@ -2490,6 +2501,11 @@ function App() {
       >
         <SidebarLogoTrigger />
         <Toaster />
+        {feedMode ? (
+          <div className="fixed inset-0 z-0 overflow-hidden">
+            <FeedView />
+          </div>
+        ) : (
         <div className="fixed inset-0 z-0 overflow-hidden no-scrollbar">
           <Gradient />
           <AnimatePresence>
@@ -3018,6 +3034,7 @@ function App() {
             startIndex={playerStartIndex}
           /> */}
         </div>
+        )}
       </AppSidebar>
       <SettingsOverlay
         name={userName || ''}

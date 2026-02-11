@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { BookOpen, Search as SearchIcon, Telescope, CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown } from "lucide-react"
+import { BookOpen, Search as SearchIcon, Telescope, CircleUserRound, Cable, Settings, HandHeart, SunMoon, ChevronDown, Rss } from "lucide-react"
 import { TwoLines } from "./Icon"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,6 +25,8 @@ type MobileAppBarProps = {
   onLoginClick?: () => void;
   onCollectionClick: () => void;
   isCollectionMode: boolean;
+  onFeedClick: () => void;
+  isFeedMode: boolean;
 }
 const ButtonStyles = "w-full rounded-full py-3 max-w-[80px] text-muted-foreground"
 const buttonContainerStyles = "bg-sidebar pointer-events-auto rounded-full h-full border border-accent inset-shadow-white shadow-xs backdrop-blur-[2px] flex items-center justify-center"
@@ -33,7 +35,7 @@ const buttonContainerStyles = "bg-sidebar pointer-events-auto rounded-full h-ful
  * Provides quick access to Search, Collection, Genres, Artists, and a More menu.
  * Styled to match the existing glassy/rounded aesthetic.
  */
-export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, isCollectionMode }: MobileAppBarProps) {
+export function MobileAppBar({ graph, onGraphChange, onOpenSearch, resetAppState, signedInUser, onSignUpClick, onLoginClick, onCollectionClick, isCollectionMode, onFeedClick, isFeedMode }: MobileAppBarProps) {
   return (
     <div
   className="w-[calc(100%-2rem)] max-w-[280px] pointer-events-none fixed left-1/2 -translate-x-1/2 inset-x-8 bottom-3 z-50 md:hidden flex gap-3 place-items-center "
@@ -57,7 +59,7 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
         className={`w-full ${buttonContainerStyles}`}
         
       >
-        <div className="p-1   w-full grid grid-cols-3 place-items-center">
+        <div className="p-1   w-full grid grid-cols-4 place-items-center">
           <ToolbarButton
             label="Collection"
             onClick={onCollectionClick}
@@ -66,9 +68,15 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
           />
           <ToolbarButton
             label="Explore"
-            active={!isCollectionMode}
+            active={!isCollectionMode && !isFeedMode}
             onClick={resetAppState}
             icon={<Telescope className="size-6" />}
+          />
+          <ToolbarButton
+            label="Feed"
+            onClick={onFeedClick}
+            icon={<Rss className="size-6" />}
+            active={isFeedMode}
           />
           <MoreMenu signedInUser={signedInUser} onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />
         </div>
