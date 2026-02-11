@@ -58,6 +58,11 @@ export interface ResponsiveDrawerProps {
    */
   onCanvasDragStart?: () => void;
   /**
+   * When enabled, clicking outside the drawer (on the canvas/graph) will dismiss it entirely.
+   * @default false
+   */
+  dismissOnCanvasClick?: boolean;
+  /**
    * A key that identifies the current content. When this changes, the drawer will
    * reset to the default middle snap position. Useful for resetting position when
    * switching between different items (e.g., different artists or genres).
@@ -100,6 +105,7 @@ export function ResponsiveDrawer({
   scrollContainerSelector = '[data-drawer-scroll]',
   minimizeOnCanvasTouch = false,
   onCanvasDragStart,
+  dismissOnCanvasClick = false,
   contentKey,
   expandToMiddleTrigger,
   onSnapChange,
@@ -309,6 +315,29 @@ export function ResponsiveDrawer({
       document.removeEventListener('pointercancel', handlePointerUp);
     };
   }, [minimizeOnCanvasTouch, isAtMinSnap, onCanvasDragStart, isDesktop]);
+
+  // Dismiss drawer when clicking outside (on the canvas)
+  useEffect(() => {
+    if (!dismissOnCanvasClick || !open) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const card = cardRef.current;
+      // Only dismiss if clicking outside the drawer
+      if (card && !card.contains(e.target as Node)) {
+        onDismiss();
+      }
+    };
+
+    // Use a small delay to avoid dismissing on the same click that opened
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleClick);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleClick);
+    };
+  }, [dismissOnCanvasClick, open, onDismiss]);
 
   if (!show) return null;
 
