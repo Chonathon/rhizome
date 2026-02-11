@@ -18,6 +18,12 @@ export interface FeedTrendingData {
     cities: ExtractedEntity[];
 }
 
+export interface EntityCooccurrence {
+    source: string;
+    target: string;
+    weight: number;
+}
+
 // Common music genres to match
 const GENRES = new Set([
     // Rock variants
@@ -183,4 +189,57 @@ export function getTopTrending(
     return all
         .sort((a, b) => b.count - a.count)
         .slice(0, limit);
+}
+
+/**
+ * Extract entities found in a single feed item
+ */
+function extractEntitiesFromItem(item: FeedItem): Set<string> {
+    const text = getItemText(item);
+    const found = new Set<string>();
+
+    const allEntities = [...GENRES, ...LABELS, ...CITIES];
+    for (const entity of allEntities) {
+        const pattern = new RegExp(`\\b${escapeRegex(entity)}\\b`, 'i');
+        if (pattern.test(text)) {
+            found.add(formatEntityName(entity));
+        }
+    }
+
+    return found;
+}
+
+/**
+ * Calculate co-occurrence relationships between entities
+ * Returns links where entities appeared in the same article
+ */
+export function extractCooccurrences(
+    items: FeedItem[],
+    topEntities: ExtractedEntity[]
+): EntityCooccurrence[] {
+    const topEntityNames = new Set(topEntities.map(e => e.name));
+    const cooccurrenceCounts = new Map<string, number>();
+
+    for (const item of items) {
+        const entitiesInItem = extractEntitiesFromItem(item);
+        // Filter to only top entities
+        const relevantEntities = [...entitiesInItem].filter(e => topEntityNames.has(e));
+
+        // Create pairs for co-occurrence
+        for (let i = 0; i < relevantEntities.length; i++) {
+            for (let j = i + 1; j < relevantEntities.length; j++) {
+                // Sort to ensure consistent key
+                const pair = [relevantEntities[i], relevantEntities[j]].sort();
+                const key = `${pair[0]}|||${pair[1]}`;
+                cooccurrenceCounts.set(key, (cooccurrenceCounts.get(key) || 0) + 1);
+            }
+        }
+    }
+
+    return Array.from(cooccurrenceCounts.entries())
+        .map(([key, weight]) => {
+            const [source, target] = key.split('|||');
+            return { source, target, weight };
+        })
+        .sort((a, b) => b.weight - a.weight);
 }
