@@ -16,6 +16,7 @@ dist-ssr
 .mcp.json
 .env
 .claude
+.pr-notes.md
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -26,4 +27,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
+.mcp.json

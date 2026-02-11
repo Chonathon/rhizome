@@ -3,12 +3,14 @@ import Graph, {
   type GraphHandle,
   type SharedGraphNode,
 } from "./Graph";
+import { calculateNodeRadius } from "./Graph/graphStyle";
 import { Genre, GenreClusterMode, GenreGraphData, NodeLink } from "@/types";
 
 interface GenresForceGraphProps {
   graphData?: GenreGraphData;
   onNodeClick: (genre: Genre) => void;
   onNodeHover?: (genreId: string | null, screenPosition: { x: number; y: number } | null) => void;
+  onZoomChange?: (zoom: number) => void;
   loading: boolean;
   show: boolean;
   dag: boolean;
@@ -29,10 +31,17 @@ interface GenresForceGraphProps {
   showNodes?: boolean;
   showLinks?: boolean;
   disableDimming?: boolean;
+  priorityLabelIds?: string[];
+  // Radial layout for popularity stratification (concentric rings)
+  radialLayout?: {
+    enabled: boolean;
+    nodeToRadius: Map<string, number>;
+    strength?: number;
+  };
 }
 
-const MIN_RADIUS = 6;
-const MAX_RADIUS = 32;
+const MIN_RADIUS = 4;
+const MAX_RADIUS = 50;
 
 const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
   (
@@ -40,6 +49,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       graphData,
       onNodeClick,
       onNodeHover,
+      onZoomChange,
       loading,
       show,
       dag,
@@ -60,6 +70,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       showNodes,
       showLinks,
       disableDimming,
+      priorityLabelIds,
+      radialLayout,
     },
     ref,
   ) => {
@@ -72,17 +84,20 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
       );
       const min = Math.min(...artistCounts);
       const max = Math.max(...artistCounts);
-      const denom = Math.max(1e-6, max - min);
+      const range = max - min;
+      const denom = Math.max(1e-6, range);
+      const hasRange = range > 1e-6;
 
       return nodes.map((genre) => {
         const value = Math.log10(Math.max(1, genre.artistCount || 1));
         const t = (value - min) / denom;
-        const radius = MIN_RADIUS + t * (MAX_RADIUS - MIN_RADIUS); // Base radius only, no scaling
+        const radius = calculateNodeRadius(t, MIN_RADIUS, MAX_RADIUS);
         return {
           id: genre.id,
           label: genre.name,
           radius,
           color: colorMap?.get(genre.id),
+          labelValue: hasRange ? t : 1,
           data: genre,
         };
       });
@@ -122,6 +137,7 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
         onNodeHover={onNodeHover ? (genre, screenPosition) => onNodeHover((genre as Genre | undefined)?.id ?? null, screenPosition) : undefined}
+        onZoomChange={onZoomChange}
         nodeSize={nodeSize}
         linkThickness={linkThickness}
         linkCurvature={linkCurvature}
@@ -131,6 +147,8 @@ const GenresForceGraph = forwardRef<GraphHandle, GenresForceGraphProps>(
         showNodes={showNodes}
         showLinks={showLinks}
         disableDimming={disableDimming}
+        priorityLabelIds={priorityLabelIds}
+        radialLayout={radialLayout}
       />
     );
   },

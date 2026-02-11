@@ -63,6 +63,8 @@ export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'parentGenre';
 
 export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion';
 
+export type ArtistClusterMode = 'similarArtists' | 'hybrid' | 'popularity';
+
 export type LinkType = GenreClusterMode | 'similar';
 
 export interface GenreGraphData {
@@ -161,6 +163,7 @@ export interface GraphHandle {
   zoomIn: () => void;
   zoomOut: () => void;
   zoomTo: (k: number, ms?: number) => void;
+  resetView: (k: number, ms?: number) => void;
   getZoom: () => number;
   getCanvas: () => HTMLCanvasElement | null;
 }
@@ -170,4 +173,14 @@ export interface FindOption {
     name: string;
     entityType: 'artist' | 'genre';
     subtitle?: string;
+}
+
+// Listener-based popularity tiers for radial stratification
+export interface ListenerTier {
+    id: number;
+    name: string;
+    min: number;
+    max: number;
+    radius: number; // Distance from center (popular = inner, underground = outer)
+    color: string; // Explicit color for visual distinction
 }

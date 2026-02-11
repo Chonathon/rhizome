@@ -1,19 +1,13 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import {type ClassValue, clsx} from "clsx"
+import {twMerge} from "tailwind-merge"
+import {Artist, BasicNode, Genre, GenreClusterMode, GenreGraphData, NodeLink} from "@/types";
 import {
-  Artist,
-  BasicNode,
-  Genre,
-  GenreClusterMode,
-  GenreGraphData,
-  NodeLink
-} from "@/types";
-import {
-  PARENT_FIELD_MAP,
   CHILD_FIELD_MAP,
-  CLUSTER_COLORS,
-  SINGLETON_PARENT_GENRE,
-  SINGLETON_PARENT_COLOR, SERVER_PRODUCTION_URL, CLIENT_DEPLOYMENT_URL, SERVER_DEVELOPMENT_URL
+  CLIENT_DEPLOYMENT_URL,
+  PARENT_FIELD_MAP,
+  SERVER_DEVELOPMENT_URL,
+  SERVER_PRODUCTION_URL,
+  SINGLETON_PARENT_GENRE
 } from "@/constants";
 
 export function cn(...inputs: ClassValue[]) {
@@ -33,13 +27,13 @@ export const formatDate = (dateString: string) => {
 };
 
 export const formatNumber = (value: number) =>
-  new Intl.NumberFormat('en-US').format(value);
+    new Intl.NumberFormat('en-US').format(value);
 
 export const formatNumberCompact = (value: number) =>
-  new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    compactDisplay: 'short'
-  }).format(value);
+    new Intl.NumberFormat('en-US', {
+      notation: 'compact',
+      compactDisplay: 'short'
+    }).format(value);
 
 export const envBoolean = (value: string) => {
   return value && (value.toLowerCase() === 'true' || parseInt(value) === 1);
@@ -254,142 +248,6 @@ export const filterOutGenreTree = (genreGraphData: GenreGraphData, parent: Genre
   // console.log(`Original nodes: ${genreGraphData.nodes.length} Filtered nodes: ${filteredNodes.length}`);
   // console.log(`Original links: ${genreGraphData.links.length} Filtered links: ${filteredLinks.length}`);
   return { nodes: filteredNodes, links: filteredLinks };
-}
-
-export const assignRootGenreColors = (rootIDs: string[]) => {
-  const colorMap = new Map<string, string>();
-  colorMap.set(SINGLETON_PARENT_GENRE.id, SINGLETON_PARENT_COLOR);
-  if (!rootIDs.length) return colorMap;
-  const sortedRoots = [...rootIDs].sort((a, b) => a.localeCompare(b));
-  sortedRoots.forEach((n, i) => {
-    const color = CLUSTER_COLORS[i % CLUSTER_COLORS.length];
-    colorMap.set(n, color);
-  });
-  return colorMap;
-}
-
-export const buildGenreColorMap = (genres: Genre[], rootIDs: string[]) => {
-  const rootColorMap = assignRootGenreColors(rootIDs);
-  const colorMap = new Map<string, string>();
-  let singletonCount = 0;
-  genres.forEach(genre => {
-    switch (genre.rootGenres.length) {
-      case 0:
-        colorMap.set(genre.id, getSingletonColor(singletonCount));
-        singletonCount++;
-        break;
-      case 1:
-        const color = rootColorMap.get(genre.rootGenres[0]);
-        if (color) colorMap.set(genre.id, color);
-        else {
-          colorMap.set(genre.id, getSingletonColor(singletonCount));
-          singletonCount++;
-        }
-        break;
-      default:
-        if (!genre.rootGenres || genre.rootGenres.length < 2) {
-          colorMap.set(genre.id, getSingletonColor(singletonCount));
-          singletonCount++;
-        } else {
-          const colors: string[] = [];
-          genre.rootGenres.forEach((g) => {
-            const curRoot = rootColorMap.get(g);
-            if (curRoot) colors.push(curRoot);
-          });
-          colorMap.set(genre.id, mixColors(colors));
-        }
-    }
-  });
-  return colorMap;
-}
-
-export const getSingletonColor = (count: number) => {
-  return CLUSTER_COLORS[count % CLUSTER_COLORS.length];
-}
-
-// --- Color utilities ---
-const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
-  let h = hex.trim();
-  if (h.startsWith('#')) h = h.slice(1);
-  if (h.length === 8) h = h.slice(0, 6); // ignore alpha
-  if (h.length === 3) {
-    const r = parseInt(h[0] + h[0], 16);
-    const g = parseInt(h[1] + h[1], 16);
-    const b = parseInt(h[2] + h[2], 16);
-    return { r, g, b };
-  }
-  if (h.length !== 6) return null;
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return { r, g, b };
-};
-
-const rgbToHex = (r: number, g: number, b: number): string => {
-  const toHex = (n: number) => n.toString(16).padStart(2, '0');
-  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
-  const cr = clamp(r), cg = clamp(g), cb = clamp(b);
-  return `#${toHex(cr)}${toHex(cg)}${toHex(cb)}`;
-};
-
-const relLuminance = (hex: string): number => {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return 0;
-  const srgb = [rgb.r, rgb.g, rgb.b].map(v => v / 255).map(v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
-  return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
-};
-
-const contrastRatio = (hex1: string, hex2: string): number => {
-  const L1 = relLuminance(hex1);
-  const L2 = relLuminance(hex2);
-  const lighter = Math.max(L1, L2);
-  const darker = Math.min(L1, L2);
-  return (lighter + 0.05) / (darker + 0.05);
-};
-
-// Darken a color by blending with black by a factor in [0,1]
-const darken = (hex: string, factor: number): string => {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return hex;
-  return rgbToHex(rgb.r * (1 - factor), rgb.g * (1 - factor), rgb.b * (1 - factor));
-};
-
-// Ensure color has at least minRatio contrast on a light background by darkening as needed
-export const ensureContrastOnLight = (hex: string, lightBgHex = '#ffffff', minRatio = 4.5): string => {
-  if (!hex) return hex;
-  let c = hex;
-  if (contrastRatio(c, lightBgHex) >= minRatio) return c;
-  // Try progressively darkening up to 90%
-  for (let f = 0.1; f <= 0.9; f += 0.05) {
-    const candidate = darken(hex, f);
-    if (contrastRatio(candidate, lightBgHex) >= minRatio) return candidate;
-  }
-  return '#111111'; // ultimate fallback to satisfy contrast on white
-};
-
-export const mixColors = (colors: string[]) => {
-  if (!colors.length) return '#000000';
-  if (colors.length === 1) return colors[0];
-  let color = mixTwoColorsAverage(colors[0], colors[1]);
-  if (colors.length === 2) return color;
-  for (let i = 2; i < colors.length; i += 1) {
-    color = mixTwoColorsAverage(color, colors[i]);
-  }
-  return color;
-}
-
-const mixTwoColorsAverage = (color1: string, color2: string) => {
-  const rgb1 = hexToRgb(color1);
-  const rgb2 = hexToRgb(color2);
-  if (rgb1 && rgb2) {
-    const mixRGB = {
-      r: Math.round(rgb1.r + rgb2.r / 2),
-      g: Math.round(rgb1.g + rgb2.g / 2),
-      b: Math.round(rgb1.b + rgb2.b / 2),
-    }
-    return rgbToHex(mixRGB.r, mixRGB.g, mixRGB.b);
-  }
-  return '#000000';
 }
 
 export const fixWikiImageURL = (url: string) => {

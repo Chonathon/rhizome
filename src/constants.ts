@@ -1,15 +1,20 @@
 import {
+    ArtistClusterMode,
     ArtistNodeLimitType,
     Genre,
     GenreClusterMode,
     GenreNodeLimitType,
     InitialGenreFilter,
-    PlayerType, Preferences, Theme
+    ListenerTier,
+    PlayerType,
+    Preferences,
+    Theme
 } from "@/types";
 
 export const PHASE_VERSION = `${import.meta.env.VITE_PRODUCT_PHASE}-${import.meta.env.VITE_PRODUCT_VERSION}`;
 export const DEFAULT_NODE_COUNT = 2000;
 export const DEFAULT_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
+export const DEFAULT_ARTIST_CLUSTER_MODE: ArtistClusterMode = 'similarArtists';
 export const DEFAULT_GENRE_LIMIT_TYPE: GenreNodeLimitType = 'artistCount';
 export const DEFAULT_ARTIST_LIMIT_TYPE: ArtistNodeLimitType = 'listeners';
 export const DEFAULT_PLAYER: PlayerType = 'youtube';
@@ -77,49 +82,19 @@ export const MAX_YTID_QUEUE_SIZE = 200;
 
 export const DEFAULT_THEME: Theme = 'system';
 export const DEFAULT_PREFERENCES: Preferences = {theme: DEFAULT_THEME, player: DEFAULT_PLAYER, enableGraphCards: true, previewTrigger: 'modifier'};
-export const DEFAULT_DARK_NODE_COLOR = '#8a80ff';
-export const DEFAULT_LIGHT_NODE_COLOR = '#4a4a4a';
-// Tailwind default color palette (lighter/less saturated variants)
-// Uses -300 and -400 shades across hues for good visibility on dark backgrounds
-// while staying softer than 500/600.
-export const CLUSTER_COLORS = [
-    // 300 shades
-    "#fca5a5", // red-300
-    "#fdba74", // orange-300
-    "#fcd34d", // amber-300
-    "#fde047", // yellow-300
-    "#bef264", // lime-300
-    "#86efac", // green-300
-    "#6ee7b7", // emerald-300
-    "#5eead4", // teal-300
-    "#67e8f9", // cyan-300
-    "#7dd3fc", // sky-300
-    "#93c5fd", // blue-300
-    "#a5b4fc", // indigo-300
-    "#c4b5fd", // violet-300
-    "#d8b4fe", // purple-300
-    "#f0abfc", // fuchsia-300
-    "#f9a8d4", // pink-300
-    "#fda4af", // rose-300
 
-    // 400 shades (slightly stronger, still soft)
-    "#f87171", // red-400
-    "#fb923c", // orange-400
-    "#fbbf24", // amber-400
-    "#facc15", // yellow-400
-    "#a3e635", // lime-400
-    "#4ade80", // green-400
-    "#34d399", // emerald-400
-    "#2dd4bf", // teal-400
-    "#22d3ee", // cyan-400
-    "#38bdf8", // sky-400
-    "#60a5fa", // blue-400
-    "#818cf8", // indigo-400
-    "#a78bfa", // violet-400
-    "#c084fc", // purple-400
-    "#e879f9", // fuchsia-400
-    "#f472b6", // pink-400
-    "#fb7185", // rose-400
+export const ARTIST_LISTENER_TIERS: ListenerTier[] = [
+    { id: 5, name: 'Mainstream', min: 1_000_000, max: Infinity, radius: 100, color: '#facc15' },    // yellow-400
+    { id: 4, name: 'Popular', min: 100_000, max: 1_000_000, radius: 250, color: '#4ade80' },       // green-400
+    { id: 3, name: 'Established', min: 10_000, max: 100_000, radius: 400, color: '#38bdf8' },      // sky-400
+    { id: 2, name: 'Emerging', min: 1_000, max: 10_000, radius: 550, color: '#c084fc' },           // purple-400
+    { id: 1, name: 'Underground', min: 0, max: 1_000, radius: 700, color: '#fb7185' },             // rose-400
 ];
 
-export const SINGLETON_PARENT_COLOR = "#c4b5fd"; // violet-300 (arbitrary)
+export const GENRE_LISTENER_TIERS: ListenerTier[] = [
+    { id: 5, name: 'Major', min: 10_000_000, max: Infinity, radius: 100, color: '#facc15' },       // yellow-400
+    { id: 4, name: 'Large', min: 1_000_000, max: 10_000_000, radius: 250, color: '#4ade80' },      // green-400
+    { id: 3, name: 'Medium', min: 100_000, max: 1_000_000, radius: 400, color: '#38bdf8' },        // sky-400
+    { id: 2, name: 'Small', min: 10_000, max: 100_000, radius: 550, color: '#c084fc' },            // purple-400
+    { id: 1, name: 'Niche', min: 0, max: 10_000, radius: 700, color: '#fb7185' },                  // rose-400
+];

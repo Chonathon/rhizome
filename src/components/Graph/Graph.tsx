@@ -1,7 +1,6 @@
 import {
   forwardRef,
   memo,
-  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -22,12 +21,26 @@ import {
   DEFAULT_LABEL_FADE_START,
   DEFAULT_LABEL_FADE_END,
   labelAlphaForZoom,
+  labelValueThresholdForZoom,
+  fontPxForZoom,
+  smoothstep,
+  applyLabelFadeCurve,
+  DEFAULT_PRIORITY_LABEL_IMPORTANCE_THRESHOLD,
+  DEFAULT_PRIORITY_LABEL_ZOOM_SCALE,
+  DEFAULT_PRIORITY_LABEL_PERCENT,
   drawCircleNode,
+  drawSelectedNodeFill,
   drawLabelBelow,
   applyMobileDrawerYOffset,
   DEFAULT_MOBILE_CENTER_OFFSET_PX,
+  applyDesktopDrawerXOffset,
   estimateLabelWidth,
+  getDefaultGraphZoom,
+  onImageLoad,
+  onImageLoadStart,
+  hasLoadingImages,
 } from "@/components/Graph/graphStyle";
+import { useSidebar } from "@/components/ui/sidebar";
 import type {BasicNode, GraphHandle} from "@/types";
 
 export type { GraphHandle };
@@ -37,6 +50,8 @@ export interface SharedGraphNode<T = unknown> {
   label: string;
   radius: number;
   color?: string;
+  // Normalized 0-1 value for label density filtering at low zoom
+  labelValue?: number;
   data: T;
 }
 
@@ -53,6 +68,7 @@ export interface NodeRenderContext<T> {
   radius: number;
   color: string;
   isSelected: boolean;
+  isClickSelected: boolean;
   isNeighbor: boolean;
   isHovered: boolean;
   alpha: number;
@@ -84,6 +100,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   autoFocus?: boolean;
   onNodeClick?: (node: T) => void;
   onNodeHover?: (node: T | undefined, screenPosition: { x: number; y: number } | null) => void;
+  onZoomChange?: (zoom: number) => void;
   renderNode?: NodeRenderer<T>;
   renderSelection?: SelectionRenderer<T>;
   renderLabel?: LabelRenderer<T>;
@@ -97,32 +114,50 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   showNodes?: boolean;
   showLinks?: boolean;
   disableDimming?: boolean;
+  priorityLabelIds?: string[];
+  // Radial layout for popularity stratification (concentric rings)
+  radialLayout?: {
+    enabled: boolean;
+    nodeToRadius: Map<string, number>;
+    strength?: number;
+  };
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
 
 function defaultRenderNode<T>(ctx: NodeRenderContext<T>): void {
-  const { ctx: canvas, x, y, radius, color, alpha } = ctx;
+  const { ctx: canvas, node, x, y, radius, color, alpha, isClickSelected, theme } = ctx;
   canvas.save();
   canvas.globalAlpha = alpha;
-  drawCircleNode(canvas, x, y, radius, color);
+
+  // For click-selected nodes, draw image (artist) or letter (genre) fill
+  if (isClickSelected) {
+    const data = node.data as { image?: string; listeners?: number } | undefined;
+    const imageUrl = data?.image;
+    const isArtist = typeof data?.listeners === 'number';
+    drawSelectedNodeFill(canvas, x, y, radius, node.label, color, imageUrl, theme, isArtist);
+  } else {
+    drawCircleNode(canvas, x, y, radius, color);
+  }
+
   canvas.restore();
 }
 
 function defaultRenderSelection<T>(ctx: SelectionRenderContext<T>): void {
-  const { ctx: canvas, x, y, radius, color } = ctx;
+  const { ctx: canvas, x, y, radius, theme } = ctx;
   canvas.save();
   canvas.beginPath();
   canvas.arc(x, y, radius + 4, 0, 2 * Math.PI);
-  canvas.strokeStyle = color;
-  canvas.lineWidth = 3;
+  // Use same color as label pill background
+  canvas.strokeStyle = theme === 'dark' ? 'oklch(0.922 0 0)' : 'oklch(0.205 0 0)';
+  canvas.lineWidth = 4;
   canvas.stroke();
   canvas.restore();
 }
 
-function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE, customColor?: string): void {
+function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE, customColor?: string, bold = false, showBackground = false): void {
   const { ctx: canvas, label, x, y, radius, theme, labelAlpha } = ctx;
-  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize, 0, customColor);
+  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize, 0, customColor, bold, showBackground);
 }
 
 const Graph = forwardRef(function GraphInner<
@@ -142,6 +177,7 @@ const Graph = forwardRef(function GraphInner<
     autoFocus = true,
     onNodeClick,
     onNodeHover,
+    onZoomChange,
     renderNode = defaultRenderNode,
     renderSelection = defaultRenderSelection,
     renderLabel = defaultRenderLabel,
@@ -154,6 +190,8 @@ const Graph = forwardRef(function GraphInner<
     showNodes = true,
     showLinks = true,
     disableDimming = false,
+    priorityLabelIds: priorityLabelIdsProp,
+    radialLayout,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -163,10 +201,26 @@ const Graph = forwardRef(function GraphInner<
   const showNodesRef = useRef<boolean>(showNodes);
   const showLinksRef = useRef<boolean>(showLinks);
   const { resolvedTheme } = useTheme();
+  const { state: sidebarState } = useSidebar();
+  const sidebarExpanded = sidebarState === "expanded";
+  const resetCenterTimeoutRef = useRef<number | null>(null);
   const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
   const lastInitializedSignatureRef = useRef<string | undefined>(undefined);
   const shouldResetZoomRef = useRef(true);
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
+  const onZoomChangeRef = useRef<((zoom: number) => void) | undefined>(onZoomChange);
+
+  useEffect(() => {
+    onZoomChangeRef.current = onZoomChange;
+  }, [onZoomChange]);
+
+  useEffect(() => {
+    return () => {
+      if (resetCenterTimeoutRef.current) {
+        window.clearTimeout(resetCenterTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Update refs when showNodes/showLinks change
   useEffect(() => {
@@ -222,15 +276,31 @@ const Graph = forwardRef(function GraphInner<
         const cur = zoomRef.current || 1;
         const target = Math.min(20, cur * 2);
         fgRef.current?.zoom?.(target, 400);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
       },
       zoomOut: () => {
         const cur = zoomRef.current || 1;
         const target = Math.max(0.03, cur / 2);
         fgRef.current?.zoom?.(target, 400);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
       },
       zoomTo: (k: number, ms = 400) => {
         const target = Math.max(0.03, Math.min(20, k));
         fgRef.current?.zoom?.(target, ms);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
+      },
+      resetView: (k: number, ms = 400) => {
+        const target = Math.max(0.03, Math.min(20, k));
+        fgRef.current?.centerAt?.(0, 0, ms);
+        fgRef.current?.zoom?.(target, ms);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
+        if (resetCenterTimeoutRef.current) {
+          window.clearTimeout(resetCenterTimeoutRef.current);
+        }
       },
       getZoom: () => zoomRef.current || 1,
       getCanvas: () => {
@@ -250,6 +320,22 @@ const Graph = forwardRef(function GraphInner<
     const clonedLinks = links.map((link) => ({ ...link }));
     return { nodes: clonedNodes, links: clonedLinks };
   }, [nodes, links]);
+
+  const priorityLabelIds = useMemo(() => {
+    if (priorityLabelIdsProp !== undefined) {
+      return new Set(priorityLabelIdsProp);
+    }
+    const values = preparedData.nodes
+      .map((node) => ({ id: node.id, value: node.labelValue }))
+      .filter((entry): entry is { id: string; value: number } =>
+        typeof entry.value === "number" && Number.isFinite(entry.value)
+      );
+    if (!values.length) return new Set<string>();
+    const count = Math.max(1, Math.ceil(values.length * DEFAULT_PRIORITY_LABEL_PERCENT));
+    const sorted = [...values].sort((a, b) => b.value - a.value);
+    const cutoff = sorted[Math.min(count - 1, sorted.length - 1)].value;
+    return new Set(values.filter((entry) => entry.value >= cutoff).map((entry) => entry.id));
+  }, [priorityLabelIdsProp, preparedData.nodes]);
 
   // Stable fingerprint lets us detect meaningful topology changes without diffing objects deeply.
   const dataSignature = useMemo(() => {
@@ -362,6 +448,51 @@ const Graph = forwardRef(function GraphInner<
     if (show) fgRef.current.resumeAnimation();
     else fgRef.current.pauseAnimation();
   }, [show]);
+
+  // Trigger redraw when images load and animate pulse during loading
+  useEffect(() => {
+    let animationFrame: number | null = null;
+
+    const animate = () => {
+      if (hasLoadingImages()) {
+        // Keep animating for pulse effect while loading
+        fgRef.current?.resumeAnimation?.();
+        animationFrame = requestAnimationFrame(animate);
+      } else {
+        animationFrame = null;
+      }
+    };
+
+    const startAnimation = () => {
+      if (animationFrame === null) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    const unsubscribeLoad = onImageLoad(() => {
+      // Force a redraw when image finishes loading
+      const currentZoom = zoomRef.current || 1;
+      fgRef.current?.zoom?.(currentZoom, 0);
+    });
+
+    const unsubscribeStart = onImageLoadStart(() => {
+      // Start animation loop when image starts loading
+      startAnimation();
+    });
+
+    // Start animation loop if images are already loading
+    if (hasLoadingImages()) {
+      startAnimation();
+    }
+
+    return () => {
+      unsubscribeLoad();
+      unsubscribeStart();
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, []);
 // oi
   useEffect(() => {
     if (!show || !fgRef.current) return;
@@ -370,28 +501,49 @@ const Graph = forwardRef(function GraphInner<
     if (signature && lastInitializedSignatureRef.current === signature) return;
     const fg = fgRef.current;
 
-    // Standardized force configuration
-    fg.d3Force("charge")?.strength(dagMode ? -1230 : -200);
+    // ===========================================
+    // Simplified force configuration matching D3 defaults
+    // D3's defaults are well-tuned for predictable behavior
+    // dagMode adjusts values for hierarchical layouts
+    // ===========================================
+
+    // Charge force: nodes repel each other (D3 default is -30)
+    // More negative = stronger repulsion/more spread out, Less negative = nodes closer together
+    // KEY FIX: Reducing from -200 to -100 greatly reduced the "floating outward" drag effect
+    fg.d3Force("charge")?.strength(dagMode ? -1230 : -120);
+
+    // Link force: connected nodes attract each other
     const linkForce = fg.d3Force("link") as d3.ForceLink<PreparedNode<T>, L> | undefined;
-    linkForce?.distance(dagMode ? 150 : 90);
-    linkForce?.strength(dagMode ? 1 : 1.6);
+    // Link distance: target spacing between connected nodes
+    // Higher = more spread out, Lower = tighter clusters
+    linkForce?.distance(dagMode ? 150 : 200);
+    // Link strength: how strongly links pull nodes together
+    // Higher = tighter/more rigid connections, Lower = more flexible/natural layout
+    linkForce?.strength(dagMode ? 1 : 1.2);
     linkForce?.id((node: any) => node.id);
-    fg.d3Force("center", d3.forceCenter(0, 0).strength(dagMode ? 0.01 : 0.05));
+
+    // Centering forces: pull graph toward origin (D3 forceX/forceY default is 0.1)
+    // Higher = stronger pull to center, Lower = allows more drift
+    fg.d3Force("x", d3.forceX(0).strength(dagMode ? 0.01 : 0.03));
+    fg.d3Force("y", d3.forceY(0).strength(dagMode ? 0.01 : 0.03));
+    // Remove center force in favor of separate x/y forces for better control
+    fg.d3Force("center", null);
+
+    // Collision force: prevents nodes from overlapping
+    // Higher strength/iterations = more rigid spacing but can cause bouncing
+    // Lower = allows some overlap but smoother movement
     fg.d3Force(
       "collide",
       d3
         .forceCollide((node: any) => {
           const n = node as PreparedNode<T>;
-          // Include label dimensions in collision radius to prevent label overlap
+          // Use partial label width to give some spacing without being too aggressive
           const labelWidth = estimateLabelWidth(n.label, LABEL_FONT_SIZE);
-          const labelHeight = LABEL_FONT_SIZE;
-          const labelDiagonal = Math.sqrt(labelWidth * labelWidth + labelHeight * labelHeight) / 2;
-          const padding = 10;
-          // Use the larger of node radius or label dimensions
-          return Math.max(n.radius + padding, labelDiagonal + padding);
+          const effectiveRadius = n.radius + (labelWidth * 0.4); // Only 40% of label width
+          return effectiveRadius;
         })
-        .iterations(2)
-        .strength(dagMode ? 0.02 : 0.7),
+        .iterations(1) // Single pass to minimize bouncing (higher = more accurate but can bounce)
+        .strength(dagMode ? 0.02 : 0.2), // Very weak to prevent bouncing while still providing some spacing
     );
     if (selectedId) {
       // Pull only the selected node toward the origin to keep it in view
@@ -408,19 +560,35 @@ const Graph = forwardRef(function GraphInner<
       fg.d3Force("selected-position-y", null);
     }
 
+    // Radial layout for popularity stratification (concentric rings)
+    if (radialLayout?.enabled && radialLayout.nodeToRadius.size > 0) {
+      fg.d3Force(
+        "radial",
+        d3.forceRadial<PreparedNode<T>>(
+          (node) => radialLayout.nodeToRadius.get(node.id) ?? 400,
+          0, // center x
+          0  // center y
+        ).strength(radialLayout.strength ?? 0.3)
+      );
+    } else {
+      fg.d3Force("radial", null);
+    }
+
     fg.d3ReheatSimulation?.();
     if (shouldResetZoomRef.current) {
       const isMobile = window.matchMedia('(max-width: 640px)').matches;
+      const defaultZoom = getDefaultGraphZoom(dagMode, isMobile);
       // Reset both zoom level and center position
       fg.centerAt(0, 0, 0);
-      fg.zoom(dagMode ? 0.25 : (isMobile ? 0.12 : 0.14), 0);
-      zoomRef.current = dagMode ? 0.25 : (isMobile ? 0.12 : 0.18);
+      fg.zoom(defaultZoom, 0);
+      zoomRef.current = defaultZoom;
+      onZoomChangeRef.current?.(defaultZoom);
       shouldResetZoomRef.current = false;
     }
     if (signature) {
       lastInitializedSignatureRef.current = signature;
     }
-  }, [dataSignature, dagMode, preparedData, selectedId, show]);
+  }, [dataSignature, dagMode, preparedData, selectedId, show, radialLayout]);
 
   useEffect(() => {
     if (!autoFocus || !show || !selectedId || !fgRef.current) return;
@@ -430,6 +598,7 @@ const Graph = forwardRef(function GraphInner<
       const x = node.x ?? 0;
       const y = node.y ?? 0;
       const isMobile = window.matchMedia("(max-width: 640px)").matches;
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
       const currentZoom = zoomRef.current || 1;
       const yAdjusted = applyMobileDrawerYOffset(
         y,
@@ -437,14 +606,15 @@ const Graph = forwardRef(function GraphInner<
         isMobile,
         DEFAULT_MOBILE_CENTER_OFFSET_PX,
       );
-      fgRef.current!.centerAt(x, yAdjusted, 600);
+      const xAdjusted = applyDesktopDrawerXOffset(x, currentZoom, isDesktop, sidebarExpanded);
+      fgRef.current!.centerAt(xAdjusted, yAdjusted, 600);
       const targetZoom = Math.max(0.8, Math.min(2.2, currentZoom < 1 ? 1.1 : currentZoom));
       fgRef.current!.zoom(targetZoom, 600);
     };
     centerToNode();
     const timeout = window.setTimeout(centerToNode, 300);
     return () => window.clearTimeout(timeout);
-  }, [autoFocus, preparedData.nodes, selectedId, show]);
+  }, [autoFocus, preparedData.nodes, selectedId, show, sidebarExpanded]);
 
   // Get hovered node data
   const hoveredNode = useMemo(() => {
@@ -527,7 +697,8 @@ const Graph = forwardRef(function GraphInner<
       className="flex-1 w-full relative"
       style={{
         height: height ?? "100%",
-        display: show ? "block" : "none", // Keep the canvas mounted while simply hiding it.
+        // Always show container so loading spinner is visible, but disable pointer events when hidden
+        display: (show || loading) ? "block" : "none",
         pointerEvents: show ? "auto" : "none",
       }}
     >
@@ -539,16 +710,27 @@ const Graph = forwardRef(function GraphInner<
           <Loading />
         </div>
       )}
+      <div style={{ visibility: show ? "visible" : "hidden" }}>
       <ForceGraph<PreparedNode<T>, L>
         ref={fgRef as any}
         width={width}
         height={height}
         graphData={preparedData}
+        // Enables hierarchical radial layout (nodes arranged in concentric rings from center)
         dagMode={dagMode ? 'radialin' : undefined}
+        // Pixel distance between hierarchy levels in DAG mode
+        // Higher = more spread out layers, Lower = more compact hierarchy
         dagLevelDistance={dagMode ? 200 : undefined}
-        d3AlphaDecay={0.02}
-        d3VelocityDecay={0.75}
+        // How quickly the simulation "cools down" (D3 default is 0.0228)
+        // Higher = faster settling but less accurate layout, Lower = slower but more precise
+        d3AlphaDecay={0.01}
+        // Friction/damping on node velocity (D3 default is 0.4, using slightly higher for stability)
+        // Higher = nodes stop faster/less drift, Lower = more fluid movement
+        d3VelocityDecay={0.4}
+        // Maximum time (ms) the simulation runs before auto-stopping
+        // Higher = continues animating longer, Lower = freezes layout sooner
         cooldownTime={12000}
+        // Pause canvas redraws when simulation is idle (performance optimization)
         autoPauseRedraw={true}
         nodeColor={() => "rgba(0,0,0,0)"}
         nodeCanvasObjectMode={() => "replace"}
@@ -562,13 +744,17 @@ const Graph = forwardRef(function GraphInner<
           const fallback = resolvedTheme === "dark" ? "#ffffff" : "#000000";
           const selected = !!effectiveSelectedId && (source === effectiveSelectedId || target === effectiveSelectedId);
 
-          // Calculate base opacity (what it would be with normal dimming)
-          const baseOpacity = effectiveSelectedId ? (selected ? 0xcc : 0x30) : 0x80;
-          const undimmedOpacity = 0x80;
+          // Zoom-based fade: links become more transparent when zoomed out
+          const zoom = zoomRef.current || 1;
+          const zoomFade = Math.min(1, Math.max(0.15, zoom / 0.5)); // Fade below zoom 0.5, min 15% opacity
 
-          // Interpolate between base and undimmed opacity
+          // Calculate base opacity (reduced for less visual noise)
+          const baseOpacity = effectiveSelectedId ? (selected ? 0xcc : 0x20) : 0x50;
+          const undimmedOpacity = 0x50;
+
+          // Interpolate between base and undimmed opacity, then apply zoom fade
           const transition = dimmingTransitionRef.current;
-          const opacity = Math.round(baseOpacity * (1 - transition) + undimmedOpacity * transition);
+          const opacity = Math.round((baseOpacity * (1 - transition) + undimmedOpacity * transition) * zoomFade);
           const opacityHex = opacity.toString(16).padStart(2, '0');
 
           return `${base ?? fallback}${opacityHex}`;
@@ -579,14 +765,15 @@ const Graph = forwardRef(function GraphInner<
             (() => {
               const source = typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
               const target = typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
-              return source === effectiveSelectedId || target === effectiveSelectedId ? 2.5 : 0.6;
+              return source === effectiveSelectedId || target === effectiveSelectedId ? 2 : 0.3;
             })()
-          ) : 1;
+          ) : 0.5; // Reduced for less visual noise
           return baseWidth * linkThicknessScale;
         }}
         linkCurvature={dagMode ? 0 : linkCurvatureValue}
         onZoom={({ k }) => {
           zoomRef.current = k;
+          onZoomChangeRef.current?.(k);
         }}
         onNodeHover={(node) => {
           const id = node?.id as string | undefined;
@@ -631,6 +818,7 @@ const Graph = forwardRef(function GraphInner<
             radius,
             color: accent,
             isSelected,
+            isClickSelected,
             isNeighbor,
             isHovered,
             alpha,
@@ -650,34 +838,61 @@ const Graph = forwardRef(function GraphInner<
           // Calculate and render label with smooth transition
           if (showLabels) {
             const k = zoomRef.current || 1;
-            const zoomBasedAlpha = labelAlphaForZoom(k, labelFadeStart, labelFadeEnd);
+            const zoomAlpha = labelAlphaForZoom(k, labelFadeStart, labelFadeEnd);
+            const priorityZoomAlpha = labelAlphaForZoom(
+              k,
+              labelFadeStart * DEFAULT_PRIORITY_LABEL_ZOOM_SCALE,
+              labelFadeEnd * DEFAULT_PRIORITY_LABEL_ZOOM_SCALE,
+            );
+            const isPriorityLabel = priorityLabelIds.has(node.id);
+            let zoomBasedAlpha = applyLabelFadeCurve(isPriorityLabel ? priorityZoomAlpha : zoomAlpha);
+            let meetsLabelThreshold = true;
 
-            // Calculate base label alpha (what it would be without dimming override)
-            let baseLabelAlpha = zoomBasedAlpha;
-            if (isSelected || isHovered) {
-              baseLabelAlpha = 1;
-            } else if (hasSelection && !isNeighbor) {
-              baseLabelAlpha = Math.min(zoomBasedAlpha, 0.25);
+            if (isPriorityLabel) {
+              const minLabelValue = labelValueThresholdForZoom(
+                priorityZoomAlpha,
+                DEFAULT_PRIORITY_LABEL_IMPORTANCE_THRESHOLD,
+              );
+              meetsLabelThreshold = priorityZoomAlpha > 0;
+              if (node.labelValue !== undefined && node.labelValue >= minLabelValue) {
+                const denom = Math.max(1e-6, 1 - minLabelValue);
+                const t = (node.labelValue - minLabelValue) / denom;
+                const importanceAlpha = applyLabelFadeCurve(smoothstep(t));
+                zoomBasedAlpha = Math.max(zoomBasedAlpha, importanceAlpha);
+              }
             }
 
-            // When transitioning to undimmed state, interpolate toward zoom-based alpha only
-            // (we don't want to boost labels to full brightness, just remove selection dimming)
-            const labelAlpha = baseLabelAlpha * (1 - transition) + zoomBasedAlpha * transition;
+            if (meetsLabelThreshold || isSelected || isHovered) {
+              // Calculate base label alpha (what it would be without dimming override)
+              let baseLabelAlpha = zoomBasedAlpha;
+              if (isSelected || isHovered) {
+                baseLabelAlpha = 1;
+              } else if (hasSelection && !isNeighbor) {
+                baseLabelAlpha = Math.min(zoomBasedAlpha, 0.25);
+              }
 
-            const labelContext: LabelRenderContext<T> = {
-              ...renderContext,
-              label: node.label,
-              labelAlpha,
-              zoomLevel: k,
-            };
+              // When transitioning to undimmed state, interpolate toward zoom-based alpha only
+              // (we don't want to boost labels to full brightness, just remove selection dimming)
+              const labelAlpha = baseLabelAlpha * (1 - transition) + zoomBasedAlpha * transition;
 
-            // Pass fontSize if using default renderer
-            if (renderLabel === defaultRenderLabel) {
-              // When nodes are hidden, use node color for labels
-              const labelColor = !showNodesRef.current ? accent : undefined;
-              defaultRenderLabel(labelContext, labelFontSize, labelColor);
-            } else {
-              renderLabel(labelContext);
+              const labelContext: LabelRenderContext<T> = {
+                ...renderContext,
+                label: node.label,
+                labelAlpha,
+                zoomLevel: k,
+              };
+
+              // Pass fontSize if using default renderer
+              if (renderLabel === defaultRenderLabel) {
+                // When nodes are hidden, use node color for labels
+                const labelColor = !showNodesRef.current ? accent : undefined;
+                const labelPx = isPriorityLabel
+                  ? Math.max(labelFontSize, fontPxForZoom(labelFontSize, k))
+                  : labelFontSize;
+                defaultRenderLabel(labelContext, labelPx, labelColor, isPriorityLabel, isClickSelected);
+              } else {
+                renderLabel(labelContext);
+              }
             }
           }
         }}
@@ -691,6 +906,7 @@ const Graph = forwardRef(function GraphInner<
         }}
         nodeVal={(node) => node.radius}
       />
+      </div>
     </div>
   );
 });
