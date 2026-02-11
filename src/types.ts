@@ -204,6 +204,8 @@ export interface FeedItem {
     source: string;
     sourceId: string;
     excerpt?: string;
+    description?: string;
+    content?: string;
     imageUrl?: string;
     author?: string;
 }
