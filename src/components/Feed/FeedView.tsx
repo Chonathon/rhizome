@@ -29,7 +29,7 @@ export function FeedView() {
     } = useMultipleFeeds({
         category: selectedCategory === "all" ? null : selectedCategory,
     });
-    const panelStyles = "border flex flex-col min-w-[375px] max-w-[440px] max-h-[calc(100dvh-32px)] flex-1 shadow-xl rounded-4xl min-w-0 overflow-hidden";
+    const panelStyles = "border bg-accent flex flex-col min-w-[375px] max-w-[440px] max-h-[calc(100dvh-32px)] flex-1 shadow-xl rounded-4xl min-w-0 overflow-hidden";
 
     return (
         <div className="flex h-full justify-center bg-background pt-3 gap-4">
@@ -95,9 +95,13 @@ export function FeedView() {
 
             {/* Trending Panel */}
             <div className={`${panelStyles} relative`}>
-                {/* Background content — scales down iOS-style when drawer is open */}
+                {/* Black backdrop for iOS depth effect */}
+                <div className={`absolute inset-0 bg-black rounded-4xl transition-opacity duration-300 ${
+                    selectedTrendingEntity ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`} />
+                {/* Background content — scales down and slides down iOS-style when drawer is open */}
                 <div className={`flex flex-col flex-1 min-h-0 transition-all duration-300 ease-out origin-top ${
-                    selectedTrendingEntity ? 'scale-[0.94] opacity-40 rounded-2xl overflow-hidden' : ''
+                    selectedTrendingEntity ? 'scale-[0.90] translate-y-2 opacity-50 overflow-hidden' : ''
                 }`}>
                     <div className="px-4 py-3 border-b">
                         <h2 className="text-sm font-medium">Trending</h2>
