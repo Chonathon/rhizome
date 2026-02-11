@@ -60,6 +60,7 @@ interface AppSidebarProps {
   playerHeaderPreferProvidedTitle?: boolean;
   onPlayerTitleClick?: () => void;
   playerStartIndex?: number;
+  playerPreviewMode?: boolean;
 }
 
 export function AppSidebar({
@@ -87,7 +88,8 @@ export function AppSidebar({
   onPlayerLoadingChange,
   playerHeaderPreferProvidedTitle,
   onPlayerTitleClick,
-  playerStartIndex
+  playerStartIndex,
+  playerPreviewMode
 }: AppSidebarProps) {
   const { setTheme } = useTheme()
   const { toggleSidebar, state } = useSidebar()
@@ -259,6 +261,7 @@ export function AppSidebar({
         headerPreferProvidedTitle={playerHeaderPreferProvidedTitle}
         onTitleClick={onPlayerTitleClick}
         startIndex={playerStartIndex}
+        previewMode={playerPreviewMode}
         sidebarCollapsed={isCollapsed}
         isDesktop={isDesktop}
         desktopSlotRef={desktopPlayerSlotRef}
