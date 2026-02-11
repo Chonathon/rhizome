@@ -28,11 +28,11 @@ export function FollowingFeedView({
 
     return (
         <div className="flex flex-col flex-1 overflow-hidden">
-            <div className="flex items-center px-4 py-2">
+            {/* <div className="flex items-center px-4 py-2">
                 <span className="text-sm text-muted-foreground">
                     {followedFeedIds.length} feed{followedFeedIds.length !== 1 ? "s" : ""}
                 </span>
-            </div>
+            </div> */}
             <FeedList
                 items={items}
                 loading={loading}
