@@ -12,6 +12,7 @@ interface FeedListProps {
     showFollowButton?: boolean;
     isFollowing?: (feedId: string) => boolean;
     onToggleFollow?: (feedId: string) => void;
+    onScroll?: (e: React.UIEvent<HTMLElement>) => void;
 }
 
 export function FeedList({
@@ -23,6 +24,7 @@ export function FeedList({
     showFollowButton = false,
     isFollowing,
     onToggleFollow,
+    onScroll,
 }: FeedListProps) {
     if (!hasSelection) {
         return <FeedEmptyState type="no-selection" />;
@@ -47,7 +49,7 @@ export function FeedList({
     }
 
     return (
-        <div className="flex flex-col gap-3 px-2 py-4 overflow-y-auto flex-1">
+        <div className="flex flex-col gap-3 px-2 py-4 overflow-y-auto flex-1" onScroll={onScroll}>
             {items.map(item => (
                 <FeedItem
                     key={item.id}
