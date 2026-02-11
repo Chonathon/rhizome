@@ -32,7 +32,7 @@ export function TrendingEntityDrawer({
 
     return (
         <div
-            className={`absolute inset-0 z-10 flex flex-col bg-card transition-transform duration-300 ease-out ${
+            className={`absolute inset-x-0 bottom-0 top-[10%] z-10 flex flex-col bg-card rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${
                 entity ? 'translate-y-0' : 'translate-y-full'
             }`}
         >

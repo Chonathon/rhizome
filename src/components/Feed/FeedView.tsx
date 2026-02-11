@@ -95,17 +95,22 @@ export function FeedView() {
 
             {/* Trending Panel */}
             <div className={`${panelStyles} relative`}>
-                <div className="px-4 py-3 border-b">
-                    <h2 className="text-sm font-medium">Trending</h2>
-                </div>
-                <div className="flex-1 overflow-auto">
-                    {!trendingLoading && trendingItems.length > 0 && (
-                        <FeedTrendingTags
-                            items={trendingItems}
-                            selectedEntity={selectedTrendingEntity}
-                            onEntityClick={setSelectedTrendingEntity}
-                        />
-                    )}
+                {/* Background content — scales down iOS-style when drawer is open */}
+                <div className={`flex flex-col flex-1 min-h-0 transition-all duration-300 ease-out origin-top ${
+                    selectedTrendingEntity ? 'scale-[0.94] opacity-40 rounded-2xl overflow-hidden' : ''
+                }`}>
+                    <div className="px-4 py-3 border-b">
+                        <h2 className="text-sm font-medium">Trending</h2>
+                    </div>
+                    <div className="flex-1 overflow-auto">
+                        {!trendingLoading && trendingItems.length > 0 && (
+                            <FeedTrendingTags
+                                items={trendingItems}
+                                selectedEntity={selectedTrendingEntity}
+                                onEntityClick={setSelectedTrendingEntity}
+                            />
+                        )}
+                    </div>
                 </div>
                 <TrendingEntityDrawer
                     entity={selectedTrendingEntity}
