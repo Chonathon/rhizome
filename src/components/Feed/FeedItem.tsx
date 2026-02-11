@@ -57,12 +57,14 @@ export function FeedItem({ item, showFollowButton, isFollowing, onToggleFollow }
                     <div className="flex-1 min-w-0 flex flex-col items-stretch gap-1">
                         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                             {faviconUrl && (
-                                <img
-                                    src={faviconUrl}
-                                    alt=""
-                                    className="w-4 h-4 rounded-sm"
-                                    loading="lazy"
-                                />
+                                <div className="w-5 h-5 rounded bg-white dark:bg-white/90 p-0.5 flex items-center justify-center">
+                                    <img
+                                        src={faviconUrl}
+                                        alt=""
+                                        className="w-4 h-4"
+                                        loading="lazy"
+                                    />
+                                </div>
                             )}
                             <span className="font-medium">{item.source}</span>
                             <span>·</span>
