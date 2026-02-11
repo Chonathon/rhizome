@@ -29,7 +29,7 @@ const stripHtml = (html: string): string => {
     return html.replace(/<[^>]*>/g, '').trim();
 };
 
-const truncateText = (text: string, maxLength: number = 200): string => {
+const truncateText = (text: string, maxLength: number = 400): string => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength).trim() + '...';
 };
