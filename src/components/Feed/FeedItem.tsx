@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FeedItem as FeedItemType } from "@/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,8 @@ function getFaviconUrl(link: string): string | null {
 
 export function FeedItem({ item, variant = 'default', showFollowButton, isFollowing, onToggleFollow }: FeedItemProps) {
     const faviconUrl = getFaviconUrl(item.link);
+    const [imgError, setImgError] = useState(false);
+    const showImage = !!item.imageUrl && !imgError;
 
     const handleFollowClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -40,13 +43,14 @@ export function FeedItem({ item, variant = 'default', showFollowButton, isFollow
             >
                 <Card className="bg-card rounded-xl border-border transition-colors overflow-hidden">
                     <div className="flex items-center gap-3 p-2.5">
-                        {item.imageUrl && (
+                        {showImage && (
                             <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0">
                                 <img
                                     src={item.imageUrl}
                                     alt={item.title}
                                     className="h-full w-full object-cover"
                                     loading="lazy"
+                                    onError={() => setImgError(true)}
                                 />
                             </div>
                         )}
@@ -80,7 +84,7 @@ export function FeedItem({ item, variant = 'default', showFollowButton, isFollow
         >
             <Card className="bg-accent backdrop-blur-xs rounded-3xl border-border transition-colors hover:bg-accent/50 overflow-hidden">
                 <div className="flex flex-col">
-                    {item.imageUrl && (
+                    {showImage && (
                         <div className="overflow-hidden border-b border-border">
                             <div className="aspect-video w-full">
                                 <img
@@ -88,6 +92,7 @@ export function FeedItem({ item, variant = 'default', showFollowButton, isFollow
                                     alt={item.title}
                                     className="h-full w-full object-cover"
                                     loading="lazy"
+                                    onError={() => setImgError(true)}
                                 />
                             </div>
                         </div>
