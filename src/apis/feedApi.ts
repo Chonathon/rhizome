@@ -34,20 +34,14 @@ const truncateText = (text: string, maxLength: number = 400): string => {
     return text.substring(0, maxLength).trim() + '...';
 };
 
-export const fetchFeed = async (feedId: string): Promise<FeedResponse | null> => {
-    const source = RSS_FEEDS.find(f => f.id === feedId);
-    if (!source) {
-        console.error(`Feed not found: ${feedId}`);
-        return null;
-    }
-
+export const fetchFeedBySource = async (source: FeedSource): Promise<FeedResponse | null> => {
     try {
         const response = await axios.get<Rss2JsonResponse>(RSS2JSON_API, {
             params: { rss_url: source.url }
         });
 
         if (response.data.status !== 'ok') {
-            console.error(`RSS2JSON error for ${feedId}`);
+            console.error(`RSS2JSON error for ${source.id}`);
             return null;
         }
 
@@ -72,9 +66,32 @@ export const fetchFeed = async (feedId: string): Promise<FeedResponse | null> =>
         };
     } catch (error) {
         if (error instanceof AxiosError) {
-            console.error(`Failed to fetch feed ${feedId}:`, error.message);
+            console.error(`Failed to fetch feed ${source.id}:`, error.message);
         }
         return null;
+    }
+};
+
+export const fetchFeed = async (feedId: string): Promise<FeedResponse | null> => {
+    const source = RSS_FEEDS.find(f => f.id === feedId);
+    if (!source) {
+        console.error(`Feed not found: ${feedId}`);
+        return null;
+    }
+    return fetchFeedBySource(source);
+};
+
+export const validateFeedUrl = async (url: string): Promise<{ valid: boolean; title: string }> => {
+    try {
+        const response = await axios.get<Rss2JsonResponse>(RSS2JSON_API, {
+            params: { rss_url: url }
+        });
+        if (response.data.status === 'ok' && response.data.items.length > 0) {
+            return { valid: true, title: response.data.feed.title || new URL(url).hostname };
+        }
+        return { valid: false, title: '' };
+    } catch {
+        return { valid: false, title: '' };
     }
 };
 

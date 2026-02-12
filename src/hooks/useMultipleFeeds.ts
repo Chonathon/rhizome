@@ -1,28 +1,39 @@
 import { useEffect, useState, useCallback } from "react";
-import { FeedItem, FeedCategory } from "@/types";
-import { fetchFeed } from "@/apis/feedApi";
+import { FeedItem, FeedCategory, FeedSource } from "@/types";
+import { fetchFeed, fetchFeedBySource } from "@/apis/feedApi";
 import { RSS_FEEDS } from "@/constants";
 
 interface UseMultipleFeedsOptions {
     feedIds?: string[];
     category?: FeedCategory | null;
+    customSources?: FeedSource[];
 }
 
-const useMultipleFeeds = ({ feedIds, category }: UseMultipleFeedsOptions = {}) => {
+const useMultipleFeeds = ({ feedIds, category, customSources }: UseMultipleFeedsOptions = {}) => {
     const [items, setItems] = useState<FeedItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
 
     const loadFeeds = useCallback(async () => {
-        let sourcesToFetch = RSS_FEEDS;
+        let builtInSources = RSS_FEEDS;
 
         if (feedIds && feedIds.length > 0) {
-            sourcesToFetch = RSS_FEEDS.filter(f => feedIds.includes(f.id));
+            builtInSources = RSS_FEEDS.filter(f => feedIds.includes(f.id));
         } else if (category) {
-            sourcesToFetch = RSS_FEEDS.filter(f => f.category === category);
+            builtInSources = RSS_FEEDS.filter(f => f.category === category);
         }
 
-        if (sourcesToFetch.length === 0) {
+        // Resolve custom sources: if feedIds filter is active, only include matching custom feeds
+        let customToFetch: FeedSource[] = [];
+        if (customSources && customSources.length > 0) {
+            if (feedIds && feedIds.length > 0) {
+                customToFetch = customSources.filter(f => feedIds.includes(f.id));
+            } else {
+                customToFetch = customSources;
+            }
+        }
+
+        if (builtInSources.length === 0 && customToFetch.length === 0) {
             setItems([]);
             setError(null);
             return;
@@ -31,9 +42,10 @@ const useMultipleFeeds = ({ feedIds, category }: UseMultipleFeedsOptions = {}) =
         setLoading(true);
         setError(null);
 
-        const results = await Promise.all(
-            sourcesToFetch.map(source => fetchFeed(source.id))
-        );
+        const results = await Promise.all([
+            ...builtInSources.map(source => fetchFeed(source.id)),
+            ...customToFetch.map(source => fetchFeedBySource(source)),
+        ]);
 
         const allItems: FeedItem[] = [];
         let hasError = false;
@@ -56,7 +68,7 @@ const useMultipleFeeds = ({ feedIds, category }: UseMultipleFeedsOptions = {}) =
             setError(new Error("Failed to load feeds"));
         }
         setLoading(false);
-    }, [feedIds, category]);
+    }, [feedIds, category, customSources]);
 
     useEffect(() => {
         loadFeeds();

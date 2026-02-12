@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { ExtractedEntity } from "@/lib/feedEntityExtraction";
 import { useFollowedFeeds } from "@/hooks/useFollowedFeeds";
+import { useCustomFeeds } from "@/hooks/useCustomFeeds";
 import useMultipleFeeds from "@/hooks/useMultipleFeeds";
 import { RSS_FEEDS } from "@/constants";
 import { FollowingFeedView } from "./FollowingFeedView";
@@ -11,6 +12,7 @@ import { FeedPanelHeader } from "./FeedPanelHeader";
 
 export function FeedView() {
     const followedFeeds = useFollowedFeeds();
+    const { customFeeds, addFeed, removeFeed, adding: addingFeed } = useCustomFeeds();
     const [selectedEverythingFeedIds, setSelectedEverythingFeedIds] = useState<string[]>([]);
     const [selectedTrendingEntity, setSelectedTrendingEntity] = useState<ExtractedEntity | null>(null);
     const trendingPanelRef = useRef<HTMLDivElement>(null);
@@ -20,7 +22,7 @@ export function FeedView() {
         loading: followingLoading,
         error: followingError,
         refresh: refreshFollowing,
-    } = useMultipleFeeds({ feedIds: followedFeeds.followedFeedIds });
+    } = useMultipleFeeds({ feedIds: followedFeeds.followedFeedIds, customSources: customFeeds });
     const {
         items: everythingItems,
         loading: everythingLoading,
@@ -28,6 +30,7 @@ export function FeedView() {
         refresh: refreshEverything,
     } = useMultipleFeeds({
         feedIds: selectedEverythingFeedIds.length > 0 ? selectedEverythingFeedIds : undefined,
+        customSources: customFeeds,
     });
 
     const toggleEverythingFeed = useCallback((feedId: string) => {
@@ -49,7 +52,7 @@ export function FeedView() {
                     onRefresh={refreshFollowing}
                     loading={followingLoading}
                     dropdown={{
-                        feeds: RSS_FEEDS.filter((f) =>
+                        feeds: [...RSS_FEEDS, ...customFeeds].filter((f) =>
                             followedFeeds.followedFeedIds.includes(f.id)
                         ),
                         groupByCategory: false,
@@ -75,10 +78,13 @@ export function FeedView() {
                     onRefresh={refreshEverything}
                     loading={everythingLoading}
                     dropdown={{
-                        feeds: RSS_FEEDS,
+                        feeds: [...RSS_FEEDS, ...customFeeds],
                         groupByCategory: true,
                         checkedIds: selectedEverythingFeedIds,
                         onToggle: toggleEverythingFeed,
+                        onAddFeed: addFeed,
+                        onRemoveFeed: removeFeed,
+                        addingFeed,
                     }}
                 />
                 <EverythingFeedsView

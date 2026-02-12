@@ -131,4 +131,5 @@ export const FEED_CATEGORIES: { id: FeedCategory; label: string }[] = [
     { id: 'indie', label: 'Indie' },
     { id: 'electronic', label: 'Electronic' },
     { id: 'industry', label: 'Industry' },
+    { id: 'custom', label: 'Custom' },
 ];

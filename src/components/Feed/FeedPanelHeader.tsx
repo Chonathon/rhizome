@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { RefreshCw, ChevronDown, Check, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { RefreshCw, ChevronDown, Check, X, Plus, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
 import {
@@ -9,6 +9,7 @@ import {
   CommandGroup,
   CommandItem,
   CommandEmpty,
+  CommandSeparator,
 } from "@/components/ui/command";
 import { FeedSource } from "@/types";
 import { FEED_CATEGORIES } from "@/constants";
@@ -20,6 +21,9 @@ interface FeedPanelHeaderDropdown {
   onToggle: (feedId: string) => void;
   showClear?: boolean;
   confirmUnfollow?: boolean;
+  onAddFeed?: (url: string) => Promise<{ success: boolean; error?: string }>;
+  onRemoveFeed?: (id: string) => void;
+  addingFeed?: boolean;
 }
 
 interface FeedPanelHeaderProps {
@@ -39,6 +43,10 @@ export function FeedPanelHeader({
 }: FeedPanelHeaderProps) {
   const [query, setQuery] = useState("");
   const [pendingUnfollowId, setPendingUnfollowId] = useState<string | null>(null);
+  const [showAddInput, setShowAddInput] = useState(false);
+  const [feedUrl, setFeedUrl] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+  const addInputRef = useRef<HTMLInputElement>(null);
 
   const checkedCount = dropdown?.checkedIds.length ?? 0;
   const showClear = dropdown?.showClear ?? true;
@@ -56,6 +64,18 @@ export function FeedPanelHeader({
   const clearAll = () => {
     if (!dropdown) return;
     dropdown.checkedIds.forEach((id) => dropdown.onToggle(id));
+  };
+
+  const handleAddFeed = async () => {
+    if (!dropdown?.onAddFeed || !feedUrl.trim()) return;
+    setAddError(null);
+    const result = await dropdown.onAddFeed(feedUrl.trim());
+    if (result.success) {
+      setFeedUrl("");
+      setShowAddInput(false);
+    } else {
+      setAddError(result.error ?? "Failed to add feed");
+    }
   };
 
   // Plain mode (Trending)
@@ -89,6 +109,9 @@ export function FeedPanelHeader({
           if (open) {
             setQuery("");
             setPendingUnfollowId(null);
+            setShowAddInput(false);
+            setFeedUrl("");
+            setAddError(null);
           }
         }}
         trigger={
@@ -158,6 +181,7 @@ export function FeedPanelHeader({
                   <CommandGroup key={cat.id} heading={cat.label}>
                     {categoryFeeds.map((feed) => {
                       const checked = dropdown.checkedIds.includes(feed.id);
+                      const isCustom = feed.category === "custom";
                       return (
                         <CommandItem
                           key={feed.id}
@@ -166,7 +190,20 @@ export function FeedPanelHeader({
                           className="flex items-center gap-2"
                         >
                           <Check className={checked ? "opacity-100" : "opacity-0"} />
-                          <span>{feed.name}</span>
+                          <span className="flex-1 truncate">{feed.name}</span>
+                          {isCustom && dropdown.onRemoveFeed && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                dropdown.onRemoveFeed!(feed.id);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
                         </CommandItem>
                       );
                     })}
@@ -232,6 +269,67 @@ export function FeedPanelHeader({
               </CommandGroup>
             )}
           </CommandList>
+          {dropdown.onAddFeed && (
+            <>
+              <CommandSeparator />
+              <div className="p-2">
+                {showAddInput ? (
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex gap-1.5">
+                      <input
+                        ref={addInputRef}
+                        type="url"
+                        placeholder="https://example.com/feed.xml"
+                        value={feedUrl}
+                        onChange={(e) => {
+                          setFeedUrl(e.target.value);
+                          setAddError(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAddFeed();
+                          if (e.key === "Escape") {
+                            setShowAddInput(false);
+                            setFeedUrl("");
+                            setAddError(null);
+                          }
+                        }}
+                        className="flex-1 min-w-0 h-8 rounded-md border border-input bg-background px-2 text-sm outline-none focus:ring-1 focus:ring-ring"
+                        autoFocus
+                      />
+                      <Button
+                        size="sm"
+                        className="h-8 px-3"
+                        onClick={handleAddFeed}
+                        disabled={!feedUrl.trim() || dropdown.addingFeed}
+                      >
+                        {dropdown.addingFeed ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          "Add"
+                        )}
+                      </Button>
+                    </div>
+                    {addError && (
+                      <p className="text-xs text-destructive px-1">{addError}</p>
+                    )}
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 text-muted-foreground"
+                    onClick={() => {
+                      setShowAddInput(true);
+                      setTimeout(() => addInputRef.current?.focus(), 0);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add custom feed
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </Command>
       </ResponsivePanel>
       <Button

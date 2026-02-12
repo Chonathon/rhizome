@@ -186,7 +186,7 @@ export interface ListenerTier {
 }
 
 // RSS Feed types
-export type FeedCategory = 'music-news' | 'indie' | 'industry' | 'electronic';
+export type FeedCategory = 'music-news' | 'indie' | 'industry' | 'electronic' | 'custom';
 
 export interface FeedSource {
     id: string;
