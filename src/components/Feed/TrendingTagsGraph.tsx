@@ -112,16 +112,14 @@ export function TrendingTagsGraph({
         ctx.fillStyle = node.color;
         ctx.fill();
 
-        // Draw label if zoomed in enough
-        if (globalScale > 1.5) {
-            const label = node.name;
-            const fontSize = Math.max(8, 10 / globalScale);
-            ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            ctx.fillStyle = isDark ? '#e5e5e5' : '#262626';
-            ctx.fillText(label, x, y + radius + 2);
-        }
+        // Draw label
+        const label = node.name;
+        const fontSize = Math.max(8, 10 / globalScale);
+        ctx.font = `${fontSize}px Geist, system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = isDark ? '#e5e5e5' : '#262626';
+        ctx.fillText(label, x, y + radius + 2);
     }, [isDark]);
 
     const linkColor = useCallback(() => {
