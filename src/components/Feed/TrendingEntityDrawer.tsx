@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Drawer as VaulDrawer } from "vaul";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
 import { FeedItem as FeedItemType } from "@/types";
 import { ExtractedEntity, getItemsForEntity, getCooccurringEntities } from "@/lib/feedEntityExtraction";
 import { BadgeIndicator, BadgeIndicatorType } from "@/components/BadgeIndicator";
@@ -49,29 +50,30 @@ export function TrendingEntityDrawer({
                             <span className="pointer-events-none h-1 w-16 rounded-full bg-muted" />
                         </VaulDrawer.Handle>
                     </div>
-                    {/* Header */}
-                    <div className="shrink-0 border-b px-4 pb-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                {entity && (
-                                    <BadgeIndicator
-                                        type={entity.type as BadgeIndicatorType}
-                                        name={entity.name}
-                                        color={ENTITY_TYPE_COLORS[entity.type]}
-                                        className="size-3"
-                                    />
-                                )}
-                                <h2 className="text-lg font-semibold">
+                    <DrawerHeader className="px-4 pt-1 pb-3 border-b">
+                        <div className="flex items-start gap-1">
+                            <div className="flex-1">
+                                <DrawerTitle className="leading-tight text-xl flex items-center gap-2">
+                                    {entity && (
+                                        <BadgeIndicator
+                                            type={entity.type as BadgeIndicatorType}
+                                            name={entity.name}
+                                            color={ENTITY_TYPE_COLORS[entity.type]}
+                                            className="size-3"
+                                        />
+                                    )}
                                     {entity?.name}
-                                </h2>
+                                </DrawerTitle>
+                                <DrawerDescription className="text-xs">
+                                    {filteredItems.length} article{filteredItems.length !== 1 ? 's' : ''} in your feed
+                                </DrawerDescription>
                             </div>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
-                                <X className="h-4 w-4" />
-                            </Button>
+                            <DrawerClose asChild>
+                                <Button aria-label="Close" variant="secondary" size="icon">
+                                    <X />
+                                </Button>
+                            </DrawerClose>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                            {filteredItems.length} article{filteredItems.length !== 1 ? 's' : ''} in your feed
-                        </p>
                         {cooccurring.length > 0 && (
                             <div className="flex items-center gap-1.5 flex-wrap mt-2">
                                 <span className="text-xs text-muted-foreground">Also trending:</span>
@@ -84,7 +86,7 @@ export function TrendingEntityDrawer({
                                 ))}
                             </div>
                         )}
-                    </div>
+                    </DrawerHeader>
 
                     {/* Scrollable content */}
                     <div className="flex-1 overflow-y-auto px-3 py-3">
