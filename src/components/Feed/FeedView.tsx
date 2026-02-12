@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FeedCategory } from "@/types";
@@ -14,6 +14,7 @@ export function FeedView() {
     const followedFeeds = useFollowedFeeds();
     const [selectedCategory, setSelectedCategory] = useState<FeedCategory | "all">("all");
     const [selectedTrendingEntity, setSelectedTrendingEntity] = useState<ExtractedEntity | null>(null);
+    const trendingPanelRef = useRef<HTMLDivElement>(null);
     const { items: trendingItems, loading: trendingLoading } = useMultipleFeeds({});
     const {
         items: followingItems,
@@ -94,14 +95,14 @@ export function FeedView() {
             </div>
 
             {/* Trending Panel */}
-            <div className={`${panelStyles} relative`}>
+            <div ref={trendingPanelRef} className={`${panelStyles} relative [transform:translateZ(0)]`}>
                 {/* Black backdrop for iOS depth effect */}
                 <div className={`absolute inset-0 bg-white dark:bg-black rounded-4xl transition-opacity duration-300 ${
                     selectedTrendingEntity ? 'opacity-30' : 'opacity-0 pointer-events-none'
                 }`} />
                 {/* Background content — scales down and slides down iOS-style when drawer is open */}
                 <div className={`flex flex-col flex-1 min-h-0 rounded-3xl transition-all duration-300 ease-out origin-top ${
-                    selectedTrendingEntity ? 'scale-[0.90] translate-y-6 opacity-100 bg-accent overflow-hidden ring-1 ring-border' : ''
+                    selectedTrendingEntity ? 'scale-[0.90] translate-y-6 opacity-100 bg-accent overflow-hidden ring-border' : ''
                 }`}>
                     <div className="px-4 py-3 border-b">
                         <h2 className="text-sm font-medium">Trending</h2>
@@ -119,6 +120,7 @@ export function FeedView() {
                 <TrendingEntityDrawer
                     entity={selectedTrendingEntity}
                     items={trendingItems}
+                    container={trendingPanelRef.current}
                     onClose={() => setSelectedTrendingEntity(null)}
                     onEntityClick={setSelectedTrendingEntity}
                 />
