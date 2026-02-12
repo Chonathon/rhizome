@@ -30,7 +30,7 @@ export function FeedView() {
     } = useMultipleFeeds({
         category: selectedCategory === "all" ? null : selectedCategory,
     });
-    const panelStyles = "border flex flex-col min-w-[375px] max-w-[440px] max-h-[calc(100dvh-32px)] flex-1 shadow-xl rounded-4xl min-w-0 overflow-hidden";
+    const panelStyles = "border flex flex-col min-w-[393px] max-w-[440px] max-h-[calc(100dvh-32px)] flex-1 shadow-xl rounded-4xl min-w-0 overflow-hidden";
     function panelHeader(title: string, onRefresh: () => void, loading: boolean, badge?: React.ReactNode) {
         return (
             <div className="p-4 flex items-center justify-between">

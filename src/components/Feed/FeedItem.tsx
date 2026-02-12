@@ -114,11 +114,11 @@ export function FeedItem({ item, variant = 'default', showFollowButton, isFollow
                                 </>
                             )}
                         </div>
-                        <div className="flex justify-start w-auto items-end gap-2">
-                            <h3 className="leading-5 text-md font-semibold line-clamp-2 group-hover:text-primary">
+                        <div className="flex justify-start w-auto items-end gap-1">
+                            <h3 className="leading-5 text-md font-semibold line-clamp-2 wrap-break-word group-hover:text-primary">
                                 {item.title}
                             </h3>
-                            <ArrowUpRight className="text-muted-foreground size-5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                <ArrowUpRight className="text-muted-foreground size-5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                         </div>
                         {item.excerpt && (
                             <p className="text-muted-foreground ">
