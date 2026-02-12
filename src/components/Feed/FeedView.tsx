@@ -104,8 +104,8 @@ export function FeedView() {
                 <div className={`flex flex-col flex-1 min-h-0 rounded-3xl transition-all duration-300 ease-out origin-top ${
                     selectedTrendingEntity ? 'scale-[0.90] translate-y-6 opacity-100 bg-accent overflow-hidden ring-border' : ''
                 }`}>
-                    <div className="px-4 py-3 border-b">
-                        <h2 className="text-sm font-medium">Trending</h2>
+                    <div className="flex items-center px-4 py-4 h-14 border-b">
+                        <h2 className="text-md font-semibold">Trending</h2>
                     </div>
                     <div className="flex-1 overflow-auto">
                         {!trendingLoading && trendingItems.length > 0 && (
