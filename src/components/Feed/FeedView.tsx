@@ -54,7 +54,7 @@ export function FeedView() {
     }
 
     return (
-        <div className="flex h-full justify-center pt-3 gap-4">
+        <div className="flex h-full justify-center p-3 gap-4 overflow-x-auto">
             {/* Following Panel */}
             <div className={panelStyles}>
                 {panelHeader(

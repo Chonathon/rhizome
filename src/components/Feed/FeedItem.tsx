@@ -1,7 +1,7 @@
 import { FeedItem as FeedItemType } from "@/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Heart } from "lucide-react";
+import { ArrowUpRight, ExternalLink, Heart } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 interface FeedItemProps {
@@ -114,11 +114,11 @@ export function FeedItem({ item, variant = 'default', showFollowButton, isFollow
                                 </>
                             )}
                         </div>
-                        <div className="flex justify-start w-auto items-center gap-2">
+                        <div className="flex justify-start w-auto items-end gap-2">
                             <h3 className="leading-5 text-md font-semibold line-clamp-2 group-hover:text-primary">
                                 {item.title}
                             </h3>
-                            <ExternalLink className="mt-0.5 h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                            <ArrowUpRight className="text-muted-foreground size-5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                         </div>
                         {item.excerpt && (
                             <p className="text-muted-foreground ">
