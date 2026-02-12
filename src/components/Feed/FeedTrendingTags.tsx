@@ -54,11 +54,10 @@ export function FeedTrendingTags({ items, maxTags = 8, selectedEntity, onEntityC
                         </div>
                     </div>
                     <CollapsibleContent>
-                        <div className="pt-3 flex justify-center w-full">
+                        <div className="pt-3">
                             <TrendingTagsGraph
                                 items={items}
                                 maxNodes={maxTags}
-                                width={320}
                                 height={180}
                                 onNodeClick={onEntityClick}
                             />

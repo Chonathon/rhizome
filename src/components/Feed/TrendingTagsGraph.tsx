@@ -1,4 +1,4 @@
-import { useMemo, useRef, useCallback } from "react";
+import { useMemo, useRef, useCallback, useState, useEffect } from "react";
 import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
 import { useTheme } from "next-themes";
 import { FeedItem } from "@/types";
@@ -12,7 +12,6 @@ import {
 interface TrendingTagsGraphProps {
     items: FeedItem[];
     maxNodes?: number;
-    width?: number;
     height?: number;
     onNodeClick?: (entity: ExtractedEntity) => void;
 }
@@ -42,13 +41,24 @@ const TYPE_COLORS: Record<ExtractedEntity['type'], { light: string; dark: string
 export function TrendingTagsGraph({
     items,
     maxNodes = 12,
-    width = 300,
     height = 200,
     onNodeClick,
 }: TrendingTagsGraphProps) {
     const fgRef = useRef<ForceGraphMethods<GraphNode, GraphLink>>();
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [width, setWidth] = useState(0);
     const { resolvedTheme } = useTheme();
     const isDark = resolvedTheme === 'dark';
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([entry]) => {
+            setWidth(entry.contentRect.width);
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
 
     const graphData = useMemo(() => {
         if (items.length === 0) return { nodes: [], links: [] };
@@ -126,8 +136,9 @@ export function TrendingTagsGraph({
 
     return (
         <div
-            className="rounded-lg overflow-hidden bg-muted/20 border"
-            style={{ width, height }}
+            ref={containerRef}
+            className="rounded-lg overflow-hidden bg-muted/20 border w-full"
+            style={{ height }}
         >
             <ForceGraph2D
                 ref={fgRef}
