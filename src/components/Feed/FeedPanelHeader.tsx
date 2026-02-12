@@ -24,6 +24,7 @@ interface FeedPanelHeaderDropdown {
   onAddFeed?: (url: string) => Promise<{ success: boolean; error?: string }>;
   onRemoveFeed?: (id: string) => void;
   addingFeed?: boolean;
+  followedFeedIds?: string[];
 }
 
 interface FeedPanelHeaderProps {
@@ -182,6 +183,7 @@ export function FeedPanelHeader({
                     {categoryFeeds.map((feed) => {
                       const checked = dropdown.checkedIds.includes(feed.id);
                       const isCustom = feed.category === "custom";
+                      const isFollowed = dropdown.followedFeedIds?.includes(feed.id);
                       return (
                         <CommandItem
                           key={feed.id}
@@ -191,6 +193,11 @@ export function FeedPanelHeader({
                         >
                           <Check className={checked ? "opacity-100" : "opacity-0"} />
                           <span className="flex-1 truncate">{feed.name}</span>
+                          {isFollowed && (
+                            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full leading-none shrink-0">
+                              Following
+                            </span>
+                          )}
                           {isCustom && dropdown.onRemoveFeed && (
                             <Button
                               variant="ghost"

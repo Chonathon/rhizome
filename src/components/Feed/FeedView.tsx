@@ -41,6 +41,14 @@ export function FeedView() {
         );
     }, []);
 
+    const addFeedAndFollow = useCallback(async (url: string) => {
+        const result = await addFeed(url);
+        if (result.success && result.feedId) {
+            followedFeeds.followFeed(result.feedId);
+        }
+        return result;
+    }, [addFeed, followedFeeds.followFeed]);
+
     const panelStyles = "border flex flex-col min-w-[393px] max-w-[440px] max-h-[calc(100dvh-32px)] flex-1 shadow-xl rounded-4xl min-w-0 overflow-hidden";
 
     return (
@@ -82,9 +90,10 @@ export function FeedView() {
                         groupByCategory: true,
                         checkedIds: selectedEverythingFeedIds,
                         onToggle: toggleEverythingFeed,
-                        onAddFeed: addFeed,
+                        onAddFeed: addFeedAndFollow,
                         onRemoveFeed: removeFeed,
                         addingFeed,
+                        followedFeedIds: followedFeeds.followedFeedIds,
                     }}
                 />
                 <EverythingFeedsView

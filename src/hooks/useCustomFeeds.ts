@@ -15,7 +15,7 @@ export function useCustomFeeds() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(customFeeds));
     }, [customFeeds]);
 
-    const addFeed = useCallback(async (url: string): Promise<{ success: boolean; error?: string }> => {
+    const addFeed = useCallback(async (url: string): Promise<{ success: boolean; error?: string; feedId?: string }> => {
         // Basic URL validation
         try {
             new URL(url);
@@ -43,7 +43,7 @@ export function useCustomFeeds() {
             };
 
             setCustomFeeds((prev) => [...prev, newFeed]);
-            return { success: true };
+            return { success: true, feedId: newFeed.id };
         } finally {
             setAdding(false);
         }
