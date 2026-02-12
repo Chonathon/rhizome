@@ -103,11 +103,27 @@ export const GENRE_LISTENER_TIERS: ListenerTier[] = [
 
 // RSS Feed sources
 export const RSS_FEEDS: FeedSource[] = [
+    // Music News
     { id: 'pitchfork', name: 'Pitchfork', url: 'https://pitchfork.com/feed/feed-news/rss', category: 'music-news', description: 'Music news and reviews' },
-    { id: 'stereogum', name: 'Stereogum', url: 'https://www.stereogum.com/feed/', category: 'indie', description: 'Indie music news and features' },
     { id: 'consequence', name: 'Consequence', url: 'https://consequence.net/feed/', category: 'music-news', description: 'Music and entertainment news' },
-    { id: 'resident-advisor', name: 'Resident Advisor', url: 'https://ra.co/xml/news.xml', category: 'electronic', description: 'Electronic music news' },
+    { id: 'nme', name: 'NME', url: 'https://www.nme.com/feed', category: 'music-news', description: 'New Musical Express' },
+    { id: 'spin', name: 'SPIN', url: 'https://www.spin.com/feed/', category: 'music-news', description: 'Music news, reviews, and culture' },
+    { id: 'billboard', name: 'Billboard', url: 'https://www.billboard.com/feed/', category: 'music-news', description: 'Charts, news, and analysis' },
+    // Indie
+    { id: 'stereogum', name: 'Stereogum', url: 'https://www.stereogum.com/feed/', category: 'indie', description: 'Indie music news and features' },
     { id: 'brooklynvegan', name: 'Brooklyn Vegan', url: 'https://www.brooklynvegan.com/feed/', category: 'indie', description: 'Indie and alternative music' },
+    { id: 'line-of-best-fit', name: 'The Line of Best Fit', url: 'https://www.thelineofbestfit.com/feed', category: 'indie', description: 'New music recommendations and reviews' },
+    { id: 'diy-magazine', name: 'DIY Magazine', url: 'https://diymag.com/feed', category: 'indie', description: 'Indie and alternative music magazine' },
+    { id: 'paste', name: 'Paste Magazine', url: 'https://www.pastemagazine.com/feed/music', category: 'indie', description: 'Music reviews and features' },
+    // Electronic
+    { id: 'resident-advisor', name: 'Resident Advisor', url: 'https://ra.co/xml/news.xml', category: 'electronic', description: 'Electronic music news' },
+    { id: 'dj-mag', name: 'DJ Mag', url: 'https://djmag.com/feed', category: 'electronic', description: 'DJ and electronic music news' },
+    { id: 'mixmag', name: 'Mixmag', url: 'https://www.mixmag.net/feed', category: 'electronic', description: 'Dance and electronic music culture' },
+    { id: 'edm', name: 'EDM.com', url: 'https://www.edm.com/feed/', category: 'electronic', description: 'Electronic dance music news' },
+    // Industry
+    { id: 'digital-music-news', name: 'Digital Music News', url: 'https://www.digitalmusicnews.com/feed/', category: 'industry', description: 'Music industry business news' },
+    { id: 'hypebot', name: 'Hypebot', url: 'https://www.hypebot.com/feed', category: 'industry', description: 'Music industry news and tools' },
+    { id: 'music-business-worldwide', name: 'Music Business Worldwide', url: 'https://www.musicbusinessworldwide.com/feed/', category: 'industry', description: 'Global music business intelligence' },
 ];
 
 export const FEED_CATEGORIES: { id: FeedCategory; label: string }[] = [

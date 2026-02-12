@@ -38,7 +38,7 @@ export function FeedItem({ item, variant = 'default', showFollowButton, isFollow
                 rel="noopener noreferrer"
                 className="block group"
             >
-                <Card className="bg-card rounded-xl border-border transition-colors hover:bg-accent/50 overflow-hidden">
+                <Card className="bg-card rounded-xl border-border transition-colors overflow-hidden">
                     <div className="flex items-center gap-3 p-2.5">
                         {item.imageUrl && (
                             <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0">
@@ -114,14 +114,14 @@ export function FeedItem({ item, variant = 'default', showFollowButton, isFollow
                                 </>
                             )}
                         </div>
-                        <div className="flex items-start justify-between gap-2">
-                            <h3 className="w-full leading-5 text-md font-semibold line-clamp-2 group-hover:text-primary">
+                        <div className="flex justify-start w-auto items-center gap-2">
+                            <h3 className="leading-5 text-md font-semibold line-clamp-2 group-hover:text-primary">
                                 {item.title}
                             </h3>
                             <ExternalLink className="mt-0.5 h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                         </div>
                         {item.excerpt && (
-                            <p className="break-words text-sm text-muted-foreground ">
+                            <p className="text-muted-foreground ">
                                 {item.excerpt}
                             </p>
                         )}
