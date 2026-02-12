@@ -1,18 +1,17 @@
-import { useRef, useState } from "react";
-import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { FeedCategory } from "@/types";
+import { useCallback, useRef, useState } from "react";
 import { ExtractedEntity } from "@/lib/feedEntityExtraction";
 import { useFollowedFeeds } from "@/hooks/useFollowedFeeds";
 import useMultipleFeeds from "@/hooks/useMultipleFeeds";
+import { RSS_FEEDS } from "@/constants";
 import { FollowingFeedView } from "./FollowingFeedView";
 import { EverythingFeedsView } from "./EverythingFeedsView";
 import { FeedTrendingTags } from "./FeedTrendingTags";
 import { TrendingEntityDrawer } from "./TrendingEntityDrawer";
+import { FeedPanelHeader } from "./FeedPanelHeader";
 
 export function FeedView() {
     const followedFeeds = useFollowedFeeds();
-    const [selectedCategory, setSelectedCategory] = useState<FeedCategory | "all">("all");
+    const [selectedEverythingFeedIds, setSelectedEverythingFeedIds] = useState<string[]>([]);
     const [selectedTrendingEntity, setSelectedTrendingEntity] = useState<ExtractedEntity | null>(null);
     const trendingPanelRef = useRef<HTMLDivElement>(null);
     const { items: trendingItems, loading: trendingLoading, refresh: refreshTrending } = useMultipleFeeds({});
@@ -28,45 +27,36 @@ export function FeedView() {
         error: everythingError,
         refresh: refreshEverything,
     } = useMultipleFeeds({
-        category: selectedCategory === "all" ? null : selectedCategory,
+        feedIds: selectedEverythingFeedIds.length > 0 ? selectedEverythingFeedIds : undefined,
     });
-    const panelStyles = "border flex flex-col min-w-[393px] max-w-[440px] max-h-[calc(100dvh-32px)] flex-1 shadow-xl rounded-4xl min-w-0 overflow-hidden";
-    function panelHeader(title: string, onRefresh: () => void, loading: boolean, badge?: React.ReactNode) {
-        return (
-            <div className="p-4 flex items-center justify-between">
-                <h2 className="text-xl font-semibold leading-tight">
-                    {title}
-                    {badge}
-                </h2>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onRefresh}
-                    disabled={loading}
-                    className="h-8 w-8"
-                >
-                    <RefreshCw
-                        className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
-                    />
-                </Button>
-            </div>
+
+    const toggleEverythingFeed = useCallback((feedId: string) => {
+        setSelectedEverythingFeedIds((prev) =>
+            prev.includes(feedId)
+                ? prev.filter((id) => id !== feedId)
+                : [...prev, feedId]
         );
-    }
+    }, []);
+
+    const panelStyles = "border flex flex-col min-w-[393px] max-w-[440px] max-h-[calc(100dvh-32px)] flex-1 shadow-xl rounded-4xl min-w-0 overflow-hidden";
 
     return (
         <div className="flex h-full justify-center p-3 gap-4 overflow-x-auto">
             {/* Following Panel */}
             <div className={panelStyles}>
-                {panelHeader(
-                    "Following",
-                    refreshFollowing,
-                    followingLoading,
-                    followedFeeds.followedFeedIds.length > 0 ? (
-                        <span className="ml-1.5 text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                            {followedFeeds.followedFeedIds.length}
-                        </span>
-                    ) : undefined,
-                )}
+                <FeedPanelHeader
+                    title="Following"
+                    onRefresh={refreshFollowing}
+                    loading={followingLoading}
+                    dropdown={{
+                        feeds: RSS_FEEDS.filter((f) =>
+                            followedFeeds.followedFeedIds.includes(f.id)
+                        ),
+                        groupByCategory: false,
+                        checkedIds: followedFeeds.followedFeedIds,
+                        onToggle: followedFeeds.toggleFollow,
+                    }}
+                />
                 <FollowingFeedView
                     followedFeedIds={followedFeeds.followedFeedIds}
                     items={followingItems}
@@ -78,7 +68,17 @@ export function FeedView() {
 
             {/* Everything Panel */}
             <div className={panelStyles}>
-                {panelHeader("Everything", refreshEverything, everythingLoading)}
+                <FeedPanelHeader
+                    title="Everything"
+                    onRefresh={refreshEverything}
+                    loading={everythingLoading}
+                    dropdown={{
+                        feeds: RSS_FEEDS,
+                        groupByCategory: true,
+                        checkedIds: selectedEverythingFeedIds,
+                        onToggle: toggleEverythingFeed,
+                    }}
+                />
                 <EverythingFeedsView
                     isFollowing={followedFeeds.isFollowing}
                     onToggleFollow={followedFeeds.toggleFollow}
@@ -86,8 +86,6 @@ export function FeedView() {
                     loading={everythingLoading}
                     error={!!everythingError}
                     onRetry={refreshEverything}
-                    selectedCategory={selectedCategory}
-                    onCategoryChange={setSelectedCategory}
                 />
             </div>
 
@@ -101,7 +99,11 @@ export function FeedView() {
                 <div className={`flex flex-col flex-1 min-h-0 rounded-3xl transition-all duration-300 ease-out origin-top ${
                     selectedTrendingEntity ? 'scale-[0.97] translate-y-6 opacity-70 bg-accent rounded-[34px] overflow-hidden ring-border' : ''
                 }`}>
-                    {panelHeader("Trending", refreshTrending, trendingLoading)}
+                    <FeedPanelHeader
+                        title="Trending"
+                        onRefresh={refreshTrending}
+                        loading={trendingLoading}
+                    />
                     <div className="flex-1 overflow-auto">
                         {!trendingLoading && trendingItems.length > 0 && (
                             <FeedTrendingTags
