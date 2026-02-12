@@ -694,7 +694,7 @@ const Graph = forwardRef(function GraphInner<
   return (
     <div
       ref={containerRef}
-      className="flex-1 w-full relative cursor-grab active:cursor-grabbing"
+      className="flex-1 w-full relative active:cursor-grabbing"
       style={{
         height: height ?? "100%",
         // Always show container so loading spinner is visible, but disable pointer events when hidden
