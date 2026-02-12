@@ -18,6 +18,7 @@ interface FeedPanelHeaderDropdown {
   groupByCategory?: boolean;
   checkedIds: string[];
   onToggle: (feedId: string) => void;
+  showClear?: boolean;
 }
 
 interface FeedPanelHeaderProps {
@@ -38,19 +39,19 @@ export function FeedPanelHeader({
   const [query, setQuery] = useState("");
 
   const checkedCount = dropdown?.checkedIds.length ?? 0;
+  const showClear = dropdown?.showClear ?? true;
 
   const label = useMemo(() => {
     if (!dropdown || checkedCount === 0) return title;
-    if (checkedCount === 1) {
+    if (showClear && checkedCount === 1) {
       const feed = dropdown.feeds.find((f) => dropdown.checkedIds.includes(f.id));
       return feed?.name ?? title;
     }
     return title;
-  }, [title, dropdown, checkedCount]);
+  }, [title, dropdown, checkedCount, showClear]);
 
   const clearAll = () => {
     if (!dropdown) return;
-    // Toggle off all currently checked feeds
     dropdown.checkedIds.forEach((id) => dropdown.onToggle(id));
   };
 
@@ -90,7 +91,7 @@ export function FeedPanelHeader({
             className={`-ml-2 text-xl font-semibold leading-tight gap-1 ${checkedCount > 0 ? "pr-2" : ""}`}
           >
             {label}
-            {checkedCount > 1 ? (
+            {showClear && checkedCount > 0 ? (
               <Button
                 asChild
                 size="icon"
@@ -108,34 +109,27 @@ export function FeedPanelHeader({
                     clearAll();
                   }}
                 >
-                  <span className="group-hover:opacity-0 group-hover:scale-0 transition-all text-xs leading-none">
-                    {checkedCount}
-                  </span>
-                  <X className="transition-all group-hover:opacity-100 absolute scale-0 group-hover:scale-100 opacity-0 h-4 w-4 group-hover:-rotate-90" />
-                </span>
-              </Button>
-            ) : checkedCount === 1 ? (
-              <Button
-                asChild
-                size="icon"
-                variant="secondary"
-                className="-m-1 w-6 h-6"
-              >
-                <span
-                  role="button"
-                  tabIndex={-1}
-                  aria-label="Clear filter"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearAll();
-                  }}
-                >
-                  <X className="h-4 w-4" />
+                  {checkedCount > 1 ? (
+                    <>
+                      <span className="group-hover:opacity-0 group-hover:scale-0 transition-all text-xs leading-none">
+                        {checkedCount}
+                      </span>
+                      <X className="transition-all group-hover:opacity-100 absolute scale-0 group-hover:scale-100 opacity-0 h-4 w-4 group-hover:-rotate-90" />
+                    </>
+                  ) : (
+                    <X className="h-4 w-4" />
+                  )}
                 </span>
               </Button>
             ) : (
-              <ChevronDown className="h-4 w-4" />
+              <>
+                {!showClear && checkedCount > 0 && (
+                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                    {checkedCount}
+                  </span>
+                )}
+                <ChevronDown className="h-4 w-4" />
+              </>
             )}
           </Button>
         }
