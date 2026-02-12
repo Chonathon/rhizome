@@ -156,8 +156,7 @@ export function TrendingTagsGraph({
                 linkColor={linkColor}
                 linkWidth={linkWidth}
                 onNodeClick={handleNodeClick}
-                enableZoomInteraction={false}
-                enablePanInteraction={false}
+                onEngineStop={() => fgRef.current?.zoomToFit(300, 20)}
                 cooldownTicks={50}
                 d3AlphaDecay={0.05}
                 d3VelocityDecay={0.3}
