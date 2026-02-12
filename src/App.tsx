@@ -1519,7 +1519,7 @@ function App() {
   // Update preview states based on cursor hover + command key or delay
   useEffect(() => {
     const triggerMode = preferences?.previewTrigger || 'modifier';
-    const shouldShowPreview = preferences?.enableGraphCards && !showGenreCard && !showArtistCard;
+    const shouldShowPreview = preferences?.enableGraphCards;
 
     if (!shouldShowPreview || !cursorHoveredGenre) {
       setPreviewGenre(null);
@@ -1536,7 +1536,7 @@ function App() {
     } else {
       setPreviewGenre(null);
     }
-  }, [isCommandHeld, cursorHoveredGenre, preferences?.enableGraphCards, preferences?.previewTrigger, showGenreCard, showArtistCard]);
+  }, [isCommandHeld, cursorHoveredGenre, preferences?.enableGraphCards, preferences?.previewTrigger]);
 
   useEffect(() => {
     const triggerMode = preferences?.previewTrigger || 'modifier';
@@ -2766,7 +2766,7 @@ function App() {
                 />
 
           {/* Genre hover preview */}
-          {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && !showGenreCard && (
+          {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && (
               <GenrePreview
                   genre={hoveredGenreData.genre}
                   topArtists={hoveredGenreData.topArtists}
@@ -2784,7 +2784,7 @@ function App() {
 
           {/* Artist hover preview */}
           {preferences?.enableGraphCards && hoveredArtistData && previewArtist
-              && (graph === 'artists' || graph === 'similarArtists') && !showArtistCard && (
+              && (graph === 'artists' || graph === 'similarArtists') && (
                   <ArtistPreview
                       artist={hoveredArtistData}
                       genreColorMap={genreColorMap}
@@ -2947,13 +2947,13 @@ function App() {
                 selectedGenre={genreInfoToShow}
                 onLinkedGenreClick={onLinkedGenreClick}
                 show={showGenreCard && !showArtistCard}
-                genreArtistsLoading={topArtistsLoading}
+                genreArtistsLoading={topArtistsLoading && topArtistsGenreId === genreInfoToShow?.id}
                 onTopArtistClick={onTopArtistClick}
                 deselectGenre={onGenreInfoDismiss}
                 onSelectGenre={onLinkedGenreClick}
                 allArtists={onShowAllArtists}
                 onBadDataSubmit={onBadDataGenreSubmit}
-                topArtists={topArtists}
+                topArtists={topArtistsResolvedGenreId === genreInfoToShow?.id ? topArtists : (genreTopArtistsCache.get(genreInfoToShow?.id ?? '') || [])}
                 getArtistImageByName={getArtistImageByName}
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
