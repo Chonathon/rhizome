@@ -58,6 +58,11 @@ export interface ResponsiveDrawerProps {
    */
   onCanvasDragStart?: () => void;
   /**
+   * When provided, the drawer portals into this container element instead of the document body.
+   * Forces bottom-sheet mode, disables overlay and desktop side-drawer behavior.
+   */
+  container?: HTMLElement | null;
+  /**
    * A key that identifies the current content. When this changes, the drawer will
    * reset to the default middle snap position. Useful for resetting position when
    * switching between different items (e.g., different artists or genres).
@@ -100,11 +105,14 @@ export function ResponsiveDrawer({
   scrollContainerSelector = '[data-drawer-scroll]',
   minimizeOnCanvasTouch = false,
   onCanvasDragStart,
+  container,
   contentKey,
   expandToMiddleTrigger,
   onSnapChange,
 }: ResponsiveDrawerProps) {
-  const isDesktop = useMediaQuery(desktopQuery);
+  const rawIsDesktop = useMediaQuery(desktopQuery);
+  // In container mode, always behave like a mobile bottom sheet
+  const isDesktop = container ? false : rawIsDesktop;
   // Detect pointer type so we can keep snap targets lower on tall desktop browsers.
   const hasCoarsePointer = useMediaQuery("(pointer: coarse)");
   const snapPoints = useMemo(
@@ -260,8 +268,8 @@ export function ResponsiveDrawer({
 
   // Detect canvas/graph drags to minimize drawer (when not already at min snap)
   useEffect(() => {
-    // Early return if feature is disabled
-    if (!minimizeOnCanvasTouch) return;
+    // Early return if feature is disabled or in container mode
+    if (!minimizeOnCanvasTouch || container) return;
 
     // On mobile: skip if already at minimum snap (no need for listeners)
     // On desktop: always listen (no snap behavior, need to trigger undimming)
@@ -310,10 +318,6 @@ export function ResponsiveDrawer({
     };
   }, [minimizeOnCanvasTouch, isAtMinSnap, onCanvasDragStart, isDesktop]);
 
-  if (!show) return null;
-
-  const drawerKey = isDesktop ? "desktop" : "mobile";
-
   // Control whether we apply the desktop side offset margin. We turn it off just before closing
   // so the Vaul translate animation can fully dismiss without leaving a sliver at the sidebar gap.
   const [useDesktopOffset, setUseDesktopOffset] = useState(true);
@@ -327,6 +331,7 @@ export function ResponsiveDrawer({
 
   // Prevent overlay from covering the sidebar region on desktop
   useEffect(() => {
+    if (container) return; // Skip overlay management in container mode
     const root = document.documentElement;
     if (!isDesktop) {
       root.style.setProperty("--overlay-left", "0px");
@@ -354,17 +359,11 @@ export function ResponsiveDrawer({
       root.style.setProperty("--overlay-top", "0px");
       root.style.setProperty("--overlay-bottom", "0px");
     };
-    // Keep the overlay vertically aligned with the floating drawer on desktop
-    root.style.setProperty("--overlay-top", "calc(var(--app-header-height, 52px) + 8px)");
-    root.style.setProperty("--overlay-bottom", "12px");
+  }, [isDesktop, directionDesktop, sidebarState, container]);
 
-    return () => {
-      root.style.setProperty("--overlay-left", "0px");
-      root.style.setProperty("--overlay-right", "0px");
-      root.style.setProperty("--overlay-top", "0px");
-      root.style.setProperty("--overlay-bottom", "0px");
-    };
-  }, [isDesktop, directionDesktop, sidebarState]);
+  if (!show) return null;
+
+  const drawerKey = isDesktop ? "desktop" : "mobile";
 
   return (
     <Drawer
@@ -414,7 +413,7 @@ export function ResponsiveDrawer({
       handleOnly={!isDesktop && !isAtMiddleSnap && !isAtMinSnap && lockDragToHandleWhenScrolled}
       dismissible={true}
       modal={false}
-      {...(!isDesktop
+      {...(!isDesktop && !container
         ? {
             snapPoints,
             activeSnapPoint: activeSnap,
@@ -424,6 +423,8 @@ export function ResponsiveDrawer({
     >
       <DrawerContent
         className={cn("w-full", isDesktop ? "max-w-sm" : "h-full", contentClassName)}
+        container={container}
+        showOverlay={!container}
         style={{
           ...(desktopSideOffset as React.CSSProperties),
           ...(isDesktop
@@ -454,8 +455,8 @@ export function ResponsiveDrawer({
           {((!isDesktop && showMobileHeader) || (isDesktop && showHeaderOnDesktop)) && (
             <DrawerHeader className={cn("px-1", isDesktop ? "pt-2 pb-3" : "pt-1 pb-2") }>
               <div className="flex items-start gap-1">
-                {/* Cycle button only on mobile */}
-                {!isDesktop && (
+                {/* Cycle button only on mobile (not in container mode) */}
+                {!isDesktop && !container && (
                   <Button
                     aria-label={isAtMaxSnap ? "Collapse" : "Expand"}
                     variant={"secondary"}

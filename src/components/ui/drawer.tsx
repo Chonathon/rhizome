@@ -56,11 +56,18 @@ function DrawerOverlay({
 function DrawerContent({
   className,
   children,
+  container,
+  showOverlay = true,
   ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Content>) {
+}: React.ComponentProps<typeof DrawerPrimitive.Content> & {
+  /** Portal into a specific container element instead of document body. */
+  container?: HTMLElement | null;
+  /** Show the backdrop overlay (default true). Disable when using a scoped container. */
+  showOverlay?: boolean;
+}) {
   return (
-    <DrawerPortal data-slot="drawer-portal">
-      <DrawerOverlay />
+    <DrawerPortal data-slot="drawer-portal" container={container ?? undefined}>
+      {showOverlay && <DrawerOverlay />}
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(
