@@ -156,6 +156,7 @@ export function ArtistInfo({
       bodyClassName=""
       minimizeOnCanvasTouch={true}
       onCanvasDragStart={onCanvasDragStart}
+      dismissOnCanvasClick={true}
       contentKey={selectedArtist?.id}
       expandToMiddleTrigger={expandToMiddleTrigger}
       headerTitle={

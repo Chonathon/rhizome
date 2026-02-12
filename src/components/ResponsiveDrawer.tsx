@@ -58,6 +58,11 @@ export interface ResponsiveDrawerProps {
    */
   onCanvasDragStart?: () => void;
   /**
+   * When enabled, clicking outside the drawer (on the canvas/graph) will dismiss it entirely.
+   * @default false
+   */
+  dismissOnCanvasClick?: boolean;
+  /**
    * A key that identifies the current content. When this changes, the drawer will
    * reset to the default middle snap position. Useful for resetting position when
    * switching between different items (e.g., different artists or genres).
@@ -100,6 +105,7 @@ export function ResponsiveDrawer({
   scrollContainerSelector = '[data-drawer-scroll]',
   minimizeOnCanvasTouch = false,
   onCanvasDragStart,
+  dismissOnCanvasClick = false,
   contentKey,
   expandToMiddleTrigger,
   onSnapChange,
@@ -121,10 +127,12 @@ export function ResponsiveDrawer({
   const scrollElRef = React.useRef<HTMLElement | null>(null);
   const closeTimerRef = React.useRef<number | null>(null);
   const canvasDragStartRef = React.useRef<{ x: number; y: number } | null>(null);
+  const openTimeRef = React.useRef<number>(0);
 
   // keep open state in sync with `show`
   useEffect(() => {
     if (show) {
+      openTimeRef.current = Date.now();
       setOpen(true);
     } else {
       setOpen(false);
@@ -309,6 +317,38 @@ export function ResponsiveDrawer({
       document.removeEventListener('pointercancel', handlePointerUp);
     };
   }, [minimizeOnCanvasTouch, isAtMinSnap, onCanvasDragStart, isDesktop]);
+
+  // Dismiss drawer when clicking outside (on the canvas)
+  // Deferred so that node clicks can cancel the dismiss before it fires
+  const dismissTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!dismissOnCanvasClick || !open) return;
+
+    const handleClick = (e: MouseEvent) => {
+      if (Date.now() - openTimeRef.current < 10) return;
+      const card = cardRef.current;
+      if (card && !card.contains(e.target as Node)) {
+        dismissTimeoutRef.current = setTimeout(() => {
+          onDismiss();
+        }, 50);
+      }
+    };
+
+    document.addEventListener('click', handleClick);
+
+    return () => {
+      document.removeEventListener('click', handleClick);
+      if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
+    };
+  }, [dismissOnCanvasClick, open, onDismiss]);
+
+  // Cancel pending dismiss when new content arrives (e.g., clicking a different node)
+  useEffect(() => {
+    if (dismissTimeoutRef.current) {
+      clearTimeout(dismissTimeoutRef.current);
+      dismissTimeoutRef.current = null;
+    }
+  }, [contentKey]);
 
   if (!show) return null;
 
