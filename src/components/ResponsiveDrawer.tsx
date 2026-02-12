@@ -127,10 +127,12 @@ export function ResponsiveDrawer({
   const scrollElRef = React.useRef<HTMLElement | null>(null);
   const closeTimerRef = React.useRef<number | null>(null);
   const canvasDragStartRef = React.useRef<{ x: number; y: number } | null>(null);
+  const openTimeRef = React.useRef<number>(0);
 
   // keep open state in sync with `show`
   useEffect(() => {
     if (show) {
+      openTimeRef.current = Date.now();
       setOpen(true);
     } else {
       setOpen(false);
@@ -317,27 +319,36 @@ export function ResponsiveDrawer({
   }, [minimizeOnCanvasTouch, isAtMinSnap, onCanvasDragStart, isDesktop]);
 
   // Dismiss drawer when clicking outside (on the canvas)
+  // Deferred so that node clicks can cancel the dismiss before it fires
+  const dismissTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!dismissOnCanvasClick || !open) return;
 
     const handleClick = (e: MouseEvent) => {
+      if (Date.now() - openTimeRef.current < 10) return;
       const card = cardRef.current;
-      // Only dismiss if clicking outside the drawer
       if (card && !card.contains(e.target as Node)) {
-        onDismiss();
+        dismissTimeoutRef.current = setTimeout(() => {
+          onDismiss();
+        }, 50);
       }
     };
 
-    // Use a small delay to avoid dismissing on the same click that opened
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('click', handleClick);
-    }, 100);
+    document.addEventListener('click', handleClick);
 
     return () => {
-      clearTimeout(timeoutId);
       document.removeEventListener('click', handleClick);
+      if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
     };
   }, [dismissOnCanvasClick, open, onDismiss]);
+
+  // Cancel pending dismiss when new content arrives (e.g., clicking a different node)
+  useEffect(() => {
+    if (dismissTimeoutRef.current) {
+      clearTimeout(dismissTimeoutRef.current);
+      dismissTimeoutRef.current = null;
+    }
+  }, [contentKey]);
 
   if (!show) return null;
 
