@@ -56,6 +56,7 @@ export function FeedView() {
                         checkedIds: followedFeeds.followedFeedIds,
                         onToggle: followedFeeds.toggleFollow,
                         showClear: false,
+                        confirmUnfollow: true,
                     }}
                 />
                 <FollowingFeedView

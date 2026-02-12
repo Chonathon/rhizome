@@ -19,6 +19,7 @@ interface FeedPanelHeaderDropdown {
   checkedIds: string[];
   onToggle: (feedId: string) => void;
   showClear?: boolean;
+  confirmUnfollow?: boolean;
 }
 
 interface FeedPanelHeaderProps {
@@ -37,9 +38,11 @@ export function FeedPanelHeader({
   dropdown,
 }: FeedPanelHeaderProps) {
   const [query, setQuery] = useState("");
+  const [pendingUnfollowId, setPendingUnfollowId] = useState<string | null>(null);
 
   const checkedCount = dropdown?.checkedIds.length ?? 0;
   const showClear = dropdown?.showClear ?? true;
+  const confirmUnfollow = dropdown?.confirmUnfollow ?? false;
 
   const label = useMemo(() => {
     if (!dropdown || checkedCount === 0) return title;
@@ -83,7 +86,10 @@ export function FeedPanelHeader({
         side="bottom"
         className="p-0 overflow-hidden"
         onOpenChange={(open) => {
-          if (open) setQuery("");
+          if (open) {
+            setQuery("");
+            setPendingUnfollowId(null);
+          }
         }}
         trigger={
           <Button
@@ -171,15 +177,55 @@ export function FeedPanelHeader({
               <CommandGroup>
                 {dropdown.feeds.map((feed) => {
                   const checked = dropdown.checkedIds.includes(feed.id);
+                  const isPending = confirmUnfollow && pendingUnfollowId === feed.id;
                   return (
                     <CommandItem
                       key={feed.id}
                       value={feed.name}
-                      onSelect={() => dropdown.onToggle(feed.id)}
+                      onSelect={() => {
+                        if (confirmUnfollow && checked) {
+                          setPendingUnfollowId(isPending ? null : feed.id);
+                        } else {
+                          dropdown.onToggle(feed.id);
+                        }
+                      }}
                       className="flex items-center gap-2"
                     >
-                      <Check className={checked ? "opacity-100" : "opacity-0"} />
-                      <span>{feed.name}</span>
+                      {isPending ? (
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-sm text-muted-foreground">Unfollow {feed.name}?</span>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                dropdown.onToggle(feed.id);
+                                setPendingUnfollowId(null);
+                              }}
+                            >
+                              Unfollow
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPendingUnfollowId(null);
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <Check className={checked ? "opacity-100" : "opacity-0"} />
+                          <span>{feed.name}</span>
+                        </>
+                      )}
                     </CommandItem>
                   );
                 })}
