@@ -78,7 +78,7 @@ export function FeedItem({ item, variant = 'default', showFollowButton, isFollow
             rel="noopener noreferrer"
             className="block group"
         >
-            <Card className="bg-card backdrop-blur-xs rounded-3xl border-border transition-colors hover:bg-accent/50 overflow-hidden">
+            <Card className="bg-accent backdrop-blur-xs rounded-3xl border-border transition-colors hover:bg-accent/50 overflow-hidden">
                 <div className="flex flex-col">
                     {item.imageUrl && (
                         <div className="overflow-hidden border-b border-border">

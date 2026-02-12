@@ -30,11 +30,11 @@ export function FeedView() {
     } = useMultipleFeeds({
         category: selectedCategory === "all" ? null : selectedCategory,
     });
-    const panelStyles = "border bg-accent flex flex-col min-w-[375px] max-w-[440px] max-h-[calc(100dvh-32px)] flex-1 shadow-xl rounded-4xl min-w-0 overflow-hidden";
+    const panelStyles = "border bg-background flex flex-col min-w-[375px] max-w-[440px] max-h-[calc(100dvh-32px)] flex-1 shadow-xl rounded-4xl min-w-0 overflow-hidden";
     function panelHeader(title: string, onRefresh: () => void, loading: boolean, badge?: React.ReactNode) {
         return (
-            <div className="px-4 py-3 border-b flex items-center justify-between">
-                <h2 className="text-md font-medium">
+            <div className="p-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold leading-tight">
                     {title}
                     {badge}
                 </h2>
@@ -99,7 +99,7 @@ export function FeedView() {
                 }`} />
                 {/* Background content — scales down and slides down iOS-style when drawer is open */}
                 <div className={`flex flex-col flex-1 min-h-0 rounded-3xl transition-all duration-300 ease-out origin-top ${
-                    selectedTrendingEntity ? 'scale-[0.90] translate-y-6 opacity-100 bg-accent overflow-hidden ring-border' : ''
+                    selectedTrendingEntity ? 'scale-[0.97] translate-y-6 opacity-70 bg-accent rounded-[34px] overflow-hidden ring-border' : ''
                 }`}>
                     {panelHeader("Trending", refreshTrending, trendingLoading)}
                     <div className="flex-1 overflow-auto">

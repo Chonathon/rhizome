@@ -54,7 +54,7 @@ export function TrendingEntityDrawer({
             container={container}
             headerTitle={headerTitle}
             headerSubtitle={headerSubtitle}
-            contentClassName="top-[5%] z-10"
+            contentClassName="top-[3%] z-10"
             bodyClassName="bg-accent rounded-t-2xl rounded-b-none shadow-2xl"
         >
             {cooccurring.length > 0 && (

@@ -30,7 +30,7 @@ export function FeedList({
 
     if (loading) {
         return (
-            <div className="flex flex-col gap-3 p-4 overflow-y-auto">
+            <div className="flex flex-col gap-3 py-2 px-4 overflow-y-auto">
                 {Array.from({ length: 5 }).map((_, i) => (
                     <FeedItemSkeleton key={i} />
                 ))}
