@@ -473,6 +473,10 @@ export function ResponsiveDrawer({
                     {isAtMaxSnap ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
                   </Button>
                 )}
+                {/* Invisible spacer to balance close button when cycle button is hidden */}
+                {!isDesktop && !!container && (
+                  <div className="w-9 h-9 shrink-0" aria-hidden="true" />
+                )}
                 <div className={cn("flex-1", isDesktop ? "text-left" : "text-center") }>
                   {headerTitle && (
                     <DrawerTitle className={cn("leading-tight text-base", isDesktop ? "text-2xl" : "text-xl")}>{headerTitle}</DrawerTitle>

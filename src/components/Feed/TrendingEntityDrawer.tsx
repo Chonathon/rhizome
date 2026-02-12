@@ -32,7 +32,7 @@ export function TrendingEntityDrawer({
     }, [items, entity]);
 
     const headerTitle = entity ? (
-        <span className="flex items-center gap-2">
+        <span className="flex items-center justify-center gap-2">
             <BadgeIndicator
                 type={entity.type as BadgeIndicatorType}
                 name={entity.name}
