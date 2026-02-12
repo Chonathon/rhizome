@@ -15,7 +15,7 @@ export function FeedView() {
     const [selectedCategory, setSelectedCategory] = useState<FeedCategory | "all">("all");
     const [selectedTrendingEntity, setSelectedTrendingEntity] = useState<ExtractedEntity | null>(null);
     const trendingPanelRef = useRef<HTMLDivElement>(null);
-    const { items: trendingItems, loading: trendingLoading } = useMultipleFeeds({});
+    const { items: trendingItems, loading: trendingLoading, refresh: refreshTrending } = useMultipleFeeds({});
     const {
         items: followingItems,
         loading: followingLoading,
@@ -31,32 +31,42 @@ export function FeedView() {
         category: selectedCategory === "all" ? null : selectedCategory,
     });
     const panelStyles = "border bg-accent flex flex-col min-w-[375px] max-w-[440px] max-h-[calc(100dvh-32px)] flex-1 shadow-xl rounded-4xl min-w-0 overflow-hidden";
+    function panelHeader(title: string, onRefresh: () => void, loading: boolean, badge?: React.ReactNode) {
+        return (
+            <div className="px-4 py-3 border-b flex items-center justify-between">
+                <h2 className="text-md font-medium">
+                    {title}
+                    {badge}
+                </h2>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onRefresh}
+                    disabled={loading}
+                    className="h-8 w-8"
+                >
+                    <RefreshCw
+                        className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+                    />
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-full justify-center bg-background pt-3 gap-4">
             {/* Following Panel */}
             <div className={panelStyles}>
-                <div className="px-4 py-3 border-b flex items-center justify-between">
-                    <h2 className="text-sm font-medium">
-                        Following
-                        {followedFeeds.followedFeedIds.length > 0 && (
-                            <span className="ml-1.5 text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                                {followedFeeds.followedFeedIds.length}
-                            </span>
-                        )}
-                    </h2>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={refreshFollowing}
-                        disabled={followingLoading}
-                        className="h-8 w-8"
-                    >
-                        <RefreshCw
-                            className={`h-4 w-4 ${followingLoading ? "animate-spin" : ""}`}
-                        />
-                    </Button>
-                </div>
+                {panelHeader(
+                    "Following",
+                    refreshFollowing,
+                    followingLoading,
+                    followedFeeds.followedFeedIds.length > 0 ? (
+                        <span className="ml-1.5 text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                            {followedFeeds.followedFeedIds.length}
+                        </span>
+                    ) : undefined,
+                )}
                 <FollowingFeedView
                     followedFeedIds={followedFeeds.followedFeedIds}
                     items={followingItems}
@@ -68,20 +78,7 @@ export function FeedView() {
 
             {/* Everything Panel */}
             <div className={panelStyles}>
-                <div className="px-4 py-3 border-b flex items-center justify-between">
-                    <h2 className="text-sm font-medium">Everything</h2>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={refreshEverything}
-                        disabled={everythingLoading}
-                        className="h-8 w-8"
-                    >
-                        <RefreshCw
-                            className={`h-4 w-4 ${everythingLoading ? "animate-spin" : ""}`}
-                        />
-                    </Button>
-                </div>
+                {panelHeader("Everything", refreshEverything, everythingLoading)}
                 <EverythingFeedsView
                     isFollowing={followedFeeds.isFollowing}
                     onToggleFollow={followedFeeds.toggleFollow}
@@ -104,9 +101,7 @@ export function FeedView() {
                 <div className={`flex flex-col flex-1 min-h-0 rounded-3xl transition-all duration-300 ease-out origin-top ${
                     selectedTrendingEntity ? 'scale-[0.90] translate-y-6 opacity-100 bg-accent overflow-hidden ring-border' : ''
                 }`}>
-                    <div className="flex items-center px-4 py-4 h-14 border-b">
-                        <h2 className="text-md font-semibold">Trending</h2>
-                    </div>
+                    {panelHeader("Trending", refreshTrending, trendingLoading)}
                     <div className="flex-1 overflow-auto">
                         {!trendingLoading && trendingItems.length > 0 && (
                             <FeedTrendingTags
