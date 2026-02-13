@@ -135,7 +135,7 @@ export function FeedItem({ item, variant = 'default', showFollowButton, isFollow
                                 <Button
                                     size="sm"
                                     variant="secondary"
-                                    className="w-full bg-neutral-700 hover:bg-neutral-800"
+                                    className="w-full bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-800"
                                     onClick={handleFollowClick}
                                     title={isFollowing ? "Unfollow feed" : "Follow feed"}
                                 >
