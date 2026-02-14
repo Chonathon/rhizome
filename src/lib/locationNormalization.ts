@@ -4,7 +4,7 @@
  */
 
 // Map of cities/regions to their parent country
-const CITY_TO_COUNTRY: Record<string, string> = {
+export const CITY_TO_COUNTRY: Record<string, string> = {
   // United States cities
   'Los Angeles': 'United States',
   'New York': 'United States',

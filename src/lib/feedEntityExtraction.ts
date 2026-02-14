@@ -25,7 +25,7 @@ export interface EntityCooccurrence {
 }
 
 // Common music genres to match
-const GENRES = new Set([
+export const GENRES = new Set([
     // Rock variants
     'rock', 'indie rock', 'alt-rock', 'alternative', 'punk', 'post-punk', 'garage rock',
     'psychedelic', 'shoegaze', 'dream pop', 'slowcore', 'sadcore', 'emo', 'screamo',
@@ -59,7 +59,7 @@ const GENRES = new Set([
 ]);
 
 // Notable indie record labels
-const LABELS = new Set([
+export const LABELS = new Set([
     // Major indies
     'sub pop', 'matador', 'merge', 'domino', '4ad', 'warp', 'ninja tune',
     'jagjaguwar', 'secretly canadian', 'dead oceans', 'kranky', 'thrill jockey',
@@ -82,7 +82,7 @@ const LABELS = new Set([
 ]);
 
 // Major music cities (extracted from locationNormalization.ts plus music-specific cities)
-const CITIES = new Set([
+export const CITIES = new Set([
     // US
     'los angeles', 'new york', 'nyc', 'brooklyn', 'chicago', 'austin', 'nashville',
     'portland', 'seattle', 'atlanta', 'philadelphia', 'philly', 'boston', 'detroit',
@@ -147,14 +147,14 @@ function countEntities(
 /**
  * Escape special regex characters
  */
-function escapeRegex(str: string): string {
+export function escapeRegex(str: string): string {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
  * Format entity name for display (title case)
  */
-function formatEntityName(name: string): string {
+export function formatEntityName(name: string): string {
     return name
         .split(' ')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -162,11 +162,18 @@ function formatEntityName(name: string): string {
 }
 
 /**
- * Extract all entity types from feed items
+ * Extract all entity types from feed items.
+ * Optionally accepts a set of artist names (e.g. from the user's collection)
+ * to enable artist-level entity extraction.
  */
-export function extractFeedEntities(items: FeedItem[]): FeedTrendingData {
+export function extractFeedEntities(
+    items: FeedItem[],
+    artistNames?: Set<string>
+): FeedTrendingData {
     return {
-        artists: [], // TODO: Artist extraction requires NLP or database lookup
+        artists: artistNames
+            ? countEntities(items, artistNames, 'artist')
+            : [],
         genres: countEntities(items, GENRES, 'genre'),
         labels: countEntities(items, LABELS, 'label'),
         cities: countEntities(items, CITIES, 'city'),
