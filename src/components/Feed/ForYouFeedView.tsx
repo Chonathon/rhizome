@@ -1,9 +1,17 @@
 import { FeedItem as FeedItemType } from "@/types";
-import { FeedList } from "./FeedList";
+import type { FeedItemMatch } from "@/lib/collectionFeedProfile";
+import { FeedItem } from "./FeedItem";
+import { FeedItemSkeleton } from "./FeedItemSkeleton";
 import { FeedEmptyState } from "./FeedEmptyState";
 
+export interface ScoredFeedItem {
+    item: FeedItemType;
+    score: number;
+    matches: FeedItemMatch[];
+}
+
 interface ForYouFeedViewProps {
-    items: FeedItemType[];
+    scoredItems: ScoredFeedItem[];
     loading: boolean;
     error: boolean;
     hasCollection: boolean;
@@ -13,7 +21,7 @@ interface ForYouFeedViewProps {
 }
 
 export function ForYouFeedView({
-    items,
+    scoredItems,
     loading,
     error,
     hasCollection,
@@ -30,18 +38,36 @@ export function ForYouFeedView({
         );
     }
 
+    if (loading) {
+        return (
+            <div className="flex flex-col gap-4 py-2 px-4 overflow-y-auto">
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <FeedItemSkeleton key={i} />
+                ))}
+            </div>
+        );
+    }
+
+    if (error) {
+        return <FeedEmptyState type="error" onRetry={onRetry} />;
+    }
+
+    if (scoredItems.length === 0) {
+        return <FeedEmptyState type="empty" />;
+    }
+
     return (
-        <div className="flex flex-col flex-1 overflow-hidden">
-            <FeedList
-                items={items}
-                loading={loading}
-                error={error}
-                hasSelection={true}
-                onRetry={onRetry}
-                showFollowButton={true}
-                isFollowing={isFollowing}
-                onToggleFollow={onToggleFollow}
-            />
+        <div className="flex flex-col gap-3 px-2 py-4 overflow-y-auto flex-1">
+            {scoredItems.map(({ item, matches }) => (
+                <FeedItem
+                    key={item.id}
+                    item={item}
+                    showFollowButton={true}
+                    isFollowing={isFollowing(item.sourceId)}
+                    onToggleFollow={() => onToggleFollow(item.sourceId)}
+                    matchReasons={matches}
+                />
+            ))}
         </div>
     );
 }

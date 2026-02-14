@@ -34,6 +34,15 @@ export interface ProfileEntity {
 interface CompiledPattern {
     pattern: RegExp;
     weight: number;
+    name: string;
+    displayName: string;
+    type: ExtractedEntity["type"];
+}
+
+/** A match reason explaining why an article was recommended */
+export interface FeedItemMatch {
+    name: string;
+    type: ExtractedEntity["type"];
 }
 
 /** The complete user feed profile */
@@ -406,7 +415,8 @@ function buildLabelProfile(artists: Artist[]): ProfileEntity[] {
 
 function compilePatterns(
     names: Iterable<string>,
-    weight: number
+    weight: number,
+    type: ExtractedEntity["type"]
 ): CompiledPattern[] {
     const patterns: CompiledPattern[] = [];
     for (const name of names) {
@@ -418,6 +428,9 @@ function compilePatterns(
         patterns.push({
             pattern: new RegExp(`\\b${escapeRegex(name)}\\b`, "i"),
             weight,
+            name,
+            displayName: formatEntityName(name),
+            type,
         });
     }
     return patterns;
@@ -427,6 +440,9 @@ function compileWeightedPatterns(entities: ProfileEntity[]): CompiledPattern[] {
     return entities.map((e) => ({
         pattern: new RegExp(`\\b${escapeRegex(e.name)}\\b`, "i"),
         weight: e.weight,
+        name: e.name,
+        displayName: e.displayName,
+        type: e.type,
     }));
 }
 
@@ -477,8 +493,8 @@ export function buildUserFeedProfile(
         },
 
         _compiled: {
-            artists: compilePatterns(artistResult.artistSet, 1.0),
-            similarArtists: compilePatterns(artistResult.similarSet, 1.0),
+            artists: compilePatterns(artistResult.artistSet, 1.0, "artist"),
+            similarArtists: compilePatterns(artistResult.similarSet, 1.0, "artist"),
             genres: compileWeightedPatterns(genreResult.entities),
             cities: compileWeightedPatterns(cityResult.entities),
             labels: compileWeightedPatterns(labelEntities),
@@ -500,38 +516,51 @@ export function scoreFeedItem(
     item: FeedItem,
     profile: UserFeedProfile
 ): number {
+    return scoreFeedItemDetailed(item, profile).score;
+}
+
+export function scoreFeedItemDetailed(
+    item: FeedItem,
+    profile: UserFeedProfile
+): { score: number; matches: FeedItemMatch[] } {
     const text = `${item.title || ""} ${item.excerpt || ""}`.toLowerCase();
     let score = 0;
+    const matches: FeedItemMatch[] = [];
 
-    for (const { pattern, weight } of profile._compiled.artists) {
-        if (pattern.test(text)) {
-            score += ARTIST_WEIGHT * weight;
+    for (const p of profile._compiled.artists) {
+        if (p.pattern.test(text)) {
+            score += ARTIST_WEIGHT * p.weight;
+            matches.push({ name: p.displayName, type: p.type });
         }
     }
 
-    for (const { pattern, weight } of profile._compiled.similarArtists) {
-        if (pattern.test(text)) {
-            score += SIMILAR_ARTIST_WEIGHT * weight;
+    for (const p of profile._compiled.similarArtists) {
+        if (p.pattern.test(text)) {
+            score += SIMILAR_ARTIST_WEIGHT * p.weight;
+            matches.push({ name: p.displayName, type: p.type });
         }
     }
 
-    for (const { pattern, weight } of profile._compiled.genres) {
-        if (pattern.test(text)) {
-            score += GENRE_WEIGHT * weight;
+    for (const p of profile._compiled.genres) {
+        if (p.pattern.test(text)) {
+            score += GENRE_WEIGHT * p.weight;
+            matches.push({ name: p.displayName, type: p.type });
         }
     }
 
-    for (const { pattern, weight } of profile._compiled.labels) {
-        if (pattern.test(text)) {
-            score += LABEL_WEIGHT * weight;
+    for (const p of profile._compiled.labels) {
+        if (p.pattern.test(text)) {
+            score += LABEL_WEIGHT * p.weight;
+            matches.push({ name: p.displayName, type: p.type });
         }
     }
 
-    for (const { pattern, weight } of profile._compiled.cities) {
-        if (pattern.test(text)) {
-            score += CITY_WEIGHT * weight;
+    for (const p of profile._compiled.cities) {
+        if (p.pattern.test(text)) {
+            score += CITY_WEIGHT * p.weight;
+            matches.push({ name: p.displayName, type: p.type });
         }
     }
 
-    return score;
+    return { score, matches };
 }

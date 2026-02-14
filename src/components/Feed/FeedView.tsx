@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { ExtractedEntity } from "@/lib/feedEntityExtraction";
-import { scoreFeedItem } from "@/lib/collectionFeedProfile";
+import { scoreFeedItemDetailed } from "@/lib/collectionFeedProfile";
 import { useFollowedFeeds } from "@/hooks/useFollowedFeeds";
 import { useCustomFeeds } from "@/hooks/useCustomFeeds";
 import { useUserFeedProfile } from "@/hooks/useUserFeedProfile";
@@ -43,13 +43,12 @@ export function FeedView() {
         refresh: refreshForYou,
     } = useMultipleFeeds({ customSources: customFeeds });
 
-    const forYouItems = useMemo(() => {
+    const forYouScoredItems = useMemo(() => {
         if (!profile || forYouAllItems.length === 0) return [];
         return forYouAllItems
-            .map((item) => ({ item, score: scoreFeedItem(item, profile) }))
+            .map((item) => ({ item, ...scoreFeedItemDetailed(item, profile) }))
             .filter(({ score }) => score > 0)
-            .sort((a, b) => b.score - a.score)
-            .map(({ item }) => item);
+            .sort((a, b) => b.score - a.score);
     }, [profile, forYouAllItems]);
 
     const toggleEverythingFeed = useCallback((feedId: string) => {
@@ -106,7 +105,7 @@ export function FeedView() {
                     loading={forYouFeedLoading || profileLoading}
                 />
                 <ForYouFeedView
-                    items={forYouItems}
+                    scoredItems={forYouScoredItems}
                     loading={forYouFeedLoading || profileLoading}
                     error={!!forYouError}
                     hasCollection={hasCollection}

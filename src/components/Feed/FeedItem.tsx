@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ExternalLink, Heart } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import type { FeedItemMatch } from "@/lib/collectionFeedProfile";
+import { ENTITY_TYPE_COLORS } from "./EntityBadge";
 
 interface FeedItemProps {
     item: FeedItemType;
@@ -11,6 +13,7 @@ interface FeedItemProps {
     showFollowButton?: boolean;
     isFollowing?: boolean;
     onToggleFollow?: () => void;
+    matchReasons?: FeedItemMatch[];
 }
 
 function getFaviconUrl(link: string): string | null {
@@ -22,7 +25,7 @@ function getFaviconUrl(link: string): string | null {
     }
 }
 
-export function FeedItem({ item, variant = 'default', showFollowButton, isFollowing, onToggleFollow }: FeedItemProps) {
+export function FeedItem({ item, variant = 'default', showFollowButton, isFollowing, onToggleFollow, matchReasons }: FeedItemProps) {
     const faviconUrl = getFaviconUrl(item.link);
     const [imgError, setImgError] = useState(false);
     const showImage = !!item.imageUrl && !imgError;
@@ -129,6 +132,22 @@ export function FeedItem({ item, variant = 'default', showFollowButton, isFollow
                             <p className="text-muted-foreground ">
                                 {item.excerpt}
                             </p>
+                        )}
+                        {matchReasons && matchReasons.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                {matchReasons.map((match) => (
+                                    <span
+                                        key={`${match.type}-${match.name}`}
+                                        className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-background/60 rounded-full px-2 py-0.5"
+                                    >
+                                        <span
+                                            className="inline-block size-1.5 rounded-full shrink-0"
+                                            style={{ backgroundColor: ENTITY_TYPE_COLORS[match.type] }}
+                                        />
+                                        {match.name}
+                                    </span>
+                                ))}
+                            </div>
                         )}
                         {showFollowButton && onToggleFollow && (
                             <div className="pt-1">
