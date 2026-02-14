@@ -104,7 +104,7 @@ export function ArtistCard({
         description={
           <p
             onClick={() => setIsExpanded((prev) => !prev)}
-            className={`break-words text-muted-foreground cursor-pointer hover:text-gray-400 ${
+            className={`break-words text-muted-foreground cursor-pointer hover:text-foreground ${
               isExpanded ? "text-muted-foreground" : "line-clamp-3 overflow-hidden"
             }`}
           >

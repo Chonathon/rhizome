@@ -89,7 +89,7 @@ export function GenrePreview({
               </div>
             </div>
           ) : (
-            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
+            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-muted/60 to-muted/60 dark:from-muted/30 dark:to-muted/30">
               <span className="text-4xl font-semibold">{initial}</span>
             </div>
           )

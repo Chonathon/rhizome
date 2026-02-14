@@ -15,37 +15,40 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   --radius: 0.625rem;
-  --background: oklch(1 0 0 90%);
+  /* Light ramp reference (base #E8EAEB -> oklch(0.936 0.003 229)) */
+  /* Surfaces: background 0.936, card 0.952, popover 0.958/90%, accent/muted/secondary 0.944 */
+  /* Lines: border 0.898, input 0.906, ring 0.78, sidebar 0.95/90% */
+  --background: oklch(0.936 0.003 229);
   --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0 );
+  --card: var(--secondary);
   --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(98.5% 0.001 106.423 / 90%);
+  --popover: var(--secondary);
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: oklch(0.967 0.002 248);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
+  --muted: oklch(0.944 0.003 229);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
+  --accent: oklch(0.944 0.003 229);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.898 0.003 229);
+  --input: oklch(0.906 0.003 229);
+  --ring: oklch(0.78 0.004 229);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0 / 90%);
+  --sidebar: var(--secondary);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent: oklch(0.942 0.003 229);
   --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-border: oklch(0.898 0.003 229);
+  --sidebar-ring: oklch(0.78 0.004 229);
 }
 
 
@@ -240,4 +243,3 @@ body {
   min-height: 100vh;
   font-family: Geist, sans-serif;
 }
-

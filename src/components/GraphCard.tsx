@@ -108,7 +108,7 @@ export function GraphCard({
           w-102 min-h-[126px] h-auto p-3 z-60 pb-4
           bg-card backdrop-blur-xs shadow-lg rounded-3xl border border-border
          overflow-hidden
-          ${loading ? "bg-stone-50/86" : ""}
+          ${loading ? "bg-card/80" : ""}
           ${className ?? ""}
         `}
         onMouseEnter={() => setIsHovered(true)}
@@ -117,13 +117,13 @@ export function GraphCard({
         {dismissible && onDismiss && (isHovered || isMobile) && (
           <div className="w-full flex justify-end absolute top-0 pr-3">
             <Button
-              className="hover:bg-white/0"
+              className="hover:bg-transparent"
               variant="ghost"
               size="icon"
               onClick={onDismiss}
               aria-label="Dismiss"
             >
-              <CircleX className="fill-gray-500 dark:fill-gray-900 text-white dark:text-foreground overflow-hidden size-5" size={20} />
+              <CircleX className="fill-muted-foreground text-background dark:fill-background dark:text-foreground overflow-hidden size-5" size={20} />
             </Button>
           </div>
         )}

@@ -41,7 +41,7 @@ export const exportGraphAsImage = (
 
     // Check if background color is transparent or empty, use fallback
     if (!backgroundColor || backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') {
-      backgroundColor = options.theme === 'dark' ? '#0a0a0a' : '#ffffff';
+      backgroundColor = options.theme === 'dark' ? '#0a0a0a' : '#E8EAEB';
     }
 
     // Fill background with the computed theme color

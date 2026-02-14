@@ -65,7 +65,7 @@ export function ListViewPanel({
          isMobile
            ? ""
            : `h-[calc(100vh-104px)] 
-       bg-white border border-gray-200 shadow-md rounded-3xl overflow-hidden`
+       bg-card border border-border shadow-md rounded-3xl overflow-hidden`
    }
     `}
     >
@@ -111,7 +111,7 @@ export function ListViewPanel({
                   <li
                     key={genre.id}
                     className="
-                      hover:bg-gray-100
+                      hover:bg-muted
                       rounded-md
                      "
                     onClick={() => onGenreClick(genre.name)}
@@ -134,7 +134,7 @@ export function ListViewPanel({
                           <div
                             className="
                               flex items-center gap-1
-                              text-sm text-gray-600"
+                              text-sm text-muted-foreground"
                           >
                             <div className="flex items-center gap-1">
                               <UsersRound size={16} />
@@ -180,7 +180,7 @@ export function ListViewPanel({
                           py-1 px-3
                           "
                       >
-                        <div className="w-full aspect-[2/1] overflow-hidden rounded-md border border-gray-300">
+                        <div className="w-full aspect-[2/1] overflow-hidden rounded-md border border-border">
                           <img
                             src={artist.image[0].link}
                             alt={artist.name}

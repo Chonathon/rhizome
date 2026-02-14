@@ -51,7 +51,7 @@ export function GraphControls() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className={`fixed top-4 right-4 z-50 w-sm flex flex-col gap-2 p-2 rounded-xl overflow-hidden   ${activePanel ? "bg-white border border-gray-200 shadow-md" : ""}`}
+      className={`fixed top-4 right-4 z-50 w-sm flex flex-col gap-2 p-2 rounded-xl overflow-hidden   ${activePanel ? "bg-card border border-border shadow-md" : ""}`}
     >
       <div className="relative flex items-center
  justify-end gap-1">
@@ -85,7 +85,7 @@ export function GraphControls() {
             variant="ghost"
             className={` ${
               activePanel === tab.id
-                ? "bg-gray-100 text-gray-700 font-medium"
+                ? "bg-muted text-foreground font-medium"
                 : ""
             }`}
           >

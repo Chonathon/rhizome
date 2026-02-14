@@ -75,7 +75,7 @@ export default function ClusteringPanel({
                         <label
                             htmlFor={option.id}
                             className={`flex items-start w-full gap-3 rounded-xl p-3 transition-colors cursor-pointer ${
-                                clusterMode === option.id ? "bg-gray-200 border-accent border dark:bg-accent" : "hover:bg-white/10 dark:hover:bg-black/10"
+                                clusterMode === option.id ? "bg-muted border-border border dark:bg-accent" : "hover:bg-accent/40 dark:hover:bg-accent/40"
                             }`}
                         >
                             <RadioGroupItem
@@ -113,7 +113,7 @@ export default function ClusteringPanel({
                     <>
                         <div className="flex items-center justify-between w-full p-3 border-t border-border mt-2 pt-3">
                             <div className="flex flex-col">
-                                <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">Color Mode</span>
+                                <span className="text-md font-semibold leading-none text-foreground">Color Mode</span>
                                 <span className="text-sm text-muted-foreground mt-1">Choose how artists are colored in the graph.</span>
                             </div>
                             <div className="flex gap-2">
@@ -161,7 +161,7 @@ export default function ClusteringPanel({
                         )}
                         {!clusteringInProgress && artistClusters && artistClusters.stats && (
                             <div className="flex flex-col gap-2 w-full p-3 border-t border-border">
-                                <span className="text-md font-semibold text-gray-900 dark:text-gray-100">Cluster Stats</span>
+                                <span className="text-md font-semibold text-foreground">Cluster Stats</span>
                                 <div className="text-sm text-muted-foreground space-y-1">
                                     <div>Communities: {artistClusters.stats.clusterCount}</div>
                                     <div>Avg size: {Math.round(artistClusters.stats.avgClusterSize)} artists</div>
@@ -175,7 +175,7 @@ export default function ClusteringPanel({
                     <>
                         <div className="flex items-center justify-between w-full p-3">
                             <div className="flex flex-col">
-                                <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">DAG Mode</span>
+                                <span className="text-md font-semibold leading-none text-foreground">DAG Mode</span>
                                 <span className="text-sm text-muted-foreground mt-1">Display as a directed acyclic graph.</span>
                             </div>
                             <Switch checked={dagMode} onCheckedChange={setDagMode} />

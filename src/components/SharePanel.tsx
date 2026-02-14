@@ -23,10 +23,10 @@ export default function SharePanel({ onExport }: SharePanelProps) {
                 {/* Export Section */}
                 <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1">
-                        <span className="text-md font-semibold text-gray-900 dark:text-gray-100">
+                        <span className="text-md font-semibold text-foreground">
                             Export Graph
                         </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="text-sm text-muted-foreground">
                             Download the current graph view as a high-resolution PNG image
                         </span>
                     </div>
