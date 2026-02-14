@@ -1,13 +1,25 @@
-import { Rss, AlertCircle, Heart } from "lucide-react";
+import { Rss, AlertCircle, Heart, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FeedEmptyStateProps {
-    type: 'empty' | 'error' | 'no-selection' | 'no-following';
+    type: 'empty' | 'error' | 'no-selection' | 'no-following' | 'no-collection';
     message?: string;
     onRetry?: () => void;
 }
 
 export function FeedEmptyState({ type, message, onRetry }: FeedEmptyStateProps) {
+    if (type === 'no-collection') {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Collection Yet</h3>
+                <p className="text-muted-foreground text-sm max-w-xs">
+                    {message || "Add artists to your collection to get personalized recommendations."}
+                </p>
+            </div>
+        );
+    }
+
     if (type === 'no-following') {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">

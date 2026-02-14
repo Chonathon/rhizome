@@ -1,10 +1,13 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ExtractedEntity } from "@/lib/feedEntityExtraction";
+import { scoreFeedItem } from "@/lib/collectionFeedProfile";
 import { useFollowedFeeds } from "@/hooks/useFollowedFeeds";
 import { useCustomFeeds } from "@/hooks/useCustomFeeds";
+import { useUserFeedProfile } from "@/hooks/useUserFeedProfile";
 import useMultipleFeeds from "@/hooks/useMultipleFeeds";
 import { RSS_FEEDS } from "@/constants";
 import { FollowingFeedView } from "./FollowingFeedView";
+import { ForYouFeedView } from "./ForYouFeedView";
 import { EverythingFeedsView } from "./EverythingFeedsView";
 import { FeedTrendingTags } from "./FeedTrendingTags";
 import { TrendingEntityDrawer } from "./TrendingEntityDrawer";
@@ -13,6 +16,7 @@ import { FeedPanelHeader } from "./FeedPanelHeader";
 export function FeedView() {
     const followedFeeds = useFollowedFeeds();
     const { customFeeds, addFeed, removeFeed, adding: addingFeed } = useCustomFeeds();
+    const { profile, loading: profileLoading, hasCollection } = useUserFeedProfile();
     const [selectedEverythingFeedIds, setSelectedEverythingFeedIds] = useState<string[]>([]);
     const [selectedTrendingEntity, setSelectedTrendingEntity] = useState<ExtractedEntity | null>(null);
     const trendingPanelRef = useRef<HTMLDivElement>(null);
@@ -32,6 +36,21 @@ export function FeedView() {
         feedIds: selectedEverythingFeedIds.length > 0 ? selectedEverythingFeedIds : undefined,
         customSources: customFeeds,
     });
+    const {
+        items: forYouAllItems,
+        loading: forYouFeedLoading,
+        error: forYouError,
+        refresh: refreshForYou,
+    } = useMultipleFeeds({ customSources: customFeeds });
+
+    const forYouItems = useMemo(() => {
+        if (!profile || forYouAllItems.length === 0) return [];
+        return forYouAllItems
+            .map((item) => ({ item, score: scoreFeedItem(item, profile) }))
+            .filter(({ score }) => score > 0)
+            .sort((a, b) => b.score - a.score)
+            .map(({ item }) => item);
+    }, [profile, forYouAllItems]);
 
     const toggleEverythingFeed = useCallback((feedId: string) => {
         setSelectedEverythingFeedIds((prev) =>
@@ -76,6 +95,24 @@ export function FeedView() {
                     loading={followingLoading}
                     error={!!followingError}
                     onRetry={refreshFollowing}
+                />
+            </div>
+
+            {/* For You Panel */}
+            <div className={panelStyles}>
+                <FeedPanelHeader
+                    title="For You"
+                    onRefresh={refreshForYou}
+                    loading={forYouFeedLoading || profileLoading}
+                />
+                <ForYouFeedView
+                    items={forYouItems}
+                    loading={forYouFeedLoading || profileLoading}
+                    error={!!forYouError}
+                    hasCollection={hasCollection}
+                    onRetry={refreshForYou}
+                    isFollowing={followedFeeds.isFollowing}
+                    onToggleFollow={followedFeeds.toggleFollow}
                 />
             </div>
 

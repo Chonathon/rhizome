@@ -5,4 +5,5 @@ export { FeedItem } from './FeedItem';
 export { FeedItemSkeleton } from './FeedItemSkeleton';
 export { FeedEmptyState } from './FeedEmptyState';
 export { EverythingFeedsView } from './EverythingFeedsView';
+export { ForYouFeedView } from './ForYouFeedView';
 export { FollowingFeedView } from './FollowingFeedView';
