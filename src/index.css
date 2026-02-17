@@ -16,8 +16,19 @@
   -moz-osx-font-smoothing: grayscale;
   --radius: 0.625rem;
   /* Light ramp reference (base #E8EAEB -> oklch(0.936 0.003 229)) */
-  /* Surfaces: background 0.936, card 0.952, popover 0.958/90%, accent/muted/secondary 0.944 */
-  /* Lines: border 0.898, input 0.906, ring 0.78, sidebar 0.95/90% */
+  /* Primitive ramp (reference only, cool neutral @ h=229, c=0.003) */
+  /* N0:  oklch(0.985 0.003 229) */
+  /* N1:  oklch(0.975 0.003 229) */
+  /* N2:  oklch(0.967 0.003 229) */
+  /* N3:  oklch(0.958 0.003 229) */
+  /* N4:  oklch(0.944 0.003 229) */
+  /* N5:  oklch(0.936 0.003 229)  (base background) */
+  /* N6:  oklch(0.922 0.003 229) */
+  /* N7:  oklch(0.906 0.003 229) */
+  /* N8:  oklch(0.898 0.003 229) */
+  /* N9:  oklch(0.85 0.003 229) */
+  /* N10: oklch(0.78 0.004 229)  (ring) */
+  /* Note: secondary is pinned to #F3F4F5 -> oklch(0.967 0.002 248) */
   --background: oklch(0.936 0.003 229);
   --foreground: oklch(0.145 0 0);
   --card: var(--secondary);

@@ -176,7 +176,7 @@ export function AppSidebar({
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               onClick={toggleSidebar}
-              className="w-full h-full rounded-md !cursor-e-resize hover:bg-sidebar-accent dark:hover:bg-sidebar-accent/40"
+              className="w-full h-full rounded-md !cursor-e-resize hover:bg-neutral-200 dark:hover:bg-sidebar-accent/40"
             />
           </SidebarContent>}
         </SidebarContent>
