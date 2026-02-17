@@ -49,7 +49,7 @@ export default function ClusteringPanel({
     return (
         <ResponsivePanel
             trigger={
-                <Button className="bg-background backdrop-blur-xs rounded-full border border-border" variant="outline" size="icon" aria-label="Clustering Panel">
+                <Button className="" variant="outline" size="icon" aria-label="Clustering Panel">
                     <span className="sr-only">Show Clustering Panel</span>
                     <Spline />
                 </Button>
