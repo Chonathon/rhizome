@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, EyeOff } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, EyeOff, Disc3 } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -41,13 +41,15 @@ interface ArtistInfoProps {
   getArtistColor: (artist: Artist) => string;
   getGenreNameById?: (id: string) => string | undefined;
   onPlay?: (artist: Artist) => void;
+  onPreview?: (artist: Artist) => void;
   onFocusInArtistsView?: (artist: Artist, options?: { forceRefocus?: boolean }) => void;
   onViewArtistGraph?: (artist: Artist) => void;
   onViewSimilarArtistGraph?: (artist: Artist) => void;
   playLoading?: boolean;
   onArtistToggle: (id: string | undefined) => void;
   isInCollection: boolean;
-  onPlayTrack?: (tracks: TopTrack[], startIndex: number) => void;
+  collectionMode: boolean;
+  onPlayTrack?: (tracks: TopTrack[], startIndex: number, options?: { preview?: boolean }) => void;
   viewRelatedArtistsLoading?: boolean;
   shouldShowChevron?: boolean;
   onDrawerSnapChange?: (isAtMinSnap: boolean) => void;
@@ -72,12 +74,14 @@ export function ArtistInfo({
   getArtistColor,
   getGenreNameById,
   onPlay,
+  onPreview,
   onFocusInArtistsView,
   onViewArtistGraph,
   onViewSimilarArtistGraph,
   playLoading,
   onArtistToggle,
   isInCollection,
+  collectionMode,
   onPlayTrack,
   viewRelatedArtistsLoading,
   shouldShowChevron,
@@ -89,7 +93,19 @@ export function ArtistInfo({
   const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [previewModeEnabled, setPreviewModeEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('previewModeEnabled') === 'true';
+    }
+    return false;
+  });
   const isDesktop = useMediaQuery("(min-width: 1200px)");
+
+  // Persist preview mode preference
+  useEffect(() => {
+    localStorage.setItem('previewModeEnabled', String(previewModeEnabled));
+  }, [previewModeEnabled]);
+
 
   const artistReasons = useMemo(
     () => [
@@ -235,7 +251,7 @@ export function ArtistInfo({
                 <div className={`flex  flex-col gap-6
                     ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
                      <div className="flex gap-3 w-full">
-                           {/* Desktop: Split button with play action and track dropdown */}
+                           {/* Desktop: Split button with play/preview action and track dropdown */}
                            {isDesktop ? (
                              <SplitButton
                                variant="default"
@@ -245,37 +261,75 @@ export function ArtistInfo({
                                <SplitButtonAction
                                  aria-busy={!!playLoading}
                                  className="disabled:opacity-100"
-                                 onClick={() => selectedArtist && onPlay?.(selectedArtist)}
+                                 onClick={() => {
+                                   if (selectedArtist) {
+                                     if (previewModeEnabled) {
+                                       onPreview?.(selectedArtist);
+                                     } else {
+                                       onPlay?.(selectedArtist);
+                                     }
+                                   }
+                                 }}
                                >
-                                 {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
-                                 Play
+                                 {playLoading ? (
+                                   <Loader2 className="animate-spin size-4" aria-hidden />
+                                 ) : previewModeEnabled ? (
+                                   <Disc3 />
+                                 ) : (
+                                   <CirclePlay />
+                                 )}
+                                 {previewModeEnabled ? 'Preview' : 'Play'}
                                </SplitButtonAction>
 
                                <DropdownMenu>
                                  <DropdownMenuTrigger asChild>
                                    <SplitButtonTrigger
                                      className="disabled:opacity-100"
-                                     disabled={!!playLoading || !selectedArtist?.topTracks || selectedArtist.topTracks.length === 0}
-                                     aria-label="Select track"
+                                     disabled={!!playLoading}
+                                     aria-label="Select track or toggle preview mode"
                                    >
                                      <ChevronDown className="size-4" />
                                    </SplitButtonTrigger>
                                  </DropdownMenuTrigger>
                                  <DropdownMenuContent align="start" className="w-[280px]">
-                                   <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
+                                   {/* Preview mode toggle */}
+                                   <DropdownMenuItem
+                                     onClick={() => setPreviewModeEnabled(!previewModeEnabled)}
+                                   >
+                                     {previewModeEnabled ? (
+                                       <>
+                                         <CirclePlay className="size-4" />
+                                         <span>Switch to Play Mode</span>
+                                       </>
+                                     ) : (
+                                       <>
+                                         <Disc3 className="size-4" />
+                                         <span>Switch to Preview Mode</span>
+                                       </>
+                                     )}
+                                   </DropdownMenuItem>
                                    <DropdownMenuSeparator />
+                                   <DropdownMenuLabel>Top Tracks</DropdownMenuLabel>
+                                   {/* <DropdownMenuSeparator /> */}
                                    {selectedArtist?.topTracks && selectedArtist.topTracks.length > 0 ? (
                                      selectedArtist.topTracks.map((track, index) => (
                                        <DropdownMenuItem
                                          key={`${track.title}-${index}`}
-                                         onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index)}
-                                         className="cursor-pointer group"
+                                         onClick={() => selectedArtist.topTracks && onPlayTrack?.(selectedArtist.topTracks, index, { preview: previewModeEnabled })}
+                                         className=" group"
                                        >
                                          <span className="relative grid place-items-center size-4">
-                                           <CirclePlay
-                                             className="absolute opacity-0 group-hover:opacity-100 size-4"
-                                             aria-hidden
-                                           />
+                                           {previewModeEnabled ? (
+                                             <Disc3
+                                               className="absolute opacity-0 group-hover:opacity-100 size-4"
+                                               aria-hidden
+                                             />
+                                           ) : (
+                                             <CirclePlay
+                                               className="absolute opacity-0 group-hover:opacity-100 size-4"
+                                               aria-hidden
+                                             />
+                                           )}
                                            <span className="text-sm text-muted-foreground text-center leading-none opacity-100 group-hover:opacity-0">
                                              {index + 1}
                                            </span>

@@ -1,8 +1,8 @@
 import { Artist } from '@/types'
 import { fixWikiImageURL, formatNumberCompact, formatDate } from '@/lib/utils'
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Button } from './ui/button'
-import { CirclePlay, ArrowRight, SquarePlus, Loader2, Check } from 'lucide-react'
+import { CirclePlay, ArrowRight, SquarePlus, Loader2, Check, Disc3 } from 'lucide-react'
 import GenreBadge from '@/components/GenreBadge'
 import GraphCard from './GraphCard'
 import ArtistBadge from './ArtistBadge'
@@ -13,6 +13,7 @@ interface ArtistPreviewProps {
   getGenreNameById?: (id: string) => string | undefined
   onNavigate?: (artist: Artist) => void
   onPlay?: (artist: Artist) => void
+  onPreview?: (artist: Artist) => void
   onToggle?: (artistId: string) => void
   playLoading?: boolean
   isInCollection?: boolean
@@ -34,6 +35,7 @@ export function ArtistPreview({
   getGenreNameById,
   onNavigate,
   onPlay,
+  onPreview,
   onToggle,
   playLoading,
   isInCollection,
@@ -47,6 +49,23 @@ export function ArtistPreview({
   onShow,
 }: ArtistPreviewProps) {
   const initial = artist?.name?.[0]?.toUpperCase() ?? '?'
+
+  // Read preview mode preference from localStorage
+  const [previewModeEnabled, setPreviewModeEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('previewModeEnabled') === 'true';
+    }
+    return false;
+  });
+
+  // Listen for storage changes (in case other components update the preference)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setPreviewModeEnabled(localStorage.getItem('previewModeEnabled') === 'true');
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const imageUrl = useMemo(() => {
     const raw = artist?.image
@@ -169,16 +188,18 @@ export function ArtistPreview({
             <Button
               size="sm"
               variant="default"
-              onClick={() => onPlay?.(artist)}
+              onClick={() => previewModeEnabled ? onPreview?.(artist) : onPlay?.(artist)}
               disabled={playLoading}
               className="flex-1 disabled:opacity-100"
             >
               {playLoading ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : previewModeEnabled ? (
+                <Disc3 />
               ) : (
                 <CirclePlay />
               )}
-              Play
+              {previewModeEnabled ? 'Preview' : 'Play'}
             </Button>
             <Button
               size="sm"
