@@ -227,6 +227,7 @@ export function GenreInfo({
       bodyClassName=""
       minimizeOnCanvasTouch={true}
       onCanvasDragStart={onCanvasDragStart}
+      dismissOnCanvasClick={true}
       contentKey={selectedGenre?.id}
       expandToMiddleTrigger={expandToMiddleTrigger}
       headerTitle={
