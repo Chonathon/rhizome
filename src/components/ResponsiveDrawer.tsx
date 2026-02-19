@@ -327,7 +327,10 @@ export function ResponsiveDrawer({
     const handleClick = (e: MouseEvent) => {
       if (Date.now() - openTimeRef.current < 10) return;
       const card = cardRef.current;
-      if (card && !card.contains(e.target as Node)) {
+      const target = e.target as HTMLElement;
+      if (card && !card.contains(target)) {
+        // Only dismiss when clicking the graph canvas
+        if (target.tagName !== 'CANVAS') return;
         dismissTimeoutRef.current = setTimeout(() => {
           onDismiss();
         }, 50);
