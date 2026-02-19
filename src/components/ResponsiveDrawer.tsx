@@ -329,8 +329,8 @@ export function ResponsiveDrawer({
       const card = cardRef.current;
       const target = e.target as HTMLElement;
       if (card && !card.contains(target)) {
-        // Ignore clicks inside Radix portals (dropdowns, popovers) that originated from within the drawer
-        if (target.closest?.('[data-radix-popper-content-wrapper]')) return;
+        // Only dismiss when clicking the graph canvas — not sidebar, header, or other UI chrome
+        if (target.tagName !== 'CANVAS') return;
         dismissTimeoutRef.current = setTimeout(() => {
           onDismiss();
         }, 50);
