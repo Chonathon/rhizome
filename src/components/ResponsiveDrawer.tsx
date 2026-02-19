@@ -327,7 +327,10 @@ export function ResponsiveDrawer({
     const handleClick = (e: MouseEvent) => {
       if (Date.now() - openTimeRef.current < 10) return;
       const card = cardRef.current;
-      if (card && !card.contains(e.target as Node)) {
+      const target = e.target as HTMLElement;
+      if (card && !card.contains(target)) {
+        // Ignore clicks inside Radix portals (dropdowns, popovers) that originated from within the drawer
+        if (target.closest?.('[data-radix-popper-content-wrapper]')) return;
         dismissTimeoutRef.current = setTimeout(() => {
           onDismiss();
         }, 50);

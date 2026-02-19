@@ -281,7 +281,7 @@ export function ArtistInfo({
                                  {previewModeEnabled ? 'Preview' : 'Play'}
                                </SplitButtonAction>
 
-                               <DropdownMenu>
+                               <DropdownMenu modal={false}>
                                  <DropdownMenuTrigger asChild>
                                    <SplitButtonTrigger
                                      className="disabled:opacity-100"
