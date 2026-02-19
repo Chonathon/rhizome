@@ -329,7 +329,7 @@ export function ResponsiveDrawer({
       const card = cardRef.current;
       const target = e.target as HTMLElement;
       if (card && !card.contains(target)) {
-        // Only dismiss when clicking the graph canvas — not sidebar, header, or other UI chrome
+        // Only dismiss when clicking the graph canvas
         if (target.tagName !== 'CANVAS') return;
         dismissTimeoutRef.current = setTimeout(() => {
           onDismiss();
