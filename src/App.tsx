@@ -2808,7 +2808,6 @@ function App() {
                   setIsFindFilterOpen(open);
                 }}
                 iconOnly={true}
-                title="find in view"
               />
               {(graph === 'genres' || graph === 'artists' || graph === 'similarArtists') && (
                 <ClusteringPanel
