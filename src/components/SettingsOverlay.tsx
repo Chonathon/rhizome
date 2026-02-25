@@ -1010,7 +1010,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
           </DialogDescription>
           <SidebarProvider className="items-start ">
             <div className="flex flex-col md:flex-row min-h-0 w-full max-h-160">
-              <Sidebar collapsible="none" className="md:pt-4 px-3 pb-2 md:pb-0 md:px-0 md:flex w-full md:w-[9rem]">
+              <Sidebar collapsible="none" className="bg-card md:pt-4 px-3 pb-2 md:pb-0 md:px-0 md:flex w-full md:w-[9rem]">
                 <SidebarContent>
                   <SidebarHeader className="sr-only md:not-sr-only">
                     <h2 className="text-md px-3 font-semibold">Settings</h2>
