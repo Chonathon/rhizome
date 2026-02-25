@@ -17,6 +17,8 @@ interface FindFilterProps {
   label?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  iconOnly?: boolean;
+  title?: string;
 }
 
 type KeyedFindOption = {
@@ -66,6 +68,8 @@ export default function FindFilter({
   label = "Find",
   open,
   onOpenChange,
+  iconOnly = false,
+  title = "Find in view",
 }: FindFilterProps) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_ITEMS);
   const [searchQuery, setSearchQuery] = useState("");
@@ -137,7 +141,18 @@ export default function FindFilter({
 
   const canClear = typeof onClear === "function";
 
-  const trigger = (
+  const trigger = iconOnly ? (
+    <Button
+      size="icon"
+      variant="outline"
+      disabled={disabled && !canClear}
+      className={cn("h-10 w-10", triggerClassName)}
+      title={title}
+    >
+      <TextSearch className="h-[1.2rem] w-[1.2rem]" />
+      <span className="sr-only">{label}</span>
+    </Button>
+  ) : (
     <Button
       size="lg"
       variant="outline"
@@ -157,7 +172,7 @@ export default function FindFilter({
     <ResponsivePanel
       trigger={trigger}
       className="w-72 sm:w-80 p-0 overflow-hidden"
-      side="bottom"
+      side="left"
       open={open}
       onOpenChange={onOpenChange}
     >

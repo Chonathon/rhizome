@@ -98,7 +98,7 @@ export default function DisplayPanel({
     return (
         <ResponsivePanel
             trigger={
-                <Button variant="outline" size="icon" className="h-10 w-10">
+                <Button variant="outline" size="icon" className="h-10 w-10" title="Display">
                     <SwatchBook className="h-[1.2rem] w-[1.2rem]" />
                     <span className="sr-only">Display Settings</span>
                 </Button>

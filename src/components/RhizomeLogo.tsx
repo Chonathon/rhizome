@@ -5,17 +5,17 @@ type Props = React.SVGProps<SVGSVGElement> & {
   animated?: boolean; // when true, always animate (not only on group hover)
 };
 
-export function RhizomeLogo({ title = "Rhizome Logo", animated = false, ...props }: Props) {
+export function RhizomeLogo({ title = "", animated = false, ...props }: Props) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 40 40"
       fill="currentColor"
       role="img"
-      aria-label={title}
+      aria-label={title || undefined}
       {...props}
     >
-      <title>{title}</title>
+      {title && <title>{title}</title>}
       {/* Decorative squares, clipped and tinted with currentColor */}
       <defs>
         <clipPath id="rhizo-clip">

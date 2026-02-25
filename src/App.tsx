@@ -2642,22 +2642,6 @@ function App() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <motion.div layout>
-                <FindFilter
-                  items={findOptions}
-                  onSelect={handleFindSelect}
-                  onClear={hasFindSelection ? handleFindClear : undefined}
-                  disabled={findPanelDisabled}
-                  placeholder={graph === 'genres' ? 'Find genres in view...' : 'Find artists in view...'}
-                  emptyText={graph === 'genres' ? 'No genres match this view.' : 'No artists match this view.'}
-                  triggerClassName="self-start"
-                  open={isFindFilterOpen}
-                  onOpenChange={(open) => {
-                    if (findPanelDisabled && open) return;
-                    setIsFindFilterOpen(open);
-                  }}
-                />
-              </motion.div>
           </motion.div>
           </AnimatePresence>
                 <GenresForceGraph
@@ -2808,9 +2792,23 @@ function App() {
             {/*    show={graph === 'artists' && collectionMode}*/}
             {/*/>*/}
           </div>}
-          {/* right controls */}
+          {/* Utility buttons - find, clustering, display settings, share/export, zoom */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               {/* <ModeToggle /> */}
+              <FindFilter
+                items={findOptions}
+                onSelect={handleFindSelect}
+                onClear={hasFindSelection ? handleFindClear : undefined}
+                disabled={findPanelDisabled}
+                placeholder={graph === 'genres' ? 'Find genres in view...' : 'Find artists in view...'}
+                emptyText={graph === 'genres' ? 'No genres match this view.' : 'No artists match this view.'}
+                open={isFindFilterOpen}
+                onOpenChange={(open) => {
+                  if (findPanelDisabled && open) return;
+                  setIsFindFilterOpen(open);
+                }}
+                iconOnly={true}
+              />
               {(graph === 'genres' || graph === 'artists' || graph === 'similarArtists') && (
                 <ClusteringPanel
                   graphType={graph === 'genres' ? 'genres' : 'artists'}
