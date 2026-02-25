@@ -45,7 +45,7 @@ export function ResponsivePanel({
       
       <DrawerContent className={cn("px-3 bg-popover backdrop-blur-sm border border-sidebar-border rounded-3xl pb-3 shadow-sm mb-2")}>
         <div>
-          <div className="bg-stone-300 mx-auto my-3 hidden h-1 w-[64px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
+          <div className="bg-neutral-300 mx-auto my-3 hidden h-1 w-[64px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         </div>
       {/* <DrawerHeader className={cn("px-1", isDesktop ? "pt-2 pb-3" : "pt-1 pb-2") }>
               <div className="flex items-start gap-1">
