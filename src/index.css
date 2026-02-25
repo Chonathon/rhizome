@@ -4,10 +4,22 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Light Mode Neutral Primitives
+Neutral 100  oklch(0.95 0.002 235)  #EAEBEC
+Neutral 200  oklch(0.94 0.004 230)  #E7EAEB
+Neutral 300  oklch(0.93 0.003 235)  #E4E5E6
+Neutral 400  oklch(0.87 0.003 235)  (borders, inputs)
+Neutral 500  oklch(0.72 0.004 235)  (disabled text)
+Neutral 600  oklch(0.56 0.006 235)  #7A7E80
+Neutral 700  oklch(0.42 0.006 235)  (secondary headings)
+Neutral 800  oklch(0.28 0.004 235)  (primary text)
+Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
+*/
+
 :root {
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: "bg-background";
+  background-color: var(--app-background);
 
 
   font-synthesis: none;
@@ -15,6 +27,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   --radius: 0.625rem;
+  --app-background: oklch(0.94 0.004 230);
   --background: oklch(1 0 0 90%);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0 );
@@ -23,11 +36,11 @@
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.95 0 0);
+  --secondary: oklch(0.93 0.003 235);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.95 0 0);
+  --muted: oklch(0.95 0.002 235);
   --muted-foreground: oklch(0.51 0 0);
-  --accent: oklch(0.95 0 0);
+  --accent: oklch(0.95 0.002 235);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.87 0 0);
@@ -58,6 +71,8 @@
   --radius-lg: var(--radius);
 
   --radius-xl: calc(var(--radius) + 4px);
+
+  --color-app-background: var(--app-background);
 
   --color-background: var(--background);
 
@@ -123,6 +138,8 @@
 }
 
 .dark {
+
+  --app-background: oklch(0.145 0 0 90%);
 
   --background: oklch(0.145 0 0 90%);
 

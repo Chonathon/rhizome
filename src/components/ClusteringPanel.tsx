@@ -79,7 +79,7 @@ export default function ClusteringPanel({
                             <label
                                 htmlFor={option.id}
                                 className={`flex items-start w-full gap-3 rounded-xl p-3 transition-colors cursor-pointer ${
-                                    clusterMode === option.id ? "bg-neutral-200/70 border-border border dark:bg-accent" : "hover:bg-white/30 dark:hover:bg-black/10"
+                                    clusterMode === option.id ? "bg-secondary dark:bg-accent" : "hover:bg-white/30 dark:hover:bg-black/10"
                                 }`}
                             >
                                 <RadioGroupItem
