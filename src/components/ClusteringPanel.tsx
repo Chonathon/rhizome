@@ -46,6 +46,8 @@ export default function ClusteringPanel({
 
     const options = graphType === 'genres' ? genreOptions : artistOptions;
 
+    const feildsetStyles = "rounded-2xl bg-accent dark:dark:bg-accent/50 border-accent border"
+
     return (
         <ResponsivePanel
             trigger={
@@ -66,11 +68,11 @@ export default function ClusteringPanel({
 
                     </Button>
                 </div>   
-            <div className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm rounded-2xl bg-accent">
+            <div className="flex flex-col items-start w-full gap-1 dark:bg-background rounded-2xl bg-background">
                 <RadioGroup
                     value={clusterMode}
                     onValueChange={(value) => setClusterMode([value])}
-                    className="w-full"
+                    className={`${feildsetStyles} w-full gap-1`}
                 >
                     {options.map((option) => (
                         <div key={option.id} className="w-full">
@@ -114,7 +116,7 @@ export default function ClusteringPanel({
                 </RadioGroup>
                 {graphType === 'artists' && artistColorMode !== undefined && setArtistColorMode && (
                     <>
-                        <div className="flex items-center justify-between w-full p-3 border-t border-border mt-2 pt-3">
+                        <div className={`${feildsetStyles} flex items-center justify-between w-full p-3 pt-3`}>
                             <div className="flex flex-col">
                                 <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">Color Mode</span>
                                 <span className="text-sm text-muted-foreground mt-1">Choose how artists are colored in the graph.</span>
@@ -137,7 +139,7 @@ export default function ClusteringPanel({
                             </div>
                         </div>
                         {artistColorMode === 'genre' && genreColorLegend && genreColorLegend.length > 0 && (
-                            <div className="flex flex-col gap-2 w-full p-3 border-t border-border">
+                            <div className={`flex flex-col gap-2 w-full p-3 border-border`}>
                                 <span className="text-md font-semibold text-foreground">Genre Color Legend</span>
                                 <div className="relative overflow-y-auto max-h-40 pr-1">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
@@ -157,14 +159,14 @@ export default function ClusteringPanel({
                                                             </div>
                         )}
                         {clusteringInProgress && (
-                            <div className="flex items-center gap-2 w-full p-3 border-t border-border">
+                            <div className={`flex items-center gap-2 w-full p-3`}>
                                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                                 <span className="text-sm text-muted-foreground">Computing clusters...</span>
                             </div>
                         )}
                         {!clusteringInProgress && artistClusters && artistClusters.stats && (
-                            <div className="flex flex-col gap-2 w-full p-3 border-t border-border">
-                                <span className="text-md font-semibold text-gray-900 dark:text-gray-100">Cluster Stats</span>
+                            <div className={`flex flex-col gap-2 w-full p-3`}>
+                                <span className="text-md font-semibold text-foreground">Cluster Stats</span>
                                 <div className="text-sm text-muted-foreground space-y-1">
                                     <div>Communities: {artistClusters.stats.clusterCount}</div>
                                     <div>Avg size: {Math.round(artistClusters.stats.avgClusterSize)} artists</div>
@@ -176,7 +178,7 @@ export default function ClusteringPanel({
                 )}
                 {graphType === 'genres' && (
                     <>
-                        <div className="flex items-center justify-between w-full p-3">
+                        <div className={`${feildsetStyles} flex items-center justify-between w-full p-3`}>
                             <div className="flex flex-col">
                                 <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">DAG Mode</span>
                                 <span className="text-sm text-muted-foreground mt-1">Display as a directed acyclic graph.</span>
@@ -184,7 +186,7 @@ export default function ClusteringPanel({
                             <Switch checked={dagMode} onCheckedChange={setDagMode} />
                         </div>
                         {genreColorLegend && genreColorLegend.length > 0 && (
-                            <div className="flex flex-col gap-2 w-full p-3 border-t border-border">
+                            <div className={`${feildsetStyles} flex flex-col gap-2 w-full p-3`}>
                                 <span className="text-md font-semibold text-foreground">Genre Color Legend</span>
                                 <div className="relative overflow-y-auto max-h-40 pr-1">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
