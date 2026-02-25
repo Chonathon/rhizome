@@ -68,7 +68,7 @@ export default function ClusteringPanel({
 
                     </Button>
                 </div>   
-            <div className="flex flex-col items-start w-full gap-1 dark:bg-background rounded-2xl bg-background">
+            <div className="flex flex-col items-start w-full gap-2 dark:bg-background rounded-2xl bg-background">
                 <RadioGroup
                     value={clusterMode}
                     onValueChange={(value) => setClusterMode([value])}
@@ -79,7 +79,7 @@ export default function ClusteringPanel({
                             <label
                                 htmlFor={option.id}
                                 className={`flex items-start w-full gap-3 rounded-xl p-3 transition-colors cursor-pointer ${
-                                    clusterMode === option.id ? "bg-gray-200 border-accent border dark:bg-accent" : "hover:bg-white/10 dark:hover:bg-black/10"
+                                    clusterMode === option.id ? "bg-accent border-border border dark:bg-accent" : "hover:bg-white/10 dark:hover:bg-black/10"
                                 }`}
                             >
                                 <RadioGroupItem
@@ -88,7 +88,7 @@ export default function ClusteringPanel({
                                     className="mt-1 sr-only"
                                 />
                                 <div className="flex flex-col items-start">
-                                    <span className="text-md font-semibold leading-none text-foreground">
+                                    <span className={`${clusterMode === option.id ? "text-foreground" : "text-muted-foreground"} text-md font-semibold leading-none `}>
                                         {option.label}
                                     </span>
                                     <AnimatePresence mode="wait" initial={false}>

@@ -1054,7 +1054,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
                     </TabsList>
                   </Tabs>
                 </div> */}
-                <div className="flex-1 mt-4 md:mt-11 pb-16 flex flex-col gap-6">
+                <div className="flex-1 mt-4 md:mt-11 pb-16 flex flex-col gap-2">
                   {views[activeView]}
                 </div>
               </main>
