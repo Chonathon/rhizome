@@ -66,49 +66,52 @@ export default function ClusteringPanel({
 
                     </Button>
                 </div>   
-            <RadioGroup
-                value={clusterMode}
-                onValueChange={(value) => setClusterMode([value])}
-                className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm rounded-2xl  bg-accent"            >
-                {options.map((option) => (
-                    <div key={option.id} className="w-full">
-                        <label
-                            htmlFor={option.id}
-                            className={`flex items-start w-full gap-3 rounded-xl p-3 transition-colors cursor-pointer ${
-                                clusterMode === option.id ? "bg-gray-200 border-accent border dark:bg-accent" : "hover:bg-white/10 dark:hover:bg-black/10"
-                            }`}
-                        >
-                            <RadioGroupItem
-                                value={option.id}
-                                id={option.id}
-                                className="mt-1 sr-only"
-                            />
-                            <div className="flex flex-col items-start">
-                                <span className="text-md font-semibold leading-none text-foreground">
-                                    {option.label}
-                                </span>
-                                <AnimatePresence mode="wait" initial={false}>
-                                    {clusterMode === option.id && (
-                                        <motion.p
-                                            key={option.id}
-                                            initial={{ opacity: 0, height: 0, y: -10 }}
-                                            animate={{ opacity: 1, height: "auto", y: 0 }}
-                                            exit={{ opacity: 0, height: 0, y: -10 }}
-                                            transition={{
-                                                opacity: { duration: 0.2, ease: "easeOut" },
-                                                height: { duration: 0.2, ease: "easeOut" },
-                                                y: { duration: 0.08, ease: "easeOut" }
-                                            }}
-                                            className="text-sm text-muted-foreground mt-1 text-left"
-                                        >
-                                            {option.description}
-                                        </motion.p>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        </label>
-                    </div>
-                ))}
+            <div className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm rounded-2xl bg-accent">
+                <RadioGroup
+                    value={clusterMode}
+                    onValueChange={(value) => setClusterMode([value])}
+                    className="w-full"
+                >
+                    {options.map((option) => (
+                        <div key={option.id} className="w-full">
+                            <label
+                                htmlFor={option.id}
+                                className={`flex items-start w-full gap-3 rounded-xl p-3 transition-colors cursor-pointer ${
+                                    clusterMode === option.id ? "bg-gray-200 border-accent border dark:bg-accent" : "hover:bg-white/10 dark:hover:bg-black/10"
+                                }`}
+                            >
+                                <RadioGroupItem
+                                    value={option.id}
+                                    id={option.id}
+                                    className="mt-1 sr-only"
+                                />
+                                <div className="flex flex-col items-start">
+                                    <span className="text-md font-semibold leading-none text-foreground">
+                                        {option.label}
+                                    </span>
+                                    <AnimatePresence mode="wait" initial={false}>
+                                        {clusterMode === option.id && (
+                                            <motion.p
+                                                key={option.id}
+                                                initial={{ opacity: 0, height: 0, y: -10 }}
+                                                animate={{ opacity: 1, height: "auto", y: 0 }}
+                                                exit={{ opacity: 0, height: 0, y: -10 }}
+                                                transition={{
+                                                    opacity: { duration: 0.2, ease: "easeOut" },
+                                                    height: { duration: 0.2, ease: "easeOut" },
+                                                    y: { duration: 0.08, ease: "easeOut" }
+                                                }}
+                                                className="text-sm text-muted-foreground mt-1 text-left"
+                                            >
+                                                {option.description}
+                                            </motion.p>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </label>
+                        </div>
+                    ))}
+                </RadioGroup>
                 {graphType === 'artists' && artistColorMode !== undefined && setArtistColorMode && (
                     <>
                         <div className="flex items-center justify-between w-full p-3 border-t border-border mt-2 pt-3">
@@ -202,7 +205,7 @@ export default function ClusteringPanel({
                         )}
                     </>
                 )}
-            </RadioGroup>
+            </div>
         </ResponsivePanel>
     )
 }
