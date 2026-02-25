@@ -1,7 +1,14 @@
 import {useContext, useEffect, useState} from "react";
 import {Preferences} from "@/types";
 import {AuthContext} from "@/providers/AuthProvider";
-import {likeArtistUser, unlikeArtistUser, updateUserPreferences} from "@/apis/usersApi";
+import {
+    lastFMConnect,
+    lastFMPreview,
+    lastFMRemove,
+    likeArtistUser,
+    unlikeArtistUser,
+    updateUserPreferences
+} from "@/apis/usersApi";
 import {DEFAULT_PREFERENCES, PHASE_VERSION} from "@/constants";
 
 const useAuth = () => {
@@ -12,7 +19,8 @@ const useAuth = () => {
     const [preferences, setPreferences] = useState<Preferences>();
     const [likedArtists, setLikedArtists] = useState<string[]>([]);
     const [isSocialUser, setIsSocialUser] = useState<boolean | undefined>();
-    const [userAccess, setUserAccess] = useState<string | undefined>();
+    const [userAccess, setUserAccess] = useState<string | undefined>()
+    const [lfmUsername, setlfmUsername] = useState<string>();
 
     const {
         user,
@@ -44,6 +52,7 @@ const useAuth = () => {
         if (user && !localStorage.getItem('versionLastAccessed')) {
             localStorage.setItem('versionLastAccessed', PHASE_VERSION);
         }
+        setlfmUsername(user && user.lfmUsername ? user.lfmUsername : undefined);
     }, [user]);
 
     const likeArtist = async (artistID: string) => {
@@ -83,6 +92,35 @@ const useAuth = () => {
         setLikedArtists([]);
     }
 
+    const onLFMPreview = async (lfmUser: string) => {
+        try {
+            return await lastFMPreview(lfmUser);
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
+    }
+
+    const onLFMConnect = async (lfmUser: string) => {
+        if (userID) {
+            const success = await lastFMConnect(lfmUser, userID);
+            if (success) setlfmUsername(lfmUser);
+            return success;
+        } else {
+            return false;
+        }
+    }
+
+    const onLFMRemove = async () => {
+        if (userID) {
+            const success = await lastFMRemove(userID);
+            if (success) setlfmUsername(undefined);
+            return success;
+        } else {
+            return false;
+        }
+    }
+
     return {
         userID,
         userName,
@@ -92,6 +130,7 @@ const useAuth = () => {
         likedArtists,
         isSocialUser,
         userAccess,
+        lfmUsername,
         signIn,
         signInSocial,
         signUp,
@@ -109,6 +148,9 @@ const useAuth = () => {
         resetPassword,
         authLoading: loading,
         authError: error,
+        onLFMPreview,
+        onLFMConnect,
+        onLFMRemove,
     }
 }
 
