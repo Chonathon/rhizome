@@ -126,7 +126,7 @@ export default function DisplayPanel({
                     )}
                 </div>
                 {/* content */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
                 {/* Node Options */}
                 <fieldset className={feildsetStyles}>
                     <legend className="sr-only">Node Options</legend>
