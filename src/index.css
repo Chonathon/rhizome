@@ -16,6 +16,7 @@ Neutral 800  oklch(0.28 0.004 235)  (primary text)
 Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
 */
 
+
 :root {
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
@@ -192,7 +193,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
 
   --chart-5: oklch(0.645 0.246 16.439);
 
-  --sidebar: oklch(0.205 0 0 / 90%);
+  --sidebar: color-mix(in srgb, var(--neutral-900) 97%, transparent);
 
   --sidebar-foreground: oklch(0.985 0 0);
 

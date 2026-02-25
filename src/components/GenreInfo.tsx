@@ -349,7 +349,7 @@ export function GenreInfo({
                       )}
                       {canNext && (
                         <Button
-                          className="pointer-events-auto h-full absolute rounded-none bg-background right-0 top-1/2 -translate-y-1/2"
+                          className="pointer-events-auto h-full absolute rounded-none bg-transparent right-0 top-1/2 -translate-y-1/2"
                           variant="ghost"
                           size="icon"
                           onClick={() => scrollByWidth('next')}
