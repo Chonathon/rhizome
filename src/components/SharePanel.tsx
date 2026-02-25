@@ -10,7 +10,7 @@ export default function SharePanel({ onExport }: SharePanelProps) {
     return (
         <ResponsivePanel
             trigger={
-                <Button variant="outline" size="icon" className="h-10 w-10">
+                <Button variant="outline" size="icon" className="h-10 w-10" title="Share">
                     <Share2 className="h-[1.2rem] w-[1.2rem]" />
                     <span className="sr-only">Share Options</span>
                 </Button>
