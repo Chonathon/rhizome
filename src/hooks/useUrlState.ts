@@ -147,7 +147,11 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     lastAppliedUrl.current = urlString;
 
     // Tell State->URL effect to skip the next update since we're driving state from URL
-    skipNextUrlUpdate.current = true;
+    // Only skip if URL actually has params — on base URL (no params), we don't want
+    // to block the first user interaction from generating a URL
+    if (urlString) {
+      skipNextUrlUpdate.current = true;
+    }
 
     const currentState = stateRef.current;
 
