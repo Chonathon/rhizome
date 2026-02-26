@@ -46,12 +46,12 @@ export default function ClusteringPanel({
 
     const options = graphType === 'genres' ? genreOptions : artistOptions;
 
-    const feildsetStyles = "rounded-2xl bg-accent dark:bg-accent/50 border"
+    const feildsetStyles = "rounded-2xl bg-accent dark:bg-accent/50 border border-muted"
 
     return (
         <ResponsivePanel
             trigger={
-                <Button className="bg-background backdrop-blur-xs rounded-full border border-border" variant="outline" size="icon" aria-label="Clustering Panel">
+                <Button className="bg-background backdrop-blur-xs rounded-full border" variant="outline" size="icon" aria-label="Clustering Panel">
                     <span className="sr-only">Show Clustering Panel</span>
                     <Spline />
                 </Button>
@@ -79,7 +79,7 @@ export default function ClusteringPanel({
                             <label
                                 htmlFor={option.id}
                                 className={`flex items-start w-full gap-3 rounded-xl p-3 transition-colors cursor-pointer ${
-                                    clusterMode === option.id ? "bg-secondary dark:bg-accent" : "hover:bg-white/30 dark:hover:bg-black/10"
+                                    clusterMode === option.id ? "bg-secondary border dark:bg-accent" : "hover:bg-white/30 dark:hover:bg-black/10"
                                 }`}
                             >
                                 <RadioGroupItem
