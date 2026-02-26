@@ -168,7 +168,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   --background: var(--neutral-900);
   --foreground: var(--neutral-100);
 
-  --card: var(--neutral-800);
+  --card: var(--neutral-900);
   --card-foreground: var(--neutral-100);
 
   --popover: oklch(0.205 0 0);
