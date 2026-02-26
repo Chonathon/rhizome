@@ -68,7 +68,7 @@ export default function ClusteringPanel({
 
                     </Button>
                 </div>   
-            <div className="flex flex-col items-start w-full gap-2 dark:bg-background rounded-2xl bg-background">
+            <div className="flex flex-col items-start w-full gap-2 rounded-2xl ">
                 <RadioGroup
                     value={clusterMode}
                     onValueChange={(value) => setClusterMode([value])}
