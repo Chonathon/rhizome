@@ -75,7 +75,7 @@ export default function ClusteringPanel({
                     className={`${feildsetStyles} w-full gap-1`}
                 >
                     {options.map((option) => (
-                        <div key={option.id} className="w-full">
+                        <motion.div key={option.id} className="w-full" layout>
                             <label
                                 htmlFor={option.id}
                                 className={`flex items-start w-full gap-3 rounded-xl p-3 transition-colors cursor-pointer ${
@@ -91,27 +91,28 @@ export default function ClusteringPanel({
                                     <span className={`${clusterMode === option.id ? "text-foreground" : "text-muted-foreground"} text-md font-semibold leading-none `}>
                                         {option.label}
                                     </span>
-                                    <AnimatePresence mode="wait" initial={false}>
+                                    <AnimatePresence initial={false}>
                                         {clusterMode === option.id && (
-                                            <motion.p
+                                            <motion.div
                                                 key={option.id}
-                                                initial={{ opacity: 0, height: 0, y: -10 }}
-                                                animate={{ opacity: 1, height: "auto", y: 0 }}
-                                                exit={{ opacity: 0, height: 0, y: -10 }}
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: "auto" }}
+                                                exit={{ opacity: 0, height: 0 }}
                                                 transition={{
+                                                    height: { duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] },
                                                     opacity: { duration: 0.2, ease: "easeOut" },
-                                                    height: { duration: 0.2, ease: "easeOut" },
-                                                    y: { duration: 0.08, ease: "easeOut" }
                                                 }}
-                                                className="text-sm text-muted-foreground mt-1 text-left"
+                                                className="overflow-hidden"
                                             >
-                                                {option.description}
-                                            </motion.p>
+                                                <p className="text-sm text-muted-foreground mt-1 text-left">
+                                                    {option.description}
+                                                </p>
+                                            </motion.div>
                                         )}
                                     </AnimatePresence>
                                 </div>
                             </label>
-                        </div>
+                        </motion.div>
                     ))}
                 </RadioGroup>
                 {graphType === 'artists' && artistColorMode !== undefined && setArtistColorMode && (
