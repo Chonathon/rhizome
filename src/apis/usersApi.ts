@@ -30,3 +30,18 @@ export const validateAccessCode = async (email: string, accessCode: string) => {
     const response = await axios.get(`${url}/users/verify-access-code/${encodeURIComponent(accessCode)}/${encodeURIComponent(email)}`, {});
     return response.status === 200;
 }
+
+export const lastFMPreview = async (lfmUsername: string) => {
+    const response = await axios.get(`${url}/users/lastfm/userpreview/${lfmUsername}`);
+    return response.data.preview;
+}
+
+export const lastFMConnect = async (lfmUsername: string, userID: string) => {
+    const response = await axios.put(`${url}/users/lastfm/${userID}/${lfmUsername}`);
+    return response.status === 200;
+}
+
+export const lastFMRemove = async (userID: string) => {
+    const response = await axios.put(`${url}/users/lastfm/remove/user/${userID}`);
+    return response.status === 200;
+}

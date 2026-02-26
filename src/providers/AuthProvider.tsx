@@ -261,6 +261,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                         socialUser: userData.socialUser,
                         image: userData.image,
                         appAccess: session.user.appAccess,
+                        lfmUsername: userData.lfmUsername,
                     });
                 } else {
                     setError(`Error: no user data found in db.`);

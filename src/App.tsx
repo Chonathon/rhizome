@@ -93,6 +93,7 @@ import {
   DEFAULT_LIGHT_NODE_COLOR,
   mixColors
 } from "@/lib/colors";
+import {lastFMConnect, lastFMPreview} from "@/apis/usersApi";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -328,6 +329,7 @@ function App() {
     likedArtists,
     isSocialUser,
     userAccess,
+    lfmUsername,
     signIn,
     signInSocial,
     signUp,
@@ -344,6 +346,9 @@ function App() {
     resetPassword,
     authError,
     authLoading,
+    onLFMPreview,
+    onLFMConnect,
+    onLFMRemove,
   } = useAuth();
 
   const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess(userAccess);
@@ -3036,12 +3041,16 @@ function App() {
         email={userEmail || ''}
         preferences={preferences || DEFAULT_PREFERENCES}
         socialUser={isSocialUser || false}
+        lfmUsername={lfmUsername}
         onLogout={signOut}
         onChangeEmail={changeEmail}
         onChangePassword={changePassword}
         onDeleteAccount={deleteUser}
         onChangeName={updateUser}
         onChangePreferences={updatePreferences}
+        onLastFMPreview={onLFMPreview}
+        onLastFMConnect={onLFMConnect}
+        onLastFMRemove={onLFMRemove}
       />
       <AuthOverlay
           onSignUp={signUp}
