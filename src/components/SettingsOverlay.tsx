@@ -62,7 +62,7 @@ const data = {
 
 // Reusable wrapper component for settings sections
 const SettingsSection = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-muted/50 max-w-3xl rounded-xl p-6">
+  <div className="bg-accent dark:bg-accent/50 border-accent border max-w-3xl rounded-xl p-6">
     {children}
   </div>
 )
@@ -1000,7 +1000,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
-          className="overflow-hidden bg-card max-h-[calc(100dvh-3rem)] p-0 pt-0 sm:pl-3 sm:max-h-160 md:max-w-[700px] lg:max-w-[800px]"
+          className="overflow-hidden max-h-[calc(100dvh-3rem)] p-0 pt-0 sm:pl-3 sm:max-h-160 md:max-w-[700px] lg:max-w-[800px]"
           onEscapeKeyDown={handleEscapeKeyDown}
         >
           
@@ -1010,7 +1010,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
           </DialogDescription>
           <SidebarProvider className="items-start ">
             <div className="flex flex-col md:flex-row min-h-0 w-full max-h-160">
-              <Sidebar collapsible="none" className="bg-card md:pt-4 px-3 pb-2 md:pb-0 md:px-0 md:flex w-full md:w-[9rem]">
+              <Sidebar collapsible="none" className=" md:pt-4 px-3 pb-2 md:pb-0 md:px-0 md:flex w-full md:w-[9rem]">
                 <SidebarContent>
                   <SidebarHeader className="sr-only md:not-sr-only">
                     <h2 className="text-md px-3 font-semibold">Settings</h2>
@@ -1022,7 +1022,7 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
                           <SidebarMenuItem key={item.name}>
                             <SidebarMenuButton
                               size="lg"
-                              variant="outline"
+                              variant="default"
                               isActive={item.name === activeView}
                               // className={item.name === "Support" ? "text-[#8A80FF] hover:text-[#8A80FF] hover:brightness-110" : ""}
                               onClick={() => setActiveView(item.name)}

@@ -29,14 +29,14 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   -moz-osx-font-smoothing: grayscale;
   --radius: 0.625rem;
 
-  /* Neutral scale primitives */
+  /* Neutral scale primitives — evenly spaced ~0.096 L per step */
   --neutral-100: oklch(0.95 0.002 235);
-  --neutral-200: oklch(0.94 0.004 230);
-  --neutral-300: oklch(0.93 0.003 235);
-  --neutral-400: oklch(0.87 0.003 235);
-  --neutral-500: oklch(0.72 0.004 235);
-  --neutral-600: oklch(0.56 0.006 235);
-  --neutral-700: oklch(0.42 0.006 235);
+  --neutral-200: oklch(0.85 0.003 235);
+  --neutral-300: oklch(0.76 0.003 235);
+  --neutral-400: oklch(0.66 0.004 235);
+  --neutral-500: oklch(0.57 0.004 235);
+  --neutral-600: oklch(0.47 0.005 235);
+  --neutral-700: oklch(0.37 0.005 235);
   --neutral-800: oklch(0.28 0.004 235);
   --neutral-900: oklch(0.18 0.002 235);
 
@@ -150,6 +150,16 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   --color-sidebar-border: var(--sidebar-border);
 
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-neutral-100: var(--neutral-100);
+  --color-neutral-200: var(--neutral-200);
+  --color-neutral-300: var(--neutral-300);
+  --color-neutral-400: var(--neutral-400);
+  --color-neutral-500: var(--neutral-500);
+  --color-neutral-600: var(--neutral-600);
+  --color-neutral-700: var(--neutral-700);
+  --color-neutral-800: var(--neutral-800);
+  --color-neutral-900: var(--neutral-900);
 }
 
 .dark {
