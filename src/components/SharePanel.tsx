@@ -7,6 +7,8 @@ interface SharePanelProps {
 }
 
 export default function SharePanel({ onExport }: SharePanelProps) {
+    const feildsetStyles = "flex flex-col gap-3 p-3 rounded-2xl bg-accent dark:bg-accent/50 border-accent border"
+
     return (
         <ResponsivePanel
             trigger={
@@ -17,16 +19,20 @@ export default function SharePanel({ onExport }: SharePanelProps) {
             }
             className="w-sm"
             side="left"
-            headerTitle="Share & Export"
         >
-            <div className="flex flex-col gap-4 p-2 rounded-2xl shadow-sm bg-accent dark:bg-background">
+            {/* header */}
+            <div className="flex items-center pl-2 mb-1 h-10">
+                <h2 className="text-lg w-full font-semibold leading-tight text-foreground">Share & Export</h2>
+                <Button variant="ghost" size="icon" className="size-10" />
+            </div>
+            <div className="flex flex-col gap-2">
                 {/* Export Section */}
-                <div className="flex flex-col gap-3">
+                <div className={feildsetStyles}>
                     <div className="flex flex-col gap-1">
-                        <span className="text-md font-semibold text-gray-900 dark:text-gray-100">
+                        <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">
                             Export Graph
                         </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="text-sm text-muted-foreground mt-1">
                             Download the current graph view as a high-resolution PNG image
                         </span>
                     </div>
@@ -41,11 +47,6 @@ export default function SharePanel({ onExport }: SharePanelProps) {
                         </Button>
                     )}
                 </div>
-
-                {/* Future share options can go here */}
-                {/* 
-                - Scaling Options
-                - Other sharing options */}
             </div>
         </ResponsivePanel>
     )
