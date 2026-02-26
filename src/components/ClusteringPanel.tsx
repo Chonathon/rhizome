@@ -46,7 +46,7 @@ export default function ClusteringPanel({
 
     const options = graphType === 'genres' ? genreOptions : artistOptions;
 
-    const feildsetStyles = "rounded-2xl bg-accent dark:bg-accent/50 border-accent border"
+    const feildsetStyles = "rounded-2xl bg-accent dark:bg-accent/50 border"
 
     return (
         <ResponsivePanel
