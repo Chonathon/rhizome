@@ -40,7 +40,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   --neutral-700: oklch(0.37 0.005 235);
   --neutral-800: oklch(0.28 0.004 235);
   --neutral-900: oklch(0.18 0.002 235);
-  --neutral-950: color-mix(oklch(0.18 0.002 235) 50%, transparent);
+  --neutral-950: color-mix(oklch(0.18 0.002 235) 50%, black);
 
   --app-background: var(--background);
   --background: rgba(255, 255, 255);
@@ -49,7 +49,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   --card: rgba(255, 255, 255, 0.87);
   --card-foreground: var(--neutral-900);
 
-  --popover: var(--neutral-50);
+  --popover: var(--background);
   --popover-foreground: oklch(0.145 0 0);
   --primary: var(--neutral-900);
   --primary-foreground: var(--neutral-100);
@@ -184,7 +184,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   --primary-foreground: oklch(0.205 0 0);
 
   --secondary: var(--neutral-800);
-  --muted: var(--neutral-800);
+  --muted: var(--neutral-900);
   --accent: var(--neutral-800);
 
   --muted-foreground: var(--neutral-400);
