@@ -26,6 +26,8 @@ Canvas via react-force-graph-2d
 
 There is no separate Collections graph component. Collection mode uses the artists graph with a filtered subset of the user's added artists.
 
+Pass `showImages={true}` (via `ArtistsForceGraph`) to always render artist images on every node, not just click-selected ones. In the app this is set to `collectionMode` so the collections view shows artist photos on all nodes.
+
 ## Key Behaviors
 
 - Graphs stay mounted and are paused/resumed via the `show` prop so physics state persists between views.

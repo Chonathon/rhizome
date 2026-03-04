@@ -73,6 +73,7 @@ export interface NodeRenderContext<T> {
   isHovered: boolean;
   alpha: number;
   theme: 'light' | 'dark' | undefined;
+  showImages?: boolean;
 }
 
 export interface SelectionRenderContext<T> extends NodeRenderContext<T> {}
@@ -115,6 +116,8 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   showLinks?: boolean;
   disableDimming?: boolean;
   priorityLabelIds?: string[];
+  // Always render artist images on all nodes (not just click-selected)
+  showImages?: boolean;
   // Radial layout for popularity stratification (concentric rings)
   radialLayout?: {
     enabled: boolean;
@@ -126,12 +129,12 @@ export interface GraphProps<T, L extends SharedGraphLink> {
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
 
 function defaultRenderNode<T>(ctx: NodeRenderContext<T>): void {
-  const { ctx: canvas, node, x, y, radius, color, alpha, isClickSelected, theme } = ctx;
+  const { ctx: canvas, node, x, y, radius, color, alpha, isClickSelected, showImages, theme } = ctx;
   canvas.save();
   canvas.globalAlpha = alpha;
 
-  // For click-selected nodes, draw image (artist) or letter (genre) fill
-  if (isClickSelected) {
+  // Show image fill for click-selected nodes, or always when showImages is enabled (e.g. collections)
+  if (isClickSelected || showImages) {
     const data = node.data as { image?: string; listeners?: number } | undefined;
     const imageUrl = data?.image;
     const isArtist = typeof data?.listeners === 'number';
@@ -191,6 +194,7 @@ const Graph = forwardRef(function GraphInner<
     showLinks = true,
     disableDimming = false,
     priorityLabelIds: priorityLabelIdsProp,
+    showImages = false,
     radialLayout,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
@@ -823,6 +827,7 @@ const Graph = forwardRef(function GraphInner<
             isHovered,
             alpha,
             theme: resolvedTheme as 'light' | 'dark' | undefined,
+            showImages,
           };
 
           // Render node and selection ring if showNodes is true

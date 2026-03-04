@@ -2703,6 +2703,7 @@ function App() {
                   showNodes={showNodes}
                   showLinks={showLinks}
                   disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
+                  showImages={collectionMode}
                   radialLayout={artistRadialLayout}
                   priorityLabelIds={centralArtistLabelIds}
                 />
