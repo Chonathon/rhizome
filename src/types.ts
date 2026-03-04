@@ -163,6 +163,7 @@ export interface GraphHandle {
   zoomIn: () => void;
   zoomOut: () => void;
   zoomTo: (k: number, ms?: number) => void;
+  resetView: (k: number, ms?: number) => void;
   getZoom: () => number;
   getCanvas: () => HTMLCanvasElement | null;
 }
@@ -184,4 +185,14 @@ export interface UrlState {
     artistSlug: string | null;
     anchorSlug: string | null;
     collectionMode: boolean;
+}
+
+// Listener-based popularity tiers for radial stratification
+export interface ListenerTier {
+    id: number;
+    name: string;
+    min: number;
+    max: number;
+    radius: number; // Distance from center (popular = inner, underground = outer)
+    color: string; // Explicit color for visual distinction
 }

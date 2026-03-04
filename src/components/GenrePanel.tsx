@@ -3,9 +3,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tag } from "lucide-react";
 import { Genre, GenreClusterMode } from "@/types";
-import {CLUSTER_COLORS, isRootGenre} from "@/lib/utils";
+import {isRootGenre} from "@/lib/utils";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
 import {useEffect, useState} from "react";
+import {useTheme} from "next-themes";
+import {getClusterColor} from "@/lib/colors";
 
 export default function GenrePanel({
   genres = [],
@@ -23,6 +25,8 @@ export default function GenrePanel({
   show: boolean;
 }) {
   const [checked, setChecked] = useState<boolean[]>([]);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
   useEffect(() => {
     if (genres){
@@ -91,8 +95,7 @@ export default function GenrePanel({
                       p-2 w-4 h-4 shrink-0
                       rounded-full inline-block"
                     style={{
-                      backgroundColor:
-                        clusterColors[index % clusterColors.length],
+                      backgroundColor: getClusterColor(index, isDark),
                     }}
                   />
                 </Button>

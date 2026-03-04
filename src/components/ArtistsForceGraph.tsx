@@ -11,6 +11,7 @@ interface ArtistsForceGraphProps {
   artistLinks: NodeLink[];
   onNodeClick: (artist: Artist) => void;
   onNodeHover?: (artistId: string | null, screenPosition: { x: number; y: number } | null) => void;
+  onZoomChange?: (zoom: number) => void;
   loading: boolean;
   show: boolean;
   selectedArtistId?: string;
@@ -46,6 +47,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       artistLinks,
       onNodeClick,
       onNodeHover,
+      onZoomChange,
       loading,
       show,
       selectedArtistId,
@@ -126,6 +128,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         autoFocus={autoFocus}
         onNodeClick={onNodeClick}
         onNodeHover={onNodeHover ? (artist, screenPosition) => onNodeHover((artist as Artist | undefined)?.id ?? null, screenPosition) : undefined}
+        onZoomChange={onZoomChange}
         nodeSize={nodeSize}
         linkThickness={linkThickness}
         linkCurvature={linkCurvature}

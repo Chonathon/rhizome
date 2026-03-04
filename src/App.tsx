@@ -28,12 +28,9 @@ import ArtistPreview from './components/ArtistPreview';
 import { Search } from './components/Search';
 import FindFilter from "@/components/FindFilter";
 import {
-  buildGenreColorMap,
   generateSimilarLinks,
   isRootGenre,
   isSingletonGenre,
-  mixColors,
-  assignRootGenreColors,
   primitiveArraysEqual,
   fixWikiImageURL,
   assignDegreesToArtists,
@@ -59,13 +56,11 @@ import GenresFilter from './components/GenresFilter';
 import DecadesFilter from './components/DecadesFilter';
 import {useTheme} from "next-themes";
 import {
-  DEFAULT_DARK_NODE_COLOR,
   DEFAULT_ARTIST_CLUSTER_MODE,
   DEFAULT_ARTIST_LIMIT_TYPE,
   DEFAULT_CLUSTER_MODE,
   DEFAULT_GENRE_LIMIT_TYPE,
   DEFAULT_NODE_COUNT,
-  DEFAULT_LIGHT_NODE_COLOR,
   TOP_ARTISTS_TO_FETCH,
   EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
@@ -92,7 +87,14 @@ import SettingsOverlay, {ChangePasswordDialog} from '@/components/SettingsOverla
 import {submitFeedback} from "@/apis/feedbackApi";
 import {useNavigate} from "react-router";
 import { exportGraphAsImage } from "@/utils/exportGraph";
-import { DEFAULT_PRIORITY_LABEL_PERCENT } from "@/components/Graph/graphStyle";
+import { DEFAULT_PRIORITY_LABEL_PERCENT, getDefaultGraphZoom } from "@/components/Graph/graphStyle";
+import {
+  assignRootGenreColors,
+  buildGenreColorMap,
+  DEFAULT_DARK_NODE_COLOR,
+  DEFAULT_LIGHT_NODE_COLOR,
+  mixColors
+} from "@/lib/colors";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -108,7 +110,7 @@ function SidebarLogoTrigger() {
 
 
 function App() {
-  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
+  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; resetView: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
   const genresGraphRef = useRef<GraphHandle | null>(null);
   const artistsGraphRef = useRef<GraphHandle | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -312,6 +314,7 @@ function App() {
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
   const [playerStartIndex, setPlayerStartIndex] = useState<number>(0);
+  const [playerPreviewMode, setPlayerPreviewMode] = useState<boolean>(false);
   // TODO: prob need to make playerIDQueue an array or update state differently as it sometimes is out of sync with the ui
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
   const [autoFocusGraph, setAutoFocusGraph] = useState<boolean>(true);
@@ -488,6 +491,91 @@ function App() {
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
+  const defaultGraphZoom = useMemo(() => getDefaultGraphZoom(dagMode, isMobile), [dagMode, isMobile]);
+  const [genresZoom, setGenresZoom] = useState<number | null>(null);
+  const [artistsZoom, setArtistsZoom] = useState<number | null>(null);
+  const [isGenresZoomResetting, setIsGenresZoomResetting] = useState(false);
+  const [isArtistsZoomResetting, setIsArtistsZoomResetting] = useState(false);
+  const genresZoomResetTimeoutRef = useRef<number | null>(null);
+  const artistsZoomResetTimeoutRef = useRef<number | null>(null);
+  const zoomResetEpsilon = 0.001;
+  const getZoomDirection = useCallback((k: number) => {
+    if (Math.abs(k - defaultGraphZoom) <= zoomResetEpsilon) return 'default';
+    return k > defaultGraphZoom ? 'in' : 'out';
+  }, [defaultGraphZoom, zoomResetEpsilon]);
+
+  const handleGenresZoomChange = useCallback((k: number) => {
+    if (isGenresZoomResetting) return;
+    setGenresZoom(k);
+  }, [isGenresZoomResetting]);
+
+  const handleArtistsZoomChange = useCallback((k: number) => {
+    if (isArtistsZoomResetting) return;
+    setArtistsZoom(k);
+  }, [isArtistsZoomResetting]);
+
+  useEffect(() => {
+    const currentGenresZoom = genresGraphRef.current?.getZoom?.();
+    if (typeof currentGenresZoom === 'number') {
+      setGenresZoom(currentGenresZoom);
+    }
+    const currentArtistsZoom = artistsGraphRef.current?.getZoom?.();
+    if (typeof currentArtistsZoom === 'number') {
+      setArtistsZoom(currentArtistsZoom);
+    }
+  }, [defaultGraphZoom]);
+
+  useEffect(() => {
+    return () => {
+      if (genresZoomResetTimeoutRef.current) {
+        window.clearTimeout(genresZoomResetTimeoutRef.current);
+      }
+      if (artistsZoomResetTimeoutRef.current) {
+        window.clearTimeout(artistsZoomResetTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const activeGraphRef = graph === 'genres' ? genresGraphRef : artistsGraphRef;
+  const activeZoomValue = graph === 'genres' ? genresZoom : artistsZoom;
+  const isActiveZoomResetting = graph === 'genres' ? isGenresZoomResetting : isArtistsZoomResetting;
+  const isActiveZoomDefault =
+    isActiveZoomResetting
+    || activeZoomValue === null
+    || Math.abs(activeZoomValue - defaultGraphZoom) <= zoomResetEpsilon;
+  const activeZoomDirection =
+    isActiveZoomResetting || activeZoomValue === null ? 'default' : getZoomDirection(activeZoomValue);
+
+  const startZoomReset = useCallback((target: 'genres' | 'artists') => {
+    const resetDurationMs = 420;
+    if (target === 'genres') {
+      if (genresZoomResetTimeoutRef.current) {
+        window.clearTimeout(genresZoomResetTimeoutRef.current);
+      }
+      setIsGenresZoomResetting(true);
+      setGenresZoom(defaultGraphZoom);
+      genresZoomResetTimeoutRef.current = window.setTimeout(() => {
+        setIsGenresZoomResetting(false);
+        const zoom = genresGraphRef.current?.getZoom?.();
+        if (typeof zoom === 'number') {
+          setGenresZoom(zoom);
+        }
+      }, resetDurationMs);
+    } else {
+      if (artistsZoomResetTimeoutRef.current) {
+        window.clearTimeout(artistsZoomResetTimeoutRef.current);
+      }
+      setIsArtistsZoomResetting(true);
+      setArtistsZoom(defaultGraphZoom);
+      artistsZoomResetTimeoutRef.current = window.setTimeout(() => {
+        setIsArtistsZoomResetting(false);
+        const zoom = artistsGraphRef.current?.getZoom?.();
+        if (typeof zoom === 'number') {
+          setArtistsZoom(zoom);
+        }
+      }, resetDurationMs);
+    }
+  }, [defaultGraphZoom]);
 
   // refs and effects for checking current loading play ids
   const artistsPlayIDsLoadingRef = useRef(artistsPlayIDsLoading);
@@ -726,7 +814,8 @@ function App() {
 
       scheduleClustering(() => {
         try {
-          const engine = new ClusteringEngine(currentArtists, currentArtistLinks);
+          const isDark = resolvedTheme === 'dark';
+          const engine = new ClusteringEngine(currentArtists, currentArtistLinks, isDark);
           const result = engine.cluster({
             method: artistClusterMethod,
             resolution: 1.0,
@@ -747,7 +836,7 @@ function App() {
         clearTimeout(clusteringTimeoutRef.current);
       }
     };
-  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod]);
+  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod, resolvedTheme]);
 
   // Use generated links from clustering (artists colored by parent genre)
   useEffect(() => {
@@ -887,64 +976,69 @@ function App() {
 
   const genreColorLegend = useMemo(() => {
     if (!genreRoots.length || !genres.length) return [];
-    const rootColorMap = assignRootGenreColors(genreRoots);
+    const isDark = resolvedTheme === 'dark';
     const genreNameById = new Map(genres.map((genre) => [genre.id, genre.name]));
     const genreById = new Map(genres.map((genre) => [genre.id, genre]));
     const rootIdLookup = new Set(genreRoots);
     const rootIdSet = new Set<string>();
+    const multiRootGenresInView = new Set<string>(); // Track multi-root genres for blended colors
 
-    // Helper to add root genres from a genre ID
-    const addRootsFromGenreId = (genreId: string) => {
-      const genre = genreById.get(genreId);
-      if (genre?.rootGenres?.length) {
-        genre.rootGenres.forEach((rootId) => rootIdSet.add(rootId));
+    // Calculate global root artist counts (from all genres, for consistent color assignment)
+    const globalRootArtistCount = new Map<string, number>();
+    genres.forEach(genre => {
+      if (genre.rootGenres?.length) {
+        genre.rootGenres.forEach(rootId => {
+          globalRootArtistCount.set(rootId, (globalRootArtistCount.get(rootId) ?? 0) + genre.artistCount);
+        });
       }
-      if (rootIdLookup.has(genreId)) {
-        rootIdSet.add(genreId);
+      if (rootIdLookup.has(genre.id)) {
+        globalRootArtistCount.set(genre.id, (globalRootArtistCount.get(genre.id) ?? 0) + genre.artistCount);
       }
-    };
+    });
+
+    // Assign colors based on global artist counts (matches buildGenreColorMap)
+    const rootColorMap = assignRootGenreColors(genreRoots, isDark, globalRootArtistCount);
+
+    // Track in-view artist counts per root genre (for legend sorting)
+    const rootArtistCount = new Map<string, number>();
+    // Track artist counts for blended (multi-root) genres
+    const blendedArtistCount = new Map<string, number>();
 
     if (graph === 'artists' || graph === 'similarArtists') {
-      // Determine which genre IDs to use for the legend
-      const filterGenreIds = collectionMode
-        ? collectionFilters.genres
-        : artistFilterGenreIDs;
-
-      // Helper to get root genres from artist's top tag (matches getArtistColor logic)
-      const getTopGenreRoots = (artist: Artist): string[] => {
+      // Helper to get top genre from artist's tags (matches getArtistColor logic)
+      const getTopGenre = (artist: Artist): Genre | null => {
         if (artist.tags?.length) {
-          // Find tags that match known genres, sorted by count (highest first)
           const genreTags = artist.tags
             .filter(t => genres.some(g => g.name === t.name))
             .sort((a, b) => b.count - a.count);
           if (genreTags.length > 0) {
             const bestTag = genreTags[0];
-            const tagGenre = genres.find(g => g.name === bestTag.name);
-            if (tagGenre?.rootGenres?.length) {
-              return tagGenre.rootGenres;
-            }
+            return genres.find(g => g.name === bestTag.name) ?? null;
           }
         }
-        // Fallback to first genre if no matching tag
         if (artist.genres?.length) {
-          const firstGenre = genreById.get(artist.genres[0]);
-          if (firstGenre?.rootGenres?.length) {
-            return firstGenre.rootGenres;
-          }
+          return genreById.get(artist.genres[0]) ?? null;
         }
-        return [];
+        return null;
       };
 
-      if (filterGenreIds.length > 0) {
-        // When a genre filter is active, use only the filtered genres for the legend
-        filterGenreIds.forEach(addRootsFromGenreId);
-      } else if (currentArtists.length) {
-        // Use each artist's TOP genre (by tag count) for the legend - matches coloring logic
+      // Always use actual artists' top genres for the legend (not just filter genres)
+      // This ensures we show all colors that appear in the graph
+      if (currentArtists.length) {
         currentArtists.forEach((artist) => {
-          const topRoots = getTopGenreRoots(artist);
-          topRoots.forEach(rootId => {
-            rootIdSet.add(rootId);
-          });
+          const topGenre = getTopGenre(artist);
+          if (topGenre?.rootGenres?.length) {
+            topGenre.rootGenres.forEach(rootId => {
+              rootIdSet.add(rootId);
+              // Count artists per root genre (each artist counts once per root)
+              rootArtistCount.set(rootId, (rootArtistCount.get(rootId) ?? 0) + 1);
+            });
+            if (topGenre.rootGenres.length >= 2) {
+              multiRootGenresInView.add(topGenre.id);
+              // Count artists for blended genre
+              blendedArtistCount.set(topGenre.id, (blendedArtistCount.get(topGenre.id) ?? 0) + 1);
+            }
+          }
         });
       }
     } else {
@@ -953,20 +1047,27 @@ function App() {
       if (!legendSource.length) return [];
       legendSource.forEach((genre) => {
         if (genre.rootGenres?.length) {
-          genre.rootGenres.forEach((rootId) => rootIdSet.add(rootId));
+          genre.rootGenres.forEach((rootId) => {
+            rootIdSet.add(rootId);
+            // Sum up total artist count from genres that belong to each root
+            rootArtistCount.set(rootId, (rootArtistCount.get(rootId) ?? 0) + genre.artistCount);
+          });
+          if (genre.rootGenres.length >= 2) {
+            multiRootGenresInView.add(genre.id);
+            // Use genre's artist count for blended entries
+            blendedArtistCount.set(genre.id, (blendedArtistCount.get(genre.id) ?? 0) + genre.artistCount);
+          }
         }
         if (rootIdLookup.has(genre.id)) {
           rootIdSet.add(genre.id);
+          // Root genres themselves contribute their own artist count
+          rootArtistCount.set(genre.id, (rootArtistCount.get(genre.id) ?? 0) + genre.artistCount);
         }
       });
     }
 
-    const sortedRootIds = [...rootIdSet].sort((a, b) => {
-      const nameA = genreNameById.get(a) ?? a;
-      const nameB = genreNameById.get(b) ?? b;
-      return nameA.localeCompare(nameB);
-    });
-    return sortedRootIds
+    // Build root genre entries
+    const rootEntries = [...rootIdSet]
       .map((id) => {
         const color = rootColorMap.get(id);
         if (!color) return null;
@@ -974,17 +1075,42 @@ function App() {
           id,
           name: genreNameById.get(id) ?? id,
           color,
+          isBlended: false,
+          artistCount: rootArtistCount.get(id) ?? 0,
         };
       })
-      .filter((entry): entry is { id: string; name: string; color: string } => Boolean(entry));
-  }, [graph, currentArtists, collectionMode, collectionFilters.genres, artistFilterGenreIDs, collectionGenresInView, genresInView, genres, genreRoots]);
+      .filter((entry): entry is { id: string; name: string; color: string; isBlended: boolean; artistCount: number } => Boolean(entry));
+
+    // Build blended genre entries
+    const blendedEntries = [...multiRootGenresInView]
+      .map((genreId) => {
+        const genre = genreById.get(genreId);
+        if (!genre?.rootGenres?.length) return null;
+        const rootColors = genre.rootGenres
+          .map(rootId => rootColorMap.get(rootId))
+          .filter((c): c is string => Boolean(c));
+        if (rootColors.length < 2) return null;
+        return {
+          id: genreId,
+          name: genreNameById.get(genreId) ?? genreId,
+          color: mixColors(rootColors),
+          isBlended: true,
+          artistCount: blendedArtistCount.get(genreId) ?? 0,
+        };
+      })
+      .filter((entry): entry is { id: string; name: string; color: string; isBlended: boolean; artistCount: number } => Boolean(entry));
+
+    // Combine and sort by artist count descending
+    return [...rootEntries, ...blendedEntries].sort((a, b) => b.artistCount - a.artistCount);
+  }, [graph, currentArtists, collectionMode, collectionGenresInView, genresInView, genres, genreRoots, resolvedTheme]);
 
   // Initializes the genre graph data after fetching genres from DB
   useEffect(() => {
     if (genres) {
       const nodeCount = genres.length;
       onGenreNodeCountChange(nodeCount);
-      const colorMap = buildGenreColorMap(genres, genreRoots);
+      const isDark = resolvedTheme === 'dark';
+      const colorMap = buildGenreColorMap(genres, genreRoots, isDark);
       // console.log('[App Debug] Building genreColorMap');
       // console.log('  genres.length:', genres.length);
       // console.log('  genreRoots:', genreRoots);
@@ -992,7 +1118,7 @@ function App() {
       // console.log('  first 5 colorMap entries:', Array.from(colorMap.entries()).slice(0, 5));
       setGenreColorMap(colorMap);
     }
-  }, [genres, genreLinks, genreRoots]);
+  }, [genres, genreLinks, genreRoots, resolvedTheme]);
 
   // Fetches top tracks of selected genre player ids in the background
   useEffect(() => {
@@ -1173,9 +1299,10 @@ function App() {
   }
 
   // Play handlers using embedded YouTube player
-  const onPlayArtist = async (artist: Artist) => {
+  const onPlayArtist = async (artist: Artist, options?: { preview?: boolean }) => {
     const req = ++playRequest.current;
     const artistLoadingKey = `artist:${artist.id}`;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerLoadingKey(artistLoadingKey);
     setPlayerSource('artist');
@@ -1220,9 +1347,15 @@ function App() {
     }
   };
 
-  const onPlayGenre = async (genre: Genre) => {
+  // Preview mode: plays from ~30% into track for 30 seconds
+  const onPreviewArtist = async (artist: Artist) => {
+    await onPlayArtist(artist, { preview: true });
+  };
+
+  const onPlayGenre = async (genre: Genre, options?: { preview?: boolean }) => {
     const req = ++playRequest.current;
     const genreLoadingKey = `genre:${genre.id}`;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerLoadingKey(genreLoadingKey);
     setPlayerSource('genre');
@@ -1273,12 +1406,13 @@ function App() {
     }
   };
 
-  const onPlayArtistTrack = async (tracks: TopTrack[], startIndex: number) => {
+  const onPlayArtistTrack = async (tracks: TopTrack[], startIndex: number, options?: { preview?: boolean }) => {
     if (!tracks || tracks.length === 0) {
       toast.error('No tracks available');
       return;
     }
     const req = ++playRequest.current;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerSource('artist');
     // Extract video IDs based on DEFAULT_PLAYER preference
@@ -1321,12 +1455,13 @@ function App() {
     }
   };
 
-  const onPlayGenreTrack = async (tracks: TopTrack[], startIndex: number) => {
+  const onPlayGenreTrack = async (tracks: TopTrack[], startIndex: number, options?: { preview?: boolean }) => {
     if (!tracks || tracks.length === 0) {
       toast.error('No tracks available');
       return;
     }
     const req = ++playRequest.current;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerSource('genre');
     // Extract video IDs based on DEFAULT_PLAYER preference
@@ -1455,7 +1590,7 @@ function App() {
   // Update preview states based on cursor hover + command key or delay
   useEffect(() => {
     const triggerMode = preferences?.previewTrigger || 'modifier';
-    const shouldShowPreview = preferences?.enableGraphCards && !showGenreCard && !showArtistCard;
+    const shouldShowPreview = preferences?.enableGraphCards;
 
     if (!shouldShowPreview || !cursorHoveredGenre) {
       setPreviewGenre(null);
@@ -1472,7 +1607,7 @@ function App() {
     } else {
       setPreviewGenre(null);
     }
-  }, [isCommandHeld, cursorHoveredGenre, preferences?.enableGraphCards, preferences?.previewTrigger, showGenreCard, showArtistCard]);
+  }, [isCommandHeld, cursorHoveredGenre, preferences?.enableGraphCards, preferences?.previewTrigger]);
 
   useEffect(() => {
     const triggerMode = preferences?.previewTrigger || 'modifier';
@@ -2425,6 +2560,7 @@ function App() {
         playerHeaderPreferProvidedTitle={playerSource === 'genre'}
         onPlayerTitleClick={handlePlayerTitleClick}
         playerStartIndex={playerStartIndex}
+        playerPreviewMode={playerPreviewMode}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -2569,22 +2705,6 @@ function App() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <motion.div layout>
-                <FindFilter
-                  items={findOptions}
-                  onSelect={handleFindSelect}
-                  onClear={hasFindSelection ? handleFindClear : undefined}
-                  disabled={findPanelDisabled}
-                  placeholder={graph === 'genres' ? 'Find genres in view...' : 'Find artists in view...'}
-                  emptyText={graph === 'genres' ? 'No genres match this view.' : 'No artists match this view.'}
-                  triggerClassName="self-start"
-                  open={isFindFilterOpen}
-                  onOpenChange={(open) => {
-                    if (findPanelDisabled && open) return;
-                    setIsFindFilterOpen(open);
-                  }}
-                />
-              </motion.div>
           </motion.div>
           </AnimatePresence>
                 <GenresForceGraph
@@ -2602,6 +2722,7 @@ function App() {
                   loading={genresLoading}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
+                  onZoomChange={handleGenresZoomChange}
                   nodeSize={nodeSize}
                   linkThickness={linkThickness}
                   linkCurvature={linkCurvature}
@@ -2635,6 +2756,7 @@ function App() {
                   loading={((graph === 'artists' || graph === 'similarArtists') && artistsLoading) || (graph === 'artists' && !artistClusters)}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
+                  onZoomChange={handleArtistsZoomChange}
                   nodeSize={nodeSize}
                   linkThickness={linkThickness}
                   linkCurvature={linkCurvature}
@@ -2649,7 +2771,7 @@ function App() {
                 />
 
           {/* Genre hover preview */}
-          {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && !showGenreCard && (
+          {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && (
               <GenrePreview
                   genre={hoveredGenreData.genre}
                   topArtists={hoveredGenreData.topArtists}
@@ -2667,13 +2789,14 @@ function App() {
 
           {/* Artist hover preview */}
           {preferences?.enableGraphCards && hoveredArtistData && previewArtist
-              && (graph === 'artists' || graph === 'similarArtists') && !showArtistCard && (
+              && (graph === 'artists' || graph === 'similarArtists') && (
                   <ArtistPreview
                       artist={hoveredArtistData}
                       genreColorMap={genreColorMap}
                       getGenreNameById={getGenreNameById}
                       onNavigate={(artist) => onArtistNodeClick(artist)}
                       onPlay={onPlayArtist}
+                      onPreview={onPreviewArtist}
                       onToggle={onAddArtistButtonToggle}
                       playLoading={playerLoading}
                       isInCollection={isInCollection(hoveredArtistData.id)}
@@ -2691,13 +2814,17 @@ function App() {
             <div className='z-20 fixed sm:hidden bottom-[52%] right-3'>
               <ZoomButtons
                 onZoomIn={() => {
-                  const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                  ref?.zoomIn();
+                  activeGraphRef.current?.zoomIn();
                 }}
                 onZoomOut={() => {
-                  const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                  ref?.zoomOut();
+                  activeGraphRef.current?.zoomOut();
                 }}
+                onResetZoom={() => {
+                  startZoomReset(graph === 'genres' ? 'genres' : 'artists');
+                  activeGraphRef.current?.resetView(defaultGraphZoom, 400);
+                }}
+                showResetZoom={!isActiveZoomDefault}
+                resetZoomDirection={activeZoomDirection}
               />
             </div>
           {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
@@ -2728,9 +2855,23 @@ function App() {
             {/*    show={graph === 'artists' && collectionMode}*/}
             {/*/>*/}
           </div>}
-          {/* right controls */}
+          {/* Utility buttons - find, clustering, display settings, share/export, zoom */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               {/* <ModeToggle /> */}
+              <FindFilter
+                items={findOptions}
+                onSelect={handleFindSelect}
+                onClear={hasFindSelection ? handleFindClear : undefined}
+                disabled={findPanelDisabled}
+                placeholder={graph === 'genres' ? 'Find genres in view...' : 'Find artists in view...'}
+                emptyText={graph === 'genres' ? 'No genres match this view.' : 'No artists match this view.'}
+                open={isFindFilterOpen}
+                onOpenChange={(open) => {
+                  if (findPanelDisabled && open) return;
+                  setIsFindFilterOpen(open);
+                }}
+                iconOnly={true}
+              />
               {(graph === 'genres' || graph === 'artists' || graph === 'similarArtists') && (
                 <ClusteringPanel
                   graphType={graph === 'genres' ? 'genres' : 'artists'}
@@ -2795,13 +2936,17 @@ function App() {
               <div className='pt-6 hidden sm:block'>
                 <ZoomButtons
                   onZoomIn={() => {
-                    const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                    ref?.zoomIn();
+                    activeGraphRef.current?.zoomIn();
                   }}
                   onZoomOut={() => {
-                    const ref = graph === 'genres' ? genresGraphRef.current : artistsGraphRef.current;
-                    ref?.zoomOut();
+                    activeGraphRef.current?.zoomOut();
                   }}
+                  onResetZoom={() => {
+                    startZoomReset(graph === 'genres' ? 'genres' : 'artists');
+                    activeGraphRef.current?.resetView(defaultGraphZoom, 400);
+                  }}
+                  showResetZoom={!isActiveZoomDefault}
+                  resetZoomDirection={activeZoomDirection}
                 />
               </div>
           </div>
@@ -2822,13 +2967,13 @@ function App() {
                 selectedGenre={genreInfoToShow}
                 onLinkedGenreClick={onLinkedGenreClick}
                 show={showGenreCard && !showArtistCard}
-                genreArtistsLoading={topArtistsLoading}
+                genreArtistsLoading={topArtistsLoading && topArtistsGenreId === genreInfoToShow?.id}
                 onTopArtistClick={onTopArtistClick}
                 deselectGenre={onGenreInfoDismiss}
                 onSelectGenre={onLinkedGenreClick}
                 allArtists={onShowAllArtists}
                 onBadDataSubmit={onBadDataGenreSubmit}
-                topArtists={topArtists}
+                topArtists={topArtistsResolvedGenreId === genreInfoToShow?.id ? topArtists : (genreTopArtistsCache.get(genreInfoToShow?.id ?? '') || [])}
                 getArtistImageByName={getArtistImageByName}
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
@@ -2859,6 +3004,7 @@ function App() {
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
                 onPlay={onPlayArtist}
+                onPreview={onPreviewArtist}
                 onFocusInArtistsView={focusArtistInCurrentView}
                 onViewArtistGraph={focusArtistRelatedGenres}
                 onViewSimilarArtistGraph={createSimilarArtistGraph}
@@ -2866,6 +3012,7 @@ function App() {
                 viewRelatedArtistsLoading={!!pendingArtistGenreGraph}
                 onArtistToggle={onAddArtistButtonToggle}
                 isInCollection={isInCollection(artistInfoToShow?.id)}
+                collectionMode={collectionMode}
                 onPlayTrack={onPlayArtistTrack}
                 shouldShowChevron={showArtistGoTo}
                 onDrawerSnapChange={setIsArtistDrawerAtMinSnap}

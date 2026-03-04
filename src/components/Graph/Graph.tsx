@@ -1,7 +1,6 @@
 import {
   forwardRef,
   memo,
-  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -30,11 +29,18 @@ import {
   DEFAULT_PRIORITY_LABEL_ZOOM_SCALE,
   DEFAULT_PRIORITY_LABEL_PERCENT,
   drawCircleNode,
+  drawSelectedNodeFill,
   drawLabelBelow,
   applyMobileDrawerYOffset,
   DEFAULT_MOBILE_CENTER_OFFSET_PX,
+  applyDesktopDrawerXOffset,
   estimateLabelWidth,
+  getDefaultGraphZoom,
+  onImageLoad,
+  onImageLoadStart,
+  hasLoadingImages,
 } from "@/components/Graph/graphStyle";
+import { useSidebar } from "@/components/ui/sidebar";
 import type {BasicNode, GraphHandle} from "@/types";
 
 export type { GraphHandle };
@@ -62,6 +68,7 @@ export interface NodeRenderContext<T> {
   radius: number;
   color: string;
   isSelected: boolean;
+  isClickSelected: boolean;
   isNeighbor: boolean;
   isHovered: boolean;
   alpha: number;
@@ -93,6 +100,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   autoFocus?: boolean;
   onNodeClick?: (node: T) => void;
   onNodeHover?: (node: T | undefined, screenPosition: { x: number; y: number } | null) => void;
+  onZoomChange?: (zoom: number) => void;
   renderNode?: NodeRenderer<T>;
   renderSelection?: SelectionRenderer<T>;
   renderLabel?: LabelRenderer<T>;
@@ -118,27 +126,38 @@ export interface GraphProps<T, L extends SharedGraphLink> {
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
 
 function defaultRenderNode<T>(ctx: NodeRenderContext<T>): void {
-  const { ctx: canvas, x, y, radius, color, alpha } = ctx;
+  const { ctx: canvas, node, x, y, radius, color, alpha, isClickSelected, theme } = ctx;
   canvas.save();
   canvas.globalAlpha = alpha;
-  drawCircleNode(canvas, x, y, radius, color);
+
+  // For click-selected nodes, draw image (artist) or letter (genre) fill
+  if (isClickSelected) {
+    const data = node.data as { image?: string; listeners?: number } | undefined;
+    const imageUrl = data?.image;
+    const isArtist = typeof data?.listeners === 'number';
+    drawSelectedNodeFill(canvas, x, y, radius, node.label, color, imageUrl, theme, isArtist);
+  } else {
+    drawCircleNode(canvas, x, y, radius, color);
+  }
+
   canvas.restore();
 }
 
 function defaultRenderSelection<T>(ctx: SelectionRenderContext<T>): void {
-  const { ctx: canvas, x, y, radius, color } = ctx;
+  const { ctx: canvas, x, y, radius, theme } = ctx;
   canvas.save();
   canvas.beginPath();
   canvas.arc(x, y, radius + 4, 0, 2 * Math.PI);
-  canvas.strokeStyle = color;
-  canvas.lineWidth = 3;
+  // Use same color as label pill background
+  canvas.strokeStyle = theme === 'dark' ? 'oklch(0.922 0 0)' : 'oklch(0.205 0 0)';
+  canvas.lineWidth = 4;
   canvas.stroke();
   canvas.restore();
 }
 
-function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE, customColor?: string): void {
+function defaultRenderLabel<T>(ctx: LabelRenderContext<T>, fontSize: number = LABEL_FONT_SIZE, customColor?: string, bold = false, showBackground = false): void {
   const { ctx: canvas, label, x, y, radius, theme, labelAlpha } = ctx;
-  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize, 0, customColor);
+  drawLabelBelow(canvas, label, x, y, radius, theme, labelAlpha, fontSize, 0, customColor, bold, showBackground);
 }
 
 const Graph = forwardRef(function GraphInner<
@@ -158,6 +177,7 @@ const Graph = forwardRef(function GraphInner<
     autoFocus = true,
     onNodeClick,
     onNodeHover,
+    onZoomChange,
     renderNode = defaultRenderNode,
     renderSelection = defaultRenderSelection,
     renderLabel = defaultRenderLabel,
@@ -181,10 +201,26 @@ const Graph = forwardRef(function GraphInner<
   const showNodesRef = useRef<boolean>(showNodes);
   const showLinksRef = useRef<boolean>(showLinks);
   const { resolvedTheme } = useTheme();
+  const { state: sidebarState } = useSidebar();
+  const sidebarExpanded = sidebarState === "expanded";
+  const resetCenterTimeoutRef = useRef<number | null>(null);
   const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
   const lastInitializedSignatureRef = useRef<string | undefined>(undefined);
   const shouldResetZoomRef = useRef(true);
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
+  const onZoomChangeRef = useRef<((zoom: number) => void) | undefined>(onZoomChange);
+
+  useEffect(() => {
+    onZoomChangeRef.current = onZoomChange;
+  }, [onZoomChange]);
+
+  useEffect(() => {
+    return () => {
+      if (resetCenterTimeoutRef.current) {
+        window.clearTimeout(resetCenterTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Update refs when showNodes/showLinks change
   useEffect(() => {
@@ -240,15 +276,31 @@ const Graph = forwardRef(function GraphInner<
         const cur = zoomRef.current || 1;
         const target = Math.min(20, cur * 2);
         fgRef.current?.zoom?.(target, 400);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
       },
       zoomOut: () => {
         const cur = zoomRef.current || 1;
         const target = Math.max(0.03, cur / 2);
         fgRef.current?.zoom?.(target, 400);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
       },
       zoomTo: (k: number, ms = 400) => {
         const target = Math.max(0.03, Math.min(20, k));
         fgRef.current?.zoom?.(target, ms);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
+      },
+      resetView: (k: number, ms = 400) => {
+        const target = Math.max(0.03, Math.min(20, k));
+        fgRef.current?.centerAt?.(0, 0, ms);
+        fgRef.current?.zoom?.(target, ms);
+        zoomRef.current = target;
+        onZoomChangeRef.current?.(target);
+        if (resetCenterTimeoutRef.current) {
+          window.clearTimeout(resetCenterTimeoutRef.current);
+        }
       },
       getZoom: () => zoomRef.current || 1,
       getCanvas: () => {
@@ -396,7 +448,52 @@ const Graph = forwardRef(function GraphInner<
     if (show) fgRef.current.resumeAnimation();
     else fgRef.current.pauseAnimation();
   }, [show]);
-// oi
+
+  // Trigger redraw when images load and animate pulse during loading
+  useEffect(() => {
+    let animationFrame: number | null = null;
+
+    const animate = () => {
+      if (hasLoadingImages()) {
+        // Keep animating for pulse effect while loading
+        fgRef.current?.resumeAnimation?.();
+        animationFrame = requestAnimationFrame(animate);
+      } else {
+        animationFrame = null;
+      }
+    };
+
+    const startAnimation = () => {
+      if (animationFrame === null) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    const unsubscribeLoad = onImageLoad(() => {
+      // Force a redraw when image finishes loading
+      const currentZoom = zoomRef.current || 1;
+      fgRef.current?.zoom?.(currentZoom, 0);
+    });
+
+    const unsubscribeStart = onImageLoadStart(() => {
+      // Start animation loop when image starts loading
+      startAnimation();
+    });
+
+    // Start animation loop if images are already loading
+    if (hasLoadingImages()) {
+      startAnimation();
+    }
+
+    return () => {
+      unsubscribeLoad();
+      unsubscribeStart();
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (!show || !fgRef.current) return;
     if (!preparedData.nodes.length && !preparedData.links.length) return;
@@ -405,42 +502,48 @@ const Graph = forwardRef(function GraphInner<
     const fg = fgRef.current;
 
     // ===========================================
-    // Standardized force configuration
-    // These forces apply to ALL graph types (Artists, Genres, etc.)
+    // Simplified force configuration matching D3 defaults
+    // D3's defaults are well-tuned for predictable behavior
     // dagMode adjusts values for hierarchical layouts
     // ===========================================
 
-    // Charge force: nodes repel each other (negative = repulsion)
-    // Higher magnitude = stronger repulsion = more spread out
-    fg.d3Force("charge")?.strength(dagMode ? -1230 : -200);
+    // Charge force: nodes repel each other (D3 default is -30)
+    // More negative = stronger repulsion/more spread out, Less negative = nodes closer together
+    // KEY FIX: Reducing from -200 to -100 greatly reduced the "floating outward" drag effect
+    fg.d3Force("charge")?.strength(dagMode ? -1230 : -120);
 
     // Link force: connected nodes attract each other
     const linkForce = fg.d3Force("link") as d3.ForceLink<PreparedNode<T>, L> | undefined;
-    // Target distance between linked nodes (pixels)
-    linkForce?.distance(dagMode ? 150 : 90);
-    // How strongly links pull nodes together (higher = tighter clusters)
-    linkForce?.strength(dagMode ? 1 : 1.6);
+    // Link distance: target spacing between connected nodes
+    // Higher = more spread out, Lower = tighter clusters
+    linkForce?.distance(dagMode ? 150 : 200);
+    // Link strength: how strongly links pull nodes together
+    // Higher = tighter/more rigid connections, Lower = more flexible/natural layout
+    linkForce?.strength(dagMode ? 1 : 1.2);
     linkForce?.id((node: any) => node.id);
 
-    // Center force: pulls entire graph toward origin (prevents drift)
-    fg.d3Force("center", d3.forceCenter(0, 0).strength(dagMode ? 0.01 : 0.05));
+    // Centering forces: pull graph toward origin (D3 forceX/forceY default is 0.1)
+    // Higher = stronger pull to center, Lower = allows more drift
+    fg.d3Force("x", d3.forceX(0).strength(dagMode ? 0.01 : 0.03));
+    fg.d3Force("y", d3.forceY(0).strength(dagMode ? 0.01 : 0.03));
+    // Remove center force in favor of separate x/y forces for better control
+    fg.d3Force("center", null);
 
     // Collision force: prevents nodes from overlapping
+    // Higher strength/iterations = more rigid spacing but can cause bouncing
+    // Lower = allows some overlap but smoother movement
     fg.d3Force(
       "collide",
       d3
         .forceCollide((node: any) => {
           const n = node as PreparedNode<T>;
-          // Include label dimensions in collision radius to prevent label overlap
+          // Use partial label width to give some spacing without being too aggressive
           const labelWidth = estimateLabelWidth(n.label, LABEL_FONT_SIZE);
-          const labelHeight = LABEL_FONT_SIZE;
-          const labelDiagonal = Math.sqrt(labelWidth * labelWidth + labelHeight * labelHeight) / 2;
-          const padding = 10;
-          // Use the larger of node radius or label dimensions
-          return Math.max(n.radius + padding, labelDiagonal + padding);
+          const effectiveRadius = n.radius + (labelWidth * 0.4); // Only 40% of label width
+          return effectiveRadius;
         })
-        .iterations(2) // Collision detection passes per tick (higher = more accurate but slower)
-        .strength(dagMode ? 0.02 : 0.7), // How rigidly collisions are enforced
+        .iterations(1) // Single pass to minimize bouncing (higher = more accurate but can bounce)
+        .strength(dagMode ? 0.02 : 0.2), // Very weak to prevent bouncing while still providing some spacing
     );
     if (selectedId) {
       // Pull only the selected node toward the origin to keep it in view
@@ -474,10 +577,12 @@ const Graph = forwardRef(function GraphInner<
     fg.d3ReheatSimulation?.();
     if (shouldResetZoomRef.current) {
       const isMobile = window.matchMedia('(max-width: 640px)').matches;
+      const defaultZoom = getDefaultGraphZoom(dagMode, isMobile);
       // Reset both zoom level and center position
       fg.centerAt(0, 0, 0);
-      fg.zoom(dagMode ? 0.25 : (isMobile ? 0.12 : 0.14), 0);
-      zoomRef.current = dagMode ? 0.25 : (isMobile ? 0.12 : 0.18);
+      fg.zoom(defaultZoom, 0);
+      zoomRef.current = defaultZoom;
+      onZoomChangeRef.current?.(defaultZoom);
       shouldResetZoomRef.current = false;
     }
     if (signature) {
@@ -493,6 +598,7 @@ const Graph = forwardRef(function GraphInner<
       const x = node.x ?? 0;
       const y = node.y ?? 0;
       const isMobile = window.matchMedia("(max-width: 640px)").matches;
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
       const currentZoom = zoomRef.current || 1;
       const yAdjusted = applyMobileDrawerYOffset(
         y,
@@ -500,14 +606,15 @@ const Graph = forwardRef(function GraphInner<
         isMobile,
         DEFAULT_MOBILE_CENTER_OFFSET_PX,
       );
-      fgRef.current!.centerAt(x, yAdjusted, 600);
+      const xAdjusted = applyDesktopDrawerXOffset(x, currentZoom, isDesktop, sidebarExpanded);
+      fgRef.current!.centerAt(xAdjusted, yAdjusted, 600);
       const targetZoom = Math.max(0.8, Math.min(2.2, currentZoom < 1 ? 1.1 : currentZoom));
       fgRef.current!.zoom(targetZoom, 600);
     };
     centerToNode();
     const timeout = window.setTimeout(centerToNode, 300);
     return () => window.clearTimeout(timeout);
-  }, [autoFocus, preparedData.nodes, selectedId, show]);
+  }, [autoFocus, preparedData.nodes, selectedId, show, sidebarExpanded]);
 
   // Get hovered node data
   const hoveredNode = useMemo(() => {
@@ -587,7 +694,7 @@ const Graph = forwardRef(function GraphInner<
   return (
     <div
       ref={containerRef}
-      className="flex-1 w-full relative"
+      className="flex-1 w-full relative active:cursor-grabbing"
       style={{
         height: height ?? "100%",
         // Always show container so loading spinner is visible, but disable pointer events when hidden
@@ -612,13 +719,17 @@ const Graph = forwardRef(function GraphInner<
         // Enables hierarchical radial layout (nodes arranged in concentric rings from center)
         dagMode={dagMode ? 'radialin' : undefined}
         // Pixel distance between hierarchy levels in DAG mode
+        // Higher = more spread out layers, Lower = more compact hierarchy
         dagLevelDistance={dagMode ? 200 : undefined}
-        // How quickly the simulation "cools down" (higher = faster settling, less movement)
-        d3AlphaDecay={0.02}
-        // Friction/damping on node velocity (higher = nodes slow down faster, less drift)
-        d3VelocityDecay={0.8}
+        // How quickly the simulation "cools down" (D3 default is 0.0228)
+        // Higher = faster settling but less accurate layout, Lower = slower but more precise
+        d3AlphaDecay={0.01}
+        // Friction/damping on node velocity (D3 default is 0.4, using slightly higher for stability)
+        // Higher = nodes stop faster/less drift, Lower = more fluid movement
+        d3VelocityDecay={0.4}
         // Maximum time (ms) the simulation runs before auto-stopping
-        cooldownTime={8000}
+        // Higher = continues animating longer, Lower = freezes layout sooner
+        cooldownTime={12000}
         // Pause canvas redraws when simulation is idle (performance optimization)
         autoPauseRedraw={true}
         nodeColor={() => "rgba(0,0,0,0)"}
@@ -662,6 +773,7 @@ const Graph = forwardRef(function GraphInner<
         linkCurvature={dagMode ? 0 : linkCurvatureValue}
         onZoom={({ k }) => {
           zoomRef.current = k;
+          onZoomChangeRef.current?.(k);
         }}
         onNodeHover={(node) => {
           const id = node?.id as string | undefined;
@@ -706,6 +818,7 @@ const Graph = forwardRef(function GraphInner<
             radius,
             color: accent,
             isSelected,
+            isClickSelected,
             isNeighbor,
             isHovered,
             alpha,
@@ -776,7 +889,7 @@ const Graph = forwardRef(function GraphInner<
                 const labelPx = isPriorityLabel
                   ? Math.max(labelFontSize, fontPxForZoom(labelFontSize, k))
                   : labelFontSize;
-                defaultRenderLabel(labelContext, labelPx, labelColor);
+                defaultRenderLabel(labelContext, labelPx, labelColor, isPriorityLabel, isClickSelected);
               } else {
                 renderLabel(labelContext);
               }

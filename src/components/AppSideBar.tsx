@@ -60,6 +60,7 @@ interface AppSidebarProps {
   playerHeaderPreferProvidedTitle?: boolean;
   onPlayerTitleClick?: () => void;
   playerStartIndex?: number;
+  playerPreviewMode?: boolean;
 }
 
 export function AppSidebar({
@@ -87,7 +88,8 @@ export function AppSidebar({
   onPlayerLoadingChange,
   playerHeaderPreferProvidedTitle,
   onPlayerTitleClick,
-  playerStartIndex
+  playerStartIndex,
+  playerPreviewMode
 }: AppSidebarProps) {
   const { setTheme } = useTheme()
   const { toggleSidebar, state } = useSidebar()
@@ -117,7 +119,7 @@ export function AppSidebar({
       <Sidebar variant="sidebar" collapsible="icon">
         <SidebarContent className={`${isCollapsed ? "" : "backdrop-blur-[2px]"} p-1 flex flex-col`}>
           <div className={`${isCollapsed ? "" : " items-center justify-between" } flex w-full pt-2.5 pl-1 mb-6`}>
-            <button onClick={resetAppState} className="group/logo">
+            <button onClick={resetAppState} className="group/logo" title="Reset App">
               <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
             </button>
             {/* {!isCollapsed && <SidebarMenuButton asChild tooltip={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} size="xl"
@@ -259,6 +261,7 @@ export function AppSidebar({
         headerPreferProvidedTitle={playerHeaderPreferProvidedTitle}
         onTitleClick={onPlayerTitleClick}
         startIndex={playerStartIndex}
+        previewMode={playerPreviewMode}
         sidebarCollapsed={isCollapsed}
         isDesktop={isDesktop}
         desktopSlotRef={desktopPlayerSlotRef}
