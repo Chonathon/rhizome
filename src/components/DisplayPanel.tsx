@@ -92,7 +92,7 @@ export default function DisplayPanel({
     ) : true;
 
     const labelStyles = "w-full text-left text-md font-medium text-foreground"
-    const badgeStyles = "w-12 p-1 text-center"
+    const badgeStyles = "w-12 p-1 text-center dark:bg-accent/50"
     const feildsetStyles = "flex flex-col gap-4 p-2 rounded-2xl bg-accent dark:dark:bg-accent/50 border-accent border"
 
     return (
@@ -126,7 +126,7 @@ export default function DisplayPanel({
                     )}
                 </div>
                 {/* content */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
                 {/* Node Options */}
                 <fieldset className={feildsetStyles}>
                     <legend className="sr-only">Node Options</legend>

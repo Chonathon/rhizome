@@ -46,10 +46,12 @@ export default function ClusteringPanel({
 
     const options = graphType === 'genres' ? genreOptions : artistOptions;
 
+    const feildsetStyles = "rounded-2xl bg-accent dark:bg-accent/50 border border-muted"
+
     return (
         <ResponsivePanel
             trigger={
-                <Button className="bg-background backdrop-blur-xs rounded-full border border-border" variant="outline" size="icon" aria-label="Clustering Panel" title="Clustering">
+                <Button className="bg-background backdrop-blur-xs rounded-full border" variant="outline" size="icon" aria-label="Clustering Panel">
                     <span className="sr-only">Show Clustering Panel</span>
                     <Spline />
                 </Button>
@@ -66,52 +68,56 @@ export default function ClusteringPanel({
 
                     </Button>
                 </div>   
-            <RadioGroup
-                value={clusterMode}
-                onValueChange={(value) => setClusterMode([value])}
-                className="flex flex-col items-start w-full gap-1 dark:bg-background shadow-sm rounded-2xl  bg-accent"            >
-                {options.map((option) => (
-                    <div key={option.id} className="w-full">
-                        <label
-                            htmlFor={option.id}
-                            className={`flex items-start w-full gap-3 rounded-xl p-3 transition-colors cursor-pointer ${
-                                clusterMode === option.id ? "bg-gray-200 border-accent border dark:bg-accent" : "hover:bg-white/10 dark:hover:bg-black/10"
-                            }`}
-                        >
-                            <RadioGroupItem
-                                value={option.id}
-                                id={option.id}
-                                className="mt-1 sr-only"
-                            />
-                            <div className="flex flex-col items-start">
-                                <span className="text-md font-semibold leading-none text-foreground">
-                                    {option.label}
-                                </span>
-                                <AnimatePresence mode="wait" initial={false}>
-                                    {clusterMode === option.id && (
-                                        <motion.p
-                                            key={option.id}
-                                            initial={{ opacity: 0, height: 0, y: -10 }}
-                                            animate={{ opacity: 1, height: "auto", y: 0 }}
-                                            exit={{ opacity: 0, height: 0, y: -10 }}
-                                            transition={{
-                                                opacity: { duration: 0.2, ease: "easeOut" },
-                                                height: { duration: 0.2, ease: "easeOut" },
-                                                y: { duration: 0.08, ease: "easeOut" }
-                                            }}
-                                            className="text-sm text-muted-foreground mt-1 text-left"
-                                        >
-                                            {option.description}
-                                        </motion.p>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        </label>
-                    </div>
-                ))}
+            <div className="flex flex-col items-start w-full gap-2 rounded-2xl ">
+                <RadioGroup
+                    value={clusterMode}
+                    onValueChange={(value) => setClusterMode([value])}
+                    className={`${feildsetStyles} w-full gap-1`}
+                >
+                    {options.map((option) => (
+                        <motion.div key={option.id} className="w-full" layout>
+                            <label
+                                htmlFor={option.id}
+                                className={`flex items-start w-full gap-3 rounded-xl p-3 transition-colors cursor-pointer ${
+                                    clusterMode === option.id ? "bg-secondary border dark:bg-accent" : "hover:bg-white/30 dark:hover:bg-black/10"
+                                }`}
+                            >
+                                <RadioGroupItem
+                                    value={option.id}
+                                    id={option.id}
+                                    className="mt-1 sr-only"
+                                />
+                                <div className="flex flex-col items-start">
+                                    <span className={`${clusterMode === option.id ? "text-foreground" : "text-muted-foreground"} text-md font-semibold leading-none `}>
+                                        {option.label}
+                                    </span>
+                                    <AnimatePresence initial={false}>
+                                        {clusterMode === option.id && (
+                                            <motion.div
+                                                key={option.id}
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: "auto" }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                transition={{
+                                                    height: { duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] },
+                                                    opacity: { duration: 0.2, ease: "easeOut" },
+                                                }}
+                                                className="overflow-hidden"
+                                            >
+                                                <p className="text-sm text-muted-foreground mt-1 text-left">
+                                                    {option.description}
+                                                </p>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </label>
+                        </motion.div>
+                    ))}
+                </RadioGroup>
                 {graphType === 'artists' && artistColorMode !== undefined && setArtistColorMode && (
                     <>
-                        <div className="flex items-center justify-between w-full p-3 border-t border-border mt-2 pt-3">
+                        <div className={`${feildsetStyles} flex items-center justify-between w-full p-3 pt-3`}>
                             <div className="flex flex-col">
                                 <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">Color Mode</span>
                                 <span className="text-sm text-muted-foreground mt-1">Choose how artists are colored in the graph.</span>
@@ -134,7 +140,7 @@ export default function ClusteringPanel({
                             </div>
                         </div>
                         {artistColorMode === 'genre' && genreColorLegend && genreColorLegend.length > 0 && (
-                            <div className="flex flex-col gap-2 w-full p-3 border-t border-border">
+                            <div className={`flex flex-col gap-2 w-full p-3 border-border`}>
                                 <span className="text-md font-semibold text-foreground">Genre Color Legend</span>
                                 <div className="relative overflow-y-auto max-h-40 pr-1">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
@@ -154,14 +160,14 @@ export default function ClusteringPanel({
                                                             </div>
                         )}
                         {clusteringInProgress && (
-                            <div className="flex items-center gap-2 w-full p-3 border-t border-border">
+                            <div className={`flex items-center gap-2 w-full p-3`}>
                                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                                 <span className="text-sm text-muted-foreground">Computing clusters...</span>
                             </div>
                         )}
                         {!clusteringInProgress && artistClusters && artistClusters.stats && (
-                            <div className="flex flex-col gap-2 w-full p-3 border-t border-border">
-                                <span className="text-md font-semibold text-gray-900 dark:text-gray-100">Cluster Stats</span>
+                            <div className={`flex flex-col gap-2 w-full p-3`}>
+                                <span className="text-md font-semibold text-foreground">Cluster Stats</span>
                                 <div className="text-sm text-muted-foreground space-y-1">
                                     <div>Communities: {artistClusters.stats.clusterCount}</div>
                                     <div>Avg size: {Math.round(artistClusters.stats.avgClusterSize)} artists</div>
@@ -173,7 +179,7 @@ export default function ClusteringPanel({
                 )}
                 {graphType === 'genres' && (
                     <>
-                        <div className="flex items-center justify-between w-full p-3">
+                        <div className={`${feildsetStyles} flex items-center justify-between w-full p-3`}>
                             <div className="flex flex-col">
                                 <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">DAG Mode</span>
                                 <span className="text-sm text-muted-foreground mt-1">Display as a directed acyclic graph.</span>
@@ -181,7 +187,7 @@ export default function ClusteringPanel({
                             <Switch checked={dagMode} onCheckedChange={setDagMode} />
                         </div>
                         {genreColorLegend && genreColorLegend.length > 0 && (
-                            <div className="flex flex-col gap-2 w-full p-3 border-t border-border">
+                            <div className={`flex flex-col gap-2 w-full p-3 border-border`}>
                                 <span className="text-md font-semibold text-foreground">Genre Color Legend</span>
                                 <div className="relative overflow-y-auto max-h-40 pr-1">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
@@ -202,7 +208,7 @@ export default function ClusteringPanel({
                         )}
                     </>
                 )}
-            </RadioGroup>
+            </div>
         </ResponsivePanel>
     )
 }
