@@ -32,7 +32,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   /* Neutral scale primitives — evenly spaced ~0.096 L per step */
   --neutral-50: color-mix(oklch(0.95 0.002 235) 50%, transparent);
   --neutral-100: oklch(0.95 0.002 235);
-  --neutral-200: oklch(0.85 0.003 235);
+  --neutral-200: oklch(0.88 0.003 235);
   --neutral-300: oklch(0.76 0.003 235);
   --neutral-400: oklch(0.66 0.004 235);
   --neutral-500: oklch(0.57 0.004 235);

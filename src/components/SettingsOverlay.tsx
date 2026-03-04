@@ -62,7 +62,7 @@ const data = {
 
 // Reusable wrapper component for settings sections
 const SettingsSection = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-accent dark:bg-accent/50 border-accent border max-w-3xl rounded-xl p-6">
+  <div className="bg-accent dark:bg-accent/50 border-muted dark:border-accent border max-w-3xl rounded-xl p-6">
     {children}
   </div>
 )
