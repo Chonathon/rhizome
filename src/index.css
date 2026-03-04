@@ -20,7 +20,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
 :root {
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: var(--app-background);
+  background-color: var(--bg-app-background);
 
 
   font-synthesis: none;
@@ -42,7 +42,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   --neutral-900: oklch(0.18 0.002 235);
   --neutral-950: color-mix(oklch(0.18 0.002 235) 50%, transparent);
 
-  --app-background: var(--neutral-100);
+  --app-background: var(--background);
   --background: rgba(255, 255, 255);
   --foreground: var(--neutral-900);
 
