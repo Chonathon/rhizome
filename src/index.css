@@ -30,7 +30,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   --radius: 0.625rem;
 
   /* Neutral scale primitives — evenly spaced ~0.096 L per step */
-  --neutral-50: color-mix(oklch(0.95 0.002 235) 50%, transparent);
+  --neutral-50: color-mix(oklch(0.95 0.002 235) 50%, white);
   --neutral-100: oklch(0.95 0.002 235);
   --neutral-200: oklch(0.88 0.003 235);
   --neutral-300: oklch(0.76 0.003 235);
@@ -49,7 +49,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   --card: rgba(255, 255, 255, 0.87);
   --card-foreground: var(--neutral-900);
 
-  --popover: oklch(98.5% 0.001 106.423 / 90%);
+  --popover: var(--neutral-50);
   --popover-foreground: oklch(0.145 0 0);
   --primary: var(--neutral-900);
   --primary-foreground: var(--neutral-100);
@@ -61,7 +61,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
 
   --destructive: oklch(0.577 0.245 27.325);
   --border: var(--neutral-200);
-  --input: var(--neutral-400);
+  --input: var(--neutral-300);
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
