@@ -4,7 +4,7 @@ import Graph, {
   type SharedGraphNode,
 } from "./Graph";
 import { calculateNodeRadius, DEFAULT_MIN_RADIUS, DEFAULT_MAX_RADIUS } from "./Graph/graphStyle";
-import { Artist, NodeLink } from "@/types";
+import { Artist, GenreContainerDef, NodeLink } from "@/types";
 
 interface ArtistsForceGraphProps {
   artists: Artist[];
@@ -37,6 +37,9 @@ interface ArtistsForceGraphProps {
     nodeToRadius: Map<string, number>;
     strength?: number;
   };
+  // Genre containers for visual hull rendering (genre exploration mode)
+  genreContainers?: GenreContainerDef[];
+  onGenreContainerClick?: (genreId: string, screenPosition: { x: number; y: number }) => void;
 }
 
 
@@ -67,6 +70,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       disableDimming,
       priorityLabelIds,
       radialLayout,
+      genreContainers,
+      onGenreContainerClick,
     },
     ref,
   ) => {
@@ -140,6 +145,8 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         disableDimming={disableDimming}
         priorityLabelIds={priorityLabelIds}
         radialLayout={radialLayout}
+        genreContainers={genreContainers}
+        onGenreContainerClick={onGenreContainerClick}
       />
     );
   },

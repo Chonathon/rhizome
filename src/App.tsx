@@ -1,6 +1,6 @@
 import './App.css'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, Settings, X } from 'lucide-react'
+import { ChevronDown, Divide, Settings, X, Compass } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -11,10 +11,13 @@ import {
   Artist, ArtistClusterMode, ArtistNodeLimitType, BadDataReport, ContextAction, FindOption,
   Genre,
   GenreClusterMode,
+  GenreContainerDef,
   GenreGraphData, GenreNodeLimitType,
   GraphType, InitialGenreFilter,
   NodeLink, Tag, TopTrack,
 } from "@/types";
+import GenreExplorationOnboarding from "@/components/GenreExplorationOnboarding";
+import GenreContainerMenu from "@/components/GenreContainerMenu";
 import { Header } from "@/components/Header"
 import { motion, AnimatePresence } from "framer-motion";
 import { ResetButton } from "@/components/ResetButton";
@@ -264,6 +267,14 @@ function App() {
   const [collectionMode, setCollectionMode] = useState<boolean>(false);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
+  // Genre exploration mode
+  const [genreExplorationMode, setGenreExplorationMode] = useState<boolean>(false);
+  const [showGenreOnboarding, setShowGenreOnboarding] = useState<boolean>(false);
+  const [genreExplorationHistory, setGenreExplorationHistory] = useState<string[][]>([]);
+  const [containerMenuState, setContainerMenuState] = useState<{
+    genreId: string;
+    screenPosition: { x: number; y: number };
+  } | null>(null);
   const { addRecentSelection } = useRecentSelections();
   const {
     genres,
@@ -2186,6 +2197,97 @@ function App() {
     return color;
   }, [artistColorMode, artistClusters, getRootGenreFromTags, getGenreColorFromRoots, getGenreColorFromID, colorFallback]);
 
+  // ── Genre exploration mode ───────────────────────────────────────────────────
+
+  /** Compute visual hull containers for each genre currently shown in exploration mode */
+  const genreContainers = useMemo<GenreContainerDef[]>(() => {
+    if (!genreExplorationMode || !artistFilterGenres.length || !currentArtists.length) return [];
+    return artistFilterGenres.map((genreFilter) => {
+      const genreData = genres?.find((g) => g.id === genreFilter.id);
+      const color = genreColorMap.get(genreFilter.id) ?? '#8a80ff';
+      // Match artists whose genres array includes this genre ID
+      const genreArtists = currentArtists
+        .filter((a) => a.genres?.includes(genreFilter.id))
+        .sort((a, b) => (b.listeners || 0) - (a.listeners || 0))
+        .slice(0, 12);
+      return {
+        genreId: genreFilter.id,
+        genreName: genreData?.name ?? genreFilter.name ?? genreFilter.id,
+        artistIds: genreArtists.map((a) => a.id),
+        color,
+        parentGenreId: genreData?.subgenre_of?.[0]?.id,
+        parentGenreName: genreData?.subgenre_of?.[0]?.name,
+        subGenres: genreData?.subgenres ?? [],
+      } satisfies GenreContainerDef;
+    });
+  }, [genreExplorationMode, artistFilterGenres, currentArtists, genres, genreColorMap]);
+
+  /** Open the onboarding dialog for genre exploration */
+  const openGenreExploration = useCallback(() => {
+    setShowGenreOnboarding(true);
+  }, []);
+
+  /** Called when the onboarding dialog completes with selected genre IDs */
+  const onGenreExplorationConfirm = useCallback((selectedGenreIds: string[]) => {
+    const selectedGenreObjects = genres?.filter((g) => selectedGenreIds.includes(g.id)) ?? [];
+    if (!selectedGenreObjects.length) return;
+    setGenreExplorationHistory([]);
+    setArtistFilterGenres(selectedGenreObjects);
+    setArtistGenreFilter(selectedGenreObjects);
+    setIsBeforeArtistLoad(false);
+    setGraph('artists');
+    setGenreExplorationMode(true);
+    setShowGenreOnboarding(false);
+    setContainerMenuState(null);
+  }, [genres]);
+
+  /** Navigate to a genre in exploration mode (push current to history) */
+  const navigateToGenreInExploration = useCallback((genreId: string) => {
+    const targetGenre = genres?.find((g) => g.id === genreId);
+    if (!targetGenre) return;
+    // Push current genre IDs to history
+    const currentIds = artistFilterGenres.map((g) => g.id);
+    if (currentIds.length) {
+      setGenreExplorationHistory((prev) => [...prev, currentIds]);
+    }
+    setArtistFilterGenres([targetGenre]);
+    setArtistGenreFilter([targetGenre]);
+    setIsBeforeArtistLoad(false);
+    setContainerMenuState(null);
+  }, [genres, artistFilterGenres]);
+
+  /** Navigate back to the previous genre in exploration history */
+  const navigateBackInExploration = useCallback(() => {
+    if (!genreExplorationHistory.length) return;
+    const prev = genreExplorationHistory[genreExplorationHistory.length - 1];
+    setGenreExplorationHistory((h) => h.slice(0, -1));
+    const prevGenres = genres?.filter((g) => prev.includes(g.id)) ?? [];
+    if (prevGenres.length) {
+      setArtistFilterGenres(prevGenres);
+      setArtistGenreFilter(prevGenres);
+      setIsBeforeArtistLoad(false);
+    }
+    setContainerMenuState(null);
+  }, [genreExplorationHistory, genres]);
+
+  /** Called when a genre container hull is clicked on the canvas */
+  const onGenreContainerClick = useCallback((genreId: string, screenPosition: { x: number; y: number }) => {
+    setContainerMenuState({ genreId, screenPosition });
+  }, []);
+
+  /** Exit genre exploration mode */
+  const exitGenreExplorationMode = useCallback(() => {
+    setGenreExplorationMode(false);
+    setGenreExplorationHistory([]);
+    setContainerMenuState(null);
+  }, []);
+
+  // The container that corresponds to the currently open menu
+  const activeContainerDef = useMemo<GenreContainerDef | null>(() => {
+    if (!containerMenuState) return null;
+    return genreContainers.find((c) => c.genreId === containerMenuState.genreId) ?? null;
+  }, [containerMenuState, genreContainers]);
+
   const onGenreFilterSelectionChange = useCallback(async (selectedIDs: string[]) => {
     if (graph === 'genres') {
       // filters genres in genre mode; buggy
@@ -2705,6 +2807,8 @@ function App() {
                   disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
                   radialLayout={artistRadialLayout}
                   priorityLabelIds={centralArtistLabelIds}
+                  genreContainers={genreExplorationMode ? genreContainers : undefined}
+                  onGenreContainerClick={genreExplorationMode ? onGenreContainerClick : undefined}
                 />
 
           {/* Genre hover preview */}
@@ -2794,6 +2898,24 @@ function App() {
           </div>}
           {/* Utility buttons - find, clustering, display settings, share/export, zoom */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
+              {/* Genre Exploration toggle */}
+              {(graph === 'artists' || graph === 'genres') && (
+                <Button
+                  variant={genreExplorationMode ? "default" : "outline"}
+                  size="icon"
+                  title={genreExplorationMode ? "Exit Genre Exploration" : "Explore by Genre"}
+                  onClick={() => {
+                    if (genreExplorationMode) {
+                      exitGenreExplorationMode();
+                    } else {
+                      openGenreExploration();
+                    }
+                  }}
+                  className="h-9 w-9"
+                >
+                  <Compass size={16} />
+                </Button>
+              )}
               {/* <ModeToggle /> */}
               <FindFilter
                 items={findOptions}
@@ -3071,6 +3193,24 @@ function App() {
               new CustomEvent("auth:open", {detail: { mode: "login" }}
             )))}
           forgot={true}
+      />
+      {/* Genre exploration onboarding dialog */}
+      <GenreExplorationOnboarding
+        genres={genres ?? []}
+        genreRoots={genreRoots ?? []}
+        genreColorMap={genreColorMap}
+        onConfirm={onGenreExplorationConfirm}
+        onDismiss={() => setShowGenreOnboarding(false)}
+        open={showGenreOnboarding}
+      />
+      {/* Genre container navigation menu (shown when a hull is clicked on the canvas) */}
+      <GenreContainerMenu
+        container={activeContainerDef}
+        screenPosition={containerMenuState?.screenPosition ?? null}
+        canGoBack={genreExplorationHistory.length > 0}
+        onNavigate={navigateToGenreInExploration}
+        onBack={navigateBackInExploration}
+        onClose={() => setContainerMenuState(null)}
       />
     </SidebarProvider>
   );

@@ -1,6 +1,7 @@
 import {
   forwardRef,
   memo,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -41,7 +42,17 @@ import {
   hasLoadingImages,
 } from "@/components/Graph/graphStyle";
 import { useSidebar } from "@/components/ui/sidebar";
-import type {BasicNode, GraphHandle} from "@/types";
+import type {BasicNode, GenreContainerDef, GraphHandle} from "@/types";
+import { hexToRgb } from "@/lib/colors";
+import {
+  convexHull,
+  expandHull,
+  hullForTwoPoints,
+  hullForOnePoint,
+  drawSmoothHull,
+  pointInPolygon,
+  hullCentroid,
+} from "@/lib/convexHull";
 
 export type { GraphHandle };
 
@@ -121,6 +132,9 @@ export interface GraphProps<T, L extends SharedGraphLink> {
     nodeToRadius: Map<string, number>;
     strength?: number;
   };
+  // Genre containers for visual hull rendering (genre exploration mode)
+  genreContainers?: GenreContainerDef[];
+  onGenreContainerClick?: (genreId: string, screenPosition: { x: number; y: number }) => void;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -192,6 +206,8 @@ const Graph = forwardRef(function GraphInner<
     disableDimming = false,
     priorityLabelIds: priorityLabelIdsProp,
     radialLayout,
+    genreContainers,
+    onGenreContainerClick,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -209,6 +225,8 @@ const Graph = forwardRef(function GraphInner<
   const shouldResetZoomRef = useRef(true);
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
   const onZoomChangeRef = useRef<((zoom: number) => void) | undefined>(onZoomChange);
+  // Stores computed hull polygons (in graph coords) for click detection
+  const hullPolygonsRef = useRef<Map<string, [number, number][]>>(new Map());
 
   useEffect(() => {
     onZoomChangeRef.current = onZoomChange;
@@ -693,6 +711,137 @@ const Graph = forwardRef(function GraphInner<
     };
   }, [disableDimming]);
 
+  // ── Genre container hull rendering ──────────────────────────────────────────
+  const genreContainersRef = useRef(genreContainers);
+  useEffect(() => { genreContainersRef.current = genreContainers; }, [genreContainers]);
+
+  const renderGenreContainersPre = useCallback((ctx: CanvasRenderingContext2D) => {
+    const containers = genreContainersRef.current;
+    if (!containers?.length || !preparedDataRef.current) return;
+
+    const nodes = preparedDataRef.current.nodes as Array<PreparedNode<unknown> & { x?: number; y?: number }>;
+    const nodePositions = new Map<string, [number, number]>();
+    for (const node of nodes) {
+      if (node.x !== undefined && node.y !== undefined) {
+        nodePositions.set(node.id, [node.x, node.y]);
+      }
+    }
+
+    const newHulls = new Map<string, [number, number][]>();
+    const PADDING = 28; // graph-unit padding around the hull
+
+    for (const container of containers) {
+      const points = container.artistIds
+        .map((id) => nodePositions.get(id))
+        .filter(Boolean) as [number, number][];
+
+      if (points.length === 0) continue;
+
+      let hullPoints: [number, number][];
+      if (points.length === 1) {
+        hullPoints = hullForOnePoint(points[0], PADDING + 10);
+      } else if (points.length === 2) {
+        hullPoints = hullForTwoPoints(points[0], points[1], PADDING);
+      } else {
+        const hull = convexHull(points);
+        if (!hull) continue;
+        hullPoints = expandHull(hull, PADDING);
+      }
+
+      newHulls.set(container.genreId, hullPoints);
+
+      // Determine fill/stroke from the genre color
+      const rgb = hexToRgb(container.color);
+      const fillColor = rgb
+        ? `rgba(${rgb.r},${rgb.g},${rgb.b},0.10)`
+        : "rgba(138,128,255,0.10)";
+      const strokeColor = rgb
+        ? `rgba(${rgb.r},${rgb.g},${rgb.b},0.45)`
+        : "rgba(138,128,255,0.45)";
+
+      ctx.save();
+      ctx.beginPath();
+      drawSmoothHull(ctx, hullPoints);
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    hullPolygonsRef.current = newHulls;
+  }, []);
+
+  const renderGenreLabelsPost = useCallback((ctx: CanvasRenderingContext2D, globalScale: number) => {
+    const containers = genreContainersRef.current;
+    if (!containers?.length || !hullPolygonsRef.current.size) return;
+
+    const fontSize = Math.max(10, 11 / globalScale);
+
+    for (const container of containers) {
+      const hull = hullPolygonsRef.current.get(container.genreId);
+      if (!hull) continue;
+
+      const [cx, cy] = hullCentroid(hull);
+      const rgb = hexToRgb(container.color);
+      const labelBg = rgb
+        ? `rgba(${rgb.r},${rgb.g},${rgb.b},0.85)`
+        : "rgba(138,128,255,0.85)";
+
+      ctx.save();
+      ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+      const textWidth = ctx.measureText(container.genreName).width;
+      const padH = 5 / globalScale;
+      const padV = 3 / globalScale;
+      const rectW = textWidth + padH * 2;
+      const rectH = fontSize + padV * 2;
+      const rx = cx - rectW / 2;
+      const ry = cy - rectH / 2;
+
+      // Rounded pill background
+      const r = rectH / 2;
+      ctx.beginPath();
+      ctx.moveTo(rx + r, ry);
+      ctx.lineTo(rx + rectW - r, ry);
+      ctx.arcTo(rx + rectW, ry, rx + rectW, ry + rectH, r);
+      ctx.lineTo(rx + rectW, ry + r);
+      ctx.arcTo(rx + rectW, ry + rectH, rx + rectW - r, ry + rectH, r);
+      ctx.lineTo(rx + r, ry + rectH);
+      ctx.arcTo(rx, ry + rectH, rx, ry + rectH - r, r);
+      ctx.lineTo(rx, ry + r);
+      ctx.arcTo(rx, ry, rx + r, ry, r);
+      ctx.closePath();
+      ctx.fillStyle = labelBg;
+      ctx.fill();
+
+      // Label text
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(container.genreName, cx, cy);
+      ctx.restore();
+    }
+  }, []);
+
+  const handleGenreContainerBackgroundClick = useCallback((event: MouseEvent) => {
+    if (!onGenreContainerClick || !hullPolygonsRef.current.size || !fgRef.current) return;
+
+    const graphCoords = fgRef.current.screen2GraphCoords?.(event.clientX, event.clientY);
+    if (!graphCoords) return;
+
+    const clickPoint: [number, number] = [graphCoords.x, graphCoords.y];
+
+    for (const [genreId, hull] of hullPolygonsRef.current) {
+      if (pointInPolygon(clickPoint, hull)) {
+        onGenreContainerClick(genreId, { x: event.clientX, y: event.clientY });
+        break;
+      }
+    }
+  }, [onGenreContainerClick]);
+
   return (
     <div
       ref={containerRef}
@@ -773,6 +922,9 @@ const Graph = forwardRef(function GraphInner<
           return baseWidth * linkThicknessScale;
         }}
         linkCurvature={dagMode ? 0 : linkCurvatureValue}
+        onRenderFramePre={genreContainers?.length ? renderGenreContainersPre : undefined}
+        onRenderFramePost={genreContainers?.length ? renderGenreLabelsPost : undefined}
+        onBackgroundClick={genreContainers?.length ? handleGenreContainerBackgroundClick : undefined}
         onZoom={({ k }) => {
           zoomRef.current = k;
           onZoomChangeRef.current?.(k);

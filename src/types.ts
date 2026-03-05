@@ -168,6 +168,30 @@ export interface GraphHandle {
   getCanvas: () => HTMLCanvasElement | null;
 }
 
+/** Defines a visual genre container (convex hull) to be rendered on the artists graph */
+export interface GenreContainerDef {
+  genreId: string;
+  genreName: string;
+  /** IDs of artists (top ~12 by listeners) that belong to this genre */
+  artistIds: string[];
+  /** Hex color for fill/stroke of the container */
+  color: string;
+  /** Parent genre ID, if this is a sub-genre */
+  parentGenreId?: string;
+  /** Parent genre name */
+  parentGenreName?: string;
+  /** Child sub-genres for drill-down navigation */
+  subGenres: BasicNode[];
+}
+
+/** State for the genre exploration feature */
+export interface GenreExplorationState {
+  isActive: boolean;
+  showOnboarding: boolean;
+  /** Stack of genre ID arrays for back-navigation */
+  history: string[][];
+}
+
 export interface FindOption {
     id: string;
     name: string;
