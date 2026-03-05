@@ -74,6 +74,8 @@ export interface NodeRenderContext<T> {
   alpha: number;
   theme: 'light' | 'dark' | undefined;
   showImages?: boolean;
+  // 0-1 fade factor for image draw; <1 means image is fading in over the base circle
+  imageAlpha?: number;
 }
 
 export interface SelectionRenderContext<T> extends NodeRenderContext<T> {}
@@ -129,7 +131,7 @@ export interface GraphProps<T, L extends SharedGraphLink> {
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
 
 function defaultRenderNode<T>(ctx: NodeRenderContext<T>): void {
-  const { ctx: canvas, node, x, y, radius, color, alpha, isClickSelected, showImages, theme } = ctx;
+  const { ctx: canvas, node, x, y, radius, color, alpha, isClickSelected, showImages, imageAlpha = 1, theme } = ctx;
   canvas.save();
   canvas.globalAlpha = alpha;
 
@@ -138,6 +140,8 @@ function defaultRenderNode<T>(ctx: NodeRenderContext<T>): void {
     const data = node.data as { image?: string; listeners?: number } | undefined;
     const imageUrl = data?.image;
     const isArtist = typeof data?.listeners === 'number';
+    // Apply image-specific fade on top of node alpha
+    canvas.globalAlpha = alpha * imageAlpha;
     drawSelectedNodeFill(canvas, x, y, radius, node.label, color, imageUrl, theme, isArtist);
   } else {
     drawCircleNode(canvas, x, y, radius, color);
@@ -813,10 +817,15 @@ const Graph = forwardRef(function GraphInner<
           const transition = dimmingTransitionRef.current;
           const alpha = baseAlpha * (1 - transition) + 1.0 * transition;
 
-          // Only show images when the node is large enough on screen to be worth drawing.
-          // Below this threshold nodes are ~12px diameter on screen — just draw the color circle.
+          // Fade images in/out based on screen-space radius.
+          // Below FADE_START: colored circle only. Above FADE_END: full image.
+          // Between: image fades in over the base circle via smoothstep.
           const screenRadius = radius * (zoomRef.current || 1);
-          const effectiveShowImages = showImages && screenRadius >= 6;
+          const IMAGE_FADE_START = 6;  // screen px
+          const IMAGE_FADE_END = 14;   // screen px
+          const imageFadeT = Math.max(0, Math.min(1, (screenRadius - IMAGE_FADE_START) / (IMAGE_FADE_END - IMAGE_FADE_START)));
+          const imageAlpha = smoothstep(imageFadeT);
+          const effectiveShowImages = showImages && imageAlpha > 0;
 
           // Build render context
           const renderContext: NodeRenderContext<T> = {
@@ -833,23 +842,32 @@ const Graph = forwardRef(function GraphInner<
             alpha,
             theme: resolvedTheme as 'light' | 'dark' | undefined,
             showImages: effectiveShowImages,
+            imageAlpha,
           };
 
           // Render node and selection ring if showNodes is true
           if (showNodesRef.current) {
+            // During image fade-in, draw base circle first so it shows through
+            if (effectiveShowImages && imageAlpha < 1) {
+              ctx.save();
+              ctx.globalAlpha = alpha;
+              drawCircleNode(ctx, x, y, radius, accent);
+              ctx.restore();
+            }
+
             renderNode(renderContext);
 
             if (isClickSelected) {
               // Full selection ring for click-selected nodes
               renderSelection(renderContext);
-            } else if (showImages) {
-              // Subtle ring for collection image nodes — genre color, thinner than selected ring
+            } else if (effectiveShowImages) {
+              // Subtle ring for collection image nodes — genre color, fades in with image
               ctx.save();
-              ctx.globalAlpha = alpha * 0.5;
+              ctx.globalAlpha = alpha * 0.5 * imageAlpha;
               ctx.beginPath();
               ctx.arc(x, y, radius + 2, 0, 2 * Math.PI);
               ctx.strokeStyle = accent;
-              ctx.lineWidth = 1.5;
+              ctx.lineWidth = 2;
               ctx.stroke();
               ctx.restore();
             }
