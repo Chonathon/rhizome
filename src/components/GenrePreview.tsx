@@ -1,8 +1,6 @@
 import { Genre, Artist } from '@/types'
 import { fixWikiImageURL, formatNumber, formatNumberCompact } from '@/lib/utils'
 import { useMemo } from 'react'
-import { Button } from './ui/button'
-import { CirclePlay, ArrowRight, Loader2, SquareArrowUp } from 'lucide-react'
 import GraphCard from './GraphCard'
 
 interface GenrePreviewProps {
@@ -47,11 +45,11 @@ export function GenrePreview({
 
   return (
     <div
-      className="absolute pointer-events-auto"
+      className="fixed pointer-events-none z-50"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        transform: 'translate(-50%, calc(-100% - 8px))', // Center horizontally, position above node with 8px spacing
+        transform: 'translate(-50%, calc(-100% - 8px))', // Center horizontally, position above cursor with 8px spacing
       }}
     >
       <GraphCard
@@ -125,43 +123,6 @@ export function GenrePreview({
           )
         }
 
-        actions={
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => onPlay?.(genre)}
-              disabled={playLoading}
-              className="flex-1 disabled:opacity-100"
-            >
-              {playLoading ? (
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-              ) : (
-                <CirclePlay />
-              )}
-              Play
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => onAllArtists?.(genre)}
-              className="flex-1"
-              title='All Artists'
-            >
-              <SquareArrowUp size={24}/>
-
-              All Artists
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onNavigate?.(genre)}
-              title='Go to Genre'
-            >
-              <ArrowRight />
-            </Button>
-          </div>
-        }
       />
     </div>
   )

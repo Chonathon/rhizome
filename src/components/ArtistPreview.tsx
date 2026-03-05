@@ -1,8 +1,6 @@
 import { Artist } from '@/types'
 import { fixWikiImageURL, formatNumberCompact, formatDate } from '@/lib/utils'
 import { useMemo, useState, useEffect } from 'react'
-import { Button } from './ui/button'
-import { CirclePlay, ArrowRight, SquarePlus, Loader2, Check, Disc3 } from 'lucide-react'
 import GenreBadge from '@/components/GenreBadge'
 import GraphCard from './GraphCard'
 import ArtistBadge from './ArtistBadge'
@@ -88,11 +86,11 @@ export function ArtistPreview({
 
   return (
     <div
-      className="absolute pointer-events-auto"
+      className="fixed pointer-events-none z-50"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        transform: 'translate(-50%, calc(-100% - 8px))', // Center horizontally, position above node with 8px spacing
+        transform: 'translate(-50%, calc(-100% - 8px))', // Center horizontally, position above cursor with 8px spacing
       }}
     >
       <GraphCard
@@ -183,46 +181,6 @@ export function ArtistPreview({
           </>
         }
 
-        actions={
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => previewModeEnabled ? onPreview?.(artist) : onPlay?.(artist)}
-              disabled={playLoading}
-              className="flex-1 disabled:opacity-100"
-            >
-              {playLoading ? (
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-              ) : previewModeEnabled ? (
-                <Disc3 />
-              ) : (
-                <CirclePlay />
-              )}
-              {previewModeEnabled ? 'Preview' : 'Play'}
-            </Button>
-            <Button
-              size="sm"
-              variant={isInCollection ? 'secondary' : 'secondary'}
-              onClick={() => onToggle?.(artist.id)}
-              className="flex-1"
-            >
-              {isInCollection ? (
-                <Check />
-              ) : (
-                <SquarePlus />
-              )}
-              {isInCollection ? 'Added' : 'Add'}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onNavigate?.(artist)}
-            >
-              <ArrowRight />
-            </Button>
-          </div>
-        }
       />
     </div>
   )
