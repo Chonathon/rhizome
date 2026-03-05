@@ -135,7 +135,7 @@ export function GraphCard({
           transition={{
             opacity: { duration: 0.15, ease: "easeOut" },
           }}
-          className={`flex items-center gap-3 ${stacked ? "flex-col" : ""} ${contentClassName ?? ""}`}
+          className={`flex items-center gap-2 ${stacked ? "flex-col" : ""} ${contentClassName ?? ""}`}
         >
           {error ? (
             <div className="w-full h-full flex justify-center p-4 min-w-0">{error}</div>
