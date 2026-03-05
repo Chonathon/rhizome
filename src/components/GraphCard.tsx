@@ -105,7 +105,7 @@ export function GraphCard({
         exit={{ scale: 0 }}
         transition={{ type: "spring", stiffness: 250, damping: 24, mass: 0.8 }}
         className={`
-          w-[320px] min-h-auto h-auto p-3 z-60 pb-4
+          w-[320px] h-auto p-3 p-0 z-60 
           bg-card/80 backdrop-blur-xs shadow-lg rounded-3xl border border-border
          overflow-hidden
           ${loading ? "bg-stone-50/86" : ""}
@@ -135,7 +135,7 @@ export function GraphCard({
           transition={{
             opacity: { duration: 0.15, ease: "easeOut" },
           }}
-          className={`flex items-start gap-3 ${stacked ? "flex-col" : ""} ${contentClassName ?? ""}`}
+          className={`flex items-center gap-3 ${stacked ? "flex-col" : ""} ${contentClassName ?? ""}`}
         >
           {error ? (
             <div className="w-full h-full flex justify-center p-4 min-w-0">{error}</div>

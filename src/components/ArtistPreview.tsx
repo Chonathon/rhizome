@@ -112,7 +112,7 @@ export function ArtistPreview({
       style={{
         left: `${cursorPosition.x}px`,
         top: `${cursorPosition.y}px`,
-        transform: 'translate(8px, -8px)', 
+        transform: 'translate(24px, -8px)', 
       }}
     >
       <GraphCard
@@ -125,7 +125,7 @@ export function ArtistPreview({
 
         thumbnail={
           imageUrl ? (
-            <div className="w-[20] self-stretch shrink-0 overflow-hidden rounded-xl border border-border">
+            <div className="w-20 h-20 self-stretch shrink-0 overflow-hidden rounded-xl border border-border aspect-square">
               <img
                 className="w-full h-full object-cover"
                 src={imageUrl}
@@ -134,7 +134,7 @@ export function ArtistPreview({
               />
             </div>
           ) : (
-            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
+            <div className="w-20 h-20 self-stretch shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
               <span className="text-4xl font-semibold">{initial}</span>
             </div>
           )
