@@ -674,6 +674,21 @@ function App() {
   const displayedArtistsData = useMemo(() => {
     let filtered = artists;
 
+    // In genre exploration mode, show only the top EXPLORATION_ARTISTS_PER_GENRE artists per
+    // selected genre rather than the full global set.
+    const EXPLORATION_ARTISTS_PER_GENRE = 12;
+    if (genreExplorationMode && artistFilterGenres.length > 0) {
+      const kept = new Map<string, Artist>();
+      for (const genre of artistFilterGenres) {
+        const genreArtists = artists
+          .filter((a) => a.genres?.includes(genre.id))
+          .sort((a, b) => (b.listeners || 0) - (a.listeners || 0))
+          .slice(0, EXPLORATION_ARTISTS_PER_GENRE);
+        for (const a of genreArtists) kept.set(a.id, a);
+      }
+      filtered = Array.from(kept.values());
+    }
+
     // Apply collection filters when in collection mode
     if (collectionMode && collectionFilters.genres.length > 0) {
       filtered = filtered.filter(artist =>
@@ -704,7 +719,7 @@ function App() {
     );
 
     return { artists: filtered, links: filteredLinks };
-  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType]);
+  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, genreExplorationMode, artistFilterGenres]);
 
   // Sets current artists/links shown in the graph
   useEffect(() => {
