@@ -53,8 +53,6 @@ export interface SharedGraphNode<T = unknown> {
   // Normalized 0-1 value for label density filtering at low zoom
   labelValue?: number;
   data: T;
-  // True when this artist is in the user's collection (shows badge in regular mode)
-  inCollection?: boolean;
 }
 
 export interface SharedGraphLink {
@@ -122,6 +120,8 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   priorityLabelIds?: string[];
   // Always render artist images on all nodes (not just click-selected)
   showImages?: boolean;
+  // IDs of nodes that are in the user's collection — stored as a ref so changes don't reheat the simulation
+  collectedIds?: Set<string>;
   // Radial layout for popularity stratification (concentric rings)
   radialLayout?: {
     enabled: boolean;
@@ -201,6 +201,7 @@ const Graph = forwardRef(function GraphInner<
     disableDimming = false,
     priorityLabelIds: priorityLabelIdsProp,
     showImages = false,
+    collectedIds,
     radialLayout,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
@@ -219,10 +220,18 @@ const Graph = forwardRef(function GraphInner<
   const shouldResetZoomRef = useRef(true);
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
   const onZoomChangeRef = useRef<((zoom: number) => void) | undefined>(onZoomChange);
+  const collectedIdsRef = useRef<Set<string> | undefined>(collectedIds);
 
   useEffect(() => {
     onZoomChangeRef.current = onZoomChange;
   }, [onZoomChange]);
+
+  // Update the collected-IDs ref and trigger a canvas redraw without reheating the simulation
+  useEffect(() => {
+    collectedIdsRef.current = collectedIds;
+    const currentZoom = zoomRef.current || 1;
+    fgRef.current?.zoom?.(currentZoom, 0);
+  }, [collectedIds]);
 
   useEffect(() => {
     return () => {
@@ -828,7 +837,8 @@ const Graph = forwardRef(function GraphInner<
           const imageFadeT = Math.max(0, Math.min(1, (screenRadius - IMAGE_FADE_START) / (IMAGE_FADE_END - IMAGE_FADE_START)));
           const imageAlpha = smoothstep(imageFadeT);
           // Show images in collection mode OR for individually collected nodes in regular mode
-          const effectiveShowImages = (showImages || !!node.inCollection) && imageAlpha > 0;
+          const isInCollection = collectedIdsRef.current?.has(node.id) ?? false;
+          const effectiveShowImages = (showImages || isInCollection) && imageAlpha > 0;
 
           // Build render context
           const renderContext: NodeRenderContext<T> = {

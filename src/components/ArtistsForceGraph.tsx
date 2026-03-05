@@ -98,10 +98,9 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
           color: computeArtistColor(artist),
           labelValue: hasRange ? t : 1,
           data: artist,
-          inCollection: collectedArtistIds?.has(artist.id) ?? false,
         };
       });
-    }, [artists, computeArtistColor, collectedArtistIds]);
+    }, [artists, computeArtistColor]);
 
     const graphLinks = useMemo<NodeLink[]>(() => {
       if (!artistLinks?.length) return [];
@@ -147,6 +146,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         disableDimming={disableDimming}
         priorityLabelIds={priorityLabelIds}
         showImages={showImages}
+        collectedIds={collectedArtistIds}
         radialLayout={radialLayout}
       />
     );
