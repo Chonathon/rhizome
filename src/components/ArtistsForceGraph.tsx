@@ -33,6 +33,8 @@ interface ArtistsForceGraphProps {
   priorityLabelIds?: string[];
   // Always show artist images on all nodes (used for collections view)
   showImages?: boolean;
+  // Set of artist IDs in the user's collection (shows badge indicator in regular mode)
+  collectedArtistIds?: Set<string>;
   // Radial layout for popularity stratification (concentric rings)
   radialLayout?: {
     enabled: boolean;
@@ -69,6 +71,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       disableDimming,
       priorityLabelIds,
       showImages,
+      collectedArtistIds,
       radialLayout,
     },
     ref,
@@ -95,9 +98,10 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
           color: computeArtistColor(artist),
           labelValue: hasRange ? t : 1,
           data: artist,
+          inCollection: collectedArtistIds?.has(artist.id) ?? false,
         };
       });
-    }, [artists, computeArtistColor]);
+    }, [artists, computeArtistColor, collectedArtistIds]);
 
     const graphLinks = useMemo<NodeLink[]>(() => {
       if (!artistLinks?.length) return [];

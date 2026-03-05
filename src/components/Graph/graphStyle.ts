@@ -354,7 +354,7 @@ export function drawLabelBelow(
   if (alpha <= 0) return;
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.font = `${bold || showBackground ? '600 ' : ''}${fontPx}px Geist`;
+  ctx.font = `${bold || showBackground ? '600 ' : '600'} ${fontPx}px Geist`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 

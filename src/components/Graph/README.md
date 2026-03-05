@@ -28,6 +28,8 @@ There is no separate Collections graph component. Collection mode uses the artis
 
 Pass `showImages={true}` (via `ArtistsForceGraph`) to always render artist images on every node, not just click-selected ones. In the app this is set to `collectionMode` so the collections view shows artist photos on all nodes.
 
+In the regular (non-collection) graph, artists that have been added to the user's collection show a small accent-coloured dot badge at the top-right of their node. Pass `collectedArtistIds` (a `Set<string>`) to `ArtistsForceGraph` to enable this. The `inCollection` flag is stored directly on `SharedGraphNode` and read by `Graph` during canvas rendering.
+
 ## Key Behaviors
 
 - Graphs stay mounted and are paused/resumed via the `show` prop so physics state persists between views.

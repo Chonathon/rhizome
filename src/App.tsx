@@ -879,6 +879,9 @@ function App() {
     return getPriorityLabelIds(currentArtists, filteredArtistLinks, DEFAULT_PRIORITY_LABEL_PERCENT);
   }, [priorityLabelMode, currentArtists, filteredArtistLinks]);
 
+  // Set of artist IDs in the user's collection for badge rendering in regular graph
+  const collectedArtistIdsSet = useMemo(() => new Set(likedArtists), [likedArtists]);
+
   // Compute genres available in the collection (only includes genres from liked artists)
   const collectionGenres = useMemo(() => {
     if (!collectionMode || !artists.length) return genres;
@@ -2704,6 +2707,7 @@ function App() {
                   showLinks={showLinks}
                   disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
                   showImages={collectionMode}
+                  collectedArtistIds={collectedArtistIdsSet}
                   radialLayout={artistRadialLayout}
                   priorityLabelIds={centralArtistLabelIds}
                 />

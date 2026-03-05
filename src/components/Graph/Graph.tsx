@@ -53,6 +53,8 @@ export interface SharedGraphNode<T = unknown> {
   // Normalized 0-1 value for label density filtering at low zoom
   labelValue?: number;
   data: T;
+  // True when this artist is in the user's collection (shows badge in regular mode)
+  inCollection?: boolean;
 }
 
 export interface SharedGraphLink {
@@ -825,7 +827,8 @@ const Graph = forwardRef(function GraphInner<
           const IMAGE_FADE_END = 14;   // screen px
           const imageFadeT = Math.max(0, Math.min(1, (screenRadius - IMAGE_FADE_START) / (IMAGE_FADE_END - IMAGE_FADE_START)));
           const imageAlpha = smoothstep(imageFadeT);
-          const effectiveShowImages = showImages && imageAlpha > 0;
+          // Show images in collection mode OR for individually collected nodes in regular mode
+          const effectiveShowImages = (showImages || !!node.inCollection) && imageAlpha > 0;
 
           // Build render context
           const renderContext: NodeRenderContext<T> = {
@@ -871,6 +874,8 @@ const Graph = forwardRef(function GraphInner<
               ctx.stroke();
               ctx.restore();
             }
+
+
           }
 
           // Calculate and render label with smooth transition
