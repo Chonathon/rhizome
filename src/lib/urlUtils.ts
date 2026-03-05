@@ -23,6 +23,7 @@ export interface ParsedUrlState {
   genreSlugs: string[];
   artistSlug: string | null;
   anchorSlug: string | null;
+  anchorId: string | null;
   collectionMode: boolean;
 }
 
@@ -35,6 +36,7 @@ export function parseUrlState(searchParams: URLSearchParams): ParsedUrlState {
   const genreSlugsParam = searchParams.get('genres');
   const artistSlug = searchParams.get('artist');
   const anchorSlug = searchParams.get('anchor');
+  const anchorId = searchParams.get('anchorId');
   const mode = searchParams.get('mode');
 
   return {
@@ -45,6 +47,7 @@ export function parseUrlState(searchParams: URLSearchParams): ParsedUrlState {
     genreSlugs: genreSlugsParam ? genreSlugsParam.split(',').filter(Boolean) : [],
     artistSlug,
     anchorSlug,
+    anchorId,
     collectionMode: mode === 'collection',
   };
 }
@@ -102,10 +105,11 @@ export function buildUrlParams(state: UrlStateInput): URLSearchParams {
   // Similar artist anchor
   if (state.graph === 'similarArtists' && state.similarArtistAnchor) {
     params.set('anchor', toSlug(state.similarArtistAnchor.name));
+    params.set('anchorId', state.similarArtistAnchor.id);
   }
 
-  // Collection mode
-  if (state.collectionMode) {
+  // Collection mode (only for artists view — similar artists is self-contained)
+  if (state.collectionMode && state.graph === 'artists') {
     params.set('mode', 'collection');
   }
 

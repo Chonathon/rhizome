@@ -87,6 +87,11 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const lastAppliedUrl = useRef<string>('');
   const pendingArtistSlugRef = useRef<string | null>(null);
   const pendingAnchorSlugRef = useRef<string | null>(null);
+  // Guards against race condition: State→URL sets lastAppliedUrl to the NEW url
+  // and calls setSearchParams, but before the browser updates searchParams,
+  // URL→State can fire and see stale searchParams mismatching lastAppliedUrl.
+  // This ref tells URL→State to skip while a State→URL push is in-flight.
+  const pendingStateToUrlUpdate = useRef(false);
 
   const {
     findGenreBySlug,
@@ -129,6 +134,20 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     artistFilterGenres,
   };
 
+  // Store callbacks in refs so URL->State effect can call them without depending on their identity
+  const callbacksRef = useRef({
+    onGenreSelected,
+    onArtistSelected,
+    onGenreDeselected,
+    onArtistDeselected,
+  });
+  callbacksRef.current = {
+    onGenreSelected,
+    onArtistSelected,
+    onGenreDeselected,
+    onArtistDeselected,
+  };
+
   // Parse current URL state
   const urlState = useMemo(() => parseUrlState(searchParams), [searchParams]);
 
@@ -139,10 +158,28 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
 
     const urlString = searchParams.toString();
 
-    // Skip if this is the same URL we last applied (prevents loops)
-    if (urlString === lastAppliedUrl.current && !isInitialLoad.current) {
+    console.log('[useUrlState] URL→State effect fired', { urlString, lastApplied: lastAppliedUrl.current, isInitial: isInitialLoad.current, pendingPush: pendingStateToUrlUpdate.current });
+
+    // Skip if State→URL just pushed a new URL and the browser hasn't caught up yet
+    if (pendingStateToUrlUpdate.current) {
+      if (urlString === lastAppliedUrl.current) {
+        // Browser caught up to the URL we pushed — clear the flag, skip processing
+        // (this URL was set by us, not by browser navigation)
+        console.log('[useUrlState] URL→State SKIPPED (browser caught up to our push)');
+        pendingStateToUrlUpdate.current = false;
+        return;
+      }
+      // Browser hasn't caught up yet — skip processing stale URL
+      console.log('[useUrlState] URL→State SKIPPED (waiting for browser to catch up)');
       return;
     }
+
+    // Skip if this is the same URL we last applied (prevents loops)
+    if (urlString === lastAppliedUrl.current && !isInitialLoad.current) {
+      console.log('[useUrlState] URL→State SKIPPED (guard matched)');
+      return;
+    }
+    console.log('[useUrlState] URL→State PROCEEDING past guard');
 
     lastAppliedUrl.current = urlString;
 
@@ -174,13 +211,15 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
       if (genre) {
         if (currentState.selectedGenres.length === 0 || currentState.selectedGenres[0].id !== genre.id) {
           setSelectedGenres([genre]);
-          onGenreSelected?.(genre);
+          console.log('[useUrlState] Calling onGenreSelected for:', genre.name);
+          callbacksRef.current.onGenreSelected?.(genre);
         }
       }
     } else if (urlState.view === 'genres' && currentState.selectedGenres.length > 0) {
       // URL has no genre slug but we have a selection - clear it
       setSelectedGenres([]);
-      onGenreDeselected?.();
+      console.log('[useUrlState] Calling onGenreDeselected');
+      callbacksRef.current.onGenreDeselected?.();
     }
 
     // Apply genre filter (artists view) - multiple genres
@@ -209,7 +248,8 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
         if (artist) {
           if (!currentState.selectedArtist || currentState.selectedArtist.id !== artist.id) {
             setSelectedArtist(artist);
-            onArtistSelected?.(artist);
+            console.log('[useUrlState] Calling onArtistSelected for:', artist.name);
+            callbacksRef.current.onArtistSelected?.(artist);
           }
         } else {
           // Artist not found yet, store as pending
@@ -222,7 +262,8 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     } else if (currentState.selectedArtist) {
       // URL has no artist slug but we have a selection - clear it
       setSelectedArtist(undefined);
-      onArtistDeselected?.();
+      console.log('[useUrlState] Calling onArtistDeselected');
+      callbacksRef.current.onArtistDeselected?.();
       pendingArtistSlugRef.current = null;
     }
 
@@ -247,6 +288,7 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     }
 
     isInitialLoad.current = false;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     searchParams,
     urlState,
@@ -260,10 +302,6 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     setSimilarArtistAnchor,
     setCollectionMode,
     setArtistFilterGenres,
-    onGenreSelected,
-    onArtistSelected,
-    onGenreDeselected,
-    onArtistDeselected,
   ]);
 
   // Sync State -> URL (when state changes from user interaction)
@@ -297,6 +335,7 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
 
     if (newUrlString !== currentUrlString) {
       lastAppliedUrl.current = newParams.toString();
+      pendingStateToUrlUpdate.current = true;
       setSearchParams(newParams, { replace: false });
     }
   }, [

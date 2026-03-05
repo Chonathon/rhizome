@@ -129,10 +129,50 @@ export function ResponsiveDrawer({
   const canvasDragStartRef = React.useRef<{ x: number; y: number } | null>(null);
   const openTimeRef = React.useRef<number>(0);
 
+  // Control whether we apply the desktop side offset margin. We turn it off just before closing
+  // so the Vaul translate animation can fully dismiss without leaving a sliver at the sidebar gap.
+  const [useDesktopOffset, setUseDesktopOffset] = useState(true);
+  const desktopSideOffset: React.CSSProperties | undefined = React.useMemo(() => {
+    if (!isDesktop || !useDesktopOffset) return undefined;
+    if (directionDesktop === "left") {
+      return { left: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
+    }
+    return { right: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
+  }, [isDesktop, useDesktopOffset, directionDesktop]);
+
+  // Prevent overlay from covering the sidebar region on desktop
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!isDesktop) {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "0px");
+      root.style.setProperty("--overlay-top", "0px");
+      root.style.setProperty("--overlay-bottom", "0px");
+      return;
+    }
+    if (directionDesktop === "left") {
+      root.style.setProperty("--overlay-left", "var(--sidebar-gap)");
+      root.style.setProperty("--overlay-right", "0px");
+    } else {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "var(--sidebar-gap)");
+    }
+    root.style.setProperty("--overlay-top", "calc(var(--app-header-height, 52px) + 8px)");
+    root.style.setProperty("--overlay-bottom", "12px");
+
+    return () => {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "0px");
+      root.style.setProperty("--overlay-top", "0px");
+      root.style.setProperty("--overlay-bottom", "0px");
+    };
+  }, [isDesktop, directionDesktop, sidebarState]);
+
   // keep open state in sync with `show`
   useEffect(() => {
     if (show) {
       openTimeRef.current = Date.now();
+      setUseDesktopOffset(true); // Reset offset when reopening (state persists across show/hide)
       setOpen(true);
     } else {
       setOpen(false);
@@ -356,58 +396,6 @@ export function ResponsiveDrawer({
   if (!show) return null;
 
   const drawerKey = isDesktop ? "desktop" : "mobile";
-
-  // Control whether we apply the desktop side offset margin. We turn it off just before closing
-  // so the Vaul translate animation can fully dismiss without leaving a sliver at the sidebar gap.
-  const [useDesktopOffset, setUseDesktopOffset] = useState(true);
-  const desktopSideOffset: React.CSSProperties | undefined = React.useMemo(() => {
-    if (!isDesktop || !useDesktopOffset) return undefined;
-    if (directionDesktop === "left") {
-      return { left: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
-    }
-    return { right: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
-  }, [isDesktop, useDesktopOffset, directionDesktop]);
-
-  // Prevent overlay from covering the sidebar region on desktop
-  useEffect(() => {
-    const root = document.documentElement;
-    if (!isDesktop) {
-      root.style.setProperty("--overlay-left", "0px");
-      root.style.setProperty("--overlay-right", "0px");
-      root.style.setProperty("--overlay-top", "0px");
-      root.style.setProperty("--overlay-bottom", "0px");
-      root.style.setProperty("--overlay-top", "0px");
-      root.style.setProperty("--overlay-bottom", "0px");
-      return;
-    }
-    if (directionDesktop === "left") {
-      root.style.setProperty("--overlay-left", "var(--sidebar-gap)");
-      root.style.setProperty("--overlay-right", "0px");
-    } else {
-      root.style.setProperty("--overlay-left", "0px");
-      root.style.setProperty("--overlay-right", "var(--sidebar-gap)");
-    }
-    // Keep the overlay vertically aligned with the floating drawer on desktop
-    root.style.setProperty("--overlay-top", "calc(var(--app-header-height, 52px) + 8px)");
-    root.style.setProperty("--overlay-bottom", "12px");
-
-    return () => {
-      root.style.setProperty("--overlay-left", "0px");
-      root.style.setProperty("--overlay-right", "0px");
-      root.style.setProperty("--overlay-top", "0px");
-      root.style.setProperty("--overlay-bottom", "0px");
-    };
-    // Keep the overlay vertically aligned with the floating drawer on desktop
-    root.style.setProperty("--overlay-top", "calc(var(--app-header-height, 52px) + 8px)");
-    root.style.setProperty("--overlay-bottom", "12px");
-
-    return () => {
-      root.style.setProperty("--overlay-left", "0px");
-      root.style.setProperty("--overlay-right", "0px");
-      root.style.setProperty("--overlay-top", "0px");
-      root.style.setProperty("--overlay-bottom", "0px");
-    };
-  }, [isDesktop, directionDesktop, sidebarState]);
 
   return (
     <Drawer

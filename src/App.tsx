@@ -291,6 +291,7 @@ function App() {
     artistsPlayIDsLoading,
     artistPlayIDLoadingKey,
     fetchSingleArtist,
+    fetchArtistBySearch,
     similarArtists,
     fetchSimilarArtists,
   } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode);
@@ -381,7 +382,7 @@ function App() {
   }, [currentArtists]);
 
   // URL State Sync: Bidirectional sync between URL and app state
-  const { pendingArtistSlug, setPendingArtistSlug } = useUrlState({
+  const { urlState, pendingArtistSlug, setPendingArtistSlug } = useUrlState({
     findGenreBySlug,
     findArtistBySlug,
     graph,
@@ -431,6 +432,70 @@ function App() {
       }
     }
   }, [currentArtists, pendingArtistSlug, findArtistBySlug, setPendingArtistSlug, addRecentSelection]);
+
+  // URL State Sync: Auto-fetch liked artists when entering collection mode from URL
+  useEffect(() => {
+    if (collectionMode && graph === 'artists' && artists.length === 0 && !artistsLoading && likedArtists.length > 0) {
+      console.log('[App] Auto-fetching liked artists for collection mode from URL');
+      fetchLikedArtists(likedArtists);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionMode, graph, artists.length, artistsLoading, likedArtists]);
+
+  // URL State Sync: Show feedback when collection URL is opened without auth
+  useEffect(() => {
+    if (collectionMode && likedArtists.length === 0 && !userID) {
+      toast.info("Sign in to view your collection");
+      setCollectionMode(false);
+      setGraph('genres');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionMode, likedArtists.length, userID]);
+
+  // URL State Sync: Build similar artist graph from URL
+  const hasBuiltSimilarGraphFromUrl = useRef(false);
+  useEffect(() => {
+    const hasAnchor = urlState.anchorId || urlState.anchorSlug;
+    if (
+      urlState.view === 'similar' &&
+      hasAnchor &&
+      !similarArtistAnchor &&
+      !artistsLoading &&
+      !hasBuiltSimilarGraphFromUrl.current
+    ) {
+      hasBuiltSimilarGraphFromUrl.current = true;
+      console.log('[App] Building similar artist graph from URL', { anchorId: urlState.anchorId, anchorSlug: urlState.anchorSlug });
+      (async () => {
+        let artist: Artist | undefined;
+        if (urlState.anchorId) {
+          artist = await fetchSingleArtist(urlState.anchorId);
+        } else if (urlState.anchorSlug) {
+          const query = urlState.anchorSlug.replace(/-/g, ' ');
+          artist = await fetchArtistBySearch(query);
+        }
+        if (artist) {
+          if (!artist.similar || artist.similar.length === 0) {
+            toast.error(`No similar artist data available for ${artist.name}`);
+            setGraph('genres');
+            return;
+          }
+          setCanCreateSimilarArtistGraph(true);
+          await fetchSimilarArtists(artist);
+          setSelectedArtist(artist);
+          setSimilarArtistAnchor(artist);
+          setArtistInfoToShow(artist);
+          setShowArtistCard(true);
+        } else {
+          toast.error('Could not load similar artist graph');
+          setGraph('genres');
+        }
+      })();
+    }
+    if (urlState.view !== 'similar') {
+      hasBuiltSimilarGraphFromUrl.current = false;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlState.view, urlState.anchorId, urlState.anchorSlug, similarArtistAnchor, artistsLoading]);
 
   const artistsAddedRef = useRef(0);
 
@@ -1921,6 +1986,7 @@ function App() {
   }
 
   const deselectGenre = () => {
+    console.log('[App] deselectGenre called');
     setSelectedGenres([]);
     setArtistGenreFilter([]);
     setArtistFilterGenres([]);
@@ -1933,6 +1999,7 @@ function App() {
   }
 
   const deselectArtist = () => {
+    console.log('[App] deselectArtist called');
     setSelectedArtistFromSearch(false);
     setSelectedArtist(undefined);
     setArtistInfoToShow(undefined);
