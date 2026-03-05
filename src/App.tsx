@@ -670,23 +670,91 @@ function App() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
+  // ── Exploration hop state ────────────────────────────────────────────────────
+  // Map of genreId → hop depth (0 = base 12 artists only)
+  const [genreHopDepths, setGenreHopDepths] = useState<Map<string, number>>(new Map());
+
+  /**
+   * Computes the full exploration dataset: which artists to show and which
+   * artists belong to each genre's territory (including hop artists).
+   * Runs the frontier-BFS hop expansion per genre.
+   */
+  const explorationData = useMemo(() => {
+    if (!genreExplorationMode || !artistFilterGenres.length) return null;
+
+    const BASE_PER_GENRE = 12;
+    const PER_HOP = 8;
+    const artistsById = new Map(artists.map((a) => [a.id, a]));
+
+    // territory: genreId → Set of artist IDs in that genre's territory
+    const territories = new Map<string, Set<string>>();
+    // canExpandMap: genreId → whether there are unseen connected artists
+    const canExpandMap = new Map<string, boolean>();
+    const allKept = new Map<string, Artist>();
+
+    for (const genre of artistFilterGenres) {
+      const hopDepth = genreHopDepths.get(genre.id) ?? 0;
+      const territory = new Set<string>();
+
+      // Seed with top BASE_PER_GENRE artists belonging to this genre
+      const base = artists
+        .filter((a) => a.genres?.includes(genre.id))
+        .sort((a, b) => (b.listeners || 0) - (a.listeners || 0))
+        .slice(0, BASE_PER_GENRE);
+
+      for (const a of base) { allKept.set(a.id, a); territory.add(a.id); }
+
+      // BFS outward through similar-artist links
+      let frontier = new Set(base.map((a) => a.id));
+
+      for (let hop = 0; hop < hopDepth; hop++) {
+        const candidates = new Map<string, Artist>();
+        for (const link of artistLinks) {
+          const src = typeof link.source === 'string' ? link.source : (link.source as any)?.id;
+          const tgt = typeof link.target === 'string' ? link.target : (link.target as any)?.id;
+          if (!src || !tgt) continue;
+
+          const newId = frontier.has(src) && !territory.has(tgt) ? tgt
+            : frontier.has(tgt) && !territory.has(src) ? src
+            : null;
+
+          if (newId && !territory.has(newId)) {
+            const artist = artistsById.get(newId);
+            if (artist && !candidates.has(newId)) candidates.set(newId, artist);
+          }
+        }
+
+        const added = Array.from(candidates.values())
+          .sort((a, b) => (b.listeners || 0) - (a.listeners || 0))
+          .slice(0, PER_HOP);
+
+        frontier = new Set(added.map((a) => a.id));
+        for (const a of added) { allKept.set(a.id, a); territory.add(a.id); }
+        if (frontier.size === 0) break;
+      }
+
+      // Check if one more hop would yield anything new
+      const wouldExpand = artistLinks.some((link) => {
+        const src = typeof link.source === 'string' ? link.source : (link.source as any)?.id;
+        const tgt = typeof link.target === 'string' ? link.target : (link.target as any)?.id;
+        return (territory.has(src) && artistsById.has(tgt) && !territory.has(tgt))
+            || (territory.has(tgt) && artistsById.has(src) && !territory.has(src));
+      });
+
+      territories.set(genre.id, territory);
+      canExpandMap.set(genre.id, wouldExpand);
+    }
+
+    return { artists: Array.from(allKept.values()), territories, canExpandMap };
+  }, [genreExplorationMode, artistFilterGenres, artists, artistLinks, genreHopDepths]);
+
   // Computes the artists/links to display - applies node limit and collection filters
   const displayedArtistsData = useMemo(() => {
     let filtered = artists;
 
-    // In genre exploration mode, show only the top EXPLORATION_ARTISTS_PER_GENRE artists per
-    // selected genre rather than the full global set.
-    const EXPLORATION_ARTISTS_PER_GENRE = 12;
-    if (genreExplorationMode && artistFilterGenres.length > 0) {
-      const kept = new Map<string, Artist>();
-      for (const genre of artistFilterGenres) {
-        const genreArtists = artists
-          .filter((a) => a.genres?.includes(genre.id))
-          .sort((a, b) => (b.listeners || 0) - (a.listeners || 0))
-          .slice(0, EXPLORATION_ARTISTS_PER_GENRE);
-        for (const a of genreArtists) kept.set(a.id, a);
-      }
-      filtered = Array.from(kept.values());
+    // In exploration mode use the hop-expanded artist set instead
+    if (genreExplorationMode && explorationData) {
+      filtered = explorationData.artists;
     }
 
     // Apply collection filters when in collection mode
@@ -719,7 +787,7 @@ function App() {
     );
 
     return { artists: filtered, links: filteredLinks };
-  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, genreExplorationMode, artistFilterGenres]);
+  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, genreExplorationMode, explorationData]);
 
   // Sets current artists/links shown in the graph
   useEffect(() => {
@@ -2216,26 +2284,24 @@ function App() {
 
   /** Compute visual hull containers for each genre currently shown in exploration mode */
   const genreContainers = useMemo<GenreContainerDef[]>(() => {
-    if (!genreExplorationMode || !artistFilterGenres.length || !currentArtists.length) return [];
+    if (!genreExplorationMode || !artistFilterGenres.length || !explorationData) return [];
     return artistFilterGenres.map((genreFilter) => {
       const genreData = genres?.find((g) => g.id === genreFilter.id);
       const color = genreColorMap.get(genreFilter.id) ?? '#8a80ff';
-      // Match artists whose genres array includes this genre ID
-      const genreArtists = currentArtists
-        .filter((a) => a.genres?.includes(genreFilter.id))
-        .sort((a, b) => (b.listeners || 0) - (a.listeners || 0))
-        .slice(0, 12);
+      const territory = explorationData.territories.get(genreFilter.id) ?? new Set<string>();
       return {
         genreId: genreFilter.id,
         genreName: genreData?.name ?? genreFilter.name ?? genreFilter.id,
-        artistIds: genreArtists.map((a) => a.id),
+        artistIds: Array.from(territory),
         color,
         parentGenreId: genreData?.subgenre_of?.[0]?.id,
         parentGenreName: genreData?.subgenre_of?.[0]?.name,
         subGenres: genreData?.subgenres ?? [],
+        hopDepth: genreHopDepths.get(genreFilter.id) ?? 0,
+        canExpand: explorationData.canExpandMap.get(genreFilter.id) ?? false,
       } satisfies GenreContainerDef;
     });
-  }, [genreExplorationMode, artistFilterGenres, currentArtists, genres, genreColorMap]);
+  }, [genreExplorationMode, artistFilterGenres, explorationData, genres, genreColorMap, genreHopDepths]);
 
   /** Open the onboarding dialog for genre exploration */
   const openGenreExploration = useCallback(() => {
@@ -2247,6 +2313,7 @@ function App() {
     const selectedGenreObjects = genres?.filter((g) => selectedGenreIds.includes(g.id)) ?? [];
     if (!selectedGenreObjects.length) return;
     setGenreExplorationHistory([]);
+    setGenreHopDepths(new Map());
     setArtistFilterGenres(selectedGenreObjects);
     setArtistGenreFilter(selectedGenreObjects);
     setIsBeforeArtistLoad(false);
@@ -2260,11 +2327,11 @@ function App() {
   const navigateToGenreInExploration = useCallback((genreId: string) => {
     const targetGenre = genres?.find((g) => g.id === genreId);
     if (!targetGenre) return;
-    // Push current genre IDs to history
     const currentIds = artistFilterGenres.map((g) => g.id);
     if (currentIds.length) {
       setGenreExplorationHistory((prev) => [...prev, currentIds]);
     }
+    setGenreHopDepths(new Map()); // reset hops for the new genre
     setArtistFilterGenres([targetGenre]);
     setArtistGenreFilter([targetGenre]);
     setIsBeforeArtistLoad(false);
@@ -2276,6 +2343,7 @@ function App() {
     if (!genreExplorationHistory.length) return;
     const prev = genreExplorationHistory[genreExplorationHistory.length - 1];
     setGenreExplorationHistory((h) => h.slice(0, -1));
+    setGenreHopDepths(new Map()); // reset hops when going back
     const prevGenres = genres?.filter((g) => prev.includes(g.id)) ?? [];
     if (prevGenres.length) {
       setArtistFilterGenres(prevGenres);
@@ -2284,6 +2352,16 @@ function App() {
     }
     setContainerMenuState(null);
   }, [genreExplorationHistory, genres]);
+
+  /** Expand a genre container by one hop of similar-artist connections */
+  const expandGenreHop = useCallback((genreId: string) => {
+    setGenreHopDepths((prev) => {
+      const next = new Map(prev);
+      next.set(genreId, (prev.get(genreId) ?? 0) + 1);
+      return next;
+    });
+    setContainerMenuState(null);
+  }, []);
 
   /** Called when a genre container hull is clicked on the canvas */
   const onGenreContainerClick = useCallback((genreId: string, screenPosition: { x: number; y: number }) => {
@@ -2294,6 +2372,7 @@ function App() {
   const exitGenreExplorationMode = useCallback(() => {
     setGenreExplorationMode(false);
     setGenreExplorationHistory([]);
+    setGenreHopDepths(new Map());
     setContainerMenuState(null);
   }, []);
 
@@ -3225,6 +3304,7 @@ function App() {
         canGoBack={genreExplorationHistory.length > 0}
         onNavigate={navigateToGenreInExploration}
         onBack={navigateBackInExploration}
+        onExpand={expandGenreHop}
         onClose={() => setContainerMenuState(null)}
       />
     </SidebarProvider>

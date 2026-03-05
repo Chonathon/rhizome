@@ -817,11 +817,14 @@ const Graph = forwardRef(function GraphInner<
       ctx.fillStyle = labelBg;
       ctx.fill();
 
-      // Label text
+      // Label text (append hop indicator when expanded)
+      const label = container.hopDepth > 0
+        ? `${container.genreName}  +${container.hopDepth}`
+        : container.genreName;
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(container.genreName, cx, cy);
+      ctx.fillText(label, cx, cy);
       ctx.restore();
     }
   }, []);

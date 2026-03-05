@@ -172,7 +172,7 @@ export interface GraphHandle {
 export interface GenreContainerDef {
   genreId: string;
   genreName: string;
-  /** IDs of artists (top ~12 by listeners) that belong to this genre */
+  /** IDs of artists in this genre's territory (base + hop artists) */
   artistIds: string[];
   /** Hex color for fill/stroke of the container */
   color: string;
@@ -182,6 +182,10 @@ export interface GenreContainerDef {
   parentGenreName?: string;
   /** Child sub-genres for drill-down navigation */
   subGenres: BasicNode[];
+  /** Current hop depth (0 = base artists only) */
+  hopDepth: number;
+  /** Whether more hops are possible */
+  canExpand: boolean;
 }
 
 /** State for the genre exploration feature */
