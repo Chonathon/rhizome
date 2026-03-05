@@ -682,8 +682,7 @@ function App() {
     if (!genreExplorationMode || !artistFilterGenres.length) return null;
 
     const BASE_PER_GENRE = 12;
-    const GHOST_HOPS = 2;
-    const GHOST_PER_HOP = 10;
+    const GHOST_PER_HOP = 5; // max ghost candidates per base artist (hop 1)
     const artistsById = new Map(artists.map((a) => [a.id, a]));
 
     const baseIds = new Set<string>();
@@ -698,27 +697,39 @@ function App() {
         .forEach((a) => { baseIds.add(a.id); poolById.set(a.id, a); });
     }
 
-    // BFS 2 hops to pre-populate ghost candidates
-    let frontier = new Set(baseIds);
-    for (let hop = 0; hop < GHOST_HOPS; hop++) {
-      const candidates = new Map<string, Artist>();
-      for (const link of artistLinks) {
-        const src = typeof link.source === 'string' ? link.source : (link.source as any)?.id;
-        const tgt = typeof link.target === 'string' ? link.target : (link.target as any)?.id;
-        if (!src || !tgt) continue;
-        const newId = frontier.has(src) && !poolById.has(tgt) ? tgt
-          : frontier.has(tgt) && !poolById.has(src) ? src : null;
-        if (newId && !poolById.has(newId)) {
-          const a = artistsById.get(newId);
-          if (a) candidates.set(newId, a);
-        }
-      }
-      const added = Array.from(candidates.values())
+    // Build an adjacency map for fast neighbor lookup
+    const neighbors = new Map<string, string[]>();
+    for (const link of artistLinks) {
+      const src = typeof link.source === 'string' ? link.source : (link.source as any)?.id;
+      const tgt = typeof link.target === 'string' ? link.target : (link.target as any)?.id;
+      if (!src || !tgt) continue;
+      if (!neighbors.has(src)) neighbors.set(src, []);
+      if (!neighbors.has(tgt)) neighbors.set(tgt, []);
+      neighbors.get(src)!.push(tgt);
+      neighbors.get(tgt)!.push(src);
+    }
+
+    // Hop 1: for each base artist, add its top GHOST_PER_HOP direct neighbors.
+    // This guarantees every base artist has ghost candidates when selected.
+    for (const baseId of baseIds) {
+      (neighbors.get(baseId) ?? [])
+        .filter((id) => !poolById.has(id) && artistsById.has(id))
+        .map((id) => artistsById.get(id)!)
         .sort((a, b) => (b.listeners || 0) - (a.listeners || 0))
-        .slice(0, GHOST_PER_HOP);
-      frontier = new Set(added.map((a) => a.id));
-      added.forEach((a) => poolById.set(a.id, a));
-      if (frontier.size === 0) break;
+        .slice(0, GHOST_PER_HOP)
+        .forEach((a) => poolById.set(a.id, a));
+    }
+
+    // Hop 2: for each hop-1 candidate, add its top 3 direct neighbors.
+    // This ensures clicking a ghost also reveals a next frontier.
+    const hop1Ids = Array.from(poolById.keys()).filter((id) => !baseIds.has(id));
+    for (const hop1Id of hop1Ids) {
+      (neighbors.get(hop1Id) ?? [])
+        .filter((id) => !poolById.has(id) && artistsById.has(id))
+        .map((id) => artistsById.get(id)!)
+        .sort((a, b) => (b.listeners || 0) - (a.listeners || 0))
+        .slice(0, 3)
+        .forEach((a) => poolById.set(a.id, a));
     }
 
     return { baseIds, pool: poolById };

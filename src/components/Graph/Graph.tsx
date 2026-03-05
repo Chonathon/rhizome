@@ -966,12 +966,23 @@ const Graph = forwardRef(function GraphInner<
           const visibilityMode = nodeVisibilityRef.current?.get(node.id);
           if (visibilityMode === 'hidden') return; // completely invisible
           if (visibilityMode === 'ghost') {
+            const ghostR = Math.max(3, radius * 0.65);
             ctx.save();
+            // Filled dot
             ctx.beginPath();
-            ctx.arc(x, y, Math.max(2.5, radius * 0.55), 0, Math.PI * 2);
+            ctx.arc(x, y, ghostR, 0, Math.PI * 2);
             ctx.fillStyle = accent;
-            ctx.globalAlpha = 0.28;
+            ctx.globalAlpha = 0.45;
             ctx.fill();
+            // Dashed ring to hint interactivity
+            ctx.beginPath();
+            ctx.arc(x, y, ghostR + 2.5, 0, Math.PI * 2);
+            ctx.strokeStyle = accent;
+            ctx.globalAlpha = 0.25;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 3]);
+            ctx.stroke();
+            ctx.setLineDash([]);
             ctx.restore();
             return;
           }
