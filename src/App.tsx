@@ -670,91 +670,105 @@ function App() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // ── Exploration hop state ────────────────────────────────────────────────────
-  // Map of genreId → hop depth (0 = base 12 artists only)
-  const [genreHopDepths, setGenreHopDepths] = useState<Map<string, number>>(new Map());
+  // ── Exploration: stable pool + per-click reveal ──────────────────────────────
 
   /**
-   * Computes the full exploration dataset: which artists to show and which
-   * artists belong to each genre's territory (including hop artists).
-   * Runs the frontier-BFS hop expansion per genre.
+   * Stable pool of artists included in the graph during exploration.
+   * Pre-populated with base artists + 2 hops of connected candidates so
+   * the physics simulation never needs to reheat when the user reveals ghosts.
+   * Changes only when the genre filter changes (intentional navigation).
    */
-  const explorationData = useMemo(() => {
+  const explorationPool = useMemo(() => {
     if (!genreExplorationMode || !artistFilterGenres.length) return null;
 
     const BASE_PER_GENRE = 12;
-    const PER_HOP = 8;
+    const GHOST_HOPS = 2;
+    const GHOST_PER_HOP = 10;
     const artistsById = new Map(artists.map((a) => [a.id, a]));
 
-    // territory: genreId → Set of artist IDs in that genre's territory
-    const territories = new Map<string, Set<string>>();
-    // canExpandMap: genreId → whether there are unseen connected artists
-    const canExpandMap = new Map<string, boolean>();
-    const allKept = new Map<string, Artist>();
+    const baseIds = new Set<string>();
+    const poolById = new Map<string, Artist>();
 
+    // Seed base artists for each genre
     for (const genre of artistFilterGenres) {
-      const hopDepth = genreHopDepths.get(genre.id) ?? 0;
-      const territory = new Set<string>();
-
-      // Seed with top BASE_PER_GENRE artists belonging to this genre
-      const base = artists
+      artists
         .filter((a) => a.genres?.includes(genre.id))
         .sort((a, b) => (b.listeners || 0) - (a.listeners || 0))
-        .slice(0, BASE_PER_GENRE);
-
-      for (const a of base) { allKept.set(a.id, a); territory.add(a.id); }
-
-      // BFS outward through similar-artist links
-      let frontier = new Set(base.map((a) => a.id));
-
-      for (let hop = 0; hop < hopDepth; hop++) {
-        const candidates = new Map<string, Artist>();
-        for (const link of artistLinks) {
-          const src = typeof link.source === 'string' ? link.source : (link.source as any)?.id;
-          const tgt = typeof link.target === 'string' ? link.target : (link.target as any)?.id;
-          if (!src || !tgt) continue;
-
-          const newId = frontier.has(src) && !territory.has(tgt) ? tgt
-            : frontier.has(tgt) && !territory.has(src) ? src
-            : null;
-
-          if (newId && !territory.has(newId)) {
-            const artist = artistsById.get(newId);
-            if (artist && !candidates.has(newId)) candidates.set(newId, artist);
-          }
-        }
-
-        const added = Array.from(candidates.values())
-          .sort((a, b) => (b.listeners || 0) - (a.listeners || 0))
-          .slice(0, PER_HOP);
-
-        frontier = new Set(added.map((a) => a.id));
-        for (const a of added) { allKept.set(a.id, a); territory.add(a.id); }
-        if (frontier.size === 0) break;
-      }
-
-      // Check if one more hop would yield anything new
-      const wouldExpand = artistLinks.some((link) => {
-        const src = typeof link.source === 'string' ? link.source : (link.source as any)?.id;
-        const tgt = typeof link.target === 'string' ? link.target : (link.target as any)?.id;
-        return (territory.has(src) && artistsById.has(tgt) && !territory.has(tgt))
-            || (territory.has(tgt) && artistsById.has(src) && !territory.has(src));
-      });
-
-      territories.set(genre.id, territory);
-      canExpandMap.set(genre.id, wouldExpand);
+        .slice(0, BASE_PER_GENRE)
+        .forEach((a) => { baseIds.add(a.id); poolById.set(a.id, a); });
     }
 
-    return { artists: Array.from(allKept.values()), territories, canExpandMap };
-  }, [genreExplorationMode, artistFilterGenres, artists, artistLinks, genreHopDepths]);
+    // BFS 2 hops to pre-populate ghost candidates
+    let frontier = new Set(baseIds);
+    for (let hop = 0; hop < GHOST_HOPS; hop++) {
+      const candidates = new Map<string, Artist>();
+      for (const link of artistLinks) {
+        const src = typeof link.source === 'string' ? link.source : (link.source as any)?.id;
+        const tgt = typeof link.target === 'string' ? link.target : (link.target as any)?.id;
+        if (!src || !tgt) continue;
+        const newId = frontier.has(src) && !poolById.has(tgt) ? tgt
+          : frontier.has(tgt) && !poolById.has(src) ? src : null;
+        if (newId && !poolById.has(newId)) {
+          const a = artistsById.get(newId);
+          if (a) candidates.set(newId, a);
+        }
+      }
+      const added = Array.from(candidates.values())
+        .sort((a, b) => (b.listeners || 0) - (a.listeners || 0))
+        .slice(0, GHOST_PER_HOP);
+      frontier = new Set(added.map((a) => a.id));
+      added.forEach((a) => poolById.set(a.id, a));
+      if (frontier.size === 0) break;
+    }
+
+    return { baseIds, pool: poolById };
+  }, [genreExplorationMode, artistFilterGenres, artists, artistLinks]);
+
+  /** Artists the user has explicitly clicked to reveal (ghost → territory) */
+  const [revealedArtistIds, setRevealedArtistIds] = useState<Set<string>>(new Set());
+
+  /**
+   * Map<artistId, 'ghost' | 'hidden'> for non-territory pool artists.
+   * Ghost = 1 hop from the currently selected artist, in pool, not yet revealed.
+   * Hidden = in pool but not adjacent to selected artist (invisible, physics only).
+   * Territory artists (base + revealed) are absent from this map → render normally.
+   */
+  const explorationNodeVisibility = useMemo<Map<string, 'ghost' | 'hidden'> | undefined>(() => {
+    if (!genreExplorationMode || !explorationPool) return undefined;
+
+    const territory = new Set([...explorationPool.baseIds, ...revealedArtistIds]);
+    const visibility = new Map<string, 'ghost' | 'hidden'>();
+
+    // Find 1-hop neighbours of selected artist that are in pool but not territory
+    const ghostIds = new Set<string>();
+    if (selectedArtist && territory.has(selectedArtist.id)) {
+      for (const link of artistLinks) {
+        const src = typeof link.source === 'string' ? link.source : (link.source as any)?.id;
+        const tgt = typeof link.target === 'string' ? link.target : (link.target as any)?.id;
+        if (!src || !tgt) continue;
+        if (src === selectedArtist.id && explorationPool.pool.has(tgt) && !territory.has(tgt)) ghostIds.add(tgt);
+        if (tgt === selectedArtist.id && explorationPool.pool.has(src) && !territory.has(src)) ghostIds.add(src);
+      }
+    }
+
+    for (const id of explorationPool.pool.keys()) {
+      if (!territory.has(id)) {
+        visibility.set(id, ghostIds.has(id) ? 'ghost' : 'hidden');
+      }
+    }
+
+    return visibility;
+  }, [genreExplorationMode, explorationPool, revealedArtistIds, selectedArtist, artistLinks]);
 
   // Computes the artists/links to display - applies node limit and collection filters
   const displayedArtistsData = useMemo(() => {
     let filtered = artists;
 
-    // In exploration mode use the hop-expanded artist set instead
-    if (genreExplorationMode && explorationData) {
-      filtered = explorationData.artists;
+    // In exploration mode use the full stable pool (base + ghost candidates).
+    // Visibility is controlled separately via explorationNodeVisibility so the
+    // graph topology never changes mid-session → no physics reheat.
+    if (genreExplorationMode && explorationPool) {
+      filtered = Array.from(explorationPool.pool.values());
     }
 
     // Apply collection filters when in collection mode
@@ -787,7 +801,7 @@ function App() {
     );
 
     return { artists: filtered, links: filteredLinks };
-  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, genreExplorationMode, explorationData]);
+  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, genreExplorationMode, explorationPool]);
 
   // Sets current artists/links shown in the graph
   useEffect(() => {
@@ -1797,6 +1811,13 @@ function App() {
   };
 
   const onArtistNodeClick = (artist: Artist) => {
+    // In exploration mode, ghost clicks reveal the artist rather than opening the info drawer
+    if (genreExplorationMode && explorationNodeVisibility?.get(artist.id) === 'ghost') {
+      setRevealedArtistIds((prev) => new Set([...prev, artist.id]));
+      setSelectedArtist(artist); // select so its neighbours become the next ghost frontier
+      return;
+    }
+
     setIsUserDraggingArtistCanvas(false); // Re-enable dimming when selecting a new node
     setArtistDrawerExpandTrigger(prev => prev + 1); // Expand drawer to middle position
     setSelectedArtistFromSearch(false);
@@ -2282,26 +2303,29 @@ function App() {
 
   // ── Genre exploration mode ───────────────────────────────────────────────────
 
-  /** Compute visual hull containers for each genre currently shown in exploration mode */
+  /** Compute visual hull containers — hull wraps only territory (base + revealed) artists */
   const genreContainers = useMemo<GenreContainerDef[]>(() => {
-    if (!genreExplorationMode || !artistFilterGenres.length || !explorationData) return [];
+    if (!genreExplorationMode || !artistFilterGenres.length || !explorationPool) return [];
+    const territory = new Set([...explorationPool.baseIds, ...revealedArtistIds]);
     return artistFilterGenres.map((genreFilter) => {
       const genreData = genres?.find((g) => g.id === genreFilter.id);
       const color = genreColorMap.get(genreFilter.id) ?? '#8a80ff';
-      const territory = explorationData.territories.get(genreFilter.id) ?? new Set<string>();
+      // Hull only wraps artists that are fully visible territory members of this genre
+      const hullArtists = Array.from(territory).filter((id) => {
+        const a = explorationPool.pool.get(id);
+        return a?.genres?.includes(genreFilter.id);
+      });
       return {
         genreId: genreFilter.id,
         genreName: genreData?.name ?? genreFilter.name ?? genreFilter.id,
-        artistIds: Array.from(territory),
+        artistIds: hullArtists,
         color,
         parentGenreId: genreData?.subgenre_of?.[0]?.id,
         parentGenreName: genreData?.subgenre_of?.[0]?.name,
         subGenres: genreData?.subgenres ?? [],
-        hopDepth: genreHopDepths.get(genreFilter.id) ?? 0,
-        canExpand: explorationData.canExpandMap.get(genreFilter.id) ?? false,
       } satisfies GenreContainerDef;
     });
-  }, [genreExplorationMode, artistFilterGenres, explorationData, genres, genreColorMap, genreHopDepths]);
+  }, [genreExplorationMode, artistFilterGenres, explorationPool, revealedArtistIds, genres, genreColorMap]);
 
   /** Open the onboarding dialog for genre exploration */
   const openGenreExploration = useCallback(() => {
@@ -2313,7 +2337,7 @@ function App() {
     const selectedGenreObjects = genres?.filter((g) => selectedGenreIds.includes(g.id)) ?? [];
     if (!selectedGenreObjects.length) return;
     setGenreExplorationHistory([]);
-    setGenreHopDepths(new Map());
+    setRevealedArtistIds(new Set());
     setArtistFilterGenres(selectedGenreObjects);
     setArtistGenreFilter(selectedGenreObjects);
     setIsBeforeArtistLoad(false);
@@ -2328,10 +2352,8 @@ function App() {
     const targetGenre = genres?.find((g) => g.id === genreId);
     if (!targetGenre) return;
     const currentIds = artistFilterGenres.map((g) => g.id);
-    if (currentIds.length) {
-      setGenreExplorationHistory((prev) => [...prev, currentIds]);
-    }
-    setGenreHopDepths(new Map()); // reset hops for the new genre
+    if (currentIds.length) setGenreExplorationHistory((prev) => [...prev, currentIds]);
+    setRevealedArtistIds(new Set());
     setArtistFilterGenres([targetGenre]);
     setArtistGenreFilter([targetGenre]);
     setIsBeforeArtistLoad(false);
@@ -2343,7 +2365,7 @@ function App() {
     if (!genreExplorationHistory.length) return;
     const prev = genreExplorationHistory[genreExplorationHistory.length - 1];
     setGenreExplorationHistory((h) => h.slice(0, -1));
-    setGenreHopDepths(new Map()); // reset hops when going back
+    setRevealedArtistIds(new Set());
     const prevGenres = genres?.filter((g) => prev.includes(g.id)) ?? [];
     if (prevGenres.length) {
       setArtistFilterGenres(prevGenres);
@@ -2352,16 +2374,6 @@ function App() {
     }
     setContainerMenuState(null);
   }, [genreExplorationHistory, genres]);
-
-  /** Expand a genre container by one hop of similar-artist connections */
-  const expandGenreHop = useCallback((genreId: string) => {
-    setGenreHopDepths((prev) => {
-      const next = new Map(prev);
-      next.set(genreId, (prev.get(genreId) ?? 0) + 1);
-      return next;
-    });
-    setContainerMenuState(null);
-  }, []);
 
   /** Called when a genre container hull is clicked on the canvas */
   const onGenreContainerClick = useCallback((genreId: string, screenPosition: { x: number; y: number }) => {
@@ -2372,7 +2384,7 @@ function App() {
   const exitGenreExplorationMode = useCallback(() => {
     setGenreExplorationMode(false);
     setGenreExplorationHistory([]);
-    setGenreHopDepths(new Map());
+    setRevealedArtistIds(new Set());
     setContainerMenuState(null);
   }, []);
 
@@ -2903,6 +2915,7 @@ function App() {
                   priorityLabelIds={centralArtistLabelIds}
                   genreContainers={genreExplorationMode ? genreContainers : undefined}
                   onGenreContainerClick={genreExplorationMode ? onGenreContainerClick : undefined}
+                  nodeVisibility={explorationNodeVisibility}
                 />
 
           {/* Genre hover preview */}
@@ -3304,7 +3317,6 @@ function App() {
         canGoBack={genreExplorationHistory.length > 0}
         onNavigate={navigateToGenreInExploration}
         onBack={navigateBackInExploration}
-        onExpand={expandGenreHop}
         onClose={() => setContainerMenuState(null)}
       />
     </SidebarProvider>

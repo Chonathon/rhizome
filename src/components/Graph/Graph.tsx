@@ -135,6 +135,13 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   // Genre containers for visual hull rendering (genre exploration mode)
   genreContainers?: GenreContainerDef[];
   onGenreContainerClick?: (genreId: string, screenPosition: { x: number; y: number }) => void;
+  /**
+   * Controls per-node visibility in exploration mode.
+   * 'ghost'  → dim translucent dot, clickable, links hidden
+   * 'hidden' → completely invisible, no hit area, links hidden
+   * absent   → normal rendering
+   */
+  nodeVisibility?: Map<string, 'ghost' | 'hidden'>;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -208,6 +215,7 @@ const Graph = forwardRef(function GraphInner<
     radialLayout,
     genreContainers,
     onGenreContainerClick,
+    nodeVisibility,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -227,6 +235,9 @@ const Graph = forwardRef(function GraphInner<
   const onZoomChangeRef = useRef<((zoom: number) => void) | undefined>(onZoomChange);
   // Stores computed hull polygons (in graph coords) for click detection
   const hullPolygonsRef = useRef<Map<string, [number, number][]>>(new Map());
+  // Per-node visibility map for exploration mode (kept in a ref for canvas callbacks)
+  const nodeVisibilityRef = useRef(nodeVisibility);
+  useEffect(() => { nodeVisibilityRef.current = nodeVisibility; }, [nodeVisibility]);
 
   useEffect(() => {
     onZoomChangeRef.current = onZoomChange;
@@ -817,14 +828,10 @@ const Graph = forwardRef(function GraphInner<
       ctx.fillStyle = labelBg;
       ctx.fill();
 
-      // Label text (append hop indicator when expanded)
-      const label = container.hopDepth > 0
-        ? `${container.genreName}  +${container.hopDepth}`
-        : container.genreName;
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(label, cx, cy);
+      ctx.fillText(container.genreName, cx, cy);
       ctx.restore();
     }
   }, []);
@@ -894,6 +901,12 @@ const Graph = forwardRef(function GraphInner<
             typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
           const target =
             typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
+          // Hide links that touch ghost or hidden nodes
+          if (nodeVisibilityRef.current) {
+            const sv = source ? nodeVisibilityRef.current.get(String(source)) : undefined;
+            const tv = target ? nodeVisibilityRef.current.get(String(target)) : undefined;
+            if (sv || tv) return 'rgba(0,0,0,0)';
+          }
           const base = source ? colorById.get(String(source)) : undefined;
           const fallback = resolvedTheme === "dark" ? "#ffffff" : "#000000";
           const selected = !!effectiveSelectedId && (source === effectiveSelectedId || target === effectiveSelectedId);
@@ -946,8 +959,23 @@ const Graph = forwardRef(function GraphInner<
           const x = node.x ?? 0;
           const y = node.y ?? 0;
           const baseRadius = node.radius;
-          const radius = baseRadius * nodeScaleFactor; // Apply visual scaling from display controls
+          const radius = baseRadius * nodeScaleFactor;
           const accent = colorById.get(node.id) ?? defaultColor;
+
+          // Exploration mode: ghost or hidden rendering
+          const visibilityMode = nodeVisibilityRef.current?.get(node.id);
+          if (visibilityMode === 'hidden') return; // completely invisible
+          if (visibilityMode === 'ghost') {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, Math.max(2.5, radius * 0.55), 0, Math.PI * 2);
+            ctx.fillStyle = accent;
+            ctx.globalAlpha = 0.28;
+            ctx.fill();
+            ctx.restore();
+            return;
+          }
+
           const isSelected = effectiveSelectedId === node.id;
           const isClickSelected = selectedId === node.id;
           const isNeighbor = hasSelection ? selectedNeighbors?.has(node.id) ?? false : false;
@@ -1054,11 +1082,15 @@ const Graph = forwardRef(function GraphInner<
           }
         }}
         nodePointerAreaPaint={(node, color, ctx) => {
+          const vis = nodeVisibilityRef.current?.get(node.id);
+          if (vis === 'hidden') return; // no hit area for invisible nodes
           ctx.fillStyle = color;
           const x = node.x ?? 0;
           const y = node.y ?? 0;
+          // Ghosts get a slightly smaller hit radius but still easy to click
+          const extra = vis === 'ghost' ? 10 : 24;
           ctx.beginPath();
-          ctx.arc(x, y, node.radius + 24, 0, 2 * Math.PI);
+          ctx.arc(x, y, node.radius + extra, 0, 2 * Math.PI);
           ctx.fill();
         }}
         nodeVal={(node) => node.radius}

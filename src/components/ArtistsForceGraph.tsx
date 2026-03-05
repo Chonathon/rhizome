@@ -40,6 +40,7 @@ interface ArtistsForceGraphProps {
   // Genre containers for visual hull rendering (genre exploration mode)
   genreContainers?: GenreContainerDef[];
   onGenreContainerClick?: (genreId: string, screenPosition: { x: number; y: number }) => void;
+  nodeVisibility?: Map<string, 'ghost' | 'hidden'>;
 }
 
 
@@ -72,6 +73,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       radialLayout,
       genreContainers,
       onGenreContainerClick,
+      nodeVisibility,
     },
     ref,
   ) => {
@@ -147,6 +149,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         radialLayout={radialLayout}
         genreContainers={genreContainers}
         onGenreContainerClick={onGenreContainerClick}
+        nodeVisibility={nodeVisibility}
       />
     );
   },
