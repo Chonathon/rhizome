@@ -1,6 +1,6 @@
 import { Genre, Artist } from '@/types'
 import { fixWikiImageURL, formatNumber, formatNumberCompact } from '@/lib/utils'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import GraphCard from './GraphCard'
 
 interface GenrePreviewProps {
@@ -41,15 +41,37 @@ export function GenrePreview({
     [topArtists]
   )
 
+  // Track the actual cursor position so the preview follows the mouse
+  const [cursorPosition, setCursorPosition] = useState(position)
+
+  // Keep local cursor position in sync with the last graph-provided position
+  useEffect(() => {
+    setCursorPosition(position)
+  }, [position.x, position.y])
+
+  // When visible, follow the real cursor position
+  useEffect(() => {
+    if (!visible || typeof window === 'undefined') return
+
+    const handleMouseMove = (event: MouseEvent) => {
+      setCursorPosition({ x: event.clientX, y: event.clientY })
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+    }
+  }, [visible])
+
   if (!visible) return null
 
   return (
     <div
       className="fixed pointer-events-none z-50"
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        transform: 'translate(-50%, calc(-100% - 8px))', // Center horizontally, position above cursor with 8px spacing
+        left: `${cursorPosition.x}px`,
+        top: `${cursorPosition.y}px`,
+        transform: 'translate(3%, 32px))', // Position above cursor with 8px spacing
       }}
     >
       <GraphCard

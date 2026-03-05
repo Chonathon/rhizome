@@ -95,7 +95,7 @@ export function GraphCard({
   if (!actuallyShow) return null;
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="sync">
       <motion.div
         ref={cardRef}
         style={{ height: loading && cardHeight ? `${cardHeight}px` : "auto" }}
@@ -106,7 +106,7 @@ export function GraphCard({
         transition={{ type: "spring", stiffness: 250, damping: 24, mass: 0.8 }}
         className={`
           w-102 min-h-[126px] h-auto p-3 z-60 pb-4
-          bg-card backdrop-blur-xs shadow-lg rounded-3xl border border-border
+          bg-card/80 backdrop-blur-xs shadow-lg rounded-3xl border border-border
          overflow-hidden
           ${loading ? "bg-stone-50/86" : ""}
           ${className ?? ""}
@@ -132,12 +132,9 @@ export function GraphCard({
           key={contentKey}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
           transition={{
-            layout: { duration: 0, ease: "easeOut" },
-            opacity: { delay: 0.0, duration: 0.2, ease: "easeOut" },
+            opacity: { duration: 0.15, ease: "easeOut" },
           }}
-          layout
           className={`flex items-start gap-3 ${stacked ? "flex-col" : ""} ${contentClassName ?? ""}`}
         >
           {error ? (
