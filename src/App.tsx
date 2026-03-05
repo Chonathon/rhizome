@@ -45,7 +45,7 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import { useUrlState } from './hooks/useUrlState';
-import { toSlug } from './lib/urlUtils';
+import { toSlug } from '@/lib/urlUtils';
 import DisplayPanel from './components/DisplayPanel';
 import SharePanel from './components/SharePanel';
 import NodeLimiter from './components/NodeLimiter'
@@ -372,130 +372,35 @@ function App() {
   }, []);
   const navigate = useNavigate();
 
-  // URL State Sync: Lookup functions to find entities by slug
+  // URL State: Lookup function to find genres by slug
   const findGenreBySlug = useCallback((slug: string): Genre | undefined => {
     return genres.find(g => toSlug(g.name) === slug);
   }, [genres]);
 
-  const findArtistBySlug = useCallback((slug: string): Artist | undefined => {
-    return currentArtists.find(a => toSlug(a.name) === slug);
-  }, [currentArtists]);
-
-  // URL State Sync: Bidirectional sync between URL and app state
-  const { urlState, pendingArtistSlug, setPendingArtistSlug } = useUrlState({
+  // URL State: Open/close drawers from URL (initial load + browser back/forward)
+  const { updateUrl } = useUrlState({
     findGenreBySlug,
-    findArtistBySlug,
-    graph,
-    selectedGenres,
-    selectedArtist,
-    similarArtistAnchor,
-    collectionMode,
-    artistFilterGenres,
-    setGraph,
-    setSelectedGenres,
-    setSelectedArtist,
-    setSimilarArtistAnchor,
-    setCollectionMode,
-    setArtistFilterGenres,
-    onGenreSelected: (genre) => {
+    fetchArtistBySearch,
+    onGenreFromUrl: (genre) => {
       setGenreInfoToShow(genre);
       setShowGenreCard(true);
       addRecentSelection(genre);
     },
-    onArtistSelected: (artist) => {
+    onArtistFromUrl: (artist) => {
       setArtistInfoToShow(artist);
       setShowArtistCard(true);
       addRecentSelection(artist);
     },
-    onGenreDeselected: () => {
+    onGenreClearedFromUrl: () => {
       setShowGenreCard(false);
       setGenreInfoToShow(undefined);
     },
-    onArtistDeselected: () => {
+    onArtistClearedFromUrl: () => {
       setShowArtistCard(false);
       setArtistInfoToShow(undefined);
     },
     genresLoaded: genres.length > 0 && !genresLoading,
-    artistsLoaded: !artistsLoading,
   });
-
-  // URL State Sync: Handle pending artist selection when artists load
-  useEffect(() => {
-    if (pendingArtistSlug && currentArtists.length > 0) {
-      const artist = findArtistBySlug(pendingArtistSlug);
-      if (artist) {
-        setSelectedArtist(artist);
-        setArtistInfoToShow(artist);
-        setShowArtistCard(true);
-        addRecentSelection(artist);
-        setPendingArtistSlug(null);
-      }
-    }
-  }, [currentArtists, pendingArtistSlug, findArtistBySlug, setPendingArtistSlug, addRecentSelection]);
-
-  // URL State Sync: Auto-fetch liked artists when entering collection mode from URL
-  useEffect(() => {
-    if (collectionMode && graph === 'artists' && artists.length === 0 && !artistsLoading && likedArtists.length > 0) {
-      console.log('[App] Auto-fetching liked artists for collection mode from URL');
-      fetchLikedArtists(likedArtists);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collectionMode, graph, artists.length, artistsLoading, likedArtists]);
-
-  // URL State Sync: Show feedback when collection URL is opened without auth
-  useEffect(() => {
-    if (collectionMode && likedArtists.length === 0 && !userID) {
-      toast.info("Sign in to view your collection");
-      setCollectionMode(false);
-      setGraph('genres');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collectionMode, likedArtists.length, userID]);
-
-  // URL State Sync: Build similar artist graph from URL
-  const hasBuiltSimilarGraphFromUrl = useRef(false);
-  useEffect(() => {
-    const hasAnchor = urlState.anchorId || urlState.anchorSlug;
-    if (
-      urlState.view === 'similar' &&
-      hasAnchor &&
-      !similarArtistAnchor &&
-      !artistsLoading &&
-      !hasBuiltSimilarGraphFromUrl.current
-    ) {
-      hasBuiltSimilarGraphFromUrl.current = true;
-      console.log('[App] Building similar artist graph from URL', { anchorId: urlState.anchorId, anchorSlug: urlState.anchorSlug });
-      (async () => {
-        let artist: Artist | undefined;
-        if (urlState.anchorId) {
-          artist = await fetchSingleArtist(urlState.anchorId);
-        } else if (urlState.anchorSlug) {
-          const query = urlState.anchorSlug.replace(/-/g, ' ');
-          artist = await fetchArtistBySearch(query);
-        }
-        if (artist) {
-          if (!artist.similar || artist.similar.length === 0) {
-            toast.error(`No similar artist data available for ${artist.name}`);
-            setGraph('genres');
-            return;
-          }
-          setCanCreateSimilarArtistGraph(true);
-          await fetchSimilarArtists(artist);
-          setSelectedArtist(artist);
-          setSimilarArtistAnchor(artist);
-          setArtistInfoToShow(artist);
-          setShowArtistCard(true);
-        } else {
-          toast.error('Could not load similar artist graph');
-          setGraph('genres');
-        }
-      })();
-    }
-    if (urlState.view !== 'similar') {
-      hasBuiltSimilarGraphFromUrl.current = false;
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlState.view, urlState.anchorId, urlState.anchorSlug, similarArtistAnchor, artistsLoading]);
 
   const artistsAddedRef = useRef(0);
 
@@ -1750,6 +1655,7 @@ function App() {
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
     setAutoFocusGraph(true); // Enable auto-focus for node clicks
     addRecentSelection(genre);
+    updateUrl({ type: 'genre', name: genre.name });
   };
 
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
@@ -1857,6 +1763,7 @@ function App() {
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
     }
+    updateUrl({ type: 'artist', name: artist.name });
   };
 
   const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
@@ -1996,6 +1903,7 @@ function App() {
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
     setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
+    updateUrl(null);
   }
 
   const deselectArtist = () => {
@@ -2005,6 +1913,7 @@ function App() {
     setArtistInfoToShow(undefined);
     setShowArtistCard(false);
     setArtistPreviewStack([]);
+    updateUrl(null);
   }
 
   // Force the drawer to remount when restoring a previously focused artist without flashing the genre card
