@@ -112,7 +112,7 @@ export function ArtistPreview({
       style={{
         left: `${cursorPosition.x}px`,
         top: `${cursorPosition.y}px`,
-        transform: 'translate(-50%, calc(-100% - 8px))', // Center horizontally, position above cursor with 8px spacing
+        transform: 'translate(8px, -8px)', 
       }}
     >
       <GraphCard

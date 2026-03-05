@@ -71,7 +71,7 @@ export function GenrePreview({
       style={{
         left: `${cursorPosition.x}px`,
         top: `${cursorPosition.y}px`,
-        transform: 'translate(3%, 32px))', // Position above cursor with 8px spacing
+        transform: 'translate(8px, -8px)', 
       }}
     >
       <GraphCard
