@@ -38,6 +38,7 @@ const useAuth = () => {
         validSession,
         forgotPassword,
         resetPassword,
+        refetchSession,
     } = useContext(AuthContext);
 
     useEffect(() => {
@@ -104,7 +105,10 @@ const useAuth = () => {
     const onLFMConnect = async (lfmUser: string) => {
         if (userID) {
             const success = await lastFMConnect(lfmUser, userID);
-            if (success) setlfmUsername(lfmUser);
+            if (success) {
+                setlfmUsername(lfmUser);
+                await refetchSession();
+            }
             return success;
         } else {
             return false;
@@ -114,7 +118,10 @@ const useAuth = () => {
     const onLFMRemove = async () => {
         if (userID) {
             const success = await lastFMRemove(userID);
-            if (success) setlfmUsername(undefined);
+            if (success) {
+                setlfmUsername(undefined);
+                await refetchSession();
+            }
             return success;
         } else {
             return false;
