@@ -813,6 +813,11 @@ const Graph = forwardRef(function GraphInner<
           const transition = dimmingTransitionRef.current;
           const alpha = baseAlpha * (1 - transition) + 1.0 * transition;
 
+          // Only show images when the node is large enough on screen to be worth drawing.
+          // Below this threshold nodes are ~12px diameter on screen — just draw the color circle.
+          const screenRadius = radius * (zoomRef.current || 1);
+          const effectiveShowImages = showImages && screenRadius >= 6;
+
           // Build render context
           const renderContext: NodeRenderContext<T> = {
             ctx,
@@ -827,7 +832,7 @@ const Graph = forwardRef(function GraphInner<
             isHovered,
             alpha,
             theme: resolvedTheme as 'light' | 'dark' | undefined,
-            showImages,
+            showImages: effectiveShowImages,
           };
 
           // Render node and selection ring if showNodes is true

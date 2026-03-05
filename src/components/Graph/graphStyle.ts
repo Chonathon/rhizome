@@ -9,6 +9,11 @@ const failedImages = new Set<string>();
 const imageLoadCallbacks = new Set<() => void>();
 const imageLoadStartCallbacks = new Set<() => void>();
 
+// Pre-clipped circular canvas cache — avoids per-frame ctx.clip() calls
+const circularCanvasCache = new Map<string, HTMLCanvasElement>();
+// Fixed off-screen diameter; nodes are drawn scaled from this
+const CIRCULAR_CACHE_SIZE = 80;
+
 export function onImageLoad(callback: () => void): () => void {
   imageLoadCallbacks.add(callback);
   return () => imageLoadCallbacks.delete(callback);
@@ -61,6 +66,42 @@ export function isImageFailed(rawUrl: string): boolean {
 
 export function hasLoadingImages(): boolean {
   return loadingImages.size > 0;
+}
+
+/**
+ * Returns a pre-clipped circular HTMLCanvasElement for the given image URL.
+ * Builds and caches it once after the source image has loaded.
+ * Returns null if the source image is not yet in cache.
+ */
+export function getCircularCanvas(rawUrl: string): HTMLCanvasElement | null {
+  const url = fixWikiImageURL(rawUrl);
+  if (circularCanvasCache.has(url)) return circularCanvasCache.get(url)!;
+
+  const img = imageCache.get(url);
+  if (!img) return null;
+
+  const size = CIRCULAR_CACHE_SIZE;
+  const offscreen = document.createElement('canvas');
+  offscreen.width = size;
+  offscreen.height = size;
+  const octx = offscreen.getContext('2d')!;
+
+  const r = size / 2;
+  octx.beginPath();
+  octx.arc(r, r, r, 0, 2 * Math.PI);
+  octx.clip();
+
+  // object-fit: cover
+  const imgW = img.naturalWidth;
+  const imgH = img.naturalHeight;
+  const imgAspect = imgW / imgH;
+  let srcX = 0, srcY = 0, srcW = imgW, srcH = imgH;
+  if (imgAspect > 1) { srcW = imgH; srcX = (imgW - srcW) / 2; }
+  else if (imgAspect < 1) { srcH = imgW; srcY = (imgH - srcH) / 2; }
+
+  octx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, size, size);
+  circularCanvasCache.set(url, offscreen);
+  return offscreen;
 }
 
 // Get pulsing opacity for loading state (matches Tailwind's pulse: 1 -> 0.5 -> 1 over 2s)
@@ -228,36 +269,16 @@ export function drawSelectedNodeFill(
 
   ctx.save();
 
-  // Only show image fill if we have an image URL and it's loaded
+  // Fast path: pre-clipped circular canvas — single drawImage blit, no ctx.clip() per frame
   if (imageUrl) {
-    const img = getOrLoadImage(imageUrl);
-    if (img) {
-      // Draw image clipped to circle with cover behavior (maintain aspect ratio)
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, 2 * Math.PI);
-      ctx.clip();
-
-      // Calculate cover dimensions (like CSS object-fit: cover)
-      const imgW = img.naturalWidth;
-      const imgH = img.naturalHeight;
-      const targetSize = r * 2;
-      const imgAspect = imgW / imgH;
-
-      let srcX = 0, srcY = 0, srcW = imgW, srcH = imgH;
-      if (imgAspect > 1) {
-        // Image is wider than tall - crop horizontally
-        srcW = imgH;
-        srcX = (imgW - srcW) / 2;
-      } else if (imgAspect < 1) {
-        // Image is taller than wide - crop vertically
-        srcH = imgW;
-        srcY = (imgH - srcH) / 2;
-      }
-
-      ctx.drawImage(img, srcX, srcY, srcW, srcH, x - r, y - r, targetSize, targetSize);
+    const circular = getCircularCanvas(imageUrl);
+    if (circular) {
+      ctx.drawImage(circular, x - r, y - r, r * 2, r * 2);
       ctx.restore();
       return true;
     }
+    // Image not yet loaded — trigger/continue loading
+    getOrLoadImage(imageUrl);
   }
 
   // Check if image is currently loading
