@@ -40,6 +40,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   --neutral-700: oklch(0.37 0.005 235);
   --neutral-800: oklch(0.28 0.004 235);
   --neutral-900: oklch(0.18 0.002 235);
+  --neutral-950: color-mix(oklch(0.18 0.002 235) 50%, transparent);
 
   --app-background: var(--neutral-100);
   --background: rgba(255, 255, 255);
@@ -59,7 +60,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   --muted-foreground: var(--neutral-600);
 
   --destructive: oklch(0.577 0.245 27.325);
-  --border: var(--neutral-100);
+  --border: var(--neutral-200);
   --input: var(--neutral-400);
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.646 0.222 41.116);
@@ -162,6 +163,7 @@ Neutral 900  oklch(0.18 0.002 235)  (high-contrast text)
   --color-neutral-700: var(--neutral-700);
   --color-neutral-800: var(--neutral-800);
   --color-neutral-900: var(--neutral-900);
+  --color-neutral-950: var(--neutral-950);
 }
 
 .dark {
