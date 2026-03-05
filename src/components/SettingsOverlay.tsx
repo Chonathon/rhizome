@@ -51,6 +51,8 @@ import KofiLogo from "@/assets/kofi_symbol.svg"
 import LastFMLogo from "@/assets/Last.fm Logo.svg"
 import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuContent } from "@/components/ui/dropdown-menu"
 import {Loading} from "@/components/Loading";
+import {Switch} from "@/components/ui/switch";
+import {Label} from "@/components/ui/label";
 
 const data = {
   nav: [
@@ -995,16 +997,17 @@ const LastFMRemoveDialog = ({
                         onOpenChange,
                       }: {
   open: boolean;
-  onLastFMRemove: () => Promise<boolean>;
+  onLastFMRemove: (removeArtists: boolean) => Promise<boolean>;
   onOpenChange: (open: boolean) => void;
 }) => {
   const [removeSuccess, setConnectSuccess] = useState(false);
+  const [removeArtists, setRemoveArtists] = useState(false);
   const [lfmLoading, setLfmLoading] = useState(false);
 
   const handleDelete = async (e: React.FormEvent) => {
     e.preventDefault()
     setLfmLoading(true);
-    const success = await onLastFMRemove();
+    const success = await onLastFMRemove(removeArtists);
     setLfmLoading(false);
     if (success) {
       setConnectSuccess(true);
@@ -1025,8 +1028,13 @@ const LastFMRemoveDialog = ({
             ) : (
                 <>
                   <DialogDescription>
-                    This action cannot be undone. This will remove all artists in your Rhizome collection that you've synced with your Last.fm account.
+                    This action cannot be undone. This will remove your Last.fm account from Rhizome and prevent syncing.
                   </DialogDescription>
+                  <span className='flex gap-2 mt-3'>
+                    {/*TODO: Make tooltip?*/}
+                    <Label className='flex'>Remove All Last.FM Artists</Label>
+                    <Switch className='flex' checked={removeArtists} onCheckedChange={setRemoveArtists} />
+                  </span>
                 </>
             )}
             <div className="flex gap-2 mt-6">
@@ -1123,7 +1131,7 @@ interface SettingsOverlayProps {
   onChangeName: (newName: string) => Promise<boolean>;
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
   onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
-  onLastFMRemove: () => Promise<boolean>;
+  onLastFMRemove: (removeArtists: boolean) => Promise<boolean>;
 }
 
 function SettingsOverlay(

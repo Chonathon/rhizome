@@ -115,9 +115,9 @@ const useAuth = () => {
         }
     }
 
-    const onLFMRemove = async () => {
+    const onLFMRemove = async (removeArtists: boolean) => {
         if (userID) {
-            const success = await lastFMRemove(userID);
+            const success = await lastFMRemove(userID, removeArtists);
             if (success) {
                 setlfmUsername(undefined);
                 await refetchSession();
