@@ -10,6 +10,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { ImageLightbox } from "@/components/ImageLightbox";
 
+function PreviewBadge({ size = "sm" }: { size?: "sm" | "md" }) {
+  const sizeClasses = size === "sm"
+    ? "text-[10px] px-1 py-0.5"
+    : "text-xs px-1.5 py-0.5";
+  return (
+    <span className={`shrink-0 font-medium text-destructive bg-accent rounded ${sizeClasses}`}>
+      Preview
+    </span>
+  );
+}
+
 declare global {
   interface Window {
     YT: any;
@@ -29,6 +40,7 @@ type SidebarPlayerProps = {
   headerPreferProvidedTitle?: boolean;
   onTitleClick?: () => void;
   startIndex?: number;
+  previewMode?: boolean;
   sidebarCollapsed: boolean;
   isDesktop: boolean;
   desktopSlotRef?: React.RefObject<HTMLDivElement | null>;
@@ -66,6 +78,7 @@ export default function SidebarPlayer({
   headerPreferProvidedTitle,
   onTitleClick,
   startIndex = 0,
+  previewMode = false,
   sidebarCollapsed,
   isDesktop,
   desktopSlotRef
@@ -109,6 +122,17 @@ export default function SidebarPlayer({
   const prevMinimalModeRef = useRef<boolean>(false);
   const prevPlayingRef = useRef<boolean>(false);
   const prevVideoIdsRef = useRef<string[]>([]);
+
+  // Preview mode: seek to 30% and auto-skip to next track after 30 seconds
+  const previewTimeoutRef = useRef<number | null>(null);
+  const previewSeekAppliedRef = useRef<boolean>(false);
+  const previewModeRef = useRef<boolean>(previewMode);
+  const [isPreviewActive, setIsPreviewActive] = useState(false);
+
+  // Keep previewModeRef in sync
+  useEffect(() => {
+    previewModeRef.current = previewMode;
+  }, [previewMode]);
 
   const hasPlaylist = videoIds && videoIds.length > 1;
   const currentVideoId = videoIds?.[currentIndex] || videoIds?.[0];
@@ -482,6 +506,35 @@ export default function SidebarPlayer({
           if (state === 1 || state === 5) {
             try { onLoadingChange?.(false); } catch {}
           }
+
+          // Preview mode: seek to 30% on first play
+          if (state === 1 && previewModeRef.current && !previewSeekAppliedRef.current) {
+            const dur = playerRef.current?.getDuration?.() || 0;
+            if (dur > 0) {
+              previewSeekAppliedRef.current = true;
+              const seekPosition = dur * 0.3;
+              playerRef.current?.seekTo?.(seekPosition, true);
+              setIsPreviewActive(true);
+
+              // Auto-skip to next track after 30 seconds
+              if (previewTimeoutRef.current) {
+                window.clearTimeout(previewTimeoutRef.current);
+              }
+              previewTimeoutRef.current = window.setTimeout(() => {
+                try {
+                  if (hasPlaylist) {
+                    playerRef.current?.nextVideo?.();
+                  } else {
+                    // No playlist - just pause
+                    playerRef.current?.pauseVideo?.();
+                    setIsPlaying(false);
+                  }
+                } catch {}
+                setIsPreviewActive(false);
+                previewTimeoutRef.current = null;
+              }, 30000);
+            }
+          }
         },
         onError: () => {
           try {
@@ -566,6 +619,37 @@ export default function SidebarPlayer({
       window.removeEventListener('responsiveDrawerSnapChange', handleSnapChange);
     };
   }, [open, isDesktop]);
+
+  // Preview mode: reset state when preview mode is disabled or player closes
+  useEffect(() => {
+    if (!previewMode || !open) {
+      previewSeekAppliedRef.current = false;
+      setIsPreviewActive(false);
+      if (previewTimeoutRef.current) {
+        window.clearTimeout(previewTimeoutRef.current);
+        previewTimeoutRef.current = null;
+      }
+    }
+  }, [previewMode, open]);
+
+  // Reset preview seek when changing tracks (so new track gets the 30% seek)
+  useEffect(() => {
+    previewSeekAppliedRef.current = false;
+    setIsPreviewActive(false);
+    if (previewTimeoutRef.current) {
+      window.clearTimeout(previewTimeoutRef.current);
+      previewTimeoutRef.current = null;
+    }
+  }, [currentVideoId]);
+
+  // Cleanup preview timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (previewTimeoutRef.current) {
+        window.clearTimeout(previewTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Helper function to activate notes for 5 seconds
   const activateNotesForDuration = useCallback(() => {
@@ -950,18 +1034,22 @@ export default function SidebarPlayer({
               {/* Track info */}
               <div className="flex flex-col leading-tight truncate min-w-0 flex-1 text-sm font-medium text-foreground">
                 {playerCollapsed
-                ? <div className="block text-left min-w-0 truncate">
-                    <span className="text-foreground">{displayVideoTitle || 'Loading...'}</span>
+                ? <div className="flex items-center gap-1.5 text-left min-w-0">
+                    <span className="text-foreground truncate">{displayVideoTitle || 'Loading...'}</span>
+                    {isPreviewActive && <PreviewBadge />}
                   </div>
                 :
-                <button
-                  type="button"
-                  onClick={(e) => {e.stopPropagation(); onTitleClick?.()}}
-                  title={displayVideoTitle}
-                  className={`block text-left min-w-0 truncate hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
-                >
-                  <span className="text-foreground">{displayVideoTitle || 'Loading...'}</span>
-                </button>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {e.stopPropagation(); onTitleClick?.()}}
+                    title={displayVideoTitle}
+                    className={`block text-left min-w-0 truncate hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
+                  >
+                    <span className="text-foreground">{displayVideoTitle || 'Loading...'}</span>
+                  </button>
+                  {isPreviewActive && <PreviewBadge />}
+                </div>
                 }
                 <span className="text-muted-foreground min-w-0 truncate leading-tight text-sm">{title || ''}</span>
               </div>
@@ -1111,7 +1199,12 @@ export default function SidebarPlayer({
               )}
             </div>
             <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-foreground min-w-0 truncate leading-tight text-sm pb-1" title={videoTitle}>{displayVideoTitle || ''}</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-foreground min-w-0 truncate leading-tight text-sm" title={videoTitle}>{displayVideoTitle || ''}</span>
+                {isPreviewActive && <div className="pb-1">
+                  <PreviewBadge />
+                </div>}
+              </div>
               <Progress
                 value={percent}
                 className="group-hover/player:h-2"
@@ -1147,21 +1240,24 @@ export default function SidebarPlayer({
         >
           <div className="w-full rounded-3xl border border-border bg-popover shadow-xl overflow-hidden">
             <div className="flex items-center justify-between gap-3 px-4 py-3">
-              <div className="min-w-0">
-                {onTitleClick ? (
-                  <button
-                    type="button"
-                    onClick={onTitleClick}
-                    title={headerDisplay}
-                    className={`text-left text-lg font-semibold truncate hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
-                  >
-                    {headerDisplay}
-                  </button>
-                ) : (
-                  <div className="text-lg font-semibold truncate" title={headerDisplay}>
-                    {headerDisplay}
-                  </div>
-                )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  {onTitleClick ? (
+                    <button
+                      type="button"
+                      onClick={onTitleClick}
+                      title={headerDisplay}
+                      className={`text-left text-lg font-semibold truncate hover:underline focus:outline-none ${!ready || loading ? 'animate-pulse' : ''}`}
+                    >
+                      {headerDisplay}
+                    </button>
+                  ) : (
+                    <div className="text-lg font-semibold truncate" title={headerDisplay}>
+                      {headerDisplay}
+                    </div>
+                  )}
+                  {isPreviewActive && <PreviewBadge size="md" />}
+                </div>
                 {title && headerDisplay !== title && (
                   <div className="text-sm text-muted-foreground truncate">{title}</div>
                 )}

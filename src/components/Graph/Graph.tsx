@@ -493,7 +493,7 @@ const Graph = forwardRef(function GraphInner<
       }
     };
   }, []);
-// oi
+
   useEffect(() => {
     if (!show || !fgRef.current) return;
     if (!preparedData.nodes.length && !preparedData.links.length) return;
@@ -600,16 +600,18 @@ const Graph = forwardRef(function GraphInner<
       const isMobile = window.matchMedia("(max-width: 640px)").matches;
       const isDesktop = window.matchMedia("(min-width: 768px)").matches;
       const currentZoom = zoomRef.current || 1;
+      const targetZoom = Math.max(0.8, Math.min(2.2, currentZoom < 1 ? 1.1 : currentZoom));
       const yAdjusted = applyMobileDrawerYOffset(
         y,
-        currentZoom,
+        targetZoom,
         isMobile,
         DEFAULT_MOBILE_CENTER_OFFSET_PX,
       );
-      const xAdjusted = applyDesktopDrawerXOffset(x, currentZoom, isDesktop, sidebarExpanded);
+      const xAdjusted = applyDesktopDrawerXOffset(x, targetZoom, isDesktop, sidebarExpanded);
       fgRef.current!.centerAt(xAdjusted, yAdjusted, 600);
-      const targetZoom = Math.max(0.8, Math.min(2.2, currentZoom < 1 ? 1.1 : currentZoom));
       fgRef.current!.zoom(targetZoom, 600);
+      zoomRef.current = targetZoom;
+      onZoomChangeRef.current?.(targetZoom);
     };
     centerToNode();
     const timeout = window.setTimeout(centerToNode, 300);
@@ -694,7 +696,7 @@ const Graph = forwardRef(function GraphInner<
   return (
     <div
       ref={containerRef}
-      className="flex-1 w-full relative"
+      className="flex-1 w-full relative active:cursor-grabbing"
       style={{
         height: height ?? "100%",
         // Always show container so loading spinner is visible, but disable pointer events when hidden
