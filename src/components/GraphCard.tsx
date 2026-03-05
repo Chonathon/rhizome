@@ -105,7 +105,7 @@ export function GraphCard({
         exit={{ scale: 0 }}
         transition={{ type: "spring", stiffness: 250, damping: 24, mass: 0.8 }}
         className={`
-          w-102 min-h-[126px] h-auto p-3 z-60 pb-4
+          w-[320px] min-h-auto h-auto p-3 z-60 pb-4
           bg-card/80 backdrop-blur-xs shadow-lg rounded-3xl border border-border
          overflow-hidden
           ${loading ? "bg-stone-50/86" : ""}

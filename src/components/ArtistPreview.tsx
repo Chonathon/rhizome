@@ -125,7 +125,7 @@ export function ArtistPreview({
 
         thumbnail={
           imageUrl ? (
-            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border">
+            <div className="w-[20] self-stretch shrink-0 overflow-hidden rounded-xl border border-border">
               <img
                 className="w-full h-full object-cover"
                 src={imageUrl}
