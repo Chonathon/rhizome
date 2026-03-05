@@ -834,9 +834,19 @@ const Graph = forwardRef(function GraphInner<
           if (showNodesRef.current) {
             renderNode(renderContext);
 
-            // Render selection ring only for click-based selection (not hover-based)
             if (isClickSelected) {
+              // Full selection ring for click-selected nodes
               renderSelection(renderContext);
+            } else if (showImages) {
+              // Subtle ring for collection image nodes — genre color, thinner than selected ring
+              ctx.save();
+              ctx.globalAlpha = alpha * 0.5;
+              ctx.beginPath();
+              ctx.arc(x, y, radius + 2, 0, 2 * Math.PI);
+              ctx.strokeStyle = accent;
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+              ctx.restore();
             }
           }
 
