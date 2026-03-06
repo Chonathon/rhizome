@@ -1,6 +1,5 @@
-import { useSearchParams } from 'react-router';
 import { useCallback, useEffect, useRef } from 'react';
-import { parseUrlState, toSlug } from '@/lib/urlUtils';
+import { toSlug } from '@/lib/urlUtils';
 import type { Artist, Genre } from '@/types';
 
 interface UseUrlStateOptions {
@@ -18,66 +17,63 @@ export interface UrlStateResult {
 }
 
 export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const skipNextUrlToApp = useRef(false);
   const prevGenreSlug = useRef<string | null>(null);
   const prevArtistSlug = useRef<string | null>(null);
+  const initialLoadProcessed = useRef(false);
 
-  const {
-    findGenreBySlug,
-    fetchArtistBySearch,
-    genresLoaded,
-  } = options;
+  const { genresLoaded } = options;
 
-  // Store callbacks in a ref to avoid effect dependency churn
+  // Store all options in a ref so effects/listeners always see latest values
   const callbacksRef = useRef(options);
   callbacksRef.current = options;
 
-  // URL → App: fires on searchParams changes (initial load + browser back/forward)
-  useEffect(() => {
-    if (skipNextUrlToApp.current) {
-      skipNextUrlToApp.current = false;
-      return;
-    }
-
-    if (!genresLoaded) return;
-
-    const { genreSlug, artistSlug } = parseUrlState(searchParams);
-
-    // Genre: resolve and open/close drawer
+  // Shared logic: resolve URL slugs → open/close drawers
+  const processUrlParams = useCallback((genreSlug: string | null, artistSlug: string | null) => {
     if (genreSlug !== prevGenreSlug.current) {
       prevGenreSlug.current = genreSlug;
       if (genreSlug) {
-        const genre = findGenreBySlug(genreSlug);
-        if (genre) {
-          callbacksRef.current.onGenreFromUrl?.(genre);
-        }
+        const genre = callbacksRef.current.findGenreBySlug(genreSlug);
+        if (genre) callbacksRef.current.onGenreFromUrl?.(genre);
       } else {
         callbacksRef.current.onGenreClearedFromUrl?.();
       }
     }
 
-    // Artist: resolve via search API and open/close drawer
     if (artistSlug !== prevArtistSlug.current) {
       prevArtistSlug.current = artistSlug;
       if (artistSlug) {
         const query = artistSlug.replace(/-/g, ' ');
-        fetchArtistBySearch(query).then((artist) => {
-          if (artist) {
-            callbacksRef.current.onArtistFromUrl?.(artist);
-          }
+        callbacksRef.current.fetchArtistBySearch(query).then((artist) => {
+          if (artist) callbacksRef.current.onArtistFromUrl?.(artist);
         });
       } else {
         callbacksRef.current.onArtistClearedFromUrl?.();
       }
     }
-  }, [searchParams, genresLoaded, findGenreBySlug, fetchArtistBySearch]);
+  }, []);
 
-  // Imperative URL updater — called from App handlers (node clicks, deselection)
+  // Initial load: process URL params once genres are ready
+  useEffect(() => {
+    if (!genresLoaded || initialLoadProcessed.current) return;
+    initialLoadProcessed.current = true;
+    const params = new URLSearchParams(window.location.search);
+    processUrlParams(params.get('genre'), params.get('artist'));
+  }, [genresLoaded, processUrlParams]);
+
+  // Browser back/forward: popstate listener reads directly from window.location
+  useEffect(() => {
+    const handlePopState = () => {
+      if (!callbacksRef.current.genresLoaded) return;
+      const params = new URLSearchParams(window.location.search);
+      processUrlParams(params.get('genre'), params.get('artist'));
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [processUrlParams]);
+
+  // App → URL: pushState directly — no React re-render, no router navigation
   const updateUrl = useCallback((entity: { type: 'genre' | 'artist'; name: string } | null) => {
-    skipNextUrlToApp.current = true;
-
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(window.location.search);
 
     if (entity === null) {
       params.delete('genre');
@@ -90,12 +86,15 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
       params.delete('genre');
     }
 
-    // Update prev refs to match what we're pushing
     prevGenreSlug.current = params.get('genre');
     prevArtistSlug.current = params.get('artist');
 
-    setSearchParams(params, { replace: false });
-  }, [searchParams, setSearchParams]);
+    const search = params.toString();
+    const newUrl = search
+      ? `${window.location.pathname}?${search}`
+      : window.location.pathname;
+    window.history.pushState(null, '', newUrl);
+  }, []);
 
   return { updateUrl };
 }

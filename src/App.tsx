@@ -1893,7 +1893,6 @@ function App() {
   }
 
   const deselectGenre = () => {
-    console.log('[App] deselectGenre called');
     setSelectedGenres([]);
     setArtistGenreFilter([]);
     setArtistFilterGenres([]);
@@ -1907,7 +1906,6 @@ function App() {
   }
 
   const deselectArtist = () => {
-    console.log('[App] deselectArtist called');
     setSelectedArtistFromSearch(false);
     setSelectedArtist(undefined);
     setArtistInfoToShow(undefined);
