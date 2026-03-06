@@ -1,5 +1,5 @@
 import { Artist } from '@/types'
-import { fixWikiImageURL, formatNumberCompact, formatDate } from '@/lib/utils'
+import { fixWikiImageURL, formatNumberCompact, formatDate, formatNumber } from '@/lib/utils'
 import { useMemo, useState, useEffect } from 'react'
 import GenreBadge from '@/components/GenreBadge'
 import GraphCard from './GraphCard'
@@ -148,24 +148,27 @@ export function ArtistPreview({
 
         meta={
           <>
+              <h3><span>
             {typeof artist.listeners === 'number' && (
-              <h3>
+              <>
                 {formatNumberCompact(artist.listeners)}{' '}
                 <span className="">Listeners</span>
-              </h3>
-            )}
+              </>
+              )}
+              </span>
             {/* {artist.startDate && (
               <h3>
-                <span className="font-medium">Founded:</span>{' '}
-                {formatDate(artist.startDate)}
+              <span className="font-medium">Founded:</span>{' '}
+              {formatDate(artist.startDate)}
               </h3>
-            )} */}
-            {/* {typeof artist.playcount === 'number' && (
-              <h3>
-                <span className="font-medium">Plays:</span>{' '}
-                {formatNumber(artist.playcount)}
-              </h3>
-            )} */}
+              )} */}
+            {typeof artist.location && (
+              <span>
+                {' '}<span className="font-medium">·</span>{' '}
+                {artist.location}
+              </span>
+            )}
+            </h3>
           </>
         }
 
