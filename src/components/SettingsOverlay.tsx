@@ -1000,7 +1000,7 @@ const LastFMRemoveDialog = ({
   onLastFMRemove: (removeArtists: boolean) => Promise<boolean>;
   onOpenChange: (open: boolean) => void;
 }) => {
-  const [removeSuccess, setConnectSuccess] = useState(false);
+  const [removeSuccess, setRemoveSuccess] = useState(false);
   const [removeArtists, setRemoveArtists] = useState(false);
   const [lfmLoading, setLfmLoading] = useState(false);
 
@@ -1010,14 +1010,19 @@ const LastFMRemoveDialog = ({
     const success = await onLastFMRemove(removeArtists);
     setLfmLoading(false);
     if (success) {
-      setConnectSuccess(true);
+      setRemoveSuccess(true);
     } else {
       toast.error("Error deleting account!");
     }
   }
 
+  const handleOpenChange = (open: boolean) => {
+    onOpenChange(open);
+    setRemoveSuccess(false);
+  }
+
   return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="bg-card sm:max-w-md">
           <DialogTitle className="text-destructive">Remove Last.FM Account</DialogTitle>
           <form onSubmit={handleDelete}>
@@ -1041,7 +1046,7 @@ const LastFMRemoveDialog = ({
               <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onOpenChange(false)}
+                  onClick={() => handleOpenChange(false)}
                   className="flex-1"
               >
                 {removeSuccess ? 'Close' : 'Cancel'}
