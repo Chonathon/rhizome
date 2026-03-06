@@ -1819,6 +1819,7 @@ function App() {
     // This prevents unwanted graph dimming during search
 
     addRecentSelection(genre);
+    updateUrl({ type: 'genre', name: genre.name });
   }
 
   const onSearchArtistSelect = (artist: Artist) => {
@@ -1837,6 +1838,7 @@ function App() {
     setArtistInfoToShow(artist); // Use drawer state, not selectedArtist (prevents graph dimming)
     setShowArtistCard(true);
     addRecentSelection(artist);
+    updateUrl({ type: 'artist', name: artist.name });
   }
 
   const handleFindSelect = (option: FindOption) => {
@@ -1850,6 +1852,7 @@ function App() {
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for find filter selections
       addRecentSelection(artist);
+      updateUrl({ type: 'artist', name: artist.name });
       if (graph !== 'artists' && graph !== 'similarArtists') {
         setGraph('artists');
       }
