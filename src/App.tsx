@@ -3034,19 +3034,23 @@ function App() {
                       focusArtistRelatedGenres(artist);
                       setArtistInfoToShow(artist);
                       setShowArtistCard(true);
+                      updateUrl({ type: 'artist', name: artist.name });
                     }}
                     onGenreGoTo={(genre) => {
                       // For genres: Go To (switches to genres view and focuses the genre)
                       focusGenreInCurrentView(genre, { forceRefocus: true });
+                      updateUrl({ type: 'genre', name: genre.name });
                     }}
                     onArtistViewSimilar={async (artist) => {
                       await createSimilarArtistGraph(artist);
                       setArtistInfoToShow(artist);
                       setShowArtistCard(true);
+                      updateUrl({ type: 'artist', name: artist.name });
                     }}
                     onGenreViewSimilar={(genre) => {
                       // For genres: View Similar also navigates to genres view
                       focusGenreInCurrentView(genre, { forceRefocus: true });
+                      updateUrl({ type: 'genre', name: genre.name });
                     }}
                   />
 
