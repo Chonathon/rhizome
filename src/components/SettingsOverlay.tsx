@@ -800,14 +800,15 @@ const ConnectionsSection = (
                           Last.FM
                       </FieldLabel>
                       <FieldDescription id="lastfm-connection-description">
-                        {isLastFmConnected ? 'Your Last.FM account is connected!' : 'Two way sync: Import your scrobbled artists into your collection'}
+                        {isLastFmConnected ? 'Last.FM connected — use the refresh button to import new scrobbles' : 'Sync your scrobbled artists from Last.FM directly into your collection'}
                       </FieldDescription>
                         {isLastFmConnected && (
-                            <span className='flex gap-2 items-center'>
-                              <FieldDescription id="lastfm-connection-refresh-description" hidden={!lfmLastSync}>
+                            <span className='flex items-center'>
+                              <span 
+                              className="text-sm text-muted-foreground" id="lastfm-connection-refresh-description" hidden={!lfmLastSync}>
                                 Last synced {lfmLastSync ? new Date(lfmLastSync).toLocaleString('en-US') : ''}
-                              </FieldDescription>
-                              <Button variant="outline" size="sm" onClick={() => handleLastFMRefresh()} disabled={refreshLoading}>
+                              </span>
+                              <Button variant="ghost" size="icon" onClick={() => handleLastFMRefresh()} disabled={refreshLoading}>
                                 {refreshLoading ? (
                                     <Loading />
                                 ) : (
