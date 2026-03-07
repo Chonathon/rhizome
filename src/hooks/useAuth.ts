@@ -37,7 +37,7 @@ const useAuth = () => {
         setUserName(user ? user.name : undefined);
         setUserEmail(user ? user.email : undefined);
         setUserImage(user ? user.image : undefined);
-        setPreferences(user ? user.preferences : DEFAULT_PREFERENCES);
+        setPreferences(user ? { ...DEFAULT_PREFERENCES, ...user.preferences } : DEFAULT_PREFERENCES);
         setLikedArtists(user && user.liked ? user.liked.map(l => l.id) : []);
         setIsSocialUser(user ? user.socialUser : false);
         setUserAccess(user ? user.appAccess : undefined);

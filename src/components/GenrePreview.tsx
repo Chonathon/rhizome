@@ -1,8 +1,6 @@
 import { Genre, Artist } from '@/types'
 import { fixWikiImageURL, formatNumber, formatNumberCompact } from '@/lib/utils'
-import { useMemo } from 'react'
-import { Button } from './ui/button'
-import { CirclePlay, ArrowRight, Loader2, SquareArrowUp } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import GraphCard from './GraphCard'
 
 interface GenrePreviewProps {
@@ -43,15 +41,37 @@ export function GenrePreview({
     [topArtists]
   )
 
+  // Track the actual cursor position so the preview follows the mouse
+  const [cursorPosition, setCursorPosition] = useState(position)
+
+  // Keep local cursor position in sync with the last graph-provided position
+  useEffect(() => {
+    setCursorPosition(position)
+  }, [position.x, position.y])
+
+  // When visible, follow the real cursor position
+  useEffect(() => {
+    if (!visible || typeof window === 'undefined') return
+
+    const handleMouseMove = (event: MouseEvent) => {
+      setCursorPosition({ x: event.clientX, y: event.clientY })
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+    }
+  }, [visible])
+
   if (!visible) return null
 
   return (
     <div
-      className="absolute pointer-events-auto"
+      className="fixed pointer-events-none z-50"
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        transform: 'translate(-50%, calc(-100% - 8px))', // Center horizontally, position above node with 8px spacing
+        left: `${cursorPosition.x}px`,
+        top: `${cursorPosition.y}px`,
+        transform: 'translate(8px, -8px)', 
       }}
     >
       <GraphCard
@@ -64,7 +84,7 @@ export function GenrePreview({
 
         thumbnail={
           imageArtists.length >= 2 ? (
-            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border">
+            <div className="w-24 h-24 aspect-square shrink-0 overflow-hidden rounded-xl border border-border">
               <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-0.5">
                 {imageArtists.map((artist, i) => {
                   const spanClasses = [
@@ -89,7 +109,7 @@ export function GenrePreview({
               </div>
             </div>
           ) : (
-            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
+            <div className="w-24 h-24 aspect-square shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
               <span className="text-4xl font-semibold">{initial}</span>
             </div>
           )
@@ -125,43 +145,6 @@ export function GenrePreview({
           )
         }
 
-        actions={
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => onPlay?.(genre)}
-              disabled={playLoading}
-              className="flex-1 disabled:opacity-100"
-            >
-              {playLoading ? (
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-              ) : (
-                <CirclePlay />
-              )}
-              Play
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => onAllArtists?.(genre)}
-              className="flex-1"
-              title='All Artists'
-            >
-              <SquareArrowUp size={24}/>
-
-              All Artists
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onNavigate?.(genre)}
-              title='Go to Genre'
-            >
-              <ArrowRight />
-            </Button>
-          </div>
-        }
       />
     </div>
   )

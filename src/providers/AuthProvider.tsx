@@ -10,7 +10,7 @@ import {
 } from "@/apis/authApi";
 import {BetterAuthError, InferSessionFromClient, InferUserFromClient} from "better-auth";
 import {getUserData} from "@/apis/usersApi";
-import {DEFAULT_PLAYER, DEFAULT_THEME} from "@/constants";
+import {DEFAULT_PREFERENCES} from "@/constants";
 import {authClient} from "@/lib/auth-client";
 import {until} from "@/lib/utils";
 
@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                     email: data.user.email,
                     image: data.user.image || undefined,
                     liked: [],
-                    preferences: { theme: DEFAULT_THEME, player: DEFAULT_PLAYER },
+                    preferences: DEFAULT_PREFERENCES,
                     //@ts-expect-error (type inference should work here but isn't currently)
                     appAccess: data.user.appAccess,
                 });
@@ -257,7 +257,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                         name: session.user.name,
                         email: session.user.email,
                         liked: userData.liked ? userData.liked : [],
-                        preferences: userData.preferences,
+                        preferences: { ...DEFAULT_PREFERENCES, ...userData.preferences },
                         socialUser: userData.socialUser,
                         image: userData.image,
                         appAccess: session.user.appAccess,
