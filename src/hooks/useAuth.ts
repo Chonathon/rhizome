@@ -3,7 +3,7 @@ import {Preferences} from "@/types";
 import {AuthContext} from "@/providers/AuthProvider";
 import {
     lastFMConnect,
-    lastFMPreview,
+    lastFMPreview, lastFMRefresh,
     lastFMRemove,
     likeArtistUser,
     unlikeArtistUser,
@@ -20,7 +20,8 @@ const useAuth = () => {
     const [likedArtists, setLikedArtists] = useState<string[]>([]);
     const [isSocialUser, setIsSocialUser] = useState<boolean | undefined>();
     const [userAccess, setUserAccess] = useState<string | undefined>()
-    const [lfmUsername, setlfmUsername] = useState<string>();
+    const [lfmUsername, setLfmUsername] = useState<string>();
+    const [lfmLastSync, setLfmLastSync] = useState<Date | undefined>();
 
     const {
         user,
@@ -53,7 +54,8 @@ const useAuth = () => {
         if (user && !localStorage.getItem('versionLastAccessed')) {
             localStorage.setItem('versionLastAccessed', PHASE_VERSION);
         }
-        setlfmUsername(user && user.lfmUsername ? user.lfmUsername : undefined);
+        setLfmUsername(user && user.lfmUsername ? user.lfmUsername : undefined);
+        setLfmLastSync(user && user.lfmLastSync ? user.lfmLastSync : undefined);
     }, [user]);
 
     const likeArtist = async (artistID: string) => {
@@ -106,7 +108,7 @@ const useAuth = () => {
         if (userID) {
             const success = await lastFMConnect(lfmUser, userID);
             if (success) {
-                setlfmUsername(lfmUser);
+                setLfmUsername(lfmUser);
                 await refetchSession();
             }
             return success;
@@ -119,7 +121,19 @@ const useAuth = () => {
         if (userID) {
             const success = await lastFMRemove(userID, removeArtists);
             if (success) {
-                setlfmUsername(undefined);
+                setLfmUsername(undefined);
+                await refetchSession();
+            }
+            return success;
+        } else {
+            return false;
+        }
+    }
+
+    const onLFMRefresh = async () => {
+        if (userID) {
+            const success = await lastFMRefresh(userID);
+            if (success) {
                 await refetchSession();
             }
             return success;
@@ -138,6 +152,7 @@ const useAuth = () => {
         isSocialUser,
         userAccess,
         lfmUsername,
+        lfmLastSync,
         signIn,
         signInSocial,
         signUp,
@@ -158,6 +173,7 @@ const useAuth = () => {
         onLFMPreview,
         onLFMConnect,
         onLFMRemove,
+        onLFMRefresh,
     }
 }
 

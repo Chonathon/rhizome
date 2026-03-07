@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CircleUserRound, Cable, HandHeart, Check, X, Cog, Info, Sparkle, Sparkles } from "lucide-react"
+import {CircleUserRound, Cable, HandHeart, Check, X, Cog, Info, Sparkle, Sparkles, RefreshCw} from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
@@ -53,6 +53,7 @@ import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuConten
 import {Loading} from "@/components/Loading";
 import {Switch} from "@/components/ui/switch";
 import {Label} from "@/components/ui/label";
+import {formatDate} from "@/lib/utils";
 
 const data = {
   nav: [
@@ -753,16 +754,21 @@ const AccountSection = ({
 // Connections Section Component
 interface ConnectionsSectionProps {
   lfmUsername?: string;
+  lfmLastSync?: Date;
   toggleLastFMDialog: (open: boolean) => void;
   toggleLastFMRemoveDialog: (open: boolean) => void;
+  onLastFMRefresh: () => Promise<boolean>;
 }
-const ConnectionsSection = ({ lfmUsername, toggleLastFMDialog, toggleLastFMRemoveDialog
+const ConnectionsSection = (
+    { lfmUsername, lfmLastSync, toggleLastFMDialog, toggleLastFMRemoveDialog, onLastFMRefresh
 }: ConnectionsSectionProps) => {
   const [isLastFmConnected, setIsLastFmConnected] = useState(!!lfmUsername);
+  const [refreshLoading, setRefreshLoading] = useState<boolean>(false);
 
   useEffect(() => {
     setIsLastFmConnected(!!lfmUsername);
   }, [lfmUsername]);
+
   const handleLastFmToggle = () => {
     if (isLastFmConnected) {
       toggleLastFMRemoveDialog(true);
@@ -770,6 +776,14 @@ const ConnectionsSection = ({ lfmUsername, toggleLastFMDialog, toggleLastFMRemov
       toggleLastFMDialog(true);
     }
   };
+
+  const handleLastFMRefresh = async () => {
+    if (isLastFmConnected) {
+      setRefreshLoading(true);
+      const success = await onLastFMRefresh();
+      setRefreshLoading(false);
+    }
+  }
 
   return (
     <SettingsSection>
@@ -788,37 +802,21 @@ const ConnectionsSection = ({ lfmUsername, toggleLastFMDialog, toggleLastFMRemov
                       <FieldDescription id="lastfm-connection-description">
                         {isLastFmConnected ? 'Your Last.FM account is connected!' : 'Two way sync: Import your scrobbled artists into your collection'}
                       </FieldDescription>
+                        {isLastFmConnected && (
+                            <span className='flex gap-2 items-center'>
+                              <FieldDescription id="lastfm-connection-refresh-description" hidden={!lfmLastSync}>
+                                Last synced {lfmLastSync ? new Date(lfmLastSync).toLocaleString('en-US') : ''}
+                              </FieldDescription>
+                              <Button variant="outline" size="sm" onClick={() => handleLastFMRefresh()} disabled={refreshLoading}>
+                                {refreshLoading ? (
+                                    <Loading />
+                                ) : (
+                                    <RefreshCw />
+                                )}
+                              </Button>
+                            </span>
+                        )}
                       </FieldContent>
-                      {/*Placeholder Functionality*/}
-                      {/*<DropdownMenu>*/}
-                      {/*   <DropdownMenuTrigger asChild>*/}
-                      {/*     <Button*/}
-                      {/*        variant="secondary">*/}
-                      {/*        Connect */}
-                      {/*      </Button>*/}
-                      {/*   </DropdownMenuTrigger>*/}
-                      {/*   <DropdownMenuContent align="end" side="bottom">*/}
-                      {/*         <div*/}
-                      {/*          className="p-3">*/}
-                      {/*            <div className="flex items-center gap-1">*/}
-                      {/*              <Info size={20}/>*/}
-                      {/*            <h2 className="text-lg font-semibold">Whoops, we haven’t implemented this yet</h2></div>*/}
-                      {/*            <p className="text-base text-muted-foreground">*/}
-                      {/*              How would you use connections in Rhizome?*/}
-                      {/*            </p>*/}
-
-                      {/*            <div className="mt-6">*/}
-                      {/*              <Button asChild>*/}
-                      {/*                <a */}
-                      {/*                  target="_blank" */}
-                      {/*                  href="https://tally.so/r/obEpvO"*/}
-                      {/*                  rel="noopener noreferrer"*/}
-                      {/*                  >Give Feedback</a>*/}
-                      {/*              </Button>*/}
-                      {/*            </div>*/}
-                      {/*          </div>*/}
-                      {/*   </DropdownMenuContent>*/}
-                      {/* </DropdownMenu>*/}
                       <ToggleButton
                         isActive={isLastFmConnected}
                         onToggle={handleLastFmToggle}
@@ -841,12 +839,13 @@ const ConnectionsSection = ({ lfmUsername, toggleLastFMDialog, toggleLastFMRemov
 }
 
 // Last.fm Preview Dialog Component
-const LastFMDialog = ({
-                               open,
-                               onLastFMPreview,
-                               onLastFMConnect,
-                               onOpenChange,
-                             }: {
+const LastFMDialog = (
+    {
+      open,
+      onLastFMPreview,
+      onLastFMConnect,
+      onOpenChange,
+    }: {
   open: boolean;
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
   onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
@@ -1128,6 +1127,7 @@ interface SettingsOverlayProps {
   socialUser: boolean;
   preferences: Preferences;
   lfmUsername?: string;
+  lfmLastSync?: Date;
   onLogout: () => Promise<boolean>;
   onChangeEmail: (newEmail: string) => Promise<boolean>;
   onChangePassword: (newPassword: string, currentPassword: string) => Promise<boolean>;
@@ -1137,6 +1137,7 @@ interface SettingsOverlayProps {
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
   onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
   onLastFMRemove: (removeArtists: boolean) => Promise<boolean>;
+  onLastFMRefresh: () => Promise<boolean>;
 }
 
 function SettingsOverlay(
@@ -1146,6 +1147,7 @@ function SettingsOverlay(
       socialUser,
       preferences,
       lfmUsername,
+      lfmLastSync,
       onLogout,
       onChangeEmail,
       onChangePassword,
@@ -1154,7 +1156,8 @@ function SettingsOverlay(
       onChangeName,
       onLastFMPreview,
       onLastFMConnect,
-      onLastFMRemove
+      onLastFMRemove,
+      onLastFMRefresh,
     }: SettingsOverlayProps
 ) {
   const [open, setOpen] = useState(false)
@@ -1243,8 +1246,10 @@ function SettingsOverlay(
     ),
     Connections: <ConnectionsSection
         lfmUsername={lfmUsername}
+        lfmLastSync={lfmLastSync}
         toggleLastFMDialog={setLastFMDialogOpen}
         toggleLastFMRemoveDialog={setLastFMRemoveDialogOpen}
+        onLastFMRefresh={onLastFMRefresh}
     />,
     Support: <SupportSection />,
   }

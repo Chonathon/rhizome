@@ -146,6 +146,7 @@ export interface User {
     image?: string;
     appAccess?: string;
     lfmUsername?: string;
+    lfmLastSync?: Date;
 }
 
 export interface Feedback {

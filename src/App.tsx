@@ -330,6 +330,7 @@ function App() {
     isSocialUser,
     userAccess,
     lfmUsername,
+    lfmLastSync,
     signIn,
     signInSocial,
     signUp,
@@ -349,6 +350,7 @@ function App() {
     onLFMPreview,
     onLFMConnect,
     onLFMRemove,
+    onLFMRefresh,
   } = useAuth();
 
   const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess(userAccess);
@@ -3044,6 +3046,7 @@ function App() {
         preferences={preferences || DEFAULT_PREFERENCES}
         socialUser={isSocialUser || false}
         lfmUsername={lfmUsername}
+        lfmLastSync={lfmLastSync}
         onLogout={signOut}
         onChangeEmail={changeEmail}
         onChangePassword={changePassword}
@@ -3053,6 +3056,7 @@ function App() {
         onLastFMPreview={onLFMPreview}
         onLastFMConnect={onLFMConnect}
         onLastFMRemove={onLFMRemove}
+        onLastFMRefresh={onLFMRefresh}
       />
       <AuthOverlay
           onSignUp={signUp}
