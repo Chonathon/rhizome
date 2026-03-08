@@ -834,7 +834,7 @@ const ConnectionsSection = (
           </FieldGroup>
         </FieldSet>
       </FieldGroup>
-            <p className="pt-3 text-sm text-muted-foreground">More connections coming soon...</p>
+            <p className="w-full text-center pt-4 text-sm text-muted-foreground">Want to see more connection options? <a href="https://tally.so/r/obEpvO" target="_blank" rel="noopener noreferrer" className="text-foreground underline">Let us know!</a></p>
     </SettingsSection>
   );
 }
