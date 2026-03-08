@@ -302,7 +302,9 @@ function App() {
     fetchSingleArtist,
     similarArtists,
     fetchSimilarArtists,
-  } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode);
+  // In exploration mode, fetch all artists so cross-genre similar artists can appear as ghosts.
+  // The explorationPool still limits which artists show as base nodes (by artistFilterGenres).
+  } = useArtists(genreExplorationMode ? [] : artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode);
 
   // Fetch top artists for the currently displayed genre info or the active filter
   const [topArtistsGenreId, setTopArtistsGenreId] = useState<string | undefined>(undefined);
@@ -2358,15 +2360,22 @@ function App() {
     setContainerMenuState(null);
   }, [genres]);
 
-  /** Navigate to a genre in exploration mode (push current to history) */
+  /** Navigate to a genre in exploration mode — adds a new container alongside existing ones */
   const navigateToGenreInExploration = useCallback((genreId: string) => {
     const targetGenre = genres?.find((g) => g.id === genreId);
     if (!targetGenre) return;
     const currentIds = artistFilterGenres.map((g) => g.id);
+    // Already showing this genre — just close the menu
+    if (currentIds.includes(genreId)) {
+      setContainerMenuState(null);
+      return;
+    }
+    // Push current set to history so "Go back" can restore it
     if (currentIds.length) setGenreExplorationHistory((prev) => [...prev, currentIds]);
     setRevealedArtistIds(new Set());
-    setArtistFilterGenres([targetGenre]);
-    setArtistGenreFilter([targetGenre]);
+    // Add the new genre alongside existing ones rather than replacing
+    setArtistFilterGenres((prev) => [...prev, targetGenre]);
+    setArtistGenreFilter((prev) => [...prev, targetGenre]);
     setIsBeforeArtistLoad(false);
     setContainerMenuState(null);
   }, [genres, artistFilterGenres]);
