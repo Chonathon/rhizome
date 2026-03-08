@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import {CircleUserRound, Cable, HandHeart, Check, X, Cog, Info, Sparkle, Sparkles, RefreshCw} from "lucide-react"
+import {CircleUserRound, Cable, HandHeart, Check, X, Cog, Info, Sparkle, Sparkles, RefreshCw, Loader, Loader2} from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
@@ -805,12 +805,12 @@ const ConnectionsSection = (
                         {isLastFmConnected && (
                             <span className='flex items-center'>
                               <span 
-                              className="text-sm text-muted-foreground" id="lastfm-connection-refresh-description" hidden={!lfmLastSync}>
+                              className="text-sm text-muted-foreground tabular-nums" id="lastfm-connection-refresh-description" hidden={!lfmLastSync}>
                                 Last synced {lfmLastSync ? new Date(lfmLastSync).toLocaleString('en-US') : ''}
                               </span>
                               <Button variant="ghost" size="icon" onClick={() => handleLastFMRefresh()} disabled={refreshLoading}>
                                 {refreshLoading ? (
-                                    <Loading />
+                                    <Loader2 className="animate-spin"/>
                                 ) : (
                                     <RefreshCw />
                                 )}
