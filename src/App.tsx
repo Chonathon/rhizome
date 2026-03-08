@@ -291,7 +291,6 @@ function App() {
     artistsPlayIDsLoading,
     artistPlayIDLoadingKey,
     fetchSingleArtist,
-    fetchArtistBySearch,
     similarArtists,
     fetchSimilarArtists,
   } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode);
@@ -380,7 +379,7 @@ function App() {
   // URL State: Open/close drawers from URL (initial load + browser back/forward)
   const { updateUrl } = useUrlState({
     findGenreBySlug,
-    fetchArtistBySearch,
+    fetchArtistById: fetchSingleArtist,
     onGenreFromUrl: (genre) => {
       setGenreInfoToShow(genre);
       setShowGenreCard(true);
@@ -1763,7 +1762,7 @@ function App() {
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
     }
-    updateUrl({ type: 'artist', name: artist.name });
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   };
 
   const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
@@ -1838,7 +1837,7 @@ function App() {
     setArtistInfoToShow(artist); // Use drawer state, not selectedArtist (prevents graph dimming)
     setShowArtistCard(true);
     addRecentSelection(artist);
-    updateUrl({ type: 'artist', name: artist.name });
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   }
 
   const handleFindSelect = (option: FindOption) => {
@@ -1852,7 +1851,7 @@ function App() {
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for find filter selections
       addRecentSelection(artist);
-      updateUrl({ type: 'artist', name: artist.name });
+      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
       if (graph !== 'artists' && graph !== 'similarArtists') {
         setGraph('artists');
       }
@@ -3034,7 +3033,7 @@ function App() {
                       focusArtistRelatedGenres(artist);
                       setArtistInfoToShow(artist);
                       setShowArtistCard(true);
-                      updateUrl({ type: 'artist', name: artist.name });
+                      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
                     }}
                     onGenreGoTo={(genre) => {
                       // For genres: Go To (switches to genres view and focuses the genre)
@@ -3045,7 +3044,7 @@ function App() {
                       await createSimilarArtistGraph(artist);
                       setArtistInfoToShow(artist);
                       setShowArtistCard(true);
-                      updateUrl({ type: 'artist', name: artist.name });
+                      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
                     }}
                     onGenreViewSimilar={(genre) => {
                       // For genres: View Similar also navigates to genres view

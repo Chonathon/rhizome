@@ -4,7 +4,7 @@ import type { Artist, Genre } from '@/types';
 
 interface UseUrlStateOptions {
   findGenreBySlug: (slug: string) => Genre | undefined;
-  fetchArtistBySearch: (query: string) => Promise<Artist | undefined>;
+  fetchArtistById: (id: string) => Promise<Artist | undefined>;
   onGenreFromUrl?: (genre: Genre) => void;
   onArtistFromUrl?: (artist: Artist) => void;
   onGenreClearedFromUrl?: () => void;
@@ -12,8 +12,13 @@ interface UseUrlStateOptions {
   genresLoaded: boolean;
 }
 
+export type UrlEntity =
+  | { type: 'genre'; name: string }
+  | { type: 'artist'; id: string; name: string }
+  | null;
+
 export interface UrlStateResult {
-  updateUrl: (entity: { type: 'genre' | 'artist'; name: string } | null) => void;
+  updateUrl: (entity: UrlEntity) => void;
 }
 
 export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
@@ -42,8 +47,7 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     if (artistSlug !== prevArtistSlug.current) {
       prevArtistSlug.current = artistSlug;
       if (artistSlug) {
-        const query = artistSlug.replace(/-/g, ' ');
-        callbacksRef.current.fetchArtistBySearch(query).then((artist) => {
+        callbacksRef.current.fetchArtistById(artistSlug).then((artist) => {
           if (artist) callbacksRef.current.onArtistFromUrl?.(artist);
         });
       } else {
@@ -72,7 +76,7 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   }, [processUrlParams]);
 
   // App → URL: pushState directly — no React re-render, no router navigation
-  const updateUrl = useCallback((entity: { type: 'genre' | 'artist'; name: string } | null) => {
+  const updateUrl = useCallback((entity: UrlEntity) => {
     const params = new URLSearchParams(window.location.search);
 
     if (entity === null) {
@@ -82,7 +86,7 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
       params.set('genre', toSlug(entity.name));
       params.delete('artist');
     } else {
-      params.set('artist', toSlug(entity.name));
+      params.set('artist', entity.id);
       params.delete('genre');
     }
 
