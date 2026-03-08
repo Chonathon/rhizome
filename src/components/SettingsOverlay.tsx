@@ -797,10 +797,10 @@ const ConnectionsSection = (
                       <img aria-hidden="true" src={LastFMLogo} className="size-8 @md/field-group:mr-2"/>
                       <FieldContent>
                       <FieldLabel htmlFor="lastfm-connection-description" id="lastfm-connection-label">
-                          Last.FM
+                          Last.fm
                       </FieldLabel>
                       <FieldDescription id="lastfm-connection-description">
-                        {isLastFmConnected ? 'Last.FM connected — use the refresh button to import new scrobbles' : 'Sync your scrobbled artists from Last.FM directly into your collection'}
+                        {isLastFmConnected ? 'Last.fm connected — use the refresh button to import new scrobbles' : 'Sync your scrobbled artists from Last.fm directly into your collection'}
                       </FieldDescription>
                         {isLastFmConnected && (
                             <span className='flex items-center'>
@@ -827,7 +827,7 @@ const ConnectionsSection = (
                         // inactiveIcon={<Cable />}
                         // variant="outline"
                         size="sm"
-                        ariaLabel={isLastFmConnected ? "Disconnect from Last.FM" : "Connect to Last.FM"}
+                        ariaLabel={isLastFmConnected ? "Disconnect from Last.fm" : "Connect to Last.fm"}
                         ariaDescribedBy="lastfm-connection-description"
                       />
                   </Field>
@@ -1024,11 +1024,11 @@ const LastFMRemoveDialog = ({
   return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="bg-card sm:max-w-md">
-          <DialogTitle className="text-destructive">Remove Last.FM Account</DialogTitle>
+          <DialogTitle className="text-destructive">Remove Last.fm Account</DialogTitle>
           <form onSubmit={handleDelete}>
             {removeSuccess ? (
                 <DialogDescription>
-                  Last.FM artists successfully removed from your collection.
+                  Last.fm artists successfully removed from your collection.
                 </DialogDescription>
             ) : (
                 <>
@@ -1037,7 +1037,7 @@ const LastFMRemoveDialog = ({
                   </DialogDescription>
                   <span className='flex gap-2 mt-3'>
                     {/*TODO: Make tooltip?*/}
-                    <Label className='flex'>Remove All Last.FM Artists</Label>
+                    <Label className='flex'>Remove All Last.fm Artists</Label>
                     <Switch className='flex' checked={removeArtists} onCheckedChange={setRemoveArtists} />
                   </span>
                 </>
@@ -1057,7 +1057,7 @@ const LastFMRemoveDialog = ({
                   className="flex-1"
                   hidden={removeSuccess}
               >
-                Remove Last.FM
+                Remove Last.fm
               </Button>
             </div>
           </form>
