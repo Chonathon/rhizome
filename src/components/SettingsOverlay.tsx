@@ -1024,7 +1024,7 @@ const LastFMRemoveDialog = ({
   return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="bg-card sm:max-w-md">
-          <DialogTitle className="text-destructive">Remove Last.fm Account</DialogTitle>
+          <DialogTitle className="text-destructive">Confirm Disconnect</DialogTitle>
           <form onSubmit={handleDelete}>
             {removeSuccess ? (
                 <DialogDescription>
