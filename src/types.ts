@@ -145,6 +145,8 @@ export interface User {
     socialUser?: boolean;
     image?: string;
     appAccess?: string;
+    lfmUsername?: string;
+    lfmLastSync?: Date;
 }
 
 export interface Feedback {
@@ -183,4 +185,10 @@ export interface ListenerTier {
     max: number;
     radius: number; // Distance from center (popular = inner, underground = outer)
     color: string; // Explicit color for visual distinction
+}
+
+export interface LastFMAccountPreview {
+    lfmUsername: string;
+    topArtists: string[];
+    totalArtists: number;
 }

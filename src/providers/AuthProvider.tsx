@@ -8,7 +8,7 @@ import {
     signOutUser,
     signUpUser, updateUserAccount
 } from "@/apis/authApi";
-import {BetterAuthError, InferSessionFromClient, InferUserFromClient} from "better-auth";
+import {BetterAuthError, InferSessionFromClient, InferUserFromClient, SessionQueryParams} from "better-auth";
 import {getUserData} from "@/apis/usersApi";
 import {DEFAULT_PREFERENCES} from "@/constants";
 import {authClient} from "@/lib/auth-client";
@@ -30,6 +30,7 @@ interface AuthContextType {
     validSession: (userID?: string) => boolean,
     forgotPassword: (email: string) => Promise<boolean>,
     resetPassword: (newPassword: string, token: string) => Promise<boolean>,
+    refetchSession: (queryParams?: ({ query?: SessionQueryParams } | undefined)) => Promise<void>,
 }
 
 // Dummy context to avoid TS errors
@@ -49,6 +50,7 @@ const noUserContext = {
     validSession: (userID?: string) => false,
     forgotPassword: (email: string) => new Promise<boolean>((resolve, reject) => {}),
     resetPassword: (newPassword: string, token: string) => new Promise<boolean>((resolve, reject) => {}),
+    refetchSession: () => new Promise<void>((resolve, reject) => {}),
 }
 
 export const AuthContext = createContext<AuthContextType>(noUserContext);
@@ -261,6 +263,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                         socialUser: userData.socialUser,
                         image: userData.image,
                         appAccess: session.user.appAccess,
+                        lfmUsername: userData.lfmUsername,
+                        lfmLastSync: userData.lfmLastSync,
                     });
                 } else {
                     setError(`Error: no user data found in db.`);
@@ -289,6 +293,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
             updateUserAppAccess,
             forgotPassword,
             resetPassword,
+            refetchSession,
         }}>
             {children}
         </AuthContext.Provider>
