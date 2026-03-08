@@ -12,6 +12,12 @@ interface UseUrlStateOptions {
   genresLoaded: boolean;
 }
 
+/**
+ * The entity passed to `updateUrl` to sync drawer state to the URL.
+ * - Artist: use `id` (database ID) — guarantees accurate restoration when artists share a name.
+ * - Genre: use `name` — slugified for the URL param.
+ * - `null`: clears both params (drawer dismissed).
+ */
 export type UrlEntity =
   | { type: 'genre'; name: string }
   | { type: 'artist'; id: string; name: string }
@@ -21,6 +27,25 @@ export interface UrlStateResult {
   updateUrl: (entity: UrlEntity) => void;
 }
 
+/**
+ * Syncs artist/genre drawer state to the URL via `window.history.pushState`.
+ * Handles initial page load and browser back/forward (popstate).
+ *
+ * Call `updateUrl` in any handler that opens or closes a drawer:
+ * ```ts
+ * // Opening an artist drawer — always include id and name
+ * updateUrl({ type: 'artist', id: artist.id, name: artist.name });
+ *
+ * // Opening a genre drawer
+ * updateUrl({ type: 'genre', name: genre.name });
+ *
+ * // Closing (dismiss / clear)
+ * updateUrl(null);
+ * ```
+ *
+ * Rule of thumb: if a handler calls `setShowArtistCard(true)` or
+ * `setShowGenreCard(true)`, it needs a matching `updateUrl` call.
+ */
 export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const prevGenreSlug = useRef<string | null>(null);
   const prevArtistSlug = useRef<string | null>(null);
