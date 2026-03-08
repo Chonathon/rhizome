@@ -1715,6 +1715,7 @@ function App() {
     // Hide genre card but mark it for restoration when artist card is dismissed
     setShowGenreCard(false);
     setRestoreGenreCardOnArtistDismiss(true);
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   }
 
   const handleGenreCanvasDragStart = () => {
