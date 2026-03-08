@@ -821,7 +821,7 @@ const ConnectionsSection = (
                       <ToggleButton
                         isActive={isLastFmConnected}
                         onToggle={handleLastFmToggle}
-                        activeLabel="Remove"
+                        activeLabel="Disconnect"
                         inactiveLabel="Connect"
                         // activeIcon={<Check />}
                         // inactiveIcon={<Cable />}
