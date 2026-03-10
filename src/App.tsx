@@ -379,7 +379,7 @@ function App() {
   // URL State: Open/close drawers from URL (initial load + browser back/forward)
   const { updateUrl } = useUrlState({
     findGenreBySlug,
-    fetchArtistById: fetchSingleArtist,
+    fetchArtistById: (id) => fetchSingleArtist(id, false),
     onGenreFromUrl: (genre) => {
       setGenreInfoToShow(genre);
       setShowGenreCard(true);

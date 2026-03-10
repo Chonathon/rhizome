@@ -154,18 +154,19 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         setArtistsLoading(false);
     }
 
-    const fetchSingleArtist = async (artistID: string) => {
+    const fetchSingleArtist = async (artistID: string, showLoading = true) => {
         resetArtistsYTError();
-        setArtistsLoading(true);
+        if (showLoading) setArtistsLoading(true);
         try {
             const response = await axios.get(`${url}/artists/fetch/id/${artistID}`);
+            if (showLoading) setArtistsLoading(false);
             return response.data;
         } catch (err) {
             if (err instanceof AxiosError) {
                 setArtistsError(err);
             }
+            if (showLoading) setArtistsLoading(false);
         }
-        setArtistsLoading(false);
     }
 
     const fetchArtistBySearch = async (query: string): Promise<Artist | undefined> => {
