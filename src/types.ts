@@ -145,6 +145,8 @@ export interface User {
     socialUser?: boolean;
     image?: string;
     appAccess?: string;
+    lfmUsername?: string;
+    lfmLastSync?: Date;
 }
 
 export interface Feedback {
