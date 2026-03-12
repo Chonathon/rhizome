@@ -177,6 +177,18 @@ export interface FindOption {
     subtitle?: string;
 }
 
+// URL State types for shareable URLs and browser navigation
+export type UrlView = 'genres' | 'artists' | 'similar';
+
+export interface UrlState {
+    view: UrlView | null;
+    genreSlug: string | null;
+    genreSlugs: string[];
+    artistSlug: string | null;
+    anchorSlug: string | null;
+    collectionMode: boolean;
+}
+
 // Listener-based popularity tiers for radial stratification
 export interface ListenerTier {
     id: number;
@@ -185,10 +197,4 @@ export interface ListenerTier {
     max: number;
     radius: number; // Distance from center (popular = inner, underground = outer)
     color: string; // Explicit color for visual distinction
-}
-
-export interface LastFMAccountPreview {
-    lfmUsername: string;
-    topArtists: string[];
-    totalArtists: number;
 }

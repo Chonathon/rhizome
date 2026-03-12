@@ -44,6 +44,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
+import { useUrlState } from './hooks/useUrlState';
+import { toSlug } from '@/lib/urlUtils';
 import DisplayPanel from './components/DisplayPanel';
 import SharePanel from './components/SharePanel';
 import NodeLimiter from './components/NodeLimiter'
@@ -375,6 +377,36 @@ function App() {
     };
   }, []);
   const navigate = useNavigate();
+
+  // URL State: Lookup function to find genres by slug
+  const findGenreBySlug = useCallback((slug: string): Genre | undefined => {
+    return genres.find(g => toSlug(g.name) === slug);
+  }, [genres]);
+
+  // URL State: Open/close drawers from URL (initial load + browser back/forward)
+  const { updateUrl } = useUrlState({
+    findGenreBySlug,
+    fetchArtistById: (id) => fetchSingleArtist(id, false),
+    onGenreFromUrl: (genre) => {
+      setGenreInfoToShow(genre);
+      setShowGenreCard(true);
+      addRecentSelection(genre);
+    },
+    onArtistFromUrl: (artist) => {
+      setArtistInfoToShow(artist);
+      setShowArtistCard(true);
+      addRecentSelection(artist);
+    },
+    onGenreClearedFromUrl: () => {
+      setShowGenreCard(false);
+      setGenreInfoToShow(undefined);
+    },
+    onArtistClearedFromUrl: () => {
+      setShowArtistCard(false);
+      setArtistInfoToShow(undefined);
+    },
+    genresLoaded: genres.length > 0 && !genresLoading,
+  });
 
   const artistsAddedRef = useRef(0);
 
@@ -1629,6 +1661,7 @@ function App() {
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
     setAutoFocusGraph(true); // Enable auto-focus for node clicks
     addRecentSelection(genre);
+    updateUrl({ type: 'genre', name: genre.name });
   };
 
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
@@ -1689,6 +1722,7 @@ function App() {
     // Hide genre card but mark it for restoration when artist card is dismissed
     setShowGenreCard(false);
     setRestoreGenreCardOnArtistDismiss(true);
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   }
 
   const handleGenreCanvasDragStart = () => {
@@ -1736,6 +1770,7 @@ function App() {
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
     }
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   };
 
   const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
@@ -1791,6 +1826,7 @@ function App() {
     // This prevents unwanted graph dimming during search
 
     addRecentSelection(genre);
+    updateUrl({ type: 'genre', name: genre.name });
   }
 
   const onSearchArtistSelect = (artist: Artist) => {
@@ -1809,6 +1845,7 @@ function App() {
     setArtistInfoToShow(artist); // Use drawer state, not selectedArtist (prevents graph dimming)
     setShowArtistCard(true);
     addRecentSelection(artist);
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   }
 
   const handleFindSelect = (option: FindOption) => {
@@ -1822,6 +1859,7 @@ function App() {
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for find filter selections
       addRecentSelection(artist);
+      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
       if (graph !== 'artists' && graph !== 'similarArtists') {
         setGraph('artists');
       }
@@ -1874,6 +1912,7 @@ function App() {
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
     setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
+    updateUrl(null);
   }
 
   const deselectArtist = () => {
@@ -1882,6 +1921,7 @@ function App() {
     setArtistInfoToShow(undefined);
     setShowArtistCard(false);
     setArtistPreviewStack([]);
+    updateUrl(null);
   }
 
   // Force the drawer to remount when restoring a previously focused artist without flashing the genre card
@@ -3001,19 +3041,23 @@ function App() {
                       focusArtistRelatedGenres(artist);
                       setArtistInfoToShow(artist);
                       setShowArtistCard(true);
+                      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
                     }}
                     onGenreGoTo={(genre) => {
                       // For genres: Go To (switches to genres view and focuses the genre)
                       focusGenreInCurrentView(genre, { forceRefocus: true });
+                      updateUrl({ type: 'genre', name: genre.name });
                     }}
                     onArtistViewSimilar={async (artist) => {
                       await createSimilarArtistGraph(artist);
                       setArtistInfoToShow(artist);
                       setShowArtistCard(true);
+                      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
                     }}
                     onGenreViewSimilar={(genre) => {
                       // For genres: View Similar also navigates to genres view
                       focusGenreInCurrentView(genre, { forceRefocus: true });
+                      updateUrl({ type: 'genre', name: genre.name });
                     }}
                   />
 
