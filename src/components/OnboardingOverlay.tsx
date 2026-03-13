@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/field"
 import type { LastFMAccountPreview, Social } from "@/types"
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 3
 
 const fadeTransition = {
   initial: { opacity: 0, y: 8 },
@@ -36,28 +36,7 @@ const fadeTransition = {
 
 // --- Step Components ---
 
-function WelcomeStep({ onNext }: { onNext: () => void }) {
-  return (
-    <div className="grid gap-6 text-center">
-      <DialogHeader>
-        <div>
-          <RhizomeLogo animated className="mx-auto mb-4 h-11 sm:h-14 w-auto" />
-        </div>
-        <DialogTitle className="sm:text-3xl text-2xl text-center">
-          Welcome to Rhizome
-        </DialogTitle>
-        <DialogDescription className="text-md text-center">
-          Thanks for joining the alpha! You're one of the first to explore Rhizome — a new way to visualize and grow your music taste.
-        </DialogDescription>
-      </DialogHeader>
-      <Button size="lg" className="w-full" onClick={onNext}>
-        Get Started
-      </Button>
-    </div>
-  )
-}
-
-function FeatureWalkthroughStep({
+function WelcomeStep({
   onNext,
   onSkip,
 }: {
@@ -88,9 +67,15 @@ function FeatureWalkthroughStep({
   return (
     <div className="grid gap-6">
       <DialogHeader>
-        <DialogTitle className="sm:text-2xl text-xl text-center">
-          How Rhizome Works
+        <div>
+          <RhizomeLogo animated className="mx-auto mb-4 h-11 sm:h-14 w-auto" />
+        </div>
+        <DialogTitle className="sm:text-3xl text-2xl text-center">
+          Welcome to Rhizome
         </DialogTitle>
+        <DialogDescription className="text-md text-center">
+          A living map of artists, genres, and connections you never noticed.
+        </DialogDescription>
       </DialogHeader>
       <div className="grid gap-4">
         {features.map((feature) => (
@@ -112,7 +97,7 @@ function FeatureWalkthroughStep({
       </div>
       <div className="flex flex-col gap-2">
         <Button size="lg" className="w-full" onClick={onNext}>
-          Next
+          Get Started
         </Button>
         <Button variant="ghost" size="sm" className="w-full" onClick={onSkip}>
           Skip
@@ -470,7 +455,7 @@ function OnboardingOverlay({
 
   // Build the active steps list, skipping steps where state is already satisfied
   const getSteps = () => {
-    const steps: string[] = ["welcome", "walkthrough"]
+    const steps: string[] = ["welcome"]
     if (!isLfmConnected) steps.push("connect")
     if (!isLoggedIn) steps.push("account")
     steps.push("completion")
@@ -496,9 +481,7 @@ function OnboardingOverlay({
   const renderStep = () => {
     switch (currentStepName) {
       case "welcome":
-        return <WelcomeStep onNext={goNext} />
-      case "walkthrough":
-        return <FeatureWalkthroughStep onNext={goNext} onSkip={goNext} />
+        return <WelcomeStep onNext={goNext} onSkip={goNext} />
       case "connect":
         return (
           <ConnectMusicStep
