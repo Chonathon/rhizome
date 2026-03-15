@@ -98,7 +98,7 @@ function WelcomeStep({
       {/* Split layout */}
       <div className="flex flex-col sm:flex-row gap-8 flex-1 min-h-0 h-full">
         {/* Left panel — features list */}
-        <div className="flex flex-col gap-6 w-full sm:justify-between h-full">
+        <div className="flex flex-col gap-6 w-full md:w-2/5 sm:shrink-0 sm:justify-between h-full">
           <div className="flex flex-col gap-6 h-auto">
             <div className="hidden sm:block">
               <RhizomeLogo animated className="mb-16 h-14 w-auto" />
@@ -174,7 +174,7 @@ function WelcomeStep({
         </div>
 
         {/* Right panel — video preview */}
-        <div className="flex-1 min-h-0 flex items-center justify-center">
+        <div className="hidden flex-1 min-h-0 md:flex items-center justify-center">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeFeature.video}
