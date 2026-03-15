@@ -36,6 +36,30 @@ const fadeTransition = {
 
 // --- Step Components ---
 
+const WELCOME_FEATURES = [
+  {
+    icon: Waypoints,
+    title: "Explore Your Graph",
+    description:
+      "Your collection comes to life as an interactive force-graph. See how genres, artists, and their relationships connect.",
+    video: "/videos/onboarding-explore.mp4",
+  },
+  {
+    icon: Disc3,
+    title: "Build Your Collection",
+    description:
+      "Add genres to your collection and discover the artists within them. Your graph grows with every addition.",
+    video: "/videos/onboarding-build.mp4",
+  },
+  {
+    icon: Sparkles,
+    title: "Discover New Music",
+    description:
+      "Follow the connections between artists and genres to find music you never knew you'd love.",
+    video: "/videos/onboarding-discover.mp4",
+  },
+]
+
 function WelcomeStep({
   onNext,
   onSkip,
@@ -43,65 +67,134 @@ function WelcomeStep({
   onNext: () => void
   onSkip: () => void
 }) {
-  const features = [
-    {
-      icon: Waypoints,
-      title: "Explore Your Graph",
-      description:
-        "Your collection comes to life as an interactive force-graph. See how genres, artists, and their relationships connect.",
-    },
-    {
-      icon: Disc3,
-      title: "Build Your Collection",
-      description:
-        "Add genres to your collection and discover the artists within them. Your graph grows with every addition.",
-    },
-    {
-      icon: Sparkles,
-      title: "Discover New Music",
-      description:
-        "Follow the connections between artists and genres to find music you never knew you'd love.",
-    },
-  ]
+  const [activeIndex, setActiveIndex] = useState(0)
+  const activeFeature = WELCOME_FEATURES[activeIndex]
+
+  const handleNext = () => {
+    if (activeIndex < WELCOME_FEATURES.length - 1) {
+      setActiveIndex(activeIndex + 1)
+    } else {
+      onNext()
+    }
+  }
+
+  const isLastFeature = activeIndex === WELCOME_FEATURES.length - 1
 
   return (
-    <div className="grid gap-6">
-      <DialogHeader>
+    <div className="grid gap-6 h-full">
+      {/* Mobile: header visible on small screens */}
+      <DialogHeader className="sm:hidden">
         <div>
-          <RhizomeLogo animated className="mx-auto mb-4 h-11 sm:h-14 w-auto" />
+          <RhizomeLogo animated className="mx-auto mb-2 h-11 w-auto" />
         </div>
-        <DialogTitle className="sm:text-3xl text-2xl text-center">
+        <DialogTitle className="text-2xl text-center">
           Welcome to Rhizome
         </DialogTitle>
         <DialogDescription className="text-md text-center">
           A living map of artists, genres, and connections you never noticed.
         </DialogDescription>
       </DialogHeader>
-      <div className="grid gap-4">
-        {features.map((feature) => (
-          <div
-            key={feature.title}
-            className="flex gap-4 items-start p-3 rounded-xl bg-accent dark:bg-accent/50 border border-muted dark:border-accent"
-          >
-            <div className="flex-shrink-0 mt-0.5">
-              <feature.icon className="size-5 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm">{feature.title}</p>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {feature.description}
-              </p>
-            </div>
+
+      {/* Split layout */}
+      <div className="flex flex-col sm:flex-row gap-6 flex-1 min-h-0">
+        {/* Left panel — features list */}
+        <div className="flex flex-col gap-4 sm:w-2/5 sm:justify-between">
+          <div className="hidden sm:block">
+            <RhizomeLogo animated className="mb-4 h-14 w-auto" />
+            <h2 className="text-3xl font-semibold tracking-tight">
+              Welcome to Rhizome
+            </h2>
+            <p className="text-md text-muted-foreground mt-1">
+              A living map of artists, genres, and connections you never noticed.
+            </p>
           </div>
-        ))}
-      </div>
-      <div className="flex flex-col gap-2">
-        <Button size="lg" className="w-full" onClick={onNext}>
-          Get Started
-        </Button>
-        <Button variant="ghost" size="sm" className="w-full" onClick={onSkip}>
-          Skip
-        </Button>
+
+          <div className="grid gap-2">
+            {WELCOME_FEATURES.map((feature, index) => {
+              const isActive = index === activeIndex
+              return (
+                <button
+                  key={feature.title}
+                  type="button"
+                  onClick={() => setActiveIndex(index)}
+                  className={`flex gap-3 items-start p-3 rounded-xl text-left transition-all duration-200 ${
+                    isActive
+                      ? "bg-accent dark:bg-accent/50 border border-primary/40 shadow-sm"
+                      : "border border-transparent hover:bg-accent/50"
+                  }`}
+                >
+                  <div className="shrink-0 mt-0.5">
+                    <feature.icon
+                      className={`size-5 transition-colors duration-200 ${
+                        isActive ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <p
+                      className={`font-medium text-sm transition-colors duration-200 ${
+                        isActive ? "text-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      {feature.title}
+                    </p>
+                    <AnimatePresence initial={false}>
+                      {isActive && (
+                        <motion.p
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          className="text-sm text-muted-foreground mt-0.5 overflow-hidden"
+                        >
+                          {feature.description}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="flex flex-col gap-2 mt-auto">
+            <Button size="lg" className="w-full" onClick={handleNext}>
+              {isLastFeature ? "Get Started" : "Next"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={onSkip}
+            >
+              Skip
+            </Button>
+          </div>
+        </div>
+
+        {/* Right panel — video preview */}
+        <div className="flex-1 min-h-0 flex items-center justify-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeFeature.video}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="w-full h-full rounded-2xl overflow-hidden bg-muted/50 border border-muted"
+            >
+              <video
+                key={activeFeature.video}
+                src={activeFeature.video}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   )
@@ -510,7 +603,7 @@ function OnboardingOverlay({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="bg-card h-[calc(100%-.8rem)] overflow-y-auto sm:max-w-[calc(100%-.8rem)] "
+        className="bg-card h-[calc(100%-.8rem)] overflow-y-auto sm:max-w-[calc(100%-.8rem)] flex flex-col"
       >
         {/* Progress bar */}
         {currentStepName !== "welcome" && currentStepName !== "completion" && (
@@ -531,6 +624,11 @@ function OnboardingOverlay({
           <motion.div
             key={currentStepName}
             {...fadeTransition}
+            className={
+              currentStepName === "welcome"
+                ? "flex-1 min-h-0"
+                : "max-w-lg mx-auto w-full"
+            }
           >
             {renderStep()}
           </motion.div>
