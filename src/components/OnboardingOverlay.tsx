@@ -628,7 +628,7 @@ function OnboardingOverlay({
             className={
               currentStepName === "welcome"
                 ? "flex-1 min-h-0"
-                : "max-w-lg mx-auto w-full"
+                : "max-w-lg mx-auto w-full my-auto"
             }
           >
             {renderStep()}
