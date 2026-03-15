@@ -294,17 +294,16 @@ function ConnectMusicStep({
         </div>
       ) : (
         <div className="grid gap-4">
-          <div className="flex gap-4 items-center p-3 rounded-xl bg-accent dark:bg-accent/50 border border-muted dark:border-accent">
-            <img aria-hidden="true" src={LastFMLogo} className="size-8" />
-            <div className="flex-1">
-              <p className="font-medium text-sm">Last.fm</p>
-              <p className="text-sm text-muted-foreground">
-                Sync your scrobbled artists into your collection
-              </p>
+          <div className="grid gap-3 p-3 rounded-xl bg-accent dark:bg-accent/50 border border-muted dark:border-accent">
+            <div className="flex gap-4 items-center">
+              <img aria-hidden="true" src={LastFMLogo} className="size-8" />
+              <div className="flex-1">
+                <p className="font-medium text-sm">Last.fm</p>
+                <p className="text-sm text-muted-foreground">
+                  Sync your scrobbled artists into your collection
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="onboarding-lfm-username">Last.fm Username</Label>
             <Input
               id="onboarding-lfm-username"
               type="text"
