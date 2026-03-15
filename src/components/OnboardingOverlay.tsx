@@ -49,14 +49,14 @@ const WELCOME_FEATURES = [
     title: "Build Your Collection",
     description:
       "Add genres to your collection and discover the artists within them. Your graph grows with every addition.",
-    video: "/videos/onboarding-build.mp4",
+    video: "/videos/onboarding-explore.mp4",
   },
   {
     icon: Sparkles,
     title: "Discover New Music",
     description:
       "Follow the connections between artists and genres to find music you never knew you'd love.",
-    video: "/videos/onboarding-discover.mp4",
+    video: "/videos/onboarding-explore.mp4",
   },
 ]
 
@@ -181,7 +181,7 @@ function WelcomeStep({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="w-full h-full rounded-2xl overflow-hidden bg-muted/50 border border-muted"
+              className="w-full rounded-2xl overflow-hidden border border-muted"
             >
               <video
                 key={activeFeature.video}
@@ -190,7 +190,7 @@ function WelcomeStep({
                 muted
                 loop
                 playsInline
-                className="w-full h-full object-cover"
+                className="w-full h-auto block"
               />
             </motion.div>
           </AnimatePresence>
