@@ -98,7 +98,7 @@ function WelcomeStep({
       {/* Split layout */}
       <div className="flex flex-col sm:flex-row gap-8 flex-1 min-h-0 h-full">
         {/* Left panel — features list */}
-        <div className="flex flex-col gap-6 sm:w-2/5 w-1/5 sm:justify-between h-full">
+        <div className="flex flex-col gap-6 w-full sm:justify-between h-full">
           <div className="flex flex-col gap-6 h-auto">
             <div className="hidden sm:block">
               <RhizomeLogo animated className="mb-16 h-14 w-auto" />
