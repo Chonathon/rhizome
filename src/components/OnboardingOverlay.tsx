@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Loading } from "@/components/Loading"
 import { toast } from "sonner"
 import RhizomeLogo from "./RhizomeLogo"
@@ -22,7 +21,7 @@ import {
   FieldDescription,
   FieldLabel,
 } from "@/components/ui/field"
-import type { LastFMAccountPreview, Social } from "@/types"
+import type { LastFMAccountPreview } from "@/types"
 
 const TOTAL_STEPS = 3
 
@@ -103,7 +102,7 @@ function WelcomeStep({
       </DialogHeader>
 
       {/* Horizontal scrolling feature cards */}
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory">
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 md:mx-0 md:px-0 md:justify-center snap-x snap-mandatory">
         {WELCOME_FEATURES.map((feature, index) => {
           const isActive = index === activeIndex
           return (
@@ -135,8 +134,8 @@ function WelcomeStep({
         })}
       </div>
 
-      {/* Video */}
-      <div className="flex-1 min-h-0 flex items-center justify-center">
+      {/* Video + description */}
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-start">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeFeature.video}
@@ -157,23 +156,21 @@ function WelcomeStep({
             />
           </motion.div>
         </AnimatePresence>
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={activeIndex}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="text-sm text-muted-foreground text-center mt-4 max-w-2xl min-h-[2lh]"
+          >
+            {activeFeature.description}
+          </motion.p>
+        </AnimatePresence>
       </div>
 
-      {/* Active feature description */}
-      <AnimatePresence mode="wait">
-        <motion.p
-          key={activeIndex}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          className="text-sm text-muted-foreground text-center"
-        >
-          {activeFeature.description}
-        </motion.p>
-      </AnimatePresence>
-
-      <div className="flex w-full gap-2">
+      <div className="flex w-full gap-2 mt-6">
         <Button
           variant="outline"
           size="lg"
@@ -310,27 +307,27 @@ function ConnectMusicStep({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
+      <div className="flex gap-2 w-full">
         {connectSuccess ? (
-          <Button size="lg" className="w-full" onClick={onNext}>
+          <Button size="lg" className="flex-1" onClick={onNext}>
             Continue
           </Button>
         ) : preview ? (
           <>
-            <Button size="lg" className="w-full" onClick={handleConnect}>
-              Connect
-            </Button>
-            <Button variant="ghost" size="sm" className="w-full" onClick={handleBack}>
+            <Button variant="outline" size="lg" className="flex-1" onClick={handleBack}>
               Back
+            </Button>
+            <Button size="lg" className="flex-1" onClick={handleConnect}>
+              Connect
             </Button>
           </>
         ) : (
           <>
-            <Button size="lg" className="w-full" onClick={handlePreview}>
-              Find Last.fm Account
-            </Button>
-            <Button variant="ghost" size="sm" className="w-full" onClick={onSkip}>
+            <Button variant="outline" size="lg" className="flex-1" onClick={onSkip}>
               Skip
+            </Button>
+            <Button size="lg" className="flex-1" onClick={handlePreview}>
+              Find Last.fm Account
             </Button>
           </>
         )}
@@ -351,162 +348,19 @@ function ConnectMusicStep({
   )
 }
 
-function CreateAccountStep({
-  onNext,
-  onSkip,
-  onSignUp,
-  onSignInSocial,
-}: {
-  onNext: () => void
-  onSkip: () => void
-  onSignUp: (email: string, password: string, name: string) => Promise<boolean>
-  onSignInSocial: (social: Social) => Promise<boolean>
-}) {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const success = await onSignUp(email, password, email.split("@")[0])
-    if (success) {
-      toast.success("Account created!")
-      onNext()
-    } else {
-      toast.error("Error creating account")
-    }
-  }
-
-  const handleSocial = async (social: Social) => {
-    const success = await onSignInSocial(social)
-    if (success) {
-      toast.success("Account connected!")
-      onNext()
-    }
-  }
-
-  return (
-    <div className="grid gap-6">
-      <DialogHeader>
-        <DialogTitle className="sm:text-2xl text-xl text-center">
-          Save Your Collection
-        </DialogTitle>
-        <DialogDescription className="text-md text-center">
-          Create a free account to keep your genres, artists, and connections across sessions.
-        </DialogDescription>
-      </DialogHeader>
-
-      {/* OAuth */}
-      <div className="flex flex-row gap-4">
-        <Button
-          className="w-full p-4 flex-1"
-          variant="outline"
-          size="xl"
-          type="button"
-          onClick={() => handleSocial("google")}
-        >
-          <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M44.59 4.21a63.28 63.28 0 0 0 4.33 120.9a67.6 67.6 0 0 0 32.36.35a57.13 57.13 0 0 0 25.9-13.46a57.44 57.44 0 0 0 16-26.26a74.3 74.3 0 0 0 1.61-33.58H65.27v24.69h34.47a29.72 29.72 0 0 1-12.66 19.52a36.2 36.2 0 0 1-13.93 5.5a41.3 41.3 0 0 1-15.1 0A37.2 37.2 0 0 1 44 95.74a39.3 39.3 0 0 1-14.5-19.42a38.3 38.3 0 0 1 0-24.63a39.25 39.25 0 0 1 9.18-14.91A37.17 37.17 0 0 1 76.13 27a34.3 34.3 0 0 1 13.64 8q5.83-5.8 11.64-11.63c2-2.09 4.18-4.08 6.15-6.22A61.2 61.2 0 0 0 87.2 4.59a64 64 0 0 0-42.61-.38"/><path fill="#e33629" d="M44.59 4.21a64 64 0 0 1 42.61.37a61.2 61.2 0 0 1 20.35 12.62c-2 2.14-4.11 4.14-6.15 6.22Q95.58 29.23 89.77 35a34.3 34.3 0 0 0-13.64-8a37.17 37.17 0 0 0-37.46 9.74a39.25 39.25 0 0 0-9.18 14.91L8.76 35.6A63.53 63.53 0 0 1 44.59 4.21"/><path fill="#f8bd00" d="M3.26 51.5a63 63 0 0 1 5.5-15.9l20.73 16.09a38.3 38.3 0 0 0 0 24.63q-10.36 8-20.73 16.08a63.33 63.33 0 0 1-5.5-40.9"/><path fill="#587dbd" d="M65.27 52.15h59.52a74.3 74.3 0 0 1-1.61 33.58a57.44 57.44 0 0 1-16 26.26c-6.69-5.22-13.41-10.4-20.1-15.62a29.72 29.72 0 0 0 12.66-19.54H65.27c-.01-8.22 0-16.45 0-24.68"/><path fill="#319f43" d="M8.75 92.4q10.37-8 20.73-16.08A39.3 39.3 0 0 0 44 95.74a37.2 37.2 0 0 0 14.08 6.08a41.3 41.3 0 0 0 15.1 0a36.2 36.2 0 0 0 13.93-5.5c6.69 5.22 13.41 10.4 20.1 15.62a57.13 57.13 0 0 1-25.9 13.47a67.6 67.6 0 0 1-32.36-.35a63 63 0 0 1-23-11.59A63.7 63.7 0 0 1 8.75 92.4"/></svg>
-        </Button>
-        <Button
-          className="w-full p-4 flex-1"
-          variant="outline"
-          size="xl"
-          type="button"
-          onClick={() => handleSocial("spotify")}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path
-              d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"
-              fill="#1DB954"
-            />
-          </svg>
-        </Button>
-      </div>
-
-      {/* Divider */}
-      <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-        <span className="bg-card text-muted-foreground relative z-10 px-2">
-          Or continue with email
-        </span>
-      </div>
-
-      {/* Email form */}
-      <form onSubmit={handleSubmit}>
-        <div className="grid gap-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="onboarding-email">Email</Label>
-            <Input
-              id="onboarding-email"
-              type="email"
-              placeholder="email@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="onboarding-password">Password</Label>
-            <Input
-              id="onboarding-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <Button type="submit" size="lg" className="w-full mt-2">
-            Create Account
-          </Button>
-        </div>
-      </form>
-
-      <div className="text-center">
-        <Button variant="ghost" size="sm" onClick={onSkip}>
-          Skip for now
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-function CompletionStep({ onFinish }: { onFinish: () => void }) {
-  return (
-    <div className="grid gap-6 text-center">
-      <DialogHeader>
-        <div>
-          <RhizomeLogo animated className="mx-auto mb-4 h-11 sm:h-14 w-auto" />
-        </div>
-        <DialogTitle className="sm:text-2xl text-xl text-center">
-          You're all set!
-        </DialogTitle>
-        <DialogDescription className="text-md text-center">
-          Start exploring — add your first genre to begin building your collection.
-        </DialogDescription>
-      </DialogHeader>
-      <Button size="lg" className="w-full" onClick={onFinish}>
-        Start Exploring
-      </Button>
-    </div>
-  )
-}
 
 // --- Main Component ---
 
 interface OnboardingOverlayProps {
-  onSignUp: (email: string, password: string, name: string) => Promise<boolean>
-  onSignInSocial: (social: Social) => Promise<boolean>
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>
   onLastFMConnect: (lfmUsername: string) => Promise<boolean>
-  isLoggedIn: boolean
   isLfmConnected: boolean
   onComplete: () => void
 }
 
 function OnboardingOverlay({
-  onSignUp,
-  onSignInSocial,
   onLastFMPreview,
   onLastFMConnect,
-  isLoggedIn,
   isLfmConnected,
   onComplete,
 }: OnboardingOverlayProps) {
@@ -539,8 +393,6 @@ function OnboardingOverlay({
   const getSteps = () => {
     const steps: string[] = ["welcome"]
     if (!isLfmConnected) steps.push("connect")
-    if (!isLoggedIn) steps.push("account")
-    steps.push("completion")
     return steps
   }
 
@@ -566,23 +418,12 @@ function OnboardingOverlay({
       case "connect":
         return (
           <ConnectMusicStep
-            onNext={goNext}
-            onSkip={goNext}
+            onNext={handleClose}
+            onSkip={handleClose}
             onLastFMPreview={onLastFMPreview}
             onLastFMConnect={onLastFMConnect}
           />
         )
-      case "account":
-        return (
-          <CreateAccountStep
-            onNext={goNext}
-            onSkip={goNext}
-            onSignUp={onSignUp}
-            onSignInSocial={onSignInSocial}
-          />
-        )
-      case "completion":
-        return <CompletionStep onFinish={handleClose} />
       default:
         return null
     }
@@ -591,7 +432,7 @@ function OnboardingOverlay({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="bg-card h-[calc(100%-.8rem)] overflow-y-auto sm:max-w-[calc(100%-.8rem)] flex flex-col"
+        className="bg-card h-[calc(100dvh-3rem)] sm:max-h-[calc(100dvh-8rem)] overflow-y-auto sm:max-w-2xl h-auto flex flex-col"
       >
         {/* Step indicators */}
         {currentStepName !== "welcome" && currentStepName !== "completion" && (
@@ -624,9 +465,8 @@ function OnboardingOverlay({
             key={currentStepName}
             {...fadeTransition}
             className={
-              currentStepName === "welcome"
-                ? "flex-1 min-h-0"
-                : "max-w-lg mx-auto w-full my-auto"
+              "flex-1 min-h-0"
+                
             }
           >
             {renderStep()}

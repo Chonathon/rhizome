@@ -3081,11 +3081,8 @@ function App() {
         onValidatePassword={validatePassword}
       />
       <OnboardingOverlay
-        onSignUp={signUp}
-        onSignInSocial={signInSocial}
         onLastFMPreview={onLFMPreview}
         onLastFMConnect={onLFMConnect}
-        isLoggedIn={!!userID}
         isLfmConnected={!!lfmUsername}
         onComplete={setOnboardingCompleted}
       />
