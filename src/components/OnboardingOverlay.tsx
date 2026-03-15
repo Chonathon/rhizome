@@ -81,7 +81,7 @@ function WelcomeStep({
   const isLastFeature = activeIndex === WELCOME_FEATURES.length - 1
 
   return (
-    <div className="grid gap-6 h-full">
+    <div className="grid gap-6 h-full place-content-center">
       {/* Mobile: header visible on small screens */}
       <DialogHeader className="sm:hidden">
         <div>
@@ -96,78 +96,79 @@ function WelcomeStep({
       </DialogHeader>
 
       {/* Split layout */}
-      <div className="flex flex-col sm:flex-row gap-6 flex-1 min-h-0">
+      <div className="flex flex-col sm:flex-row gap-8 flex-1 min-h-0 h-full">
         {/* Left panel — features list */}
-        <div className="flex flex-col gap-4 sm:w-2/5 sm:justify-between">
-          <div className="hidden sm:block">
-            <RhizomeLogo animated className="mb-4 h-14 w-auto" />
-            <h2 className="text-3xl font-semibold tracking-tight">
-              Welcome to Rhizome
-            </h2>
-            <p className="text-md text-muted-foreground mt-1">
-              A living map of artists, genres, and connections you never noticed.
-            </p>
+        <div className="flex flex-col gap-6 sm:w-2/5 w-1/5 sm:justify-between h-full">
+          <div className="flex flex-col gap-6 h-auto">
+            <div className="hidden sm:block">
+              <RhizomeLogo animated className="mb-16 h-14 w-auto" />
+              <h2 className="text-3xl font-semibold tracking-tight">
+                Welcome to Rhizome
+              </h2>
+              <p className="text-md text-muted-foreground mt-1">
+                A living map of artists, genres, and connections you never noticed.
+              </p>
+            </div>
+            <div className="grid gap-2">
+              {WELCOME_FEATURES.map((feature, index) => {
+                const isActive = index === activeIndex
+                return (
+                  <button
+                    key={feature.title}
+                    type="button"
+                    onClick={() => setActiveIndex(index)}
+                    className={`flex gap-3 items-start p-3 rounded-xl text-left transition-all duration-200 ${
+                      isActive
+                        ? "bg-accent dark:bg-accent/50 border border-primary/40 shadow-sm"
+                        : "border border-transparent hover:bg-accent/50"
+                    }`}
+                  >
+                    <div className="shrink-0 mt-0.5">
+                      <feature.icon
+                        className={`size-5 transition-colors duration-200 ${
+                          isActive ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <p
+                        className={`font-medium text-sm transition-colors duration-200 ${
+                          isActive ? "text-foreground" : "text-muted-foreground"
+                        }`}
+                      >
+                        {feature.title}
+                      </p>
+                      <AnimatePresence initial={false}>
+                        {isActive && (
+                          <motion.p
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="text-sm text-muted-foreground mt-0.5 overflow-hidden"
+                          >
+                            {feature.description}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
-          <div className="grid gap-2">
-            {WELCOME_FEATURES.map((feature, index) => {
-              const isActive = index === activeIndex
-              return (
-                <button
-                  key={feature.title}
-                  type="button"
-                  onClick={() => setActiveIndex(index)}
-                  className={`flex gap-3 items-start p-3 rounded-xl text-left transition-all duration-200 ${
-                    isActive
-                      ? "bg-accent dark:bg-accent/50 border border-primary/40 shadow-sm"
-                      : "border border-transparent hover:bg-accent/50"
-                  }`}
-                >
-                  <div className="shrink-0 mt-0.5">
-                    <feature.icon
-                      className={`size-5 transition-colors duration-200 ${
-                        isActive ? "text-primary" : "text-muted-foreground"
-                      }`}
-                    />
-                  </div>
-                  <div>
-                    <p
-                      className={`font-medium text-sm transition-colors duration-200 ${
-                        isActive ? "text-foreground" : "text-muted-foreground"
-                      }`}
-                    >
-                      {feature.title}
-                    </p>
-                    <AnimatePresence initial={false}>
-                      {isActive && (
-                        <motion.p
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2, ease: "easeOut" }}
-                          className="text-sm text-muted-foreground mt-0.5 overflow-hidden"
-                        >
-                          {feature.description}
-                        </motion.p>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="flex flex-col gap-2 mt-auto">
-            <Button size="lg" className="w-full" onClick={handleNext}>
-              {isLastFeature ? "Get Started" : "Next"}
-            </Button>
+          <div className="flex w-full justify-end gap-2 mt-8">
             <Button
-              variant="ghost"
-              size="sm"
-              className="w-full"
+              variant="outline"
+              size="lg"
+              className="flex-1"
               onClick={onSkip}
             >
               Skip
+            </Button>
+            <Button size="lg" className="flex-1" onClick={handleNext}>
+              {isLastFeature ? "Get Started" : "Next"}
             </Button>
           </div>
         </div>
