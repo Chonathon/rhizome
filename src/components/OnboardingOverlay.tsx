@@ -69,6 +69,15 @@ function WelcomeStep({
 }) {
   const [activeIndex, setActiveIndex] = useState(0)
   const activeFeature = WELCOME_FEATURES[activeIndex]
+  const featureRefs = useRef<(HTMLButtonElement | null)[]>([])
+
+  useEffect(() => {
+    featureRefs.current[activeIndex]?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    })
+  }, [activeIndex])
 
   const handleNext = () => {
     if (activeIndex < WELCOME_FEATURES.length - 1) {
@@ -81,26 +90,113 @@ function WelcomeStep({
   const isLastFeature = activeIndex === WELCOME_FEATURES.length - 1
 
   return (
-    <div className="grid gap-6 h-full place-content-center">
-      {/* Mobile: header visible on small screens */}
-      <DialogHeader className="sm:hidden">
-        <div>
-          <RhizomeLogo animated className="mx-auto mb-2 h-11 w-auto" />
-        </div>
-        <DialogTitle className="text-2xl text-center">
-          Welcome to Rhizome
-        </DialogTitle>
-        <DialogDescription className="text-md text-center">
-          A living map of artists, genres, and connections you never noticed.
-        </DialogDescription>
-      </DialogHeader>
+    <>
+      {/* ── Mobile: welcome + horizontal feature cards ── */}
+      <div className="md:hidden flex flex-col gap-4 h-full">
+        <DialogHeader>
+          <div>
+            <RhizomeLogo animated className="mx-auto mb-2 h-11 w-auto" />
+          </div>
+          <DialogTitle className="text-2xl text-center">
+            Welcome to Rhizome
+          </DialogTitle>
+          <DialogDescription className="text-md text-center">
+            A living map of artists, genres, and connections you never noticed.
+          </DialogDescription>
+        </DialogHeader>
 
-      {/* Split layout */}
-      <div className="flex flex-col sm:flex-row gap-8 flex-1 min-h-0 h-full">
+        {/* Horizontal scrolling feature cards */}
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory">
+          {WELCOME_FEATURES.map((feature, index) => {
+            const isActive = index === activeIndex
+            return (
+              <button
+                ref={(el) => { featureRefs.current[index] = el }}
+                key={feature.title}
+                type="button"
+                onClick={() => setActiveIndex(index)}
+                className={`flex gap-2 items-center p-3 rounded-xl text-left shrink-0 snap-center transition-all duration-200 ${
+                  isActive
+                    ? "bg-accent dark:bg-accent/50 border border-primary/40 shadow-sm"
+                    : "border border-transparent hover:bg-accent/50"
+                }`}
+              >
+                <feature.icon
+                  className={`size-4 shrink-0 transition-colors duration-200 ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`}
+                />
+                <p
+                  className={`font-medium text-sm whitespace-nowrap transition-colors duration-200 ${
+                    isActive ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {feature.title}
+                </p>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Video */}
+        <div className="flex-1 min-h-0 flex items-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeFeature.video}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="w-full rounded-2xl overflow-hidden border border-muted"
+            >
+              <video
+                key={activeFeature.video}
+                src={activeFeature.video}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-auto block"
+              />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Active feature description */}
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={activeIndex}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="text-sm text-muted-foreground text-center"
+          >
+            {activeFeature.description}
+          </motion.p>
+        </AnimatePresence>
+
+        <div className="flex w-full gap-2">
+          <Button
+            variant="outline"
+            size="lg"
+            className="flex-1"
+            onClick={onSkip}
+          >
+            Skip
+          </Button>
+          <Button size="lg" className="flex-1" onClick={handleNext}>
+            {isLastFeature ? "Get Started" : "Next"}
+          </Button>
+        </div>
+      </div>
+
+      {/* ── Desktop: split layout ── */}
+      <div className="hidden md:flex gap-8 h-full">
         {/* Left panel — features list */}
-        <div className="flex flex-col gap-6 w-full md:w-2/5 sm:shrink-0 sm:justify-between h-full">
-          <div className="flex flex-col gap-6 h-auto">
-            <div className="hidden sm:block">
+        <div className="flex flex-col gap-6 w-2/5 shrink-0 justify-between h-full">
+          <div className="flex flex-col gap-6">
+            <div>
               <RhizomeLogo animated className="mb-16 h-14 w-auto" />
               <h2 className="text-3xl font-semibold tracking-tight">
                 Welcome to Rhizome
@@ -158,7 +254,7 @@ function WelcomeStep({
             </div>
           </div>
 
-          <div className="flex w-full justify-end gap-2 mt-8">
+          <div className="flex w-full gap-2">
             <Button
               variant="outline"
               size="lg"
@@ -174,7 +270,7 @@ function WelcomeStep({
         </div>
 
         {/* Right panel — video preview */}
-        <div className="hidden flex-1 min-h-0 md:flex items-center justify-center">
+        <div className="flex-1 min-h-0 flex items-center justify-center">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeFeature.video}
@@ -197,7 +293,7 @@ function WelcomeStep({
           </AnimatePresence>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 
