@@ -510,7 +510,7 @@ function OnboardingOverlay({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="bg-card max-h-[calc(100dvh-3rem)] overflow-y-auto sm:max-w-lg"
+        className="bg-card h-[calc(100%-.8rem)] overflow-y-auto sm:max-w-[calc(100%-.8rem)] "
       >
         {/* Progress bar */}
         {currentStepName !== "welcome" && currentStepName !== "completion" && (
