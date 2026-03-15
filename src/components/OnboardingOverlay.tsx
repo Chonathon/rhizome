@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
 import { Loading } from "@/components/Loading"
 import { toast } from "sonner"
 import RhizomeLogo from "./RhizomeLogo"
@@ -90,210 +89,104 @@ function WelcomeStep({
   const isLastFeature = activeIndex === WELCOME_FEATURES.length - 1
 
   return (
-    <>
-      {/* ── Mobile: welcome + horizontal feature cards ── */}
-      <div className="md:hidden flex flex-col gap-4 h-full">
-        <DialogHeader>
-          <div>
-            <RhizomeLogo animated className="mx-auto mb-2 h-11 w-auto" />
-          </div>
-          <DialogTitle className="text-2xl text-center">
-            Welcome to Rhizome
-          </DialogTitle>
-          <DialogDescription className="text-md text-center">
-            A living map of artists, genres, and connections you never noticed.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="flex flex-col gap-4 h-full">
+      <DialogHeader>
+        <div>
+          <RhizomeLogo animated className="mx-auto mb-2 h-11 sm:h-14 w-auto" />
+        </div>
+        <DialogTitle className="text-2xl sm:text-3xl text-center">
+          Welcome to Rhizome
+        </DialogTitle>
+        <DialogDescription className="text-md text-center">
+          A living map of artists, genres, and connections you never noticed.
+        </DialogDescription>
+      </DialogHeader>
 
-        {/* Horizontal scrolling feature cards */}
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory">
-          {WELCOME_FEATURES.map((feature, index) => {
-            const isActive = index === activeIndex
-            return (
-              <button
-                ref={(el) => { featureRefs.current[index] = el }}
-                key={feature.title}
-                type="button"
-                onClick={() => setActiveIndex(index)}
-                className={`flex gap-2 items-center p-3 rounded-xl text-left shrink-0 snap-center transition-all duration-200 ${
-                  isActive
-                    ? "bg-accent dark:bg-accent/50 border border-primary/40 shadow-sm"
-                    : "border border-transparent hover:bg-accent/50"
+      {/* Horizontal scrolling feature cards */}
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory">
+        {WELCOME_FEATURES.map((feature, index) => {
+          const isActive = index === activeIndex
+          return (
+            <button
+              ref={(el) => { featureRefs.current[index] = el }}
+              key={feature.title}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              className={`flex gap-2 items-center p-3 rounded-xl text-left shrink-0 snap-center transition-all duration-200 ${
+                isActive
+                  ? "bg-accent dark:bg-accent/50 border border-primary/40 shadow-sm"
+                  : "border border-transparent hover:bg-accent/50"
+              }`}
+            >
+              <feature.icon
+                className={`size-4 shrink-0 transition-colors duration-200 ${
+                  isActive ? "text-primary" : "text-muted-foreground"
+                }`}
+              />
+              <p
+                className={`font-medium text-sm whitespace-nowrap transition-colors duration-200 ${
+                  isActive ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
-                <feature.icon
-                  className={`size-4 shrink-0 transition-colors duration-200 ${
-                    isActive ? "text-primary" : "text-muted-foreground"
-                  }`}
-                />
-                <p
-                  className={`font-medium text-sm whitespace-nowrap transition-colors duration-200 ${
-                    isActive ? "text-foreground" : "text-muted-foreground"
-                  }`}
-                >
-                  {feature.title}
-                </p>
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Video */}
-        <div className="flex-1 min-h-0 flex items-center">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeFeature.video}
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="w-full rounded-2xl overflow-hidden border border-muted"
-            >
-              <video
-                key={activeFeature.video}
-                src={activeFeature.video}
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="w-full h-auto block"
-              />
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* Active feature description */}
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={activeIndex}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="text-sm text-muted-foreground text-center"
-          >
-            {activeFeature.description}
-          </motion.p>
-        </AnimatePresence>
-
-        <div className="flex w-full gap-2">
-          <Button
-            variant="outline"
-            size="lg"
-            className="flex-1"
-            onClick={onSkip}
-          >
-            Skip
-          </Button>
-          <Button size="lg" className="flex-1" onClick={handleNext}>
-            {isLastFeature ? "Get Started" : "Next"}
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Desktop: split layout ── */}
-      <div className="hidden md:flex gap-8 h-full">
-        {/* Left panel — features list */}
-        <div className="flex flex-col gap-6 w-2/5 shrink-0 justify-between h-full">
-          <div className="flex flex-col gap-6">
-            <div>
-              <RhizomeLogo animated className="mb-16 h-14 w-auto" />
-              <h2 className="text-3xl font-semibold tracking-tight">
-                Welcome to Rhizome
-              </h2>
-              <p className="text-md text-muted-foreground mt-1">
-                A living map of artists, genres, and connections you never noticed.
+                {feature.title}
               </p>
-            </div>
-            <div className="grid gap-2">
-              {WELCOME_FEATURES.map((feature, index) => {
-                const isActive = index === activeIndex
-                return (
-                  <button
-                    key={feature.title}
-                    type="button"
-                    onClick={() => setActiveIndex(index)}
-                    className={`flex gap-3 items-start p-3 rounded-xl text-left transition-all duration-200 ${
-                      isActive
-                        ? "bg-accent dark:bg-accent/50 border border-primary/40 shadow-sm"
-                        : "border border-transparent hover:bg-accent/50"
-                    }`}
-                  >
-                    <div className="shrink-0 mt-0.5">
-                      <feature.icon
-                        className={`size-5 transition-colors duration-200 ${
-                          isActive ? "text-primary" : "text-muted-foreground"
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <p
-                        className={`font-medium text-sm transition-colors duration-200 ${
-                          isActive ? "text-foreground" : "text-muted-foreground"
-                        }`}
-                      >
-                        {feature.title}
-                      </p>
-                      <AnimatePresence initial={false}>
-                        {isActive && (
-                          <motion.p
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="text-sm text-muted-foreground mt-0.5 overflow-hidden"
-                          >
-                            {feature.description}
-                          </motion.p>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="flex w-full gap-2">
-            <Button
-              variant="outline"
-              size="lg"
-              className="flex-1"
-              onClick={onSkip}
-            >
-              Skip
-            </Button>
-            <Button size="lg" className="flex-1" onClick={handleNext}>
-              {isLastFeature ? "Get Started" : "Next"}
-            </Button>
-          </div>
-        </div>
-
-        {/* Right panel — video preview */}
-        <div className="flex-1 min-h-0 flex items-center justify-center">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeFeature.video}
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="w-full rounded-2xl overflow-hidden border border-muted"
-            >
-              <video
-                key={activeFeature.video}
-                src={activeFeature.video}
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="w-full h-auto block"
-              />
-            </motion.div>
-          </AnimatePresence>
-        </div>
+            </button>
+          )
+        })}
       </div>
-    </>
+
+      {/* Video */}
+      <div className="flex-1 min-h-0 flex items-center justify-center">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeFeature.video}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="max-w-2xl w-full max-h-full rounded-2xl overflow-hidden border border-muted"
+          >
+            <video
+              key={activeFeature.video}
+              src={activeFeature.video}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-auto block"
+            />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Active feature description */}
+      <AnimatePresence mode="wait">
+        <motion.p
+          key={activeIndex}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="text-sm text-muted-foreground text-center"
+        >
+          {activeFeature.description}
+        </motion.p>
+      </AnimatePresence>
+
+      <div className="flex w-full gap-2">
+        <Button
+          variant="outline"
+          size="lg"
+          className="flex-1"
+          onClick={onSkip}
+        >
+          Skip
+        </Button>
+        <Button size="lg" className="flex-1" onClick={handleNext}>
+          {isLastFeature ? "Get Started" : "Next"}
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -653,7 +546,6 @@ function OnboardingOverlay({
 
   const steps = getSteps()
   const currentStepName = steps[step] || "completion"
-  const progressValue = ((step + 1) / steps.length) * 100
 
   const goNext = () => {
     if (step < steps.length - 1) {
@@ -701,9 +593,20 @@ function OnboardingOverlay({
       <DialogContent
         className="bg-card h-[calc(100%-.8rem)] overflow-y-auto sm:max-w-[calc(100%-.8rem)] flex flex-col"
       >
-        {/* Progress bar */}
+        {/* Step indicators */}
         {currentStepName !== "welcome" && currentStepName !== "completion" && (
-          <Progress value={progressValue} className="mb-2" />
+          <div className="flex justify-center gap-1.5 mb-2">
+            {steps.map((_, index) => (
+              <div
+                key={index}
+                className={`h-1.5 rounded-full transition-all duration-200 ${
+                  index === step
+                    ? "w-6 bg-primary"
+                    : "w-1.5 bg-muted-foreground/30"
+                }`}
+              />
+            ))}
+          </div>
         )}
 
         {/* Screen-reader title for non-welcome steps */}
