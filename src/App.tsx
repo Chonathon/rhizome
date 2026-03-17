@@ -3071,6 +3071,8 @@ function App() {
           onSignInSocial={signInSocial}
           onSignIn={signIn}
           onForgotPassword={forgotPassword}
+          onLastFMPreview={onLFMPreview}
+          onLastFMConnect={onLFMConnect}
       />
       <AlphaAccessDialog
         open={!isAlphaValidated && !authLoading}
@@ -3081,9 +3083,6 @@ function App() {
         onValidatePassword={validatePassword}
       />
       <OnboardingOverlay
-        onLastFMPreview={onLFMPreview}
-        onLastFMConnect={onLFMConnect}
-        isLfmConnected={!!lfmUsername}
         onComplete={setOnboardingCompleted}
       />
       <FeedbackOverlay
