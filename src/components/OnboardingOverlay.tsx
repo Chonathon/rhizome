@@ -187,7 +187,7 @@ function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 
   useEffect(() => {
     const handleOpen = () => {
-      setOpen(true)
+      setTimeout(() => setOpen(true), 2000)
     }
     window.addEventListener("onboarding:open", handleOpen)
     return () => {
@@ -209,7 +209,7 @@ function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="bg-card h-[calc(100dvh-3rem)] sm:max-h-[calc(100dvh-8rem)] overflow-y-auto sm:max-w-2xl h-auto flex flex-col"
+        className="bg-card h-[calc(100dvh-3rem)] sm:max-h-[calc(100dvh-8rem)] overflow-y-auto sm:max-w-2xl h-auto flex flex-col duration-400"
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
