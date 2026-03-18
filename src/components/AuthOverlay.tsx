@@ -296,14 +296,29 @@ function AuthOverlay({ onSignUp, onSignInSocial, onSignIn, onForgotPassword, onL
           if (!isLfmStep) emailRef.current?.focus();
         }}
       >
+        <AnimatePresence mode="wait" initial={false}>
         {isLfmStep ? (
-          <ConnectMusicStep
-            onDone={() => setOpen(false)}
-            onLastFMPreview={onLastFMPreview}
-            onLastFMConnect={onLastFMConnect}
-          />
+          <motion.div
+            key="connect-lfm"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <ConnectMusicStep
+              onDone={() => setOpen(false)}
+              onLastFMPreview={onLastFMPreview}
+              onLastFMConnect={onLastFMConnect}
+            />
+          </motion.div>
         ) : (
-          <div>
+          <motion.div
+            key="auth"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
             <DialogHeader>
               <div>
                 <RhizomeLogo className="mx-auto mb-4 h-11 sm:h-14 w-auto" />
@@ -445,8 +460,9 @@ function AuthOverlay({ onSignUp, onSignInSocial, onSignIn, onForgotPassword, onL
                 </div>
               </div>
             </form>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );
