@@ -158,19 +158,31 @@ function WelcomeStep({
         </AnimatePresence>
       </div>
 
-      <div className="flex w-full gap-2 mt-6">
-        <Button
-          variant="outline"
-          size="lg"
-          className="flex-1"
-          onClick={onSkip}
-        >
-          Skip
-        </Button>
-        <Button size="lg" className="flex-1" onClick={handleNext}>
-          {isLastFeature ? "Get Started" : "Next"}
-        </Button>
-      </div>
+      <motion.div layout className="flex w-full gap-2 mt-6">
+        <AnimatePresence mode="popLayout">
+          {!isLastFeature &&
+          <motion.div className="flex-1"
+          key="skip-btn"
+          initial={{ opacity: 0}}
+          animate={{ opacity: 1}}
+          exit={{ opacity: 0}}
+          transition={{ duration: .2, ease: "easeOut" }}>
+             <Button
+              variant="outline"
+              size="lg"
+              className="w-full"
+              onClick={onSkip}
+            >
+              Skip
+            </Button>
+          </motion.div>}
+        </AnimatePresence>
+        <motion.div layout className="flex-1">
+          <Button size="lg" className="w-full" onClick={handleNext}>
+            {isLastFeature ? "Get Started" : "Next"}
+          </Button>
+        </motion.div>
+      </motion.div>
     </div>
   )
 }
