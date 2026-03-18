@@ -37,7 +37,7 @@ import { Sparkles } from 'lucide-react';
  */
 
 // Notification type configurations
-type NotificationType = 'alpha-feedback' | 'release-notes';
+type NotificationType = 'alpha-feedback' | 'release-notes' | 'import-music';
 
 interface NotiToastConfig {
   title: string;
@@ -80,6 +80,17 @@ const notificationConfigs: Record<NotificationType, NotiToastConfig> = {
     },
     dismissButton: {
       label: 'Dismiss',
+    },
+  },
+  'import-music': {
+    title: 'Import your music',
+    description: 'Connect Last.fm to sync your scrobbled artists into your collection.',
+    primaryButton: {
+      label: 'Connect Last.fm',
+      onClick: () => window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'connect-lfm' } })),
+    },
+    dismissButton: {
+      label: 'Maybe later',
     },
   },
 };
@@ -134,6 +145,7 @@ function NotiToast({
 
     if (config.primaryButton.onClick) {
       config.primaryButton.onClick();
+      sonnerToast.dismiss(id);
     }
   };
 
