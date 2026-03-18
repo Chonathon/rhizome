@@ -45,6 +45,7 @@ function ConnectMusicStep({
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState<LastFMAccountPreview | undefined>()
   const [connectSuccess, setConnectSuccess] = useState(false)
+  const [skipped, setSkipped] = useState(false)
 
   const handlePreview = async () => {
     if (!lfmUsername) {
@@ -78,6 +79,24 @@ function ConnectMusicStep({
     if (preview && !connectSuccess) {
       setPreview(undefined)
     }
+  }
+
+  if (skipped) {
+    return (
+      <div className="grid gap-6">
+        <DialogHeader>
+          <DialogTitle className="sm:text-2xl text-xl text-center">
+            No worries!
+          </DialogTitle>
+          <DialogDescription className="text-md text-center">
+            You can connect Last.fm and other services anytime from the Settings menu.
+          </DialogDescription>
+        </DialogHeader>
+        <Button size="lg" onClick={onDone}>
+          Got it
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -174,7 +193,7 @@ function ConnectMusicStep({
           </>
         ) : (
           <>
-            <Button variant="outline" size="lg" className="flex-1" onClick={onDone}>
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setSkipped(true)}>
               Skip
             </Button>
             <Button size="lg" className="flex-1" onClick={handlePreview}>
