@@ -179,7 +179,7 @@ function WelcomeStep({
         </AnimatePresence>
         <motion.div layout className="flex-1">
           <Button size="lg" className="w-full" onClick={handleNext}>
-            {isLastFeature ? "Get Started" : "Next"}
+            {isLastFeature ? "Start Exploring" : "Next"}
           </Button>
         </motion.div>
       </motion.div>
