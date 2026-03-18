@@ -402,6 +402,7 @@ function App() {
     }
   }, [isAlphaValidated, authLoading, hasCompletedOnboarding]);
 
+
   // Setup alpha feedback timer on mount
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -2435,6 +2436,13 @@ function App() {
       window.dispatchEvent(new Event('auth:open'));
     }
   }
+
+  // Listen for collection:open event (dispatched from auth overlay post-connect)
+  useEffect(() => {
+    const handleCollectionOpen = () => onCollectionClick();
+    window.addEventListener("collection:open", handleCollectionOpen);
+    return () => window.removeEventListener("collection:open", handleCollectionOpen);
+  }, [onCollectionClick]);
 
   const onExploreClick = () => {
     resetAppState();

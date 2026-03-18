@@ -152,9 +152,17 @@ function ConnectMusicStep({
 
       <div className="flex gap-2 w-full">
         {connectSuccess ? (
-          <Button size="lg" className="flex-1" onClick={onDone}>
-            Continue
-          </Button>
+          <>
+            <Button variant="outline" size="lg" className="flex-1" onClick={onDone}>
+              Close
+            </Button>
+            <Button size="lg" className="flex-1" onClick={() => {
+              onDone()
+              window.dispatchEvent(new Event("collection:open"))
+            }}>
+              View Collection
+            </Button>
+          </>
         ) : preview ? (
           <>
             <Button variant="outline" size="lg" className="flex-1" onClick={handleBack}>
