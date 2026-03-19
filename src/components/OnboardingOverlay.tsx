@@ -182,45 +182,45 @@ function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
             </div>
           </div>
 
-          {/* Slide content */}
-          <div className="overflow-hidden relative">
+          {/* Slide content — min-h fits the tallest screen (modes) so buttons don't move */}
+          <div className="relative min-h-[15rem]">
             <AnimatePresence mode="wait" custom={direction}>
-              <motion.div
-                key={screen.id}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                className="flex flex-col gap-2"
-              >
-                <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
-                  {screen.headline}
-                </h2>
-                {screen.body && (
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                    {screen.body}
-                  </p>
-                )}
-                {screen.modes && (
-                  <div className="flex flex-col gap-1.5 mt-1">
-                    {screen.modes.map((mode) => (
-                      <div
-                        key={mode.name}
-                        className="flex gap-2 items-baseline px-3 py-2.5 rounded-lg bg-accent/50 border border-muted/60"
-                      >
-                        <span className="font-medium text-sm shrink-0 text-foreground">
-                          {mode.name} —
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          {mode.description}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </motion.div>
+                <motion.div
+                  key={screen.id}
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="flex flex-col gap-2"
+                >
+                  <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
+                    {screen.headline}
+                  </h2>
+                  {screen.body && (
+                    <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                      {screen.body}
+                    </p>
+                  )}
+                  {screen.modes && (
+                    <div className="flex flex-col gap-1.5 mt-1">
+                      {screen.modes.map((mode) => (
+                        <div
+                          key={mode.name}
+                          className="flex gap-2 items-baseline px-3 py-2.5 rounded-lg bg-accent/50 border border-muted/60"
+                        >
+                          <span className="font-medium text-sm shrink-0 text-foreground">
+                            {mode.name} —
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {mode.description}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
             </AnimatePresence>
           </div>
 
