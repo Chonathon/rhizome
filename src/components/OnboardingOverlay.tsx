@@ -309,18 +309,21 @@ function OnboardingOverlay({ onComplete, onCreateAccount }: OnboardingOverlayPro
                     </Button>
                   )}
                   {screen.modes && (
-                    <div className="flex flex-col gap-1.5 mt-1">
+                    <div className="flex flex-col gap-1 mt-1">
                       {screen.modes.map((mode) => {
                         const Icon = modeIcons[mode.name]
                         return (
                           <div
                             key={mode.name}
-                            className="flex gap-2 items-center px-3 py-2.5 rounded-lg bg-accent/50 border border-muted/60"
+                            className="flex flex-col items-start px-3 py-2.5 rounded-lg bg-accent/50 border border-muted/60"
                           >
-                            {Icon && <Icon className="size-4 text-muted-foreground shrink-0" />}
-                            <span className="font-medium text-sm shrink-0 text-foreground">
-                              {mode.name} —
-                            </span>
+                            <div className="flex gap-2 items-center mb-1">
+                              {Icon && <Icon className="size-5 text-foreground shrink-0" />}
+                              <span className=" font-medium text-md shrink-0 text-foreground">
+                                {mode.name}
+                              
+                              </span>
+                            </div>
                             <span className="text-sm text-muted-foreground">
                               {mode.description}
                             </span>
