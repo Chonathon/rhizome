@@ -146,22 +146,11 @@ const SCREENS: Screen[] = [
 ]
 
 const slideVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 32 : -32,
-    opacity: 0,
-  }),
-  center: { x: 0, opacity: 1 },
-  exit: (direction: number) => ({
-    x: direction > 0 ? -32 : 32,
-    opacity: 0,
-  }),
+  enter: { y: 12, opacity: 0 },
+  center: { y: 0, opacity: 1 },
+  exit: { y: -12, opacity: 0 },
 }
 
-const ctaSlideVariants = {
-  enter: { y: 16, opacity: 0 },
-  center: { y: 0, opacity: 1 },
-  exit: { y: -16, opacity: 0 },
-}
 
 const videoVariants = {
   enter: { opacity: 0 },
@@ -179,7 +168,6 @@ interface OnboardingOverlayProps {
 function OnboardingOverlay({ onComplete, onCreateAccount }: OnboardingOverlayProps) {
   const [open, setOpen] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [direction, setDirection] = useState(1)
 
   useEffect(() => {
     const handleOpen = () => {
@@ -201,12 +189,10 @@ function OnboardingOverlay({ onComplete, onCreateAccount }: OnboardingOverlayPro
   }
 
   const goNext = () => {
-    setDirection(1)
     setCurrentIndex((i) => i + 1)
   }
 
   const goBack = () => {
-    setDirection(-1)
     setCurrentIndex((i) => i - 1)
   }
 
@@ -281,11 +267,10 @@ function OnboardingOverlay({ onComplete, onCreateAccount }: OnboardingOverlayPro
 
           {/* Slide content — min-h fits the tallest screen (modes) so buttons don't move */}
           <div className={`relative ${screen.isCTA ? "flex-1 flex items-center justify-center" : "min-h-[15rem]"}`}>
-            <AnimatePresence mode="wait" custom={direction}>
+            <AnimatePresence mode="wait">
                 <motion.div
                   key={screen.id}
-                  custom={direction}
-                  variants={screen.isCTA ? ctaSlideVariants : slideVariants}
+                  variants={slideVariants}
                   initial="enter"
                   animate="center"
                   exit="exit"
