@@ -68,20 +68,20 @@ const brandIcons = [
 function BrandIconStack() {
   return (
     <div className="flex items-center justify-center -space-x-2">
-      {brandIcons.map(({ key, label, available }) => (
+      {brandIcons.map(({ key, label, available }, i) => (
         <div
           key={key}
           title={available ? label : `${label} (coming soon)`}
-          className={`relative size-9 rounded-full bg-card border border-border flex items-center justify-center overflow-hidden transition-opacity ${available ? "opacity-100 z-10" : "opacity-30"}`}
-          style={{ zIndex: available ? 10 : undefined }}
+          style={{ zIndex: brandIcons.length - i }}
+          className={`relative size-9 rounded-full bg-accent border border-border flex items-center justify-center overflow-hidden transition-opacity ${available ? "opacity-100" : "bg-card"}`}
         >
           {key === "lastfm" && (
             <img src={LastFMLogo} alt="Last.fm" className="size-5 object-contain" />
           )}
-          {key === "spotify" && <SpotifyIcon className="size-5" />}
-          {key === "apple" && <AppleMusicIcon className="size-5" />}
-          {key === "deezer" && <DeezerIcon className="size-5" />}
-          {key === "tidal" && <TidalIcon className="size-5" />}
+          {key === "spotify" && <SpotifyIcon className={`size-5 ${available ? "" : ""}`} />}
+          {key === "apple" && <AppleMusicIcon className={`size-5 ${available ? "" : ""}`} />}
+          {key === "deezer" && <DeezerIcon className={`size-5 ${available ? "" : ""}`} />}
+          {key === "tidal" && <TidalIcon className={`size-5 ${available ? "" : ""}`} />}
         </div>
       ))}
     </div>
