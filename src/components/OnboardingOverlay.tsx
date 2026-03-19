@@ -324,7 +324,7 @@ function OnboardingOverlay({ onComplete, onCreateAccount }: OnboardingOverlayPro
           {/* Footer navigation */}
           <motion.div layout className="flex gap-2 pt-1 mt-auto">
               <AnimatePresence mode="popLayout">
-                {!isFirst && (
+                {!isLast && (
                   <motion.div
                     key="back-btn"
                     className="flex-1"
