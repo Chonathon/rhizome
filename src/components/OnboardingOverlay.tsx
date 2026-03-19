@@ -9,6 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Search, Telescope, BookOpen } from "lucide-react"
 import RhizomeLogo from "./RhizomeLogo"
 import LastFMLogo from "@/assets/Last.fm Logo.svg"
@@ -68,22 +69,33 @@ const brandIcons = [
 function BrandIconStack() {
   return (
     <div className="flex items-center justify-center -space-x-2">
-      {brandIcons.map(({ key, label, available }, i) => (
-        <div
-          key={key}
-          title={available ? label : `${label} (coming soon)`}
-          style={{ zIndex: brandIcons.length - i }}
-          className={`relative size-9 rounded-full bg-accent border border-border flex items-center justify-center overflow-hidden transition-opacity ${available ? "opacity-100" : "bg-card"}`}
-        >
-          {key === "lastfm" && (
-            <img src={LastFMLogo} alt="Last.fm" className="size-5 object-contain" />
-          )}
-          {key === "spotify" && <SpotifyIcon className={`size-5 ${available ? "" : ""}`} />}
-          {key === "apple" && <AppleMusicIcon className={`size-5 ${available ? "" : ""}`} />}
-          {key === "deezer" && <DeezerIcon className={`size-5 ${available ? "" : ""}`} />}
-          {key === "tidal" && <TidalIcon className={`size-5 ${available ? "" : ""}`} />}
-        </div>
-      ))}
+      {brandIcons.map(({ key, label, available }, i) => {
+        const icon = (
+          <div
+            style={{ zIndex: brandIcons.length - i }}
+            className={`relative size-9 rounded-full border border-border flex items-center justify-center overflow-hidden ${available ? "bg-accent" : "bg-card"}`}
+          >
+            {key === "lastfm" && (
+              <img src={LastFMLogo} alt="Last.fm" className="size-5 object-contain" />
+            )}
+            {key === "spotify" && <SpotifyIcon className={`size-5 ${available ? "" : "opacity-30"}`} />}
+            {key === "apple" && <AppleMusicIcon className={`size-5 ${available ? "" : "opacity-30"}`} />}
+            {key === "deezer" && <DeezerIcon className={`size-5 ${available ? "" : "opacity-30"}`} />}
+            {key === "tidal" && <TidalIcon className={`size-5 ${available ? "" : "opacity-30"}`} />}
+          </div>
+        )
+
+        if (!available) {
+          return (
+            <Tooltip key={key}>
+              <TooltipTrigger asChild>{icon}</TooltipTrigger>
+              <TooltipContent>{label} — coming soon</TooltipContent>
+            </Tooltip>
+          )
+        }
+
+        return <div key={key}>{icon}</div>
+      })}
     </div>
   )
 }
