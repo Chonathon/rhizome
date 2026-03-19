@@ -268,7 +268,7 @@ function AuthOverlay({ onSignUp, onSignInSocial, onSignIn, onForgotPassword, onL
   };
 
   const handleAuthSuccess = () => {
-    setOpen(false);
+    setMode("connect-lfm");
   };
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {

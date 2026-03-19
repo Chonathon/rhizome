@@ -2430,10 +2430,7 @@ function App() {
       } else {
         toast.info("You haven't added any artists yet!");
       }
-      if (localStorage.getItem('shownImportMusicNoti') !== 'true') {
-        localStorage.setItem('shownImportMusicNoti', 'true');
-        setTimeout(() => showNotiToast('import-music'), 1000);
-      }
+
     } else {
       const action: ContextAction = {type: 'viewCollection'};
       localStorage.setItem('unregisteredAction', JSON.stringify(action));

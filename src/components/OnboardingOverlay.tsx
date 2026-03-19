@@ -56,7 +56,7 @@ const SCREENS: Screen[] = [
         description: "Your saved artists, mapped. See how they connect and what's nearby.",
       },
     ],
-    video: "/videos/onboarding-explore.mp4",
+    video: "/videos/start-from-anywhere.mp4",
   },
   {
     id: "cta",
