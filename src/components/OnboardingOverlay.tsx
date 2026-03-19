@@ -29,32 +29,31 @@ const SCREENS: Screen[] = [
   {
     id: "hook",
     headline: "Your music has a shape.",
-    body: "Streaming platforms give you a list. Rhizome gives you a map — every genre, artist, and connection laid out so you can see your taste all at once.",
-    video: "/videos/onboarding-explore.mp4",
+    body: "Streaming platforms give you a list. Rhizome gives you a map. Every genre, artist, and connection, laid out so you can see your taste all at once.",
+    video: "/videos/artist-graph.mp4",
   },
   {
     id: "graph",
     headline: "Every node is a door.",
-    body: "Genres branch into subgenres and bleed into each other. Artists cluster by sound. At the edges, faint nodes mark artists just outside your world — click one to pull it in.",
-    video: "/videos/onboarding-explore.mp4",
+    body: "Genres branch into subgenres, cross-pollinate into fusions. Artists gravitate toward their neighbors. Click any node to go deeper.",
+    video: "/videos/the-graph.mp4",
   },
   {
     id: "modes",
     headline: "Start from anywhere.",
     modes: [
       {
-        name: "Collection",
+        name: "Search",
         description:
-          "Your artists, rooted at the center. Expand outward one connection at a time.",
+          "Look up any artist or genre and see the full context: genre tags, listener counts, similar artists, and more.",
       },
       {
         name: "Explore",
-        description:
-          "The full genre landscape, open and unmapped. Find your way in.",
+        description: "The full genre landscape, open for exploration.",
       },
       {
-        name: "Search",
-        description: "Go straight to any artist or genre by name.",
+        name: "Collection",
+        description: "Your saved artists, mapped. See how they connect and what's nearby.",
       },
     ],
     video: "/videos/onboarding-explore.mp4",
@@ -62,7 +61,7 @@ const SCREENS: Screen[] = [
   {
     id: "cta",
     headline: "Ready to explore?",
-    body: "Connect your Last.fm account to plant your collection in the graph — or jump straight in and start from scratch.",
+    body: "Create a Rhizome account to import your listening history and see your collection mapped in the graph, or jump straight in and start from scratch.",
     video: "/videos/onboarding-explore.mp4",
     isCTA: true,
   },
@@ -90,9 +89,10 @@ const videoVariants = {
 
 interface OnboardingOverlayProps {
   onComplete: () => void
+  onCreateAccount?: () => void
 }
 
-function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
+function OnboardingOverlay({ onComplete, onCreateAccount }: OnboardingOverlayProps) {
   const [open, setOpen] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [direction, setDirection] = useState(1)
@@ -203,6 +203,14 @@ function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
                       {screen.body}
                     </p>
                   )}
+                  {screen.isCTA && onCreateAccount && (
+                    <button
+                      onClick={onCreateAccount}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left mt-1"
+                    >
+                      Create account →
+                    </button>
+                  )}
                   {screen.modes && (
                     <div className="flex flex-col gap-1.5 mt-1">
                       {screen.modes.map((mode) => (
@@ -226,37 +234,37 @@ function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
 
           {/* Footer navigation */}
           <motion.div layout className="flex gap-2 pt-1">
-            <AnimatePresence mode="popLayout">
-              {!isFirst && (
-                <motion.div
-                  key="back-btn"
-                  className="flex-1"
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -8 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                >
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full"
-                    onClick={goBack}
+              <AnimatePresence mode="popLayout">
+                {!isFirst && (
+                  <motion.div
+                    key="back-btn"
+                    className="flex-1"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -8 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
                   >
-                    Back
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <motion.div layout className="flex-1">
-              <Button
-                size="lg"
-                className="w-full"
-                onClick={isLast ? handleClose : goNext}
-              >
-                {isLast ? "Start Exploring →" : "Next"}
-              </Button>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full"
+                      onClick={goBack}
+                    >
+                      Back
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <motion.div layout className="flex-1">
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={isLast ? handleClose : goNext}
+                >
+                  {isLast ? "Start Exploring" : "Next"}
+                </Button>
+              </motion.div>
             </motion.div>
-          </motion.div>
 
         </div>
       </DialogContent>
