@@ -1,192 +1,90 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Waypoints, Disc3, Sparkles } from "lucide-react"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import RhizomeLogo from "./RhizomeLogo"
 
-const fadeTransition = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
-  transition: { duration: 0.2, ease: "easeOut" as const },
+type ScreenMode = {
+  name: string
+  description: string
 }
 
-// --- Step Components ---
+type Screen = {
+  id: string
+  headline: string
+  body?: string
+  modes?: ScreenMode[]
+  video: string
+  isCTA?: boolean
+}
 
-const WELCOME_FEATURES = [
+const SCREENS: Screen[] = [
   {
-    icon: Waypoints,
-    title: "Explore Your Graph",
-    description:
-      "Your collection comes to life as an interactive force-graph. See how genres, artists, and their relationships connect.",
+    id: "hook",
+    headline: "Your music has a shape.",
+    body: "Streaming platforms give you a list. Rhizome gives you a map — every genre, artist, and connection laid out so you can see your taste all at once.",
     video: "/videos/onboarding-explore.mp4",
   },
   {
-    icon: Disc3,
-    title: "Build Your Collection",
-    description:
-      "Add genres to your collection and discover the artists within them. Your graph grows with every addition.",
+    id: "graph",
+    headline: "Every node is a door.",
+    body: "Genres branch into subgenres and bleed into each other. Artists cluster by sound. At the edges, faint nodes mark artists just outside your world — click one to pull it in.",
     video: "/videos/onboarding-explore.mp4",
   },
   {
-    icon: Sparkles,
-    title: "Discover New Music",
-    description:
-      "Follow the connections between artists and genres to find music you never knew you'd love.",
+    id: "modes",
+    headline: "Start from anywhere.",
+    modes: [
+      {
+        name: "Collection",
+        description:
+          "Your artists, rooted at the center. Expand outward one connection at a time.",
+      },
+      {
+        name: "Explore",
+        description:
+          "The full genre landscape, open and unmapped. Find your way in.",
+      },
+      {
+        name: "Search",
+        description: "Go straight to any artist or genre by name.",
+      },
+    ],
     video: "/videos/onboarding-explore.mp4",
+  },
+  {
+    id: "cta",
+    headline: "Ready to explore?",
+    body: "Connect your Last.fm account to plant your collection in the graph — or jump straight in and start from scratch.",
+    video: "/videos/onboarding-explore.mp4",
+    isCTA: true,
   },
 ]
 
-function WelcomeStep({
-  onNext,
-  onSkip,
-}: {
-  onNext: () => void
-  onSkip: () => void
-}) {
-  const [activeIndex, setActiveIndex] = useState(0)
-  const activeFeature = WELCOME_FEATURES[activeIndex]
-  const featureRefs = useRef<(HTMLButtonElement | null)[]>([])
-
-  useEffect(() => {
-    featureRefs.current[activeIndex]?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-      inline: "center",
-    })
-  }, [activeIndex])
-
-  const handleNext = () => {
-    if (activeIndex < WELCOME_FEATURES.length - 1) {
-      setActiveIndex(activeIndex + 1)
-    } else {
-      onNext()
-    }
-  }
-
-  const isLastFeature = activeIndex === WELCOME_FEATURES.length - 1
-
-  return (
-    <div className="flex flex-col gap-4 h-full">
-      <DialogHeader>
-        <div>
-          <RhizomeLogo animated className="mx-auto mb-2 h-11 sm:h-14 w-auto" />
-        </div>
-        <DialogTitle className="text-2xl sm:text-3xl text-center">
-          Welcome to Rhizome
-        </DialogTitle>
-        <DialogDescription className="text-md text-center">
-          A living map of artists, genres, and connections you never noticed.
-        </DialogDescription>
-      </DialogHeader>
-
-      {/* Horizontal scrolling feature cards */}
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 md:mx-0 md:px-0 md:justify-center snap-x snap-mandatory">
-        {WELCOME_FEATURES.map((feature, index) => {
-          const isActive = index === activeIndex
-          return (
-            <button
-              ref={(el) => { featureRefs.current[index] = el }}
-              key={feature.title}
-              type="button"
-              onClick={() => setActiveIndex(index)}
-              className={`flex gap-2 items-center p-3 rounded-xl text-left shrink-0 snap-center transition-all duration-200 ${
-                isActive
-                  ? "bg-accent dark:bg-accent/50 border border-primary/40 shadow-sm"
-                  : "border border-transparent hover:bg-accent/50"
-              }`}
-            >
-              <feature.icon
-                className={`size-4 shrink-0 transition-colors duration-200 ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
-              />
-              <p
-                className={`font-medium text-sm whitespace-nowrap transition-colors duration-200 ${
-                  isActive ? "text-foreground" : "text-muted-foreground"
-                }`}
-              >
-                {feature.title}
-              </p>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Video + description */}
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-start">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeFeature.video}
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="max-w-2xl w-full max-h-full rounded-2xl overflow-hidden border border-muted"
-          >
-            <video
-              key={activeFeature.video}
-              src={activeFeature.video}
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="w-full h-auto block"
-            />
-          </motion.div>
-        </AnimatePresence>
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={activeIndex}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="text-sm text-muted-foreground text-center mt-4 max-w-2xl min-h-[2lh]"
-          >
-            {activeFeature.description}
-          </motion.p>
-        </AnimatePresence>
-      </div>
-
-      <motion.div layout className="flex w-full gap-2 mt-6">
-        <AnimatePresence mode="popLayout">
-          {!isLastFeature &&
-          <motion.div className="flex-1"
-          key="skip-btn"
-          initial={{ opacity: 0}}
-          animate={{ opacity: 1}}
-          exit={{ opacity: 0}}
-          transition={{ duration: .2, ease: "easeOut" }}>
-             <Button
-              variant="outline"
-              size="lg"
-              className="w-full"
-              onClick={onSkip}
-            >
-              Skip
-            </Button>
-          </motion.div>}
-        </AnimatePresence>
-        <motion.div layout className="flex-1">
-          <Button size="lg" className="w-full" onClick={handleNext}>
-            {isLastFeature ? "Start Exploring" : "Next"}
-          </Button>
-        </motion.div>
-      </motion.div>
-    </div>
-  )
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 32 : -32,
+    opacity: 0,
+  }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -32 : 32,
+    opacity: 0,
+  }),
 }
 
+const videoVariants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1 },
+  exit: { opacity: 0 },
+}
 
 // --- Main Component ---
 
@@ -196,6 +94,8 @@ interface OnboardingOverlayProps {
 
 function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
   const [open, setOpen] = useState(false)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [direction, setDirection] = useState(1)
 
   useEffect(() => {
     const handleOpen = () => {
@@ -213,25 +113,152 @@ function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
   }
 
   const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      handleClose()
-    }
+    if (!nextOpen) handleClose()
   }
+
+  const goNext = () => {
+    setDirection(1)
+    setCurrentIndex((i) => i + 1)
+  }
+
+  const goBack = () => {
+    setDirection(-1)
+    setCurrentIndex((i) => i - 1)
+  }
+
+  const screen = SCREENS[currentIndex]
+  const isFirst = currentIndex === 0
+  const isLast = currentIndex === SCREENS.length - 1
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        className="bg-card h-[calc(100dvh-3rem)] sm:max-h-[calc(100dvh-8rem)] overflow-y-auto sm:max-w-2xl h-auto flex flex-col data-[state=open]:duration-600 data-[state=close]:duration-200"
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key="welcome"
-            {...fadeTransition}
-            className="flex-1 min-h-0"
-          >
-            <WelcomeStep onNext={handleClose} onSkip={handleClose} />
+      <DialogContent className="bg-card p-0 overflow-hidden sm:max-w-lg flex flex-col gap-0 data-[state=open]:duration-600 data-[state=close]:duration-200">
+        <DialogTitle className="sr-only">Rhizome Onboarding</DialogTitle>
+        <DialogDescription className="sr-only">
+          Introduction to Rhizome
+        </DialogDescription>
+
+        {/* Video hero — full-bleed, flush to top/sides */}
+        <div className="relative w-full aspect-video bg-muted shrink-0 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.video
+              key={screen.id}
+              src={screen.video}
+              autoPlay
+              muted
+              loop
+              playsInline
+              variants={videoVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </AnimatePresence>
+          {/* Bottom vignette blending video into card bg */}
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+        </div>
+
+        {/* Content area */}
+        <div className="flex flex-col gap-4 px-5 pt-3 pb-5">
+
+          {/* Logo + progress */}
+          <div className="flex items-center justify-between">
+            <RhizomeLogo animated className="h-9 sm:h-11 w-auto" />
+            <div className="flex gap-1.5 items-center">
+              {SCREENS.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1 rounded-full transition-all duration-300 ${
+                    i === currentIndex
+                      ? "w-5 bg-primary"
+                      : i < currentIndex
+                        ? "w-1 bg-primary/50"
+                        : "w-1 bg-muted-foreground/20"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Slide content */}
+          <div className="overflow-hidden relative">
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={screen.id}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="flex flex-col gap-2"
+              >
+                <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
+                  {screen.headline}
+                </h2>
+                {screen.body && (
+                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                    {screen.body}
+                  </p>
+                )}
+                {screen.modes && (
+                  <div className="flex flex-col gap-1.5 mt-1">
+                    {screen.modes.map((mode) => (
+                      <div
+                        key={mode.name}
+                        className="flex gap-2 items-baseline px-3 py-2.5 rounded-lg bg-accent/50 border border-muted/60"
+                      >
+                        <span className="font-medium text-sm shrink-0 text-foreground">
+                          {mode.name} —
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {mode.description}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Footer navigation */}
+          <motion.div layout className="flex gap-2 pt-1">
+            <AnimatePresence mode="popLayout">
+              {!isFirst && (
+                <motion.div
+                  key="back-btn"
+                  className="flex-1"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -8 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                >
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full"
+                    onClick={goBack}
+                  >
+                    Back
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <motion.div layout className="flex-1">
+              <Button
+                size="lg"
+                className="w-full"
+                onClick={isLast ? handleClose : goNext}
+              >
+                {isLast ? "Start Exploring →" : "Next"}
+              </Button>
+            </motion.div>
           </motion.div>
-        </AnimatePresence>
+
+        </div>
       </DialogContent>
     </Dialog>
   )
