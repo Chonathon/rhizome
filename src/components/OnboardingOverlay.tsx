@@ -99,7 +99,7 @@ function OnboardingOverlay({ onComplete, onCreateAccount }: OnboardingOverlayPro
 
   useEffect(() => {
     const handleOpen = () => {
-      setTimeout(() => setOpen(true), 2000)
+      setTimeout(() => setOpen(true), 3000)
     }
     window.addEventListener("onboarding:open", handleOpen)
     return () => {
@@ -205,8 +205,8 @@ function OnboardingOverlay({ onComplete, onCreateAccount }: OnboardingOverlayPro
                   )}
                   {screen.isCTA && (
                     <Button
-                    variant={'link'}
-                      onClick={onCreateAccount}
+                      variant="link"
+                      onClick={() => { handleClose(); onCreateAccount?.() }}
                       className="w-auto self-start"
                     >
                       Create account →

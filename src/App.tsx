@@ -3096,6 +3096,7 @@ function App() {
       />
       <OnboardingOverlay
         onComplete={setOnboardingCompleted}
+        onCreateAccount={() => window.dispatchEvent(new Event('auth:open'))}
       />
       <FeedbackOverlay
         onSubmit={submitFeedback}
