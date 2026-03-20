@@ -214,7 +214,7 @@ function OnboardingOverlay({ onComplete, onCreateAccount }: OnboardingOverlayPro
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="bg-card p-0 overflow-hidden sm:max-w-lg flex flex-col gap-0 min-h-[43rem] data-[state=open]:duration-600 data-[state=close]:duration-200">
+      <DialogContent className="bg-card p-0 overflow-hidden sm:max-w-lg flex flex-col gap-0 min-h-[46rem] data-[state=open]:duration-600 data-[state=close]:duration-200">
         <DialogTitle className="sr-only">Rhizome Onboarding</DialogTitle>
         <DialogDescription className="sr-only">
           Introduction to Rhizome
