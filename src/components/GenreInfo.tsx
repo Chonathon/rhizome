@@ -3,7 +3,7 @@ import {fixWikiImageURL, formatNumber, clientUrl} from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
 import useArtists from "@/hooks/useArtists";
-import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info, CirclePlay, Loader2, ChevronDown, Disc3, Link, Check } from 'lucide-react';
+import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info, CirclePlay, Loader2, ChevronDown, Disc3, Link, Check, Ellipsis } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge} from './ui/badge';
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
@@ -498,15 +498,29 @@ export function GenreInfo({
                       >
                         <SquareArrowUp size={24}/>All Artists
                       </Button>
-                      <Button
-                        onClick={handleCopyUrl}
-                        variant="outline"
-                        size="icon"
-                        className={isDesktop ? '' : 'flex-1'}
-                      >
-                        {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
-                        {/* {isDesktop && (copied ? 'Copied!' : 'Share')} */}
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0"
+                            title="More options"
+                          >
+                            <Ellipsis className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={handleCopyUrl}>
+                            {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+                            Copy link
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setReportDialogOpen(true)}>
+                            <Flag className="h-4 w-4" />
+                            Report incorrect info
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                     {isDesktop && (
                       <button className='text-left'
@@ -683,12 +697,6 @@ export function GenreInfo({
                   </AlertDescription>
                 </Alert>
               )}
-              <div className='w-full pt-8 flex items-end'>
-                <Button className='self-start' variant={'link'} size={'lg'} onClick={() => setReportDialogOpen(true)}>
-                  <Flag />Report Incorrect Information
-                </Button>
-              </div>
-
               {/* Report Incorrect Info Dialog */}
               <ReportIncorrectInfoDialog
                 open={reportDialogOpen}

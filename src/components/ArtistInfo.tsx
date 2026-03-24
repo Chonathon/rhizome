@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber, clientUrl } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, EyeOff, Disc3, Link, Check } from "lucide-react";
+import { CirclePlay, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, EyeOff, Disc3, Link, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -380,44 +380,29 @@ export function ArtistInfo({
                               onToggle={() => onArtistToggle(selectedArtist?.id)}
                               isInCollection={isInCollection}
                             />
-                           <Button
-                             onClick={handleCopyUrl}
-                             variant="outline"
-                             size={isDesktop ? 'icon' : 'icon'}
-                             className={isDesktop ? '' : 'flex-1'}
-                           >
-                             {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
-                           </Button>
-                           {/* <Button
-                              size={isDesktop ? "lg" : "xl"}
-                              variant="secondary"
-                              onClick={() => window.dispatchEvent(new Event('auth:open'))}
-                              className={isDesktop ? 'self-start' : 'flex-1'}
-                                                >
-                              <SquarePlus size={24}/>Add
-                            </Button> */}
-
-                       {/* <DropdownMenu>
-                         <DropdownMenuTrigger asChild>
-                           <Button
-                              size={isDesktop ? "lg" : "xl"}
-                              variant="secondary"
-                              // onClick={() => selectedArtist && allArtists(selectedArtist)}
-                              className={isDesktop ? 'self-start' : 'flex-1'}
-                              >
-                              <Ellipsis size={24}/>More
-                            </Button>
-                         </DropdownMenuTrigger>
-                         <DropdownMenuContent>
-                            <DropdownMenuItem
-                              onSelect={() => {
-                                onViewArtistGraph
-                              }}
-                            >
-                              View Genres
-                            </DropdownMenuItem>
-                         </DropdownMenuContent>
-                       </DropdownMenu> */}
+                           <DropdownMenu>
+                             <DropdownMenuTrigger asChild>
+                               <Button
+                                 variant="outline"
+                                 size={`${isDesktop ? 'lg' : 'xl'}`}
+                                 className="shrink-0"
+                                 title="More options"
+                               >
+                                 <Ellipsis className="h-4 w-4" />
+                               </Button>
+                             </DropdownMenuTrigger>
+                             <DropdownMenuContent align="end">
+                               <DropdownMenuItem onClick={handleCopyUrl}>
+                                 {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+                                 Copy link
+                               </DropdownMenuItem>
+                               <DropdownMenuSeparator />
+                               <DropdownMenuItem onClick={() => setReportDialogOpen(true)}>
+                                 <Flag className="h-4 w-4" />
+                                 Report incorrect info
+                               </DropdownMenuItem>
+                             </DropdownMenuContent>
+                           </DropdownMenu>
                      </div>
                 {/* Description */}
                 {isDesktop && (
@@ -618,12 +603,6 @@ export function ArtistInfo({
                     <AlertDescription>Hmm… something about this artist's info doesn't sound quite right. We're checking it out</AlertDescription>
                   </Alert>
               )}
-              <div className='w-full pt-8 flex items-end'>
-                <Button className='self-start' variant={'link'} size={'lg'} onClick={() => setReportDialogOpen(true)}>
-                  <Flag />Report Incorrect Information
-                </Button>
-              </div>
-
               {/* Report Incorrect Info Dialog */}
               <ReportIncorrectInfoDialog
                 open={reportDialogOpen}
