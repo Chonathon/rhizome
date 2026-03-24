@@ -1,13 +1,29 @@
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Share2, Download } from "lucide-react"
+import { Share2, Download, Link, Check } from "lucide-react"
 import { ResponsivePanel } from "@/components/ResponsivePanel"
+import { toast } from "sonner"
+import { clientUrl } from "@/lib/utils"
 
 interface SharePanelProps {
     onExport?: () => void;
 }
 
 export default function SharePanel({ onExport }: SharePanelProps) {
+    const [copied, setCopied] = useState(false);
     const feildsetStyles = "flex flex-col gap-3 p-3 rounded-2xl bg-accent dark:bg-accent/50 border-accent border"
+
+    const handleCopyUrl = async () => {
+        const shareUrl = clientUrl() + window.location.search;
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            setCopied(true);
+            toast.success("Link copied to clipboard");
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            toast.error("Failed to copy link");
+        }
+    };
 
     return (
         <ResponsivePanel
@@ -26,6 +42,26 @@ export default function SharePanel({ onExport }: SharePanelProps) {
                 <Button variant="ghost" size="icon" className="size-10" />
             </div>
             <div className="flex flex-col gap-2">
+                {/* Share URL Section */}
+                <div className={feildsetStyles}>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">
+                            Share Link
+                        </span>
+                        <span className="text-sm text-muted-foreground mt-1">
+                            Copy a link to your current view to share with others
+                        </span>
+                    </div>
+                    <Button
+                        onClick={handleCopyUrl}
+                        variant="outline"
+                        className="w-full flex items-center justify-center gap-2"
+                    >
+                        {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+                        {copied ? "Copied!" : "Copy Link"}
+                    </Button>
+                </div>
+
                 {/* Export Section */}
                 <div className={feildsetStyles}>
                     <div className="flex flex-col gap-1">

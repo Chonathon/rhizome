@@ -1,9 +1,9 @@
 import { BasicNode, Genre, Artist, TopTrack } from '@/types'
-import {fixWikiImageURL, formatNumber} from '@/lib/utils'
+import {fixWikiImageURL, formatNumber, clientUrl} from '@/lib/utils'
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from './ui/button';
 import useArtists from "@/hooks/useArtists";
-import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info, CirclePlay, Loader2, ChevronDown, Disc3 } from 'lucide-react';
+import { SquareArrowUp, ChevronLeft, ChevronRight, Flag, Info, CirclePlay, Loader2, ChevronDown, Disc3, Link, Check } from 'lucide-react';
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { Badge} from './ui/badge';
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
@@ -83,6 +83,7 @@ export function GenreInfo({
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string; artist: Artist } | null>(null)
+  const [copied, setCopied] = useState(false)
   const [previewModeEnabled, setPreviewModeEnabled] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('previewModeEnabled') === 'true';
@@ -209,6 +210,18 @@ export function GenreInfo({
       }
     }
   }
+
+  const handleCopyUrl = async () => {
+    const shareUrl = clientUrl() + window.location.search;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      toast.success("Link copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
 
   // Reset carousel scroll position when a new genre is selected
   useEffect(() => {
@@ -484,6 +497,15 @@ export function GenreInfo({
                         className={isDesktop ? 'self-start' : 'flex-1 min-w-0'}
                       >
                         <SquareArrowUp size={24}/>All Artists
+                      </Button>
+                      <Button
+                        onClick={handleCopyUrl}
+                        variant="outline"
+                        size="icon"
+                        className={isDesktop ? '' : 'flex-1'}
+                      >
+                        {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
+                        {/* {isDesktop && (copied ? 'Copied!' : 'Share')} */}
                       </Button>
                     </div>
                     {isDesktop && (
