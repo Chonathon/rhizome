@@ -383,12 +383,12 @@ export function ArtistInfo({
                            <DropdownMenu>
                              <DropdownMenuTrigger asChild>
                                <Button
-                                 variant="outline"
+                                 variant={`${isDesktop ? 'secondary' : 'secondary'}`}
                                  size={`${isDesktop ? 'lg' : 'xl'}`}
-                                 className="shrink-0"
+                                 className={`"shrink-0 flex-1 ${isDesktop ? '' : ''}}`}
                                  title="More options"
-                               >
-                                 <Ellipsis className="h-4 w-4" />
+                               > <Ellipsis className="h-4 w-4" />
+                               {`${isDesktop ? '' : 'More'}`}  
                                </Button>
                              </DropdownMenuTrigger>
                              <DropdownMenuContent align="end">

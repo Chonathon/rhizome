@@ -21,7 +21,7 @@ export function AddButton({ isInCollection, onToggle, isDesktop, className, logg
       isActive={isInCollection}
       onToggle={onToggle}
       activeLabel="Added"
-      inactiveLabel="Add to Collection"
+      inactiveLabel={`${isDesktop ? "Add to Collection" : "Add"}`}
       activeIcon={<BookOpen />}
       inactiveIcon={<PlusSquare />}
       className={className || (isDesktop ? "px-4 self-start" : "px-4 flex-1")}

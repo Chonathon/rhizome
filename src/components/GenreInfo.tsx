@@ -501,12 +501,13 @@ export function GenreInfo({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
-                            variant="outline"
-                            size="icon"
-                            className="shrink-0"
+                            variant={`${isDesktop ? 'secondary' : 'secondary'}`}
+                            size={`${isDesktop ? 'lg' : 'xl'}`}
+                            className={`"shrink-0 flex-1 ${isDesktop ? '' : ''}}`}
                             title="More options"
                           >
                             <Ellipsis className="h-4 w-4" />
+                            {`${isDesktop ? '' : 'More'}`}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
