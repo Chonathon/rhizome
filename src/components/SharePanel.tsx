@@ -42,26 +42,6 @@ export default function SharePanel({ onExport }: SharePanelProps) {
                 <Button variant="ghost" size="icon" className="size-10" />
             </div>
             <div className="flex flex-col gap-2">
-                {/* Share URL Section */}
-                <div className={feildsetStyles}>
-                    <div className="flex flex-col gap-1">
-                        <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">
-                            Share Link
-                        </span>
-                        <span className="text-sm text-muted-foreground mt-1">
-                            Copy a link to your current view to share with others
-                        </span>
-                    </div>
-                    <Button
-                        onClick={handleCopyUrl}
-                        variant="outline"
-                        className="w-full flex items-center justify-center gap-2"
-                    >
-                        {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
-                        {copied ? "Copied!" : "Copy Link"}
-                    </Button>
-                </div>
-
                 {/* Export Section */}
                 <div className={feildsetStyles}>
                     <div className="flex flex-col gap-1">
