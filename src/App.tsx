@@ -1,6 +1,6 @@
 import './App.css'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, Settings, X } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Divide, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -384,7 +384,7 @@ function App() {
   }, [genres]);
 
   // URL State: Open/close drawers from URL (initial load + browser back/forward)
-  const { updateUrl } = useUrlState({
+  const { updateUrl, canGoBack, canGoForward, goBack, goForward } = useUrlState({
     findGenreBySlug,
     fetchArtistById: (id) => fetchSingleArtist(id, false),
     onGenreFromUrl: (genre) => {
@@ -2555,7 +2555,7 @@ function App() {
               layout
               transition={{ layout: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } }}
               className={
-                "fixed top-0 left-0 z-70 pt-3 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
+                "fixed top-0 left-0 z-70 pt-3 pl-3 flex justify-left flex-col items-start sm:flex-row gap-3"
               }
               style={{ left: "var(--sidebar-gap)" }}
             >
@@ -2588,25 +2588,48 @@ function App() {
                   }
               /> */}
               <AnimatePresence initial={false} mode="popLayout">
+                <div className="flex flex-col md sm:flex-row items-start gap-3">
+                {!isMobile &&
+                <div className="flex gap-1">
+                   <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={goBack}
+                  disabled={!canGoBack}
+                  aria-label="Go back"
+                  >
+                  <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={goForward}
+                  disabled={!canGoForward}
+                  aria-label="Go forward"
+                  >
+                  <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>}
                 {!collectionMode && (
                   <motion.div
-                    key="tabs"
-                    layout
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  key="tabs"
+                  layout
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <Tabs
-                      value={graph === 'similarArtists' ? 'artists' : graph}
-                      onValueChange={(val) => onTabChange(val as GraphType)}>
-                        <TabsList>
-                          <TabsTrigger value="genres">Genres</TabsTrigger>
-                          <TabsTrigger value="artists">Artists</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
+                  <Tabs
+                    value={graph === 'similarArtists' ? 'artists' : graph}
+                    onValueChange={(val) => onTabChange(val as GraphType)}>
+                    <TabsList>
+                      <TabsTrigger value="genres">Genres</TabsTrigger>
+                      <TabsTrigger value="artists">Artists</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                   </motion.div>
                 )}
+                </div>
               </AnimatePresence>
               <AnimatePresence initial={false} mode="popLayout">
                 {graph === 'similarArtists' && similarArtistAnchor && (
