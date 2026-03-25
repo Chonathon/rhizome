@@ -32,6 +32,14 @@ export interface UrlStateResult {
 }
 
 /**
+ * historyIndex is stored in window.history.state so it survives page refreshes.
+ * On refresh, the browser restores the current history entry's state, so we can
+ * read the index back from there.
+ */
+const getStoredHistoryIndex = (): number =>
+  window.history.state?.historyIndex ?? 0;
+
+/**
  * Syncs artist/genre drawer state to the URL via `window.history.pushState`.
  * Handles initial page load and browser back/forward (popstate).
  *
@@ -58,11 +66,11 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const prevArtistSlug = useRef<string | null>(null);
   const initialLoadProcessed = useRef(false);
 
-  // Tracks position within the history entries pushed by this app.
-  // Index 0 = the page the user first landed on.
-  const historyIndex = useRef(0);
+  // historyIndex is seeded from window.history.state on every mount (survives refresh).
+  // forwardCount cannot be reliably restored after a refresh — reset to 0.
+  const historyIndex = useRef(getStoredHistoryIndex());
   const forwardCount = useRef(0);
-  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(() => historyIndex.current > 0);
   const [canGoForward, setCanGoForward] = useState(false);
 
   const { genresLoaded } = options;
@@ -103,18 +111,37 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     processUrlParams(params.get('genre'), params.get('artist'));
   }, [genresLoaded, processUrlParams]);
 
-  // Browser back/forward: popstate listener reads directly from window.location
+  // Browser back/forward: popstate listener reads directly from window.location.
+  // Also syncs historyIndex from event.state so native nav keeps canGoBack/canGoForward accurate.
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
       if (!callbacksRef.current.genresLoaded) return;
+
       const params = new URLSearchParams(window.location.search);
       processUrlParams(params.get('genre'), params.get('artist'));
+
+      // Sync history index from the restored history entry's state.
+      const newIndex: number = event.state?.historyIndex ?? 0;
+      const prevIndex = historyIndex.current;
+
+      if (newIndex < prevIndex) {
+        // navigated back — accumulate forward entries
+        forwardCount.current += prevIndex - newIndex;
+      } else if (newIndex > prevIndex) {
+        // navigated forward — consume forward entries
+        forwardCount.current = Math.max(0, forwardCount.current - (newIndex - prevIndex));
+      }
+
+      historyIndex.current = newIndex;
+      setCanGoBack(newIndex > 0);
+      setCanGoForward(forwardCount.current > 0);
     };
+
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [processUrlParams]);
 
-  // App → URL: pushState directly — no React re-render, no router navigation
+  // App → URL: pushState with historyIndex embedded in state so it survives refresh.
   const updateUrl = useCallback((entity: UrlEntity) => {
     const params = new URLSearchParams(window.location.search);
 
@@ -136,9 +163,11 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     const newUrl = search
       ? `${window.location.pathname}?${search}`
       : window.location.pathname;
-    window.history.pushState(null, '', newUrl);
 
-    historyIndex.current++;
+    const newIndex = historyIndex.current + 1;
+    window.history.pushState({ historyIndex: newIndex }, '', newUrl);
+
+    historyIndex.current = newIndex;
     forwardCount.current = 0;
     setCanGoBack(true);
     setCanGoForward(false);
@@ -147,15 +176,18 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const goBack = useCallback(() => {
     if (historyIndex.current <= 0) return;
     window.history.back();
-    historyIndex.current--;
+    // Optimistically update for immediate UI feedback; popstate will confirm.
+    const newIndex = historyIndex.current - 1;
+    historyIndex.current = newIndex;
     forwardCount.current++;
-    setCanGoBack(historyIndex.current > 0);
+    setCanGoBack(newIndex > 0);
     setCanGoForward(true);
   }, []);
 
   const goForward = useCallback(() => {
     if (forwardCount.current <= 0) return;
     window.history.forward();
+    // Optimistically update for immediate UI feedback; popstate will confirm.
     historyIndex.current++;
     forwardCount.current--;
     setCanGoBack(true);
