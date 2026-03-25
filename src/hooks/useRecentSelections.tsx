@@ -2,28 +2,43 @@ import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, 
 import { BasicNode } from "@/types";
 
 const LOCAL_STORAGE_KEY = 'recentSelections';
-const MAX_RECENT_SELECTIONS = 10;
+const MAX_RECENT_SELECTIONS = 50;
+
+export type RecentSelectionItem = BasicNode & {
+  nodeType: 'artist' | 'genre';
+  timestamp: number;
+};
 
 type RecentSelectionsContextValue = {
-  recentSelections: BasicNode[];
-  addRecentSelection: (selection: BasicNode) => void;
+  recentSelections: RecentSelectionItem[];
+  addRecentSelection: (selection: BasicNode, nodeType: 'artist' | 'genre') => void;
   removeRecentSelection: (id: string) => void;
 };
 
 const RecentSelectionsContext = createContext<RecentSelectionsContextValue | undefined>(undefined);
 
-const isBasicNode = (value: unknown): value is BasicNode => {
+const isRecentSelectionItem = (value: unknown): value is RecentSelectionItem => {
   if (!value || typeof value !== 'object') return false;
-  const node = value as BasicNode;
+  const node = value as RecentSelectionItem;
   return typeof node.id === 'string' && typeof node.name === 'string';
 };
 
-const parseStoredSelections = (raw: string | null): BasicNode[] => {
+const migrateItem = (value: unknown): RecentSelectionItem | null => {
+  if (!isRecentSelectionItem(value)) return null;
+  const item = value as RecentSelectionItem;
+  return {
+    ...item,
+    nodeType: item.nodeType ?? 'artist',
+    timestamp: item.timestamp ?? Date.now(),
+  };
+};
+
+const parseStoredSelections = (raw: string | null): RecentSelectionItem[] => {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isBasicNode);
+    return parsed.map(migrateItem).filter((x): x is RecentSelectionItem => x !== null);
   } catch (error) {
     console.error("Failed to parse recent selections from localStorage", error);
     return [];
@@ -31,7 +46,7 @@ const parseStoredSelections = (raw: string | null): BasicNode[] => {
 };
 
 export function RecentSelectionsProvider({ children }: { children: ReactNode }) {
-  const [recentSelections, setRecentSelections] = useState<BasicNode[]>(() => {
+  const [recentSelections, setRecentSelections] = useState<RecentSelectionItem[]>(() => {
     if (typeof window === 'undefined') return [];
     return parseStoredSelections(localStorage.getItem(LOCAL_STORAGE_KEY));
   });
@@ -62,15 +77,16 @@ export function RecentSelectionsProvider({ children }: { children: ReactNode }) 
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  const addRecentSelection = useCallback((selection: BasicNode) => {
-    setRecentSelections((prevSelections) => {
-      const merged = [selection, ...prevSelections.filter((item) => item.id !== selection.id)];
+  const addRecentSelection = useCallback((selection: BasicNode, nodeType: 'artist' | 'genre') => {
+    setRecentSelections((prev) => {
+      const item: RecentSelectionItem = { ...selection, nodeType, timestamp: Date.now() };
+      const merged = [item, ...prev.filter((s) => s.id !== selection.id)];
       return merged.slice(0, MAX_RECENT_SELECTIONS);
     });
   }, []);
 
   const removeRecentSelection = useCallback((id: string) => {
-    setRecentSelections((prevSelections) => prevSelections.filter((item) => item.id !== id));
+    setRecentSelections((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
   const value = useMemo(

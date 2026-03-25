@@ -180,7 +180,7 @@ export function Search({
     } else {
       onArtistSelect(selection as Artist);
     }
-    addRecentSelection(selection);
+    addRecentSelection(selection, isGenre(selection) ? 'genre' : 'artist');
     setOpen(false);
   }
   // Checks which modifier keys are held and performs the appropriate action
@@ -194,7 +194,7 @@ export function Search({
       } else if (!isGenreItem && onArtistGoTo) {
         onArtistGoTo(item as Artist);
       }
-      addRecentSelection(item);
+      addRecentSelection(item, isGenre(item) ? 'genre' : 'artist');
       setOpen(false);
     }
     // Alt + Click: View Similar
@@ -204,7 +204,7 @@ export function Search({
       } else if (!isGenreItem && onArtistViewSimilar) {
         onArtistViewSimilar(item as Artist);
       }
-      addRecentSelection(item);
+      addRecentSelection(item, isGenre(item) ? 'genre' : 'artist');
       setOpen(false);
     }
     // Shift + Click: Play
@@ -214,7 +214,7 @@ export function Search({
       } else if (!isGenreItem && onArtistPlay) {
         onArtistPlay(item as Artist);
       }
-      addRecentSelection(item);
+      addRecentSelection(item, isGenre(item) ? 'genre' : 'artist');
       setOpen(false);
     }
     // No modifiers: Default select
@@ -314,7 +314,7 @@ export function Search({
       } else if (!isGenreItem && onArtistGoTo) {
         onArtistGoTo(selectedItem as Artist);
       }
-      addRecentSelection(selectedItem);
+      addRecentSelection(selectedItem, isGenre(selectedItem) ? 'genre' : 'artist');
       setOpen(false);
     }
     // Alt + Enter: View Similar
@@ -324,7 +324,7 @@ export function Search({
       } else if (!isGenreItem && onArtistViewSimilar) {
         onArtistViewSimilar(selectedItem as Artist);
       }
-      addRecentSelection(selectedItem);
+      addRecentSelection(selectedItem, isGenre(selectedItem) ? 'genre' : 'artist');
       setOpen(false);
     }
     // Shift + Enter: Play
@@ -334,7 +334,7 @@ export function Search({
       } else if (!isGenreItem && onArtistPlay) {
         onArtistPlay(selectedItem as Artist);
       }
-      addRecentSelection(selectedItem);
+      addRecentSelection(selectedItem, isGenre(selectedItem) ? 'genre' : 'artist');
       setOpen(false);
     }
   };

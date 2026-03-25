@@ -13,6 +13,8 @@ import React, { useCallback, useRef } from "react"
 import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog } from "lucide-react"
 import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
 import { Genre, GraphType } from "@/types"
+import { RecentsPopover } from "@/components/RecentsPopover"
+import { RecentSelectionItem } from "@/hooks/useRecentSelections"
 import RhizomeLogo from "@/components/RhizomeLogo"
 import { useSidebar } from "@/components/ui/sidebar"
 import MobileAppBar from "@/components/MobileAppBar"
@@ -44,6 +46,7 @@ interface AppSidebarProps {
   resetAppState: () => void;
   onCollectionClick: () => void;
   onExploreClick: () => void;
+  onRecentsSelect: (item: RecentSelectionItem) => void;
   signedInUser: boolean;
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
@@ -77,6 +80,7 @@ export function AppSidebar({
   onLoginClick,
   onCollectionClick,
   onExploreClick,
+  onRecentsSelect,
   isCollectionMode,
   searchOpen,
   playerOpen,
@@ -161,6 +165,10 @@ export function AppSidebar({
                         <span className="truncate">Collection</span>
                       </button>
                     </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <RecentsPopover onItemSelect={onRecentsSelect} isCollapsed={isCollapsed} />
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroup>
