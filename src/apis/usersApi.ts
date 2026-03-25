@@ -46,7 +46,7 @@ export const lastFMRemove = async (userID: string, removeArtists: boolean) => {
     return response.status === 200;
 }
 
-export const lastFMRefresh = async (userID: string) => {
-    const response = await axios.put(`${url}/users/lastfm/sync/${userID}/true`);
+export const lastFMRefresh = async (userID: string, force = true) => {
+    const response = await axios.put(`${url}/users/lastfm/sync/${userID}/${force}`);
     return response.status === 200;
 }

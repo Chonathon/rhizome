@@ -130,9 +130,9 @@ const useAuth = () => {
         }
     }
 
-    const onLFMRefresh = async () => {
+    const onLFMRefresh = async (force = true) => {
         if (userID) {
-            const success = await lastFMRefresh(userID);
+            const success = await lastFMRefresh(userID, force);
             if (success) {
                 await refetchSession();
             }
