@@ -9,7 +9,7 @@ import {
     signUpUser, updateUserAccount
 } from "@/apis/authApi";
 import {BetterAuthError, InferSessionFromClient, InferUserFromClient, SessionQueryParams} from "better-auth";
-import {getUserData} from "@/apis/usersApi";
+import {getUserData, lastFMRefresh} from "@/apis/usersApi";
 import {DEFAULT_PREFERENCES} from "@/constants";
 import {authClient} from "@/lib/auth-client";
 import {until} from "@/lib/utils";
@@ -266,6 +266,14 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                         lfmUsername: userData.lfmUsername,
                         lfmLastSync: userData.lfmLastSync,
                     });
+                    // Attempt to auto-refresh user last.fm data
+                    if (userData.lfmUsername && userData.lfmLastSync) {
+                        lastFMRefresh(session.user.id, false).then(response => {
+                            if (!response) {
+                                setError('Error: could not refresh user account.');
+                            }
+                        });
+                    }
                 } else {
                     setError(`Error: no user data found in db.`);
                 }
