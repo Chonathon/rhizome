@@ -106,12 +106,17 @@ const useAuth = () => {
 
     const onLFMConnect = async (lfmUser: string) => {
         if (userID) {
-            const success = await lastFMConnect(lfmUser, userID);
-            if (success) {
-                setLfmUsername(lfmUser);
-                await refetchSession();
+            try {
+                const success = await lastFMConnect(lfmUser, userID);
+                if (success) {
+                    setLfmUsername(lfmUser);
+                    await refetchSession();
+                }
+                return success;
+            } catch (err) {
+                console.error(err);
+                return false;
             }
-            return success;
         } else {
             return false;
         }
@@ -119,12 +124,17 @@ const useAuth = () => {
 
     const onLFMRemove = async (removeArtists: boolean) => {
         if (userID) {
-            const success = await lastFMRemove(userID, removeArtists);
-            if (success) {
-                setLfmUsername(undefined);
-                await refetchSession();
+            try {
+                const success = await lastFMRemove(userID, removeArtists);
+                if (success) {
+                    setLfmUsername(undefined);
+                    await refetchSession();
+                }
+                return success;
+            } catch (err) {
+                console.error(err);
+                return false;
             }
-            return success;
         } else {
             return false;
         }
@@ -132,11 +142,16 @@ const useAuth = () => {
 
     const onLFMRefresh = async (force = true) => {
         if (userID) {
-            const success = await lastFMRefresh(userID, force);
-            if (success) {
-                await refetchSession();
+            try {
+                const success = await lastFMRefresh(userID, force);
+                if (success) {
+                    await refetchSession();
+                }
+                return success;
+            } catch (err) {
+                console.error(err);
+                return false;
             }
-            return success;
         } else {
             return false;
         }
