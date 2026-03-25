@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toSlug } from '@/lib/urlUtils';
 import type { Artist, Genre } from '@/types';
 
@@ -25,6 +25,10 @@ export type UrlEntity =
 
 export interface UrlStateResult {
   updateUrl: (entity: UrlEntity) => void;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  goBack: () => void;
+  goForward: () => void;
 }
 
 /**
@@ -45,11 +49,21 @@ export interface UrlStateResult {
  *
  * Rule of thumb: if a handler calls `setShowArtistCard(true)` or
  * `setShowGenreCard(true)`, it needs a matching `updateUrl` call.
+ *
+ * `goBack` / `goForward` navigate the app's own URL history.
+ * `canGoBack` / `canGoForward` reflect whether navigation is possible.
  */
 export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const prevGenreSlug = useRef<string | null>(null);
   const prevArtistSlug = useRef<string | null>(null);
   const initialLoadProcessed = useRef(false);
+
+  // Tracks position within the history entries pushed by this app.
+  // Index 0 = the page the user first landed on.
+  const historyIndex = useRef(0);
+  const forwardCount = useRef(0);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
 
   const { genresLoaded } = options;
 
@@ -123,7 +137,30 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
       ? `${window.location.pathname}?${search}`
       : window.location.pathname;
     window.history.pushState(null, '', newUrl);
+
+    historyIndex.current++;
+    forwardCount.current = 0;
+    setCanGoBack(true);
+    setCanGoForward(false);
   }, []);
 
-  return { updateUrl };
+  const goBack = useCallback(() => {
+    if (historyIndex.current <= 0) return;
+    window.history.back();
+    historyIndex.current--;
+    forwardCount.current++;
+    setCanGoBack(historyIndex.current > 0);
+    setCanGoForward(true);
+  }, []);
+
+  const goForward = useCallback(() => {
+    if (forwardCount.current <= 0) return;
+    window.history.forward();
+    historyIndex.current++;
+    forwardCount.current--;
+    setCanGoBack(true);
+    setCanGoForward(forwardCount.current > 0);
+  }, []);
+
+  return { updateUrl, canGoBack, canGoForward, goBack, goForward };
 }
