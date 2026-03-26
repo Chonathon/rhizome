@@ -79,6 +79,8 @@ import AuthOverlay from '@/components/AuthOverlay';
 import AlphaAccessDialog from '@/components/AlphaAccessDialog';
 import { useAlphaAccess } from '@/hooks/useAlphaAccess';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
+import OnboardingOverlay from '@/components/OnboardingOverlay';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
 import { showNotiToast } from '@/components/NotiToast';
@@ -356,6 +358,7 @@ function App() {
   } = useAuth();
 
   const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess(userAccess);
+  const { hasCompletedOnboarding, setOnboardingCompleted } = useOnboarding();
   const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
 
   // Keep alpha dialog open state in sync with validation
@@ -423,6 +426,14 @@ function App() {
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
+
+  // Auto-trigger onboarding after alpha validation
+  useEffect(() => {
+    if (isAlphaValidated && !authLoading && !hasCompletedOnboarding) {
+      window.dispatchEvent(new Event("onboarding:open"));
+    }
+  }, [isAlphaValidated, authLoading, hasCompletedOnboarding]);
+
 
   // Setup alpha feedback timer on mount
   useEffect(() => {
@@ -2459,12 +2470,20 @@ function App() {
       } else {
         toast.info("You haven't added any artists yet!");
       }
+
     } else {
       const action: ContextAction = {type: 'viewCollection'};
       localStorage.setItem('unregisteredAction', JSON.stringify(action));
       window.dispatchEvent(new Event('auth:open'));
     }
   }
+
+  // Listen for collection:open event (dispatched from auth overlay post-connect)
+  useEffect(() => {
+    const handleCollectionOpen = () => onCollectionClick();
+    window.addEventListener("collection:open", handleCollectionOpen);
+    return () => window.removeEventListener("collection:open", handleCollectionOpen);
+  }, [onCollectionClick]);
 
   const onExploreClick = () => {
     resetAppState();
@@ -3128,6 +3147,8 @@ function App() {
           onSignInSocial={signInSocial}
           onSignIn={signIn}
           onForgotPassword={forgotPassword}
+          onLastFMPreview={onLFMPreview}
+          onLastFMConnect={onLFMConnect}
       />
       <AlphaAccessDialog
         open={!isAlphaValidated && !authLoading}
@@ -3136,6 +3157,10 @@ function App() {
           setAlphaOpen(false);
         }}
         onValidatePassword={validatePassword}
+      />
+      <OnboardingOverlay
+        onComplete={setOnboardingCompleted}
+        onCreateAccount={() => window.dispatchEvent(new Event('auth:open'))}
       />
       <FeedbackOverlay
         onSubmit={submitFeedback}
