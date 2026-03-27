@@ -9,6 +9,7 @@ interface BadgeIndicatorProps {
   color?: string;
   imageUrl?: string;
   className?: string;
+  labelClassName?: string;
   icon?: LucideIcon;
 }
 
@@ -21,6 +22,7 @@ export function BadgeIndicator({
   color,
   imageUrl,
   className,
+  labelClassName,
   icon: Icon,
 }: BadgeIndicatorProps) {
   if (type === 'genre') {
@@ -54,7 +56,7 @@ export function BadgeIndicator({
           loading="lazy"
         />
       ) : (
-        <span className="h-full w-full rounded-full bg-muted text-center text-[10px] leading-5">
+        <span className={cn("h-full w-full rounded-full bg-muted flex items-center justify-center text-[10px]", labelClassName)}>
           {initial}
         </span>
       )}

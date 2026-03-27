@@ -18,8 +18,8 @@ import {
 import { SplitButton, SplitButtonAction, SplitButtonTrigger } from "@/components/ui/split-button"
 import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
-import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
+import { BadgeIndicator } from "@/components/BadgeIndicator";
 import { AddButton } from "./AddButton";
 import { Separator } from "@radix-ui/react-separator";
 import { ImageLightbox } from "@/components/ImageLightbox";
@@ -481,7 +481,7 @@ export function ArtistInfo({
 
                 {/* Similar Artists */}
                 {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-3">
                     {onViewSimilarArtistGraph && selectedArtist ? (
                       <button
                         className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
@@ -489,28 +489,38 @@ export function ArtistInfo({
                         title={`Explore artists similar to ${selectedArtist.name}`}
                       >
                         <span className="text-md font-semibold">Similar Artists</span>
-                        <ChevronRight className="shrink-0 text-muted-foreground size-5"/>
+                        <ChevronRight className="shrink-0 text-muted-foreground size-5" />
                       </button>
                     ) : (
                       <span className="text-md font-semibold">Similar Artists</span>
                     )}
-                    <div className="flex flex-wrap items-center gap-1.5">
+                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
                       {similarFilter(selectedArtist.similar).map((name) => {
                         const artistObj = getArtistByName?.(name);
                         const isInView = !!artistObj;
-                        const img = getArtistImageByName?.(name);
+                        const img = isInView ? getArtistImageByName?.(name) : undefined;
                         const genreColor = artistObj ? getArtistColor(artistObj) : undefined;
 
                         return (
-                          <ArtistBadge
+                          <button
                             key={name}
-                            name={name}
-                            imageUrl={isInView ? img : undefined}
-                            genreColor={genreColor}
                             onClick={() => setArtistFromName(name)}
                             title={isInView ? `Go to ${name}` : `View ${name}`}
-                            icon={!isInView ? EyeOff : undefined}
-                          />
+                            className="flex flex-col items-center gap-2 flex-none w-[68px] group"
+                          >
+                            <BadgeIndicator
+                              type="artist"
+                              name={name}
+                              imageUrl={img}
+                              color={genreColor}
+                              icon={!isInView ? EyeOff : undefined}
+                              className="size-[52px] ring-2 ring-transparent group-hover:ring-primary/30 group-hover:scale-105 transition-all duration-200"
+                              labelClassName="text-base"
+                            />
+                            <span className="text-[11px] leading-tight text-center line-clamp-2 w-full font-medium text-foreground/80 group-hover:text-foreground transition-colors">
+                              {name}
+                            </span>
+                          </button>
                         );
                       })}
                     </div>

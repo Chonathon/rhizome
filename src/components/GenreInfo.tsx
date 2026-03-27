@@ -11,6 +11,7 @@ import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
+import { BadgeIndicator } from "@/components/BadgeIndicator";
 import GenreBadge from "@/components/GenreBadge";
 import { SplitButton, SplitButtonAction, SplitButtonTrigger } from "@/components/ui/split-button";
 import {
@@ -587,29 +588,36 @@ export function GenreInfo({
                 )}
                 {/* Top Artists */}
                 {topArtists && topArtists.length > 0 && (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-3">
                     <span className="text-md font-semibold">Top Artists</span>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                    {topArtists.map((artist) => {
-                      const accent = getArtistColor(artist!);
-                      const img = typeof artist.image === 'string' && artist.image.trim()
-                        ? fixWikiImageURL(artist.image as string)
-                        : undefined;
-                      const initial = artist.name?.[0]?.toUpperCase() ?? '?';
-                      return (
-                        <ArtistBadge
+                    <div className="grid grid-cols-4 gap-4 w-full pb-1 -mx-1 px-1">
+                      {topArtists.map((artist) => {
+                        const accent = getArtistColor(artist!);
+                        const img = typeof artist.image === 'string' && artist.image.trim()
+                          ? fixWikiImageURL(artist.image as string)
+                          : undefined;
+                        return (
+                          <button
                             key={artist.name}
-                            name={artist.name}
-                            imageUrl={img}
-                            genreColor={accent}
-                            onClick={() =>onTopArtistClick?.(artist)}
+                            onClick={() => onTopArtistClick?.(artist)}
                             title={`Go to ${artist.name}`}
-                          />
-                      );
-                    })}
+                            className="flex flex-col items-center gap-2 flex-none w-auto group"
+                          >
+                            <BadgeIndicator
+                              type="artist"
+                              name={artist.name}
+                              imageUrl={img}
+                              color={accent}
+                              className="size-[64px] ring-2 ring-transparent group-hover:ring-primary/30 group-hover:scale-105 transition-all duration-200"
+                              labelClassName="text-base"
+                            />
+                            <span className="text-[11px] leading-tight text-center line-clamp-2 w-full font-semibold group-hover:text-foreground transition-colors">
+                              {artist.name}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                
-                
                   </div>
                 )}
 
