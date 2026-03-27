@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { lastFMRecentTracks } from '@/apis/usersApi';
 
 export interface LastFmTrack {
   name: string;
@@ -9,14 +10,13 @@ export interface LastFmTrack {
   imageUrl?: string;
 }
 
-export function useLastFmRecentTracks(lfmUsername?: string, enabled = true, limit = 30) {
+export function useLastFmRecentTracks(lfmUsername?: string, enabled = true, limit = 20) {
   const [tracks, setTracks] = useState<LastFmTrack[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_LASTFM_API_KEY;
-    if (!lfmUsername || !enabled || !apiKey) {
+    if (!lfmUsername || !enabled) {
       setTracks([]);
       return;
     }
@@ -24,25 +24,8 @@ export function useLastFmRecentTracks(lfmUsername?: string, enabled = true, limi
     setLoading(true);
     setError(null);
 
-    const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(lfmUsername)}&api_key=${apiKey}&format=json&limit=${limit}`;
-
-    fetch(url)
-      .then((r) => r.json())
-      .then((data) => {
-        const raw: unknown[] = data?.recenttracks?.track ?? [];
-        setTracks(
-          raw
-            .filter((t: any) => t?.name && t?.artist?.['#text'])
-            .map((t: any) => ({
-              name: t.name,
-              artist: t.artist['#text'],
-              album: t.album?.['#text'] ?? '',
-              timestamp: t.date?.uts ? parseInt(t.date.uts, 10) * 1000 : Date.now(),
-              nowPlaying: t['@attr']?.nowplaying === 'true',
-              imageUrl: t.image?.find((img: any) => img.size === 'medium')?.['#text'] ?? undefined,
-            }))
-        );
-      })
+    lastFMRecentTracks(lfmUsername, limit)
+      .then(setTracks)
       .catch(() => setError('Failed to load Last.fm data'))
       .finally(() => setLoading(false));
   }, [lfmUsername, enabled, limit]);

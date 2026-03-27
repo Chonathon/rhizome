@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
@@ -32,11 +32,10 @@ export function RecentsPopover({ onItemSelect, isCollapsed }: RecentsPopoverProp
   const [showLfm, setShowLfm] = useState(false)
   const { recentSelections, removeRecentSelection } = useRecentSelections()
   const { lfmUsername } = useAuth()
-  const hasApiKey = !!import.meta.env.VITE_LASTFM_API_KEY
 
   const { tracks, loading: lfmLoading } = useLastFmRecentTracks(
     lfmUsername,
-    showLfm && hasApiKey,
+    showLfm,
     20
   )
 
@@ -65,24 +64,66 @@ export function RecentsPopover({ onItemSelect, isCollapsed }: RecentsPopoverProp
       >
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2.5 shrink-0">
-          <span className="text-sm font-semibold">Recent Activity</span>
-          {hasRecents && (
-            <button
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => {
-                displayedRecents.forEach((item) => removeRecentSelection(item.id))
-              }}
-            >
-              Clear all
-            </button>
-          )}
+          <span className="text-sm font-semibold">
+            {showLfm ? 'Last.fm Scrobbles' : 'Recent Activity'}
+          </span>
+          <div className="flex items-center gap-2">
+            {!showLfm && hasRecents && (
+              <button
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => {
+                  displayedRecents.forEach((item) => removeRecentSelection(item.id))
+                }}
+              >
+                Clear all
+              </button>
+            )}
+            {lfmUsername && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Last.fm</span>
+                <Switch
+                  checked={showLfm}
+                  onCheckedChange={setShowLfm}
+                  className="scale-75"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         <Separator className="shrink-0" />
 
         {/* Scrollable list */}
         <div className="flex-1 overflow-y-auto py-1">
-          {!hasRecents ? (
+          {showLfm ? (
+            lfmLoading ? (
+              <div className="px-3 py-2 space-y-2">
+                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+              </div>
+            ) : tracks.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
+                <Clock className="h-6 w-6 opacity-30" />
+                <p className="text-xs">No scrobbles found</p>
+              </div>
+            ) : (
+              tracks.map((track, i) => (
+                <div key={i} className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent/50 transition-colors">
+                  <div className="shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-red-500/15 text-red-400">
+                    <Clock className="h-3 w-3" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{track.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
+                  </div>
+                  {track.nowPlaying ? (
+                    <span className="text-[10px] text-green-500 shrink-0">▶</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground/60 shrink-0">{formatTime(track.timestamp)}</span>
+                  )}
+                </div>
+              ))
+            )
+          ) : !hasRecents ? (
             <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
               <Search className="h-6 w-6 opacity-30" />
               <p className="text-xs">No recent activity</p>
@@ -115,50 +156,6 @@ export function RecentsPopover({ onItemSelect, isCollapsed }: RecentsPopoverProp
             })
           )}
         </div>
-
-        {/* Last.fm section */}
-        {lfmUsername && (
-          <>
-            <Separator className="shrink-0" />
-            <div className="shrink-0 px-3 py-2.5 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Last.fm</span>
-              <Switch
-                checked={showLfm}
-                onCheckedChange={setShowLfm}
-                className="scale-75"
-              />
-            </div>
-
-            {showLfm && (
-              <div className="border-t border-border overflow-y-auto max-h-36">
-                {!hasApiKey ? (
-                  <p className="px-3 py-2 text-xs text-muted-foreground">
-                    Set <code className="font-mono text-[10px] bg-muted px-1 rounded">VITE_LASTFM_API_KEY</code> to sync scrobbles.
-                  </p>
-                ) : lfmLoading ? (
-                  <div className="px-3 py-2 space-y-2">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-3 w-full" />)}
-                  </div>
-                ) : tracks.length === 0 ? (
-                  <p className="px-3 py-2 text-xs text-muted-foreground">No scrobbles found.</p>
-                ) : (
-                  tracks.map((track, i) => (
-                    <div key={i} className="flex items-center gap-2 px-3 py-1.5">
-                      <Clock className="h-3 w-3 text-red-400 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{track.name}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
-                      </div>
-                      {track.nowPlaying && (
-                        <span className="text-[10px] text-green-500 shrink-0">▶</span>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </>
-        )}
       </PopoverContent>
     </Popover>
   )
