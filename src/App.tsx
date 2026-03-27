@@ -2531,6 +2531,10 @@ function App() {
         resetAppState={resetAppState}
         onCollectionClick={onCollectionClick}
         onExploreClick={onExploreClick}
+        getArtistImageByName={getArtistImageByName}
+        getArtistByName={getArtistByName}
+        getArtistColor={getArtistColor}
+        genreColorMap={genreColorMap}
         onRecentsSelect={(item) => {
           if (item.nodeType === 'genre') {
             window.history.pushState({}, '', `?genre=${encodeURIComponent(item.name.toLowerCase().replace(/\s+/g, '-'))}`);

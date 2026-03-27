@@ -430,58 +430,74 @@ export function Search({
               </CommandGroup>
           )}
 
-          {!inputValue && recentSelections.length > 0 && (
-            <CommandGroup heading="Recent Selections">
-              {recentSelections.map((selection) => {
-                const meta = getIndicatorMeta(selection);
-                const isGenreSelection = meta.type === 'genre';
-
-                return (
-                  <CommandItem
-                    key={selection.id}
-                    value={selection.id}
-                    onSelect={() => handleItemAction(selection)}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      {shiftHeld && selectedValue === selection.id ? (
-                        <CirclePlay className="size-4 flex-shrink-0" />
-                      ) : (
-                        <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
-                          <BadgeIndicator
-                            type={meta.type}
-                            name={selection.name}
-                            color={meta.color}
-                            imageUrl={meta.imageUrl}
-                            className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
-                          />
-                        </div>
-                      )}
-                      <span className="truncate">{selection.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {getActionHint(selection, selectedValue === selection.id) && (
-                        <span className="text-xs text-muted-foreground">
-                          {getActionHint(selection, selectedValue === selection.id)}
-                        </span>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeRecentSelection(selection.id);
-                        }}
-                        className="-m-2"
-                      >
-                        <X />
-                      </Button>
-                    </div>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          )}
+          {!inputValue && recentSelections.length > 0 && (() => {
+            const todayStart = new Date().setHours(0, 0, 0, 0);
+            const yesterdayStart = todayStart - 86_400_000;
+            const weekStart = todayStart - 6 * 86_400_000;
+            const buckets: { label: string; items: typeof recentSelections }[] = [
+              { label: 'Today', items: [] },
+              { label: 'Yesterday', items: [] },
+              { label: 'This Week', items: [] },
+              { label: 'Older', items: [] },
+            ];
+            for (const s of recentSelections) {
+              if (s.timestamp >= todayStart) buckets[0].items.push(s);
+              else if (s.timestamp >= yesterdayStart) buckets[1].items.push(s);
+              else if (s.timestamp >= weekStart) buckets[2].items.push(s);
+              else buckets[3].items.push(s);
+            }
+            return buckets.filter(b => b.items.length > 0).map((bucket) => (
+              <CommandGroup key={bucket.label} heading={bucket.label}>
+                {bucket.items.map((selection) => {
+                  const meta = getIndicatorMeta(selection);
+                  const isGenreSelection = meta.type === 'genre';
+                  return (
+                    <CommandItem
+                      key={selection.id}
+                      value={selection.id}
+                      onSelect={() => handleItemAction(selection)}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        {shiftHeld && selectedValue === selection.id ? (
+                          <CirclePlay className="size-4 flex-shrink-0" />
+                        ) : (
+                          <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
+                            <BadgeIndicator
+                              type={meta.type}
+                              name={selection.name}
+                              color={meta.color}
+                              imageUrl={meta.imageUrl}
+                              className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
+                            />
+                          </div>
+                        )}
+                        <span className="truncate">{selection.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {getActionHint(selection, selectedValue === selection.id) && (
+                          <span className="text-xs text-muted-foreground">
+                            {getActionHint(selection, selectedValue === selection.id)}
+                          </span>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeRecentSelection(selection.id);
+                          }}
+                          className="-m-2"
+                        >
+                          <X />
+                        </Button>
+                      </div>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            ));
+          })()}
           {filteredActions.length > 0 && (
           <CommandGroup heading="Actions">
             {filteredActions.map((action) => {

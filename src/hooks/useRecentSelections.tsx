@@ -2,7 +2,7 @@ import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, 
 import { BasicNode } from "@/types";
 
 const LOCAL_STORAGE_KEY = 'recentSelections';
-const MAX_RECENT_SELECTIONS = 50;
+export const MAX_RECENT_SELECTIONS = 100;
 
 export type RecentSelectionItem = BasicNode & {
   nodeType: 'artist' | 'genre';

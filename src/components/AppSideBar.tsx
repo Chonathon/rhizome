@@ -12,7 +12,7 @@ import {
 import React, { useCallback, useRef } from "react"
 import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog } from "lucide-react"
 import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
-import { Genre, GraphType } from "@/types"
+import { Artist, Genre, GraphType } from "@/types"
 import { RecentsPopover } from "@/components/RecentsPopover"
 import { RecentSelectionItem } from "@/hooks/useRecentSelections"
 import RhizomeLogo from "@/components/RhizomeLogo"
@@ -47,6 +47,10 @@ interface AppSidebarProps {
   onCollectionClick: () => void;
   onExploreClick: () => void;
   onRecentsSelect: (item: RecentSelectionItem) => void;
+  getArtistImageByName?: (name: string) => string | undefined;
+  getArtistByName?: (name: string) => Artist | undefined;
+  getArtistColor?: (artist: Artist) => string;
+  genreColorMap?: Map<string, string>;
   signedInUser: boolean;
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
@@ -81,6 +85,10 @@ export function AppSidebar({
   onCollectionClick,
   onExploreClick,
   onRecentsSelect,
+  getArtistImageByName,
+  getArtistByName,
+  getArtistColor,
+  genreColorMap,
   isCollectionMode,
   searchOpen,
   playerOpen,
@@ -168,7 +176,14 @@ export function AppSidebar({
                   </SidebarMenuItem>
 
                   <SidebarMenuItem>
-                    <RecentsPopover onItemSelect={onRecentsSelect} isCollapsed={isCollapsed} />
+                    <RecentsPopover
+                      onItemSelect={onRecentsSelect}
+                      isCollapsed={isCollapsed}
+                      getArtistImageByName={getArtistImageByName}
+                      getArtistByName={getArtistByName}
+                      getArtistColor={getArtistColor}
+                      genreColorMap={genreColorMap}
+                    />
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroup>
