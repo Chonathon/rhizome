@@ -494,7 +494,7 @@ export function ArtistInfo({
                     ) : (
                       <span className="text-md font-semibold">Similar Artists</span>
                     )}
-                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+                    <div className="grid grid-cols-4 gap-4 w-full pb-1 -mx-1 px-1">
                       {similarFilter(selectedArtist.similar).map((name) => {
                         const artistObj = getArtistByName?.(name);
                         const isInView = !!artistObj;
@@ -506,7 +506,7 @@ export function ArtistInfo({
                             key={name}
                             onClick={() => setArtistFromName(name)}
                             title={isInView ? `Go to ${name}` : `View ${name}`}
-                            className="flex flex-col items-center gap-2 flex-none w-[68px] group"
+                            className="flex flex-col items-center gap-2 flex-none w-auto group"
                           >
                             <BadgeIndicator
                               type="artist"
@@ -514,10 +514,10 @@ export function ArtistInfo({
                               imageUrl={img}
                               color={genreColor}
                               icon={!isInView ? EyeOff : undefined}
-                              className="size-[52px] ring-2 ring-transparent group-hover:ring-primary/30 group-hover:scale-105 transition-all duration-200"
+                              className="size-[64px] border-2 ring-2 ring-transparent group-hover:ring-primary/30 group-hover:scale-105 transition-all duration-200"
                               labelClassName="text-base"
                             />
-                            <span className="text-[11px] leading-tight text-center line-clamp-2 w-full font-medium text-foreground/80 group-hover:text-foreground transition-colors">
+                            <span className="text-[11px] leading-tight text-center line-clamp-2 w-full font-semibold group-hover:text-foreground transition-colors">
                               {name}
                             </span>
                           </button>
