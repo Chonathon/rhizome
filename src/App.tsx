@@ -1554,6 +1554,7 @@ function App() {
     } else {
       const fetched = await fetchArtistBySearch(name);
       if (fetched) {
+        setSelectedArtist(undefined);
         setArtistInfoToShow(fetched);
         setShowArtistCard(true);
         addRecentSelection(fetched);
@@ -1851,6 +1852,7 @@ function App() {
 
   const onSearchArtistSelect = (artist: Artist) => {
     setAutoFocusGraph(false); // Disable auto-focus for search selections
+    setSelectedArtist(undefined);
     setSelectedArtistFromSearch(true);
     setArtistPreviewStack((prev) => {
       if (artistInfoToShow && artistInfoToShow.id !== artist.id) {
