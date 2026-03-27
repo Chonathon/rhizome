@@ -294,6 +294,7 @@ function App() {
     artistsPlayIDsLoading,
     artistPlayIDLoadingKey,
     fetchSingleArtist,
+    fetchArtistBySearch,
     similarArtists,
     fetchSimilarArtists,
   } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode);
@@ -1546,10 +1547,18 @@ function App() {
     }
   };
 
-  const setArtistFromName = (name: string) => {
+  const setArtistFromName = async (name: string) => {
     const artist = currentArtists.find((a) => a.name === name);
     if (artist) {
       onArtistNodeClick(artist);
+    } else {
+      const fetched = await fetchArtistBySearch(name);
+      if (fetched) {
+        setArtistInfoToShow(fetched);
+        setShowArtistCard(true);
+        addRecentSelection(fetched);
+        updateUrl({ type: 'artist', id: fetched.id, name: fetched.name });
+      }
     }
   }
 

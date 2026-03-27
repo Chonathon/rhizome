@@ -502,20 +502,13 @@ export function ArtistInfo({
                         const genreColor = artistObj ? getArtistColor(artistObj) : undefined;
 
                         return (
-                          // TODO: Provide navigation options for artists not in view
                           <ArtistBadge
                             key={name}
                             name={name}
                             imageUrl={isInView ? img : undefined}
                             genreColor={genreColor}
-                            onClick={() => {
-                              if (isInView) {
-                                setArtistFromName(name);
-                              } else {
-                                toast.info(`${name} is not in the current view.`);
-                              }
-                            }}
-                            title={!isInView ? `${name} is not in the current view` : `Go to ${name}`}
+                            onClick={() => setArtistFromName(name)}
+                            title={isInView ? `Go to ${name}` : `View ${name}`}
                             icon={!isInView ? EyeOff : undefined}
                           />
                         );
