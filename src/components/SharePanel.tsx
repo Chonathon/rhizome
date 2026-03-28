@@ -1,13 +1,29 @@
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Share2, Download } from "lucide-react"
+import { Share2, Download, Link, Check } from "lucide-react"
 import { ResponsivePanel } from "@/components/ResponsivePanel"
+import { toast } from "sonner"
+import { clientUrl } from "@/lib/utils"
 
 interface SharePanelProps {
     onExport?: () => void;
 }
 
 export default function SharePanel({ onExport }: SharePanelProps) {
+    const [copied, setCopied] = useState(false);
     const feildsetStyles = "flex flex-col gap-3 p-3 rounded-2xl bg-accent dark:bg-accent/50 border-accent border"
+
+    const handleCopyUrl = async () => {
+        const shareUrl = clientUrl() + window.location.search;
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            setCopied(true);
+            toast.success("Link copied to clipboard");
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            toast.error("Failed to copy link");
+        }
+    };
 
     return (
         <ResponsivePanel
