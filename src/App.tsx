@@ -1,6 +1,6 @@
 import './App.css'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, Settings, X } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Divide, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -44,6 +44,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
+import { useUrlState } from './hooks/useUrlState';
+import { toSlug } from '@/lib/urlUtils';
 import DisplayPanel from './components/DisplayPanel';
 import SharePanel from './components/SharePanel';
 import NodeLimiter from './components/NodeLimiter'
@@ -77,6 +79,8 @@ import AuthOverlay from '@/components/AuthOverlay';
 import AlphaAccessDialog from '@/components/AlphaAccessDialog';
 import { useAlphaAccess } from '@/hooks/useAlphaAccess';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
+import OnboardingOverlay from '@/components/OnboardingOverlay';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
 import { showNotiToast } from '@/components/NotiToast';
@@ -93,6 +97,7 @@ import {
   DEFAULT_LIGHT_NODE_COLOR,
   mixColors
 } from "@/lib/colors";
+import {lastFMConnect, lastFMPreview} from "@/apis/usersApi";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -328,6 +333,8 @@ function App() {
     likedArtists,
     isSocialUser,
     userAccess,
+    lfmUsername,
+    lfmLastSync,
     signIn,
     signInSocial,
     signUp,
@@ -344,9 +351,14 @@ function App() {
     resetPassword,
     authError,
     authLoading,
+    onLFMPreview,
+    onLFMConnect,
+    onLFMRemove,
+    onLFMRefresh,
   } = useAuth();
 
   const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess(userAccess);
+  const { hasCompletedOnboarding, setOnboardingCompleted } = useOnboarding();
   const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
 
   // Keep alpha dialog open state in sync with validation
@@ -369,6 +381,36 @@ function App() {
   }, []);
   const navigate = useNavigate();
 
+  // URL State: Lookup function to find genres by slug
+  const findGenreBySlug = useCallback((slug: string): Genre | undefined => {
+    return genres.find(g => toSlug(g.name) === slug);
+  }, [genres]);
+
+  // URL State: Open/close drawers from URL (initial load + browser back/forward)
+  const { updateUrl, canGoBack, canGoForward, goBack, goForward } = useUrlState({
+    findGenreBySlug,
+    fetchArtistById: (id) => fetchSingleArtist(id, false),
+    onGenreFromUrl: (genre) => {
+      setGenreInfoToShow(genre);
+      setShowGenreCard(true);
+      addRecentSelection(genre);
+    },
+    onArtistFromUrl: (artist) => {
+      setArtistInfoToShow(artist);
+      setShowArtistCard(true);
+      addRecentSelection(artist);
+    },
+    onGenreClearedFromUrl: () => {
+      setShowGenreCard(false);
+      setGenreInfoToShow(undefined);
+    },
+    onArtistClearedFromUrl: () => {
+      setShowArtistCard(false);
+      setArtistInfoToShow(undefined);
+    },
+    genresLoaded: genres.length > 0 && !genresLoading,
+  });
+
   const artistsAddedRef = useRef(0);
 
   // Get hovered artist data for preview
@@ -384,6 +426,14 @@ function App() {
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
+
+  // Auto-trigger onboarding after alpha validation
+  useEffect(() => {
+    if (isAlphaValidated && !authLoading && !hasCompletedOnboarding) {
+      window.dispatchEvent(new Event("onboarding:open"));
+    }
+  }, [isAlphaValidated, authLoading, hasCompletedOnboarding]);
+
 
   // Setup alpha feedback timer on mount
   useEffect(() => {
@@ -1622,6 +1672,7 @@ function App() {
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
     setAutoFocusGraph(true); // Enable auto-focus for node clicks
     addRecentSelection(genre);
+    updateUrl({ type: 'genre', name: genre.name });
   };
 
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
@@ -1682,6 +1733,7 @@ function App() {
     // Hide genre card but mark it for restoration when artist card is dismissed
     setShowGenreCard(false);
     setRestoreGenreCardOnArtistDismiss(true);
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   }
 
   const handleGenreCanvasDragStart = () => {
@@ -1729,6 +1781,7 @@ function App() {
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist);
     }
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   };
 
   const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
@@ -1784,6 +1837,7 @@ function App() {
     // This prevents unwanted graph dimming during search
 
     addRecentSelection(genre);
+    updateUrl({ type: 'genre', name: genre.name });
   }
 
   const onSearchArtistSelect = (artist: Artist) => {
@@ -1802,6 +1856,7 @@ function App() {
     setArtistInfoToShow(artist); // Use drawer state, not selectedArtist (prevents graph dimming)
     setShowArtistCard(true);
     addRecentSelection(artist);
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   }
 
   const handleFindSelect = (option: FindOption) => {
@@ -1815,6 +1870,7 @@ function App() {
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for find filter selections
       addRecentSelection(artist);
+      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
       if (graph !== 'artists' && graph !== 'similarArtists') {
         setGraph('artists');
       }
@@ -1867,6 +1923,7 @@ function App() {
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
     setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
+    updateUrl(null);
   }
 
   const deselectArtist = () => {
@@ -1875,6 +1932,7 @@ function App() {
     setArtistInfoToShow(undefined);
     setShowArtistCard(false);
     setArtistPreviewStack([]);
+    updateUrl(null);
   }
 
   // Force the drawer to remount when restoring a previously focused artist without flashing the genre card
@@ -2412,12 +2470,20 @@ function App() {
       } else {
         toast.info("You haven't added any artists yet!");
       }
+
     } else {
       const action: ContextAction = {type: 'viewCollection'};
       localStorage.setItem('unregisteredAction', JSON.stringify(action));
       window.dispatchEvent(new Event('auth:open'));
     }
   }
+
+  // Listen for collection:open event (dispatched from auth overlay post-connect)
+  useEffect(() => {
+    const handleCollectionOpen = () => onCollectionClick();
+    window.addEventListener("collection:open", handleCollectionOpen);
+    return () => window.removeEventListener("collection:open", handleCollectionOpen);
+  }, [onCollectionClick]);
 
   const onExploreClick = () => {
     resetAppState();
@@ -2508,7 +2574,7 @@ function App() {
               layout
               transition={{ layout: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } }}
               className={
-                "fixed top-0 left-0 z-70 pt-3 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
+                "fixed top-0 left-0 z-70 pt-3 pl-3 flex justify-left flex-col items-start sm:flex-row gap-3"
               }
               style={{ left: "var(--sidebar-gap)" }}
             >
@@ -2541,25 +2607,48 @@ function App() {
                   }
               /> */}
               <AnimatePresence initial={false} mode="popLayout">
+                <div className="flex flex-col md sm:flex-row items-start gap-3">
+                {!isMobile &&
+                <div className="flex gap-1">
+                   <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={goBack}
+                  disabled={!canGoBack}
+                  aria-label="Go back"
+                  >
+                  <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={goForward}
+                  disabled={!canGoForward}
+                  aria-label="Go forward"
+                  >
+                  <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>}
                 {!collectionMode && (
                   <motion.div
-                    key="tabs"
-                    layout
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  key="tabs"
+                  layout
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <Tabs
-                      value={graph === 'similarArtists' ? 'artists' : graph}
-                      onValueChange={(val) => onTabChange(val as GraphType)}>
-                        <TabsList>
-                          <TabsTrigger value="genres">Genres</TabsTrigger>
-                          <TabsTrigger value="artists">Artists</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
+                  <Tabs
+                    value={graph === 'similarArtists' ? 'artists' : graph}
+                    onValueChange={(val) => onTabChange(val as GraphType)}>
+                    <TabsList>
+                      <TabsTrigger value="genres">Genres</TabsTrigger>
+                      <TabsTrigger value="artists">Artists</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                   </motion.div>
                 )}
+                </div>
               </AnimatePresence>
               <AnimatePresence initial={false} mode="popLayout">
                 {graph === 'similarArtists' && similarArtistAnchor && (
@@ -2994,19 +3083,23 @@ function App() {
                       focusArtistRelatedGenres(artist);
                       setArtistInfoToShow(artist);
                       setShowArtistCard(true);
+                      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
                     }}
                     onGenreGoTo={(genre) => {
                       // For genres: Go To (switches to genres view and focuses the genre)
                       focusGenreInCurrentView(genre, { forceRefocus: true });
+                      updateUrl({ type: 'genre', name: genre.name });
                     }}
                     onArtistViewSimilar={async (artist) => {
                       await createSimilarArtistGraph(artist);
                       setArtistInfoToShow(artist);
                       setShowArtistCard(true);
+                      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
                     }}
                     onGenreViewSimilar={(genre) => {
                       // For genres: View Similar also navigates to genres view
                       focusGenreInCurrentView(genre, { forceRefocus: true });
+                      updateUrl({ type: 'genre', name: genre.name });
                     }}
                   />
 
@@ -3036,18 +3129,26 @@ function App() {
         email={userEmail || ''}
         preferences={preferences || DEFAULT_PREFERENCES}
         socialUser={isSocialUser || false}
+        lfmUsername={lfmUsername}
+        lfmLastSync={lfmLastSync}
         onLogout={signOut}
         onChangeEmail={changeEmail}
         onChangePassword={changePassword}
         onDeleteAccount={deleteUser}
         onChangeName={updateUser}
         onChangePreferences={updatePreferences}
+        onLastFMPreview={onLFMPreview}
+        onLastFMConnect={onLFMConnect}
+        onLastFMRemove={onLFMRemove}
+        onLastFMRefresh={onLFMRefresh}
       />
       <AuthOverlay
           onSignUp={signUp}
           onSignInSocial={signInSocial}
           onSignIn={signIn}
           onForgotPassword={forgotPassword}
+          onLastFMPreview={onLFMPreview}
+          onLastFMConnect={onLFMConnect}
       />
       <AlphaAccessDialog
         open={!isAlphaValidated && !authLoading}
@@ -3056,6 +3157,10 @@ function App() {
           setAlphaOpen(false);
         }}
         onValidatePassword={validatePassword}
+      />
+      <OnboardingOverlay
+        onComplete={setOnboardingCompleted}
+        onCreateAccount={() => window.dispatchEvent(new Event('auth:open'))}
       />
       <FeedbackOverlay
         onSubmit={submitFeedback}

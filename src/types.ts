@@ -145,6 +145,8 @@ export interface User {
     socialUser?: boolean;
     image?: string;
     appAccess?: string;
+    lfmUsername?: string;
+    lfmLastSync?: Date;
 }
 
 export interface Feedback {
@@ -173,6 +175,18 @@ export interface FindOption {
     name: string;
     entityType: 'artist' | 'genre';
     subtitle?: string;
+}
+
+// URL State types for shareable URLs and browser navigation
+export type UrlView = 'genres' | 'artists' | 'similar';
+
+export interface UrlState {
+    view: UrlView | null;
+    genreSlug: string | null;
+    genreSlugs: string[];
+    artistSlug: string | null;
+    anchorSlug: string | null;
+    collectionMode: boolean;
 }
 
 // Listener-based popularity tiers for radial stratification

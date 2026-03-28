@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CircleUserRound, Cable, HandHeart, Check, X, Cog, Info, Sparkle, Sparkles } from "lucide-react"
+import {CircleUserRound, Cable, HandHeart, Check, X, Cog, Info, Sparkle, Sparkles, RefreshCw, Loader, Loader2} from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ToggleButton } from "@/components/ui/ToggleButton"
@@ -46,10 +46,14 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import {Preferences, PreviewTrigger, Theme} from "@/types";
+import {LastFMAccountPreview, Preferences, PreviewTrigger, Theme} from "@/types";
 import KofiLogo from "@/assets/kofi_symbol.svg"
 import LastFMLogo from "@/assets/Last.fm Logo.svg"
 import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuContent } from "@/components/ui/dropdown-menu"
+import {Loading} from "@/components/Loading";
+import {Switch} from "@/components/ui/switch";
+import {Label} from "@/components/ui/label";
+import {formatDate} from "@/lib/utils";
 
 const data = {
   nav: [
@@ -748,19 +752,38 @@ const AccountSection = ({
 }
 
 // Connections Section Component
-const ConnectionsSection = () => {
-  const [isLastFmConnected, setIsLastFmConnected] = useState(false);
+interface ConnectionsSectionProps {
+  lfmUsername?: string;
+  lfmLastSync?: Date;
+  toggleLastFMDialog: (open: boolean) => void;
+  toggleLastFMRemoveDialog: (open: boolean) => void;
+  onLastFMRefresh: () => Promise<boolean>;
+}
+const ConnectionsSection = (
+    { lfmUsername, lfmLastSync, toggleLastFMDialog, toggleLastFMRemoveDialog, onLastFMRefresh
+}: ConnectionsSectionProps) => {
+  const [isLastFmConnected, setIsLastFmConnected] = useState(!!lfmUsername);
+  const [refreshLoading, setRefreshLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsLastFmConnected(!!lfmUsername);
+  }, [lfmUsername]);
 
   const handleLastFmToggle = () => {
     if (isLastFmConnected) {
-      toast.info('Disconnected from Last.FM... Phew 😮‍💨');
-      setIsLastFmConnected(false);
+      toggleLastFMRemoveDialog(true);
     } else {
-      toast.success('Connected to Last.FM... Whoops, this isn\'t implemented yet 🙃');
-      setIsLastFmConnected(true);
-      // TODO: Implement actual Last.FM OAuth flow
+      toggleLastFMDialog(true);
     }
   };
+
+  const handleLastFMRefresh = async () => {
+    if (isLastFmConnected) {
+      setRefreshLoading(true);
+      const success = await onLastFMRefresh();
+      setRefreshLoading(false);
+    }
+  }
 
   return (
     <SettingsSection>
@@ -774,60 +797,273 @@ const ConnectionsSection = () => {
                       <img aria-hidden="true" src={LastFMLogo} className="size-8 @md/field-group:mr-2"/>
                       <FieldContent>
                       <FieldLabel htmlFor="lastfm-connection-description" id="lastfm-connection-label">
-                          Last.FM
+                          Last.fm
                       </FieldLabel>
-                      <FieldDescription id="lastfm-connection-description">Two way sync: Import your followed artists and share your collection</FieldDescription>
+                      <FieldDescription id="lastfm-connection-description">
+                        {isLastFmConnected ? 'Last.fm connected — use the refresh button to import new scrobbles' : 'Sync your scrobbled artists from Last.fm directly into your collection'}
+                      </FieldDescription>
+                        {isLastFmConnected && (
+                            <span className='flex items-center'>
+                              <span 
+                              className="text-sm text-muted-foreground tabular-nums" id="lastfm-connection-refresh-description" hidden={!lfmLastSync}>
+                                Last synced {lfmLastSync ? new Date(lfmLastSync).toLocaleString('en-US') : ''}
+                              </span>
+                              <Button variant="ghost" size="icon" onClick={() => handleLastFMRefresh()} disabled={refreshLoading}>
+                                {refreshLoading ? (
+                                    <Loader2 className="animate-spin"/>
+                                ) : (
+                                    <RefreshCw />
+                                )}
+                              </Button>
+                            </span>
+                        )}
                       </FieldContent>
-                      
-                      <DropdownMenu>
-                         <DropdownMenuTrigger asChild>
-                           <Button
-                              variant="secondary">
-                              Connect 
-                            </Button>
-                         </DropdownMenuTrigger>
-                         <DropdownMenuContent align="end" side="bottom">
-                               <div
-                                className="p-3">
-                                  <div className="flex items-center gap-1">
-                                    <Info size={20}/>
-                                  <h2 className="text-lg font-semibold">Whoops, we haven’t implemented this yet</h2></div>
-                                  <p className="text-base text-muted-foreground">
-                                    How would you use connections in Rhizome?
-                                  </p>
-
-                                  <div className="mt-6">
-                                    <Button asChild>
-                                      <a 
-                                        target="_blank" 
-                                        href="https://tally.so/r/obEpvO"
-                                        rel="noopener noreferrer"
-                                        >Give Feedback</a>
-                                    </Button>
-                                  </div>
-                                </div>
-                         </DropdownMenuContent>
-                       </DropdownMenu>
-                       {/* Hidden while not functional */}
-                      {/* <ToggleButton
+                      <ToggleButton
                         isActive={isLastFmConnected}
                         onToggle={handleLastFmToggle}
-                        activeLabel="Connected"
+                        activeLabel="Disconnect"
                         inactiveLabel="Connect"
                         // activeIcon={<Check />}
                         // inactiveIcon={<Cable />}
                         // variant="outline"
                         size="sm"
-                        ariaLabel={isLastFmConnected ? "Disconnect from Last.FM" : "Connect to Last.FM"}
+                        ariaLabel={isLastFmConnected ? "Disconnect from Last.fm" : "Connect to Last.fm"}
                         ariaDescribedBy="lastfm-connection-description"
-                      /> */}
+                      />
                   </Field>
           </FieldGroup>
         </FieldSet>
       </FieldGroup>
-            <p className="pt-3 text-sm text-muted-foreground">More connections coming soon...</p>
+            <p className="w-full text-center pt-4 text-sm text-muted-foreground">Want to see more connection options? <a href="https://tally.so/r/obEpvO" target="_blank" rel="noopener noreferrer" className="text-foreground underline">Let us know!</a></p>
     </SettingsSection>
   );
+}
+
+// Last.fm Preview Dialog Component
+const LastFMDialog = (
+    {
+      open,
+      onLastFMPreview,
+      onLastFMConnect,
+      onOpenChange,
+    }: {
+  open: boolean;
+  onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
+  onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const [preview, setPreview] = useState<LastFMAccountPreview | undefined>(undefined);
+  const [connectSuccess, setConnectSuccess] = useState(false);
+  const [lfmUsername, setLfmUsername] = useState("");
+  const [lfmLoading, setLfmLoading] = useState(false);
+
+  const handleSubmitPreview = async () => {
+    if (!lfmUsername) {
+      toast.error("Please enter a last.fm username");
+      return;
+    }
+    setLfmLoading(true);
+    const previewResult = await onLastFMPreview(lfmUsername);
+    setLfmLoading(false);
+    if (previewResult) {
+      setPreview(previewResult);
+    } else {
+      toast.error("Unable to find last.fm account");
+    }
+  }
+
+  const handleSubmitConnect = async () => {
+    if (!lfmUsername) {
+      toast.error("Please enter a last.fm username");
+      return;
+    }
+    if (!preview || !preview.lfmUsername) {
+      toast.error("No user data found.");
+      return;
+    }
+    setLfmLoading(true);
+    const success = await onLastFMConnect(preview.lfmUsername);
+    setLfmLoading(false);
+    if (success) {
+      toast.success("Successfully connected to Last.fm!");
+      setConnectSuccess(true);
+    } else {
+      toast.error("Unable to connect to Last.fm!");
+      setConnectSuccess(false);
+    }
+  }
+
+  const handleCancel = () => {
+    if (preview && !connectSuccess) {
+      setPreview(undefined);
+    } else {
+      onOpenChange(false);
+      setConnectSuccess(false);
+    }
+  }
+
+  return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="bg-card sm:max-w-md">
+          <DialogTitle>Connect Last.fm Account</DialogTitle>
+          {lfmLoading ? (
+              <div className="pt-3">
+                <Loading />
+              </div>
+          ) : (
+             <>
+               {connectSuccess ? (
+                   <DialogDescription>
+                     Your Last.fm account has been successfully linked.
+                   </DialogDescription>
+               ) : (
+                   <>
+                     {preview ? (
+                         <>
+                           <DialogDescription>
+                             Last.fm account <strong>{preview.lfmUsername}</strong> found with <strong>{preview.totalArtists}</strong> artists.
+                           </DialogDescription>
+                           <DialogDescription>
+                             Favorite artists: <strong>{preview.topArtists.map(a => `${a}`).join(', ')}</strong>
+                           </DialogDescription>
+                           <DialogDescription>
+                             Connecting your account will attempt to add all of your scrobbled artists to your collection.
+                             This could take some time if you have thousands of artists scrobbled!
+                           </DialogDescription>
+                         </>
+                     ) : (
+                         <>
+                           <DialogDescription>
+                             Link your Last.fm account to add your scrobbled artists to your Rhizome collection.
+                           </DialogDescription>
+                           <FieldGroup>
+                             <Field>
+                               <FieldLabel htmlFor="last-fm-username">
+                                 Enter your Last.fm username
+                               </FieldLabel>
+                               <Input
+                                   id="last-fm-username"
+                                   type="text"
+                                   value={lfmUsername}
+                                   onChange={(e) => setLfmUsername(e.target.value)}
+                                   required
+                               />
+                             </Field>
+                           </FieldGroup>
+                         </>
+                     )}
+                   </>
+               )}
+               <div className="flex gap-2 mt-6">
+                 <Button
+                     type="button"
+                     variant="outline"
+                     onClick={() => handleCancel()}
+                     className="flex-1"
+                 >
+                   {connectSuccess ? "Close" : "Cancel"}
+                 </Button>
+                 {preview ? (
+                     <Button
+                         type="button"
+                         className="flex-1"
+                         hidden={connectSuccess}
+                         onClick={() => handleSubmitConnect()}
+                     >
+                       Connect
+                     </Button>
+                 ) : (
+                     <Button
+                         type="button"
+                         className="flex-1"
+                         hidden={connectSuccess}
+                         onClick={() => handleSubmitPreview()}
+                     >
+                       Find Last.fm account
+                     </Button>
+                 )}
+               </div>
+             </>
+          )}
+        </DialogContent>
+      </Dialog>
+  )
+}
+
+// Last.fm Preview Dialog Component
+const LastFMRemoveDialog = ({
+                        open,
+                        onLastFMRemove,
+                        onOpenChange,
+                      }: {
+  open: boolean;
+  onLastFMRemove: (removeArtists: boolean) => Promise<boolean>;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const [removeSuccess, setRemoveSuccess] = useState(false);
+  const [removeArtists, setRemoveArtists] = useState(false);
+  const [lfmLoading, setLfmLoading] = useState(false);
+
+  const handleDelete = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLfmLoading(true);
+    const success = await onLastFMRemove(removeArtists);
+    setLfmLoading(false);
+    if (success) {
+      setRemoveSuccess(true);
+    } else {
+      toast.error("Error deleting account!");
+    }
+  }
+
+  const handleOpenChange = (open: boolean) => {
+    onOpenChange(open);
+    setRemoveSuccess(false);
+  }
+
+  return (
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="bg-card sm:max-w-md">
+          <DialogTitle className="text-destructive">Disconnect Last.fm</DialogTitle>
+          <form onSubmit={handleDelete}>
+            {removeSuccess ? (
+                <DialogDescription>
+                  Last.fm artists successfully removed from your collection.
+                </DialogDescription>
+            ) : (
+                <>
+                  <DialogDescription>
+                    This action cannot be undone. This will remove your Last.fm account from Rhizome and prevent syncing.
+                  </DialogDescription>
+                  <span className='flex gap-2 mt-3'>
+                    {/*TODO: Make tooltip?*/}
+                    <Label className='flex'>Remove All Last.fm Artists</Label>
+                    <Switch className='flex' checked={removeArtists} onCheckedChange={setRemoveArtists} />
+                  </span>
+                </>
+            )}
+            <div className="flex gap-2 mt-6">
+              <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleOpenChange(false)}
+                  className="flex-1"
+              >
+                {removeSuccess ? 'Close' : 'Cancel'}
+              </Button>
+              <Button
+                  type="submit"
+                  variant="destructive"
+                  className="flex-1"
+                  hidden={removeSuccess}
+              >
+                Disconnect
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+  )
 }
 
 // Support Section Component
@@ -891,15 +1127,40 @@ interface SettingsOverlayProps {
   name: string;
   socialUser: boolean;
   preferences: Preferences;
+  lfmUsername?: string;
+  lfmLastSync?: Date;
   onLogout: () => Promise<boolean>;
   onChangeEmail: (newEmail: string) => Promise<boolean>;
   onChangePassword: (newPassword: string, currentPassword: string) => Promise<boolean>;
   onDeleteAccount: (password?: string) => Promise<boolean>;
   onChangePreferences: (newPreferences: Preferences) => Promise<boolean>;
   onChangeName: (newName: string) => Promise<boolean>;
+  onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
+  onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
+  onLastFMRemove: (removeArtists: boolean) => Promise<boolean>;
+  onLastFMRefresh: () => Promise<boolean>;
 }
 
-function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChangeEmail, onChangePassword, onDeleteAccount, onChangePreferences, onChangeName}: SettingsOverlayProps) {
+function SettingsOverlay(
+    {
+      email,
+      name,
+      socialUser,
+      preferences,
+      lfmUsername,
+      lfmLastSync,
+      onLogout,
+      onChangeEmail,
+      onChangePassword,
+      onDeleteAccount,
+      onChangePreferences,
+      onChangeName,
+      onLastFMPreview,
+      onLastFMConnect,
+      onLastFMRemove,
+      onLastFMRefresh,
+    }: SettingsOverlayProps
+) {
   const [open, setOpen] = useState(false)
   const [activeView, setActiveView] = useState("General")
   const [newName, setNewName] = useState<string>(name)
@@ -910,6 +1171,8 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false)
+  const [lastFMDialogOpen, setLastFMDialogOpen] = useState(false);
+  const [lastFMRemoveDialogOpen, setLastFMRemoveDialogOpen] = useState(false);
 
   useEffect(() => {
     const handleOpen = (event: Event) => {
@@ -982,7 +1245,13 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
         isSocial={socialUser}
       />
     ),
-    Connections: <ConnectionsSection />,
+    Connections: <ConnectionsSection
+        lfmUsername={lfmUsername}
+        lfmLastSync={lfmLastSync}
+        toggleLastFMDialog={setLastFMDialogOpen}
+        toggleLastFMRemoveDialog={setLastFMRemoveDialogOpen}
+        onLastFMRefresh={onLastFMRefresh}
+    />,
     Support: <SupportSection />,
   }
 
@@ -1089,6 +1358,17 @@ function SettingsOverlay({email, name, socialUser, preferences, onLogout, onChan
           onOpenChange={setDeleteAccountOpen}
           onSubmit={onDeleteAccount}
           isSocial={true} // if password-only deletion is possible simultaneously with email verification, set this to socialUser
+      />
+      <LastFMDialog
+          open={lastFMDialogOpen}
+          onLastFMPreview={onLastFMPreview}
+          onLastFMConnect={onLastFMConnect}
+          onOpenChange={setLastFMDialogOpen}
+      />
+      <LastFMRemoveDialog
+          open={lastFMRemoveDialogOpen}
+          onLastFMRemove={onLastFMRemove}
+          onOpenChange={setLastFMRemoveDialogOpen}
       />
     </>
   )

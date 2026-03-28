@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {Artist, ArtistNodeLimitType, BadDataReport, BasicNode, NodeLink, TopTrack} from "@/types";
+import {Artist, ArtistNodeLimitType, BadDataReport, BasicNode, Genre, NodeLink, TopTrack} from "@/types";
 import axios, {AxiosError} from "axios";
 import {serverUrl} from "@/lib/utils";
 import {DEFAULT_NODE_COUNT, MAX_NODES, TOP_ARTISTS_TO_FETCH} from "@/constants";
@@ -154,18 +154,30 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         setArtistsLoading(false);
     }
 
-    const fetchSingleArtist = async (artistID: string) => {
+    const fetchSingleArtist = async (artistID: string, showLoading = true) => {
         resetArtistsYTError();
-        setArtistsLoading(true);
+        if (showLoading) setArtistsLoading(true);
         try {
             const response = await axios.get(`${url}/artists/fetch/id/${artistID}`);
+            if (showLoading) setArtistsLoading(false);
             return response.data;
         } catch (err) {
             if (err instanceof AxiosError) {
                 setArtistsError(err);
             }
+            if (showLoading) setArtistsLoading(false);
         }
-        setArtistsLoading(false);
+    }
+
+    const fetchArtistBySearch = async (query: string): Promise<Artist | undefined> => {
+        try {
+            const response = await axios.get(`${url}/search/${query}`);
+            const results = response.data as (Artist | Genre)[];
+            // Find the first result that looks like an artist (has listeners property)
+            return results.find((r): r is Artist => 'listeners' in r);
+        } catch {
+            return undefined;
+        }
     }
 
     const fetchSimilarArtists = async (artist: Artist) => {
@@ -206,6 +218,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         artistsPlayIDsLoading,
         artistPlayIDLoadingKey,
         fetchSingleArtist,
+        fetchArtistBySearch,
         similarArtists,
         fetchSimilarArtists,
     };
