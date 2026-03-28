@@ -53,6 +53,7 @@ function groupByTime(items: RecentSelectionItem[]): TimeGroup[] {
 interface RecentsPopoverProps {
   onItemSelect: (item: RecentSelectionItem) => void
   isCollapsed: boolean
+  onSearchOpen?: () => void
   getArtistImageByName?: (name: string) => string | undefined
   getArtistByName?: (name: string) => Artist | undefined
   getArtistColor?: (artist: Artist) => string
@@ -62,6 +63,7 @@ interface RecentsPopoverProps {
 export function RecentsPopover({
   onItemSelect,
   isCollapsed,
+  onSearchOpen,
   getArtistImageByName,
   getArtistByName,
   getArtistColor,
@@ -79,8 +81,9 @@ export function RecentsPopover({
   )
 
   const displayedRecents = recentSelections.slice(0, 15)
-  const hasRecents = displayedRecents.length > 0
+  const hasRecents = recentSelections.length > 0
   const groups = groupByTime(displayedRecents)
+  const popoverGroups = groupByTime(recentSelections)
 
   const handleSelect = (item: RecentSelectionItem) => {
     onItemSelect(item)
@@ -201,6 +204,16 @@ export function RecentsPopover({
           })}
         </div>
       ))}
+      {onSearchOpen && (
+        <Button
+          variant="link" 
+          size="sm"
+          className="px-6"
+          onClick={onSearchOpen}
+        >
+          More...
+        </Button>
+      )}
     </>
   )
 
@@ -234,7 +247,7 @@ export function RecentsPopover({
           <CommandInput placeholder="Filter recents..." />
           <CommandList className="max-h-320 overflow-y-auto">
             {!hasRecents && <CommandEmpty>Nothing yet — start exploring</CommandEmpty>}
-            {groups.map((group) => (
+            {popoverGroups.map((group) => (
               <CommandGroup key={group.label} heading={group.label}>
                 {group.items.map((item) => {
                   const isArtist = item.nodeType === 'artist'

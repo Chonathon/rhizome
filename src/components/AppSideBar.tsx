@@ -179,6 +179,7 @@ export function AppSidebar({
                     <RecentsPopover
                       onItemSelect={onRecentsSelect}
                       isCollapsed={isCollapsed}
+                      onSearchOpen={() => setSearchOpen(true)}
                       getArtistImageByName={getArtistImageByName}
                       getArtistByName={getArtistByName}
                       getArtistColor={getArtistColor}
