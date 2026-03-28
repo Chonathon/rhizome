@@ -498,7 +498,7 @@ export function GenreInfo({
                       >
                         <SquareArrowUp size={24}/>All Artists
                       </Button>
-                      <DropdownMenu>
+                      <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant={`${isDesktop ? 'secondary' : 'secondary'}`}

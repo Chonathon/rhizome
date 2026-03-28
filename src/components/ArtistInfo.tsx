@@ -380,7 +380,7 @@ export function ArtistInfo({
                               onToggle={() => onArtistToggle(selectedArtist?.id)}
                               isInCollection={isInCollection}
                             />
-                           <DropdownMenu>
+                           <DropdownMenu modal={false}>
                              <DropdownMenuTrigger asChild>
                                <Button
                                  variant={`${isDesktop ? 'secondary' : 'secondary'}`}
