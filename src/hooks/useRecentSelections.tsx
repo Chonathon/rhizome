@@ -18,6 +18,30 @@ type RecentSelectionsContextValue = {
 
 const RecentSelectionsContext = createContext<RecentSelectionsContextValue | undefined>(undefined);
 
+export type TimeGroup = { label: string; items: RecentSelectionItem[] }
+
+export function groupByTime(items: RecentSelectionItem[]): TimeGroup[] {
+  const todayStart = new Date().setHours(0, 0, 0, 0)
+  const yesterdayStart = todayStart - 86_400_000
+  const weekStart = todayStart - 6 * 86_400_000
+
+  const groups: TimeGroup[] = [
+    { label: 'Today', items: [] },
+    { label: 'Yesterday', items: [] },
+    { label: 'This Week', items: [] },
+    { label: 'Older', items: [] },
+  ]
+
+  for (const item of items) {
+    if (item.timestamp >= todayStart) groups[0].items.push(item)
+    else if (item.timestamp >= yesterdayStart) groups[1].items.push(item)
+    else if (item.timestamp >= weekStart) groups[2].items.push(item)
+    else groups[3].items.push(item)
+  }
+
+  return groups.filter(g => g.items.length > 0)
+}
+
 const isRecentSelectionItem = (value: unknown): value is RecentSelectionItem => {
   if (!value || typeof value !== 'object') return false;
   const node = value as RecentSelectionItem;

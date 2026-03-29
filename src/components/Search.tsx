@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
 import { BadgeIndicator } from "@/components/BadgeIndicator"
-import { useRecentSelections } from "@/hooks/useRecentSelections"
+import { useRecentSelections, groupByTime } from "@/hooks/useRecentSelections"
 import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon } from "lucide-react"
 import { motion } from "framer-motion";
 import { isGenre } from "@/lib/utils"
@@ -430,23 +430,7 @@ export function Search({
               </CommandGroup>
           )}
 
-          {!inputValue && recentSelections.length > 0 && (() => {
-            const todayStart = new Date().setHours(0, 0, 0, 0);
-            const yesterdayStart = todayStart - 86_400_000;
-            const weekStart = todayStart - 6 * 86_400_000;
-            const buckets: { label: string; items: typeof recentSelections }[] = [
-              { label: 'Today', items: [] },
-              { label: 'Yesterday', items: [] },
-              { label: 'This Week', items: [] },
-              { label: 'Older', items: [] },
-            ];
-            for (const s of recentSelections) {
-              if (s.timestamp >= todayStart) buckets[0].items.push(s);
-              else if (s.timestamp >= yesterdayStart) buckets[1].items.push(s);
-              else if (s.timestamp >= weekStart) buckets[2].items.push(s);
-              else buckets[3].items.push(s);
-            }
-            return buckets.filter(b => b.items.length > 0).map((bucket) => (
+          {!inputValue && recentSelections.length > 0 && groupByTime(recentSelections).map((bucket) => (
               <CommandGroup key={bucket.label} heading={bucket.label}>
                 {bucket.items.map((selection) => {
                   const meta = getIndicatorMeta(selection);
@@ -496,8 +480,7 @@ export function Search({
                   );
                 })}
               </CommandGroup>
-            ));
-          })()}
+            ))}
           {filteredActions.length > 0 && (
           <CommandGroup heading="Actions">
             {filteredActions.map((action) => {

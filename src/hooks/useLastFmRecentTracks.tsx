@@ -21,13 +21,16 @@ export function useLastFmRecentTracks(lfmUsername?: string, enabled = true, limi
       return;
     }
 
+    let mounted = true;
     setLoading(true);
     setError(null);
 
     lastFMRecentTracks(lfmUsername, limit)
-      .then(setTracks)
-      .catch(() => setError('Failed to load Last.fm data'))
-      .finally(() => setLoading(false));
+      .then((data) => { if (mounted) setTracks(data.map((t) => ({ ...t, imageUrl: t.imageUrl ?? undefined }))); })
+      .catch(() => { if (mounted) setError('Failed to load Last.fm data'); })
+      .finally(() => { if (mounted) setLoading(false); });
+
+    return () => { mounted = false; };
   }, [lfmUsername, enabled, limit]);
 
   return { tracks, loading, error };
