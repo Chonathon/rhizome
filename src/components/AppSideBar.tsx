@@ -142,10 +142,10 @@ export function AppSidebar({
             </SidebarMenuButton>} */}
           </div>
 
-          <SidebarContent className="flex-none">
-            <SidebarGroupContent className="flex gap-4 flex-col">
-              <SidebarGroup>
-                <SidebarMenu className="gap-4">
+          <SidebarContent className={!isCollapsed ? "flex-1 min-h-0" : "flex-none"}>
+            <SidebarGroupContent className={`flex gap-4 flex-col${!isCollapsed ? " flex-1 min-h-0" : ""}`}>
+              <SidebarGroup className={!isCollapsed ? "flex-1 min-h-0" : ""}>
+                <SidebarMenu className={`gap-4${!isCollapsed ? " flex-1 min-h-0" : ""}`}>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Search ⌘K" size="xl" >
                       <button onClick={() => setSearchOpen(true)}>
@@ -175,7 +175,7 @@ export function AppSidebar({
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  <SidebarMenuItem>
+                  <SidebarMenuItem className={!isCollapsed ? "flex-1 min-h-0 overflow-hidden" : ""}>
                     <RecentsPopover
                       onItemSelect={onRecentsSelect}
                       isCollapsed={isCollapsed}

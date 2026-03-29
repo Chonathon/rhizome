@@ -147,18 +147,16 @@ export function RecentsPopover({
   )
 
   const recentsList = !hasRecents ? (
-    <div className="flex flex-col items-center gap-2 py-10 px-4">
+    <div className="flex flex-col items-center gap-2 py-10 px-4 overflow-y-auto">
       <Search className="h-5 w-5 text-muted-foreground/20" />
       <p className="text-xs text-muted-foreground/40 text-center">Nothing yet — start exploring</p>
     </div>
   ) : (
     <>
       {groups.map((group) => (
-        <div key={group.label} className=''>
-          <div className="flex items-center gap-2 px-2 pb-0.5">
-            <span className="text-xs font-medium text-muted-foreground shrink-0">
-              {group.label}
-            </span>
+        <div key={group.label} className='overflow-hidden p-1'>
+          <div className="px-2 py-1.5 text-sm font-medium text-muted-foreground">
+            {group.label}
           </div>
           {group.items.map((item) => {
             const isArtist = item.nodeType === 'artist'
@@ -172,7 +170,7 @@ export function RecentsPopover({
             return (
               <div
                 key={item.id}
-                className="group/item flex items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer select-none hover:bg-accent hover:text-accent-foreground transition-colors"
+                className="group/item flex items-center justify-between gap-2 rounded-md px-2 py-2 text-sm font-semibold cursor-default select-none data-[selected=true]:bg-accent hover:bg-accent hover:text-accent-foreground transition-colors"
                 onClick={() => handleSelect(item)}
               >
                 <div className="flex min-w-0 items-center gap-2">
@@ -208,8 +206,7 @@ export function RecentsPopover({
       ))}
       {onSearchOpen && (
         <button
-          size="sm"
-          className="flex items-start w-full gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer select-none hover:bg-accent hover:text-accent-foreground transition-colors text-muted-foreground"
+          className="flex items-center w-full gap-2 rounded-md px-2 py-2 text-sm font-medium cursor-default select-none hover:bg-accent hover:text-accent-foreground transition-colors text-muted-foreground"
           onClick={onSearchOpen}
         >
           <Ellipsis className='size-5'/>
@@ -222,8 +219,8 @@ export function RecentsPopover({
   // Expanded sidebar: render inline
   if (!isCollapsed) {
     return (
-      <div className="flex flex-col w-full">
-        <div className="h-full">
+      <div className="flex flex-col w-full h-full">
+        <div className="overflow-y-auto flex-1">
           {showLfm ? lfmList : recentsList}
         </div>
       </div>
@@ -234,7 +231,7 @@ export function RecentsPopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <SidebarMenuButton tooltip="Recent Activity" size="xl" isActive={open}>
+        <SidebarMenuButton tooltip="Recents" size="xl" isActive={open}>
           <History className="shrink-0" />
         </SidebarMenuButton>
       </PopoverTrigger>
