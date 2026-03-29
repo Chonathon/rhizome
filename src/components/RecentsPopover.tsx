@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SidebarMenuButton } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
-import { History, Clock, Search, X } from 'lucide-react'
+import { History, Clock, Search, X, Ellipsis } from 'lucide-react'
 import { BadgeIndicator } from '@/components/BadgeIndicator'
 import { useRecentSelections, RecentSelectionItem, MAX_RECENT_SELECTIONS } from '@/hooks/useRecentSelections'
 import { useLastFmRecentTracks } from '@/hooks/useLastFmRecentTracks'
@@ -154,7 +154,7 @@ export function RecentsPopover({
   ) : (
     <>
       {groups.map((group) => (
-        <div key={group.label} className='pb-3'>
+        <div key={group.label} className=''>
           <div className="flex items-center gap-2 px-2 pb-0.5">
             <span className="text-xs font-medium text-muted-foreground shrink-0">
               {group.label}
@@ -207,14 +207,14 @@ export function RecentsPopover({
         </div>
       ))}
       {onSearchOpen && (
-        <Button
-          variant="link" 
+        <button
           size="sm"
-          className="px-6"
+          className="flex items-start w-full gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer select-none hover:bg-accent hover:text-accent-foreground transition-colors text-muted-foreground"
           onClick={onSearchOpen}
         >
-          More...
-        </Button>
+          <Ellipsis className='size-5'/>
+          View all
+        </button>
       )}
     </>
   )
