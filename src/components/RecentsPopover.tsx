@@ -247,7 +247,7 @@ export function RecentsPopover({
       >
         <Command>
           <CommandInput placeholder="Filter recents..." />
-          <CommandList className="max-h-320 overflow-y-auto">
+          <CommandList className="max-h-[400px] overflow-y-auto">
             {!hasRecents && <CommandEmpty>Nothing yet — start exploring</CommandEmpty>}
             {popoverGroups.map((group) => (
               <CommandGroup key={group.label} heading={group.label}>
