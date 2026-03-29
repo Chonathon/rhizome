@@ -7,6 +7,7 @@ export const MAX_RECENT_SELECTIONS = 100;
 export type RecentSelectionItem = BasicNode & {
   nodeType: 'artist' | 'genre';
   timestamp: number;
+  image?: string;
 };
 
 type RecentSelectionsContextValue = {
@@ -79,7 +80,9 @@ export function RecentSelectionsProvider({ children }: { children: ReactNode }) 
 
   const addRecentSelection = useCallback((selection: BasicNode, nodeType: 'artist' | 'genre') => {
     setRecentSelections((prev) => {
-      const item: RecentSelectionItem = { ...selection, nodeType, timestamp: Date.now() };
+      const maybeImage = (selection as { image?: string }).image;
+      const image = typeof maybeImage === 'string' && maybeImage.trim().length > 0 ? maybeImage : undefined;
+      const item: RecentSelectionItem = { ...selection, nodeType, timestamp: Date.now(), ...(image ? { image } : {}) };
       const merged = [item, ...prev.filter((s) => s.id !== selection.id)];
       return merged.slice(0, MAX_RECENT_SELECTIONS);
     });

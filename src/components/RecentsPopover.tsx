@@ -163,7 +163,9 @@ export function RecentsPopover({
           {group.items.map((item) => {
             const isArtist = item.nodeType === 'artist'
             const artistObj = isArtist ? getArtistByName?.(item.name) : undefined
-            const imageUrl = isArtist ? getArtistImageByName?.(item.name) : undefined
+            const imageUrl = isArtist
+              ? (item.image ?? (artistObj?.image && artistObj.image.trim().length > 0 ? artistObj.image : getArtistImageByName?.(item.name)))
+              : undefined
             const color = isArtist
               ? (artistObj && getArtistColor ? getArtistColor(artistObj) : undefined)
               : genreColorMap?.get(item.id)
@@ -221,7 +223,7 @@ export function RecentsPopover({
   if (!isCollapsed) {
     return (
       <div className="flex flex-col w-full">
-        <div className="overflow-y-auto h-full">
+        <div className="h-full">
           {showLfm ? lfmList : recentsList}
         </div>
       </div>
@@ -252,7 +254,9 @@ export function RecentsPopover({
                 {group.items.map((item) => {
                   const isArtist = item.nodeType === 'artist'
                   const artistObj = isArtist ? getArtistByName?.(item.name) : undefined
-                  const imageUrl = isArtist ? getArtistImageByName?.(item.name) : undefined
+                  const imageUrl = isArtist
+              ? (item.image ?? (artistObj?.image && artistObj.image.trim().length > 0 ? artistObj.image : getArtistImageByName?.(item.name)))
+              : undefined
                   const color = isArtist
                     ? (artistObj && getArtistColor ? getArtistColor(artistObj) : undefined)
                     : genreColorMap?.get(item.id)
