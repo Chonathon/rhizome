@@ -1152,6 +1152,8 @@ function App() {
         setCurrentArtistLinks(links);
         setGraph('similarArtists');
         setShowArtistCard(true);
+      } else if (similarArtists.length === 1) {
+        toast.error(`No similar artist data available for ${similarArtists[0].name}`);
       }
       setCanCreateSimilarArtistGraph(false);
     }
@@ -1554,11 +1556,15 @@ function App() {
     } else {
       const fetched = await fetchArtistBySearch(name);
       if (fetched) {
-        setSelectedArtist(undefined);
-        setArtistInfoToShow(fetched);
-        setShowArtistCard(true);
-        addRecentSelection(fetched);
-        updateUrl({ type: 'artist', id: fetched.id, name: fetched.name });
+        if (graph === 'similarArtists') {
+          await createSimilarArtistGraph(fetched);
+        } else {
+          setSelectedArtist(undefined);
+          setArtistInfoToShow(fetched);
+          setShowArtistCard(true);
+          addRecentSelection(fetched);
+          updateUrl({ type: 'artist', id: fetched.id, name: fetched.name });
+        }
       }
     }
   }
@@ -2008,10 +2014,6 @@ function App() {
   }
 
   const createSimilarArtistGraph = async (artistResult: Artist) => {
-    if (!artistResult.similar || artistResult.similar.length === 0) {
-      toast.error(`No similar artist data available for ${artistResult.name}`);
-      return;
-    }
     setCanCreateSimilarArtistGraph(true);
     await fetchSimilarArtists(artistResult);
     setSelectedArtistFromSearch(false);
