@@ -52,7 +52,7 @@ const SplitButtonAction = React.forwardRef<HTMLButtonElement, React.ComponentPro
         disabled={disabled}
         className={cn(
           buttonVariants({ variant, size }),
-          "!pr-1.5",
+          "!pr-1.5 !rounded-r-md border-r-2 border-black",
           className
         )}
         {...props}
@@ -91,7 +91,7 @@ const SplitButtonTrigger = React.forwardRef<HTMLButtonElement, SplitButtonTrigge
         aria-label={ariaLabel}
         className={cn(
           buttonVariants({ variant, size }),
-          "h-auto !pl-1 !pr-2",
+          "h-auto !pl-1 !pr-2 !rounded-l-md",
           className
         )}
         {...props}
