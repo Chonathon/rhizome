@@ -2535,6 +2535,7 @@ function App() {
         getArtistByName={getArtistByName}
         getArtistColor={getArtistColor}
         genreColorMap={genreColorMap}
+        lfmUsername={lfmUsername}
         onRecentsSelect={(item) => {
           if (item.nodeType === 'genre') {
             window.history.pushState({}, '', `?genre=${encodeURIComponent(item.name.toLowerCase().replace(/\s+/g, '-'))}`);

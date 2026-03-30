@@ -51,6 +51,7 @@ interface AppSidebarProps {
   getArtistByName?: (name: string) => Artist | undefined;
   getArtistColor?: (artist: Artist) => string;
   genreColorMap?: Map<string, string>;
+  lfmUsername?: string;
   signedInUser: boolean;
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
@@ -89,6 +90,7 @@ export function AppSidebar({
   getArtistByName,
   getArtistColor,
   genreColorMap,
+  lfmUsername,
   isCollectionMode,
   searchOpen,
   playerOpen,
@@ -184,6 +186,7 @@ export function AppSidebar({
                       getArtistByName={getArtistByName}
                       getArtistColor={getArtistColor}
                       genreColorMap={genreColorMap}
+                      lfmUsername={lfmUsername}
                     />
                   </SidebarMenuItem>
                 </SidebarMenu>
