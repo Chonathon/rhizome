@@ -2018,6 +2018,7 @@ function App() {
     setArtistPreviewStack([]);
     setSelectedArtist(artistResult);
     setSimilarArtistAnchor(artistResult);
+    setArtistInfoToShow(artistResult);
   }
 
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
@@ -2109,14 +2110,18 @@ function App() {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
 
-      // Restore card visibility based on selections
-      if (selectedArtist) {
-        // Prioritize showing artist card if an artist was selected
-        setArtistInfoToShow(selectedArtist);
+      // Restore card visibility.
+      // Use artistInfoToShow (what the drawer was displaying) rather than selectedArtist —
+      // navigating to an off-graph artist clears selectedArtist but keeps artistInfoToShow set.
+      if (artistInfoToShow) {
         setShowArtistCard(true);
-        // Hide genre card unless there's an active filter
         if (artistFilterGenres.length === 0) {
           setShowGenreCard(false);
+        }
+        // If the last-viewed artist isn't in the restored graph, clear selectedArtist so we
+        // don't accidentally dim every node trying to focus someone who isn't there.
+        if (selectedArtist && !artists.some(a => a.id === selectedArtist.id)) {
+          setSelectedArtist(undefined);
         }
       } else if (artistFilterGenres.length > 0) {
         // If no artist selected but there's an active filter, show genre card

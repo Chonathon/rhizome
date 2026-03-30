@@ -504,7 +504,14 @@ export function ArtistInfo({
                         return (
                           <button
                             key={name}
-                            onClick={() => setArtistFromName(name)}
+                            onClick={() => {
+                            const artist = getArtistByName?.(name);
+                            if (artist && onViewSimilarArtistGraph) {
+                              onViewSimilarArtistGraph(artist);
+                            } else {
+                              setArtistFromName(name);
+                            }
+                          }}
                             title={isInView ? `Go to ${name}` : `View ${name}`}
                             className="flex flex-col items-center gap-2 flex-none w-auto group"
                           >
