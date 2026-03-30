@@ -59,16 +59,16 @@ export function MobileAppBar({ graph, onGraphChange, onOpenSearch,resetAppState,
       >
         <div className="p-1   w-full grid grid-cols-3 place-items-center">
           <ToolbarButton
-            label="Collection"
-            onClick={onCollectionClick}
-            icon={<BookOpen className="size-6" />}
-            active={isCollectionMode}
-          />
-          <ToolbarButton
             label="Explore"
             active={!isCollectionMode}
             onClick={resetAppState}
             icon={<Telescope className="size-6" />}
+          />
+          <ToolbarButton
+            label="Collection"
+            onClick={onCollectionClick}
+            icon={<BookOpen className="size-6" />}
+            active={isCollectionMode}
           />
           <MoreMenu signedInUser={signedInUser} onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />
         </div>
