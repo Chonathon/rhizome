@@ -498,7 +498,7 @@ export function ArtistInfo({
                       {similarFilter(selectedArtist.similar).map((name) => {
                         const artistObj = getArtistByName?.(name);
                         const isInView = !!artistObj;
-                        const img = isInView ? getArtistImageByName?.(name) : undefined;
+                        const img = getArtistImageByName?.(name);
                         const genreColor = artistObj ? getArtistColor(artistObj) : undefined;
 
                         return (
