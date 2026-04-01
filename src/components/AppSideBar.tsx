@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import React, { useCallback, useRef } from "react"
-import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog } from "lucide-react"
+import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog, ArrowUpRight } from "lucide-react"
 import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
 import { Genre, GraphType } from "@/types"
 import RhizomeLogo from "@/components/RhizomeLogo"
@@ -113,12 +113,15 @@ export function AppSidebar({
     }
     window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'login' } }))
   }, [onLoginClick])
-
+// TODO: get alpha version from env or config
   function AlphaBadge() {
   return (
-    <span className={`shrink-0 font-medium text-indigo-500 bg-indigo-100/10 rounded  tracking-wide text-xs px-1.5 py-0.5`}>
-      Alpha v2.0
-    </span>
+    <div className={`shrink-0 font-medium flex items-center text-center text-indigo-500 bg-indigo-100/10 rounded  tracking-wide text-xs px-1.5 py-0.5`}>
+      <a href="#" className="hover:underline">
+        Alpha v2.0
+      </a>
+      <ArrowUpRight className="size-3 inline-block " />
+    </div>
   );
 }
 
@@ -136,9 +139,9 @@ export function AppSidebar({
                 <ArrowLeftToLine />
               </button>
             </SidebarMenuButton>} */}
-            <div className={`pl-2 ${isCollapsed ? "hidden" : "block"}`}>
-              <AlphaBadge size={isCollapsed ? "sm" : "md"} />
-            </div>
+            {/* <div className={`pl-2 ${isCollapsed ? "hidden" : "block"}`}>
+              <AlphaBadge  />
+            </div> */}
           </div>
 
           <SidebarContent className="flex-none">
@@ -198,7 +201,7 @@ export function AppSidebar({
         <div id="sidebar-player-slot" ref={desktopPlayerSlotRef} />
 
         <SidebarFooter className="mt-auto flex p-1 pb-3">
-          <SidebarMenu className={isCollapsed ? "mx-auto gap-4" : "flex w-full flex-row justify-between gap-4"}>
+          <SidebarMenu className={isCollapsed ? "mx-auto" : "flex w-full flex-row justify-between items-center"}>
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="xl" className="self-start w-auto" tooltip="More">
@@ -249,8 +252,12 @@ export function AppSidebar({
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+            <div className={` ${isCollapsed ? "hidden" : "block"}`}>
+              <AlphaBadge  />
+            </div>
             {!isCollapsed && <SidebarMenuButton asChild tooltip="Collapse sidebar" size="xl"
             className="w-auto">
+              
               <button className="!cursor-w-resize" onClick={toggleSidebar}>
                 <ArrowLeftToLine />
               </button>
