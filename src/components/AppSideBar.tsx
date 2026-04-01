@@ -120,7 +120,7 @@ export function AppSidebar({
 
   function AlphaBadge() {
   return (
-      <a href="https://www.notion.so/seanathon/Rhizome-Changelog-2cd7b160b42a8090ace6d43d3803b2ae?source=copy_link" className={`shrink-0 font-medium flex items-center text-center text-gray-500 bg-gray-100/10 rounded hover:bg-gray-100/15 tracking-wide text-xs px-1.5 py-0.5`} target="_blank" rel="noopener noreferrer">
+      <a href="https://www.notion.so/seanathon/Rhizome-Changelog-2cd7b160b42a8090ace6d43d3803b2ae?source=copy_link" className={`shrink-0 font-medium flex items-center text-center text-muted-foreground/70 dark:bg-accent/50 bg-muted/50 hover:bg-muted rounded hover:dark:bg-accent tracking-wide text-xs px-1.5 py-0.5`} target="_blank" rel="noopener noreferrer">
       <div >
         Alpha v{cleanVersion}
       <ArrowUpRight className="size-3 inline-block " />
