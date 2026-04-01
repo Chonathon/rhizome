@@ -32,6 +32,7 @@ import { useTheme } from "next-themes"
 import KofiLogo from "@/assets/kofi_symbol.svg"
 import SidebarPlayer from "@/components/SidebarPlayer"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { AnimatePresence, motion } from "framer-motion"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -116,12 +117,12 @@ export function AppSidebar({
 // TODO: get alpha version from env or config
   function AlphaBadge() {
   return (
-    <div className={`shrink-0 font-medium flex items-center text-center text-indigo-500 bg-indigo-100/10 rounded  tracking-wide text-xs px-1.5 py-0.5`}>
-      <a href="#" className="hover:underline">
+      <a href="https://www.notion.so/seanathon/Rhizome-Changelog-2cd7b160b42a8090ace6d43d3803b2ae?source=copy_link" className={`shrink-0 font-medium flex items-center text-center text-indigo-500 bg-indigo-100/10 rounded hover:bg-indigo-100/15 tracking-wide text-xs px-1.5 py-0.5`} target="_blank" rel="noopener noreferrer">
+      <div >
         Alpha v2.0
-      </a>
       <ArrowUpRight className="size-3 inline-block " />
     </div>
+      </a>
   );
 }
 
@@ -252,9 +253,19 @@ export function AppSidebar({
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-            <div className={` ${isCollapsed ? "hidden" : "block"}`}>
-              <AlphaBadge  />
-            </div>
+            <AnimatePresence mode="popLayout">
+              {!isCollapsed && <motion.div 
+              key={"alpha-badge"}
+              initial={{ opacity: 0, display: "none" }}
+              animate={{ opacity: 1, display: "block" }}
+              transition={{ delay: 0.1, duration: 0.2 }}
+              exit={{ opacity: 0, transition: { delay: 0} }}
+              className={`
+              
+              `}>
+                <AlphaBadge  />
+              </motion.div>}
+            </AnimatePresence>
             {!isCollapsed && <SidebarMenuButton asChild tooltip="Collapse sidebar" size="xl"
             className="w-auto">
               
