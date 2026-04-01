@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import React, { useCallback, useRef } from "react"
-import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog } from "lucide-react"
+import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog, ArrowUpRight } from "lucide-react"
 import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
 import { Artist, Genre, GraphType } from "@/types"
 import { RecentsPopover } from "@/components/RecentsPopover"
@@ -34,6 +34,8 @@ import { useTheme } from "next-themes"
 import KofiLogo from "@/assets/kofi_symbol.svg"
 import SidebarPlayer from "@/components/SidebarPlayer"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { AnimatePresence, motion } from "framer-motion"
+import { PHASE_VERSION } from "@/constants"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -125,12 +127,26 @@ export function AppSidebar({
     }
     window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'login' } }))
   }, [onLoginClick])
+  // Extract phase and version from PHASE_VERSION (format: "valpha-0.2.0")
+  const [rawPhase, rawVersion] = PHASE_VERSION.split('-');
+  const cleanPhase = rawPhase?.replace(/^v/, '').charAt(0).toUpperCase() + rawPhase?.replace(/^v/, '').slice(1) || 'Alpha';
+
+  function AlphaBadge() {
+  return (
+      <a href="https://www.notion.so/seanathon/Rhizome-Changelog-2cd7b160b42a8090ace6d43d3803b2ae?source=copy_link" className={`shrink-0 font-medium flex items-center text-center text-muted-foreground/70 dark:bg-accent/50 bg-muted/50 hover:bg-muted rounded hover:dark:bg-accent tracking-wide text-xs px-1.5 py-0.5`} target="_blank" rel="noopener noreferrer">
+      <div >
+        {cleanPhase} v{rawVersion}
+      <ArrowUpRight className="size-3 inline-block " />
+    </div>
+      </a>
+  );
+}
 
   return (
     <>
       <Sidebar variant="sidebar" collapsible="icon">
         <SidebarContent className={`${isCollapsed ? "" : "backdrop-blur-[2px]"} p-1 flex flex-col`}>
-          <div className={`${isCollapsed ? "" : " items-center justify-between" } flex w-full pt-2.5 pl-1 mb-6`}>
+          <div className={`${isCollapsed ? "" : " items-center justify-start" } flex w-full pt-2.5 pl-1 mb-6`}>
             <button onClick={resetAppState} className="group/logo" title="Reset App">
               <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
             </button>
@@ -140,6 +156,9 @@ export function AppSidebar({
                 <ArrowLeftToLine />
               </button>
             </SidebarMenuButton>} */}
+            {/* <div className={`pl-2 ${isCollapsed ? "hidden" : "block"}`}>
+              <AlphaBadge  />
+            </div> */}
           </div>
 
           <SidebarContent className={!isCollapsed ? "flex-1 min-h-0" : "flex-none"}>
@@ -211,7 +230,7 @@ export function AppSidebar({
         <div id="sidebar-player-slot" ref={desktopPlayerSlotRef} />
 
         <SidebarFooter className="mt-auto flex p-1 pb-3">
-          <SidebarMenu className={isCollapsed ? "mx-auto gap-4" : "flex w-full flex-row justify-between gap-4"}>
+          <SidebarMenu className={isCollapsed ? "mx-auto" : "flex w-full flex-row justify-between items-center"}>
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="xl" className="self-start w-auto" tooltip="More">
@@ -262,8 +281,22 @@ export function AppSidebar({
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+            <AnimatePresence mode="popLayout">
+              {!isCollapsed && <motion.div 
+              key={"alpha-badge"}
+              initial={{ opacity: 0, display: "none" }}
+              animate={{ opacity: 1, display: "block" }}
+              transition={{ delay: 0.1, duration: 0.2 }}
+              exit={{ opacity: 0, transition: { delay: 0} }}
+              className={`
+              
+              `}>
+                <AlphaBadge  />
+              </motion.div>}
+            </AnimatePresence>
             {!isCollapsed && <SidebarMenuButton asChild tooltip="Collapse sidebar" size="xl"
             className="w-auto">
+              
               <button className="!cursor-w-resize" onClick={toggleSidebar}>
                 <ArrowLeftToLine />
               </button>
