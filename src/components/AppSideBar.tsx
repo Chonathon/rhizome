@@ -114,11 +114,19 @@ export function AppSidebar({
     window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'login' } }))
   }, [onLoginClick])
 
+  function AlphaBadge() {
+  return (
+    <span className={`shrink-0 font-medium text-indigo-500 bg-indigo-100/10 rounded  tracking-wide text-xs px-1.5 py-0.5`}>
+      Alpha v2.0
+    </span>
+  );
+}
+
   return (
     <>
       <Sidebar variant="sidebar" collapsible="icon">
         <SidebarContent className={`${isCollapsed ? "" : "backdrop-blur-[2px]"} p-1 flex flex-col`}>
-          <div className={`${isCollapsed ? "" : " items-center justify-between" } flex w-full pt-2.5 pl-1 mb-6`}>
+          <div className={`${isCollapsed ? "" : " items-center justify-start" } flex w-full pt-2.5 pl-1 mb-6`}>
             <button onClick={resetAppState} className="group/logo" title="Reset App">
               <RhizomeLogo className="h-9 w-auto mx-auto text-primary" />
             </button>
@@ -128,6 +136,9 @@ export function AppSidebar({
                 <ArrowLeftToLine />
               </button>
             </SidebarMenuButton>} */}
+            <div className={`pl-2 ${isCollapsed ? "hidden" : "block"}`}>
+              <AlphaBadge size={isCollapsed ? "sm" : "md"} />
+            </div>
           </div>
 
           <SidebarContent className="flex-none">
