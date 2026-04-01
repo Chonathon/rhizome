@@ -33,6 +33,7 @@ import KofiLogo from "@/assets/kofi_symbol.svg"
 import SidebarPlayer from "@/components/SidebarPlayer"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { AnimatePresence, motion } from "framer-motion"
+import { PHASE_VERSION } from "@/constants"
 
 interface AppSidebarProps {
   onClick: () => void;
@@ -115,11 +116,13 @@ export function AppSidebar({
     window.dispatchEvent(new CustomEvent('auth:open', { detail: { mode: 'login' } }))
   }, [onLoginClick])
   // TODO: get alpha version
+  const cleanVersion = PHASE_VERSION.split('-')[1]?.replace(/^\d+\./, '') || PHASE_VERSION;
+
   function AlphaBadge() {
   return (
       <a href="https://www.notion.so/seanathon/Rhizome-Changelog-2cd7b160b42a8090ace6d43d3803b2ae?source=copy_link" className={`shrink-0 font-medium flex items-center text-center text-gray-500 bg-gray-100/10 rounded hover:bg-gray-100/15 tracking-wide text-xs px-1.5 py-0.5`} target="_blank" rel="noopener noreferrer">
       <div >
-        Alpha v2.0
+        Alpha v{cleanVersion}
       <ArrowUpRight className="size-3 inline-block " />
     </div>
       </a>
