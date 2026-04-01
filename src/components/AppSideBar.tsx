@@ -118,13 +118,12 @@ export function AppSidebar({
   // Extract phase and version from PHASE_VERSION (format: "valpha-0.2.0")
   const [rawPhase, rawVersion] = PHASE_VERSION.split('-');
   const cleanPhase = rawPhase?.replace(/^v/, '').charAt(0).toUpperCase() + rawPhase?.replace(/^v/, '').slice(1) || 'Alpha';
-  const cleanVersion = rawVersion?.replace(/^\d+\./, '') || PHASE_VERSION;
 
   function AlphaBadge() {
   return (
       <a href="https://www.notion.so/seanathon/Rhizome-Changelog-2cd7b160b42a8090ace6d43d3803b2ae?source=copy_link" className={`shrink-0 font-medium flex items-center text-center text-muted-foreground/70 dark:bg-accent/50 bg-muted/50 hover:bg-muted rounded hover:dark:bg-accent tracking-wide text-xs px-1.5 py-0.5`} target="_blank" rel="noopener noreferrer">
       <div >
-        {cleanPhase} v{cleanVersion}
+        {cleanPhase} v{rawVersion}
       <ArrowUpRight className="size-3 inline-block " />
     </div>
       </a>
