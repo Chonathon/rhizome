@@ -393,12 +393,12 @@ function App() {
     onGenreFromUrl: (genre) => {
       setGenreInfoToShow(genre);
       setShowGenreCard(true);
-      addRecentSelection(genre);
+      addRecentSelection(genre, 'genre');
     },
     onArtistFromUrl: (artist) => {
       setArtistInfoToShow(artist);
       setShowArtistCard(true);
-      addRecentSelection(artist);
+      addRecentSelection(artist, 'artist');
     },
     onGenreClearedFromUrl: () => {
       setShowGenreCard(false);
@@ -1671,7 +1671,7 @@ function App() {
     setShowGenreCard(true);
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
     setAutoFocusGraph(true); // Enable auto-focus for node clicks
-    addRecentSelection(genre);
+    addRecentSelection(genre, 'genre');
     updateUrl({ type: 'genre', name: genre.name });
   };
 
@@ -1704,7 +1704,7 @@ function App() {
     // Switch to artists view (or stay there)
     setGraph('artists');
     setAutoFocusGraph(true); // Enable auto-focus for this navigation
-    addRecentSelection(genre);
+    addRecentSelection(genre, 'genre');
   }
 
   // Switch to artists graph and select the clicked artist
@@ -1729,7 +1729,7 @@ function App() {
     setArtistInfoToShow(artist); // For drawer display
     setShowArtistCard(true);
     setAutoFocusGraph(true); // Enable auto-focus for top artist clicks
-    addRecentSelection(artist);
+    addRecentSelection(artist, 'artist');
     // Hide genre card but mark it for restoration when artist card is dismissed
     setShowGenreCard(false);
     setRestoreGenreCardOnArtistDismiss(true);
@@ -1769,7 +1769,7 @@ function App() {
         setShowGenreCard(false);
       }
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
-      addRecentSelection(artist);
+      addRecentSelection(artist, 'artist');
     }
     if (graph === 'similarArtists') {
       // Just select the artist without changing the similar filter
@@ -1779,7 +1779,7 @@ function App() {
       setShowArtistCard(true);
       setShowGenreCard(false); // Hide genre card but preserve selection for tab switching
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
-      addRecentSelection(artist);
+      addRecentSelection(artist, 'artist');
     }
     updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   };
@@ -1802,7 +1802,7 @@ function App() {
     } else {
       setAutoFocusGraph(true);
     }
-    addRecentSelection(artist);
+    addRecentSelection(artist, 'artist');
   }
 
   const focusGenreInCurrentView = (genre: Genre, opts?: { forceRefocus?: boolean }) => {
@@ -1816,7 +1816,7 @@ function App() {
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
     setSelectedGenres([genre]);
     // Don't set initialGenreFilter here - focusing a genre is just for viewing, not filtering
-    addRecentSelection(genre);
+    addRecentSelection(genre, 'genre');
     if (shouldTriggerRefocus) {
       setAutoFocusGraph(false);
       setTimeout(() => setAutoFocusGraph(true), 16);
@@ -1836,7 +1836,7 @@ function App() {
     // Don't change graph selection/filters - just show the info card as a preview
     // This prevents unwanted graph dimming during search
 
-    addRecentSelection(genre);
+    addRecentSelection(genre, 'genre');
     updateUrl({ type: 'genre', name: genre.name });
   }
 
@@ -1855,7 +1855,7 @@ function App() {
     });
     setArtistInfoToShow(artist); // Use drawer state, not selectedArtist (prevents graph dimming)
     setShowArtistCard(true);
-    addRecentSelection(artist);
+    addRecentSelection(artist, 'artist');
     updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   }
 
@@ -1869,7 +1869,7 @@ function App() {
       setArtistInfoToShow(artist); // For drawer display
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for find filter selections
-      addRecentSelection(artist);
+      addRecentSelection(artist, 'artist');
       updateUrl({ type: 'artist', id: artist.id, name: artist.name });
       if (graph !== 'artists' && graph !== 'similarArtists') {
         setGraph('artists');
@@ -2550,6 +2550,18 @@ function App() {
         resetAppState={resetAppState}
         onCollectionClick={onCollectionClick}
         onExploreClick={onExploreClick}
+        getArtistImageByName={getArtistImageByName}
+        getArtistByName={getArtistByName}
+        getArtistColor={getArtistColor}
+        genreColorMap={genreColorMap}
+        onRecentsSelect={(item) => {
+          if (item.nodeType === 'genre') {
+            window.history.pushState({}, '', `?genre=${encodeURIComponent(item.name.toLowerCase().replace(/\s+/g, '-'))}`);
+          } else {
+            window.history.pushState({}, '', `?artist=${encodeURIComponent(item.id)}`);
+          }
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
         signedInUser={!!userID}
         isCollectionMode={collectionMode}
         searchOpen={searchOpen}

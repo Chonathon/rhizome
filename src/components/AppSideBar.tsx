@@ -12,7 +12,9 @@ import {
 import React, { useCallback, useRef } from "react"
 import { Settings, CircleUserRound, Cable, HandHeart, SunMoon, ArrowLeftToLine, Cog } from "lucide-react"
 import { TwoLines, SearchIcon, SearchFilled, BookOpen, BookOpenFilled, Telescope, TelescopeFilled } from "./Icon"
-import { Genre, GraphType } from "@/types"
+import { Artist, Genre, GraphType } from "@/types"
+import { RecentsPopover } from "@/components/RecentsPopover"
+import { RecentSelectionItem } from "@/hooks/useRecentSelections"
 import RhizomeLogo from "@/components/RhizomeLogo"
 import { useSidebar } from "@/components/ui/sidebar"
 import MobileAppBar from "@/components/MobileAppBar"
@@ -44,6 +46,11 @@ interface AppSidebarProps {
   resetAppState: () => void;
   onCollectionClick: () => void;
   onExploreClick: () => void;
+  onRecentsSelect: (item: RecentSelectionItem) => void;
+  getArtistImageByName?: (name: string) => string | undefined;
+  getArtistByName?: (name: string) => Artist | undefined;
+  getArtistColor?: (artist: Artist) => string;
+  genreColorMap?: Map<string, string>;
   signedInUser: boolean;
   onSignUpClick?: () => void;
   onLoginClick?: () => void;
@@ -77,6 +84,11 @@ export function AppSidebar({
   onLoginClick,
   onCollectionClick,
   onExploreClick,
+  onRecentsSelect,
+  getArtistImageByName,
+  getArtistByName,
+  getArtistColor,
+  genreColorMap,
   isCollectionMode,
   searchOpen,
   playerOpen,
@@ -130,10 +142,10 @@ export function AppSidebar({
             </SidebarMenuButton>} */}
           </div>
 
-          <SidebarContent className="flex-none">
-            <SidebarGroupContent className="flex gap-4 flex-col">
-              <SidebarGroup>
-                <SidebarMenu className="gap-4">
+          <SidebarContent className={!isCollapsed ? "flex-1 min-h-0" : "flex-none"}>
+            <SidebarGroupContent className={`flex gap-4 flex-col${!isCollapsed ? " flex-1 min-h-0" : ""}`}>
+              <SidebarGroup className={!isCollapsed ? "flex-1 min-h-0" : ""}>
+                <SidebarMenu className={`gap-4${!isCollapsed ? " flex-1 min-h-0" : ""}`}>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Search ⌘K" size="xl" >
                       <button onClick={() => setSearchOpen(true)}>
@@ -161,6 +173,18 @@ export function AppSidebar({
                         <span className="truncate">Collection</span>
                       </button>
                     </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem className={!isCollapsed ? "flex-1 min-h-0 overflow-hidden" : ""}>
+                    <RecentsPopover
+                      onItemSelect={onRecentsSelect}
+                      isCollapsed={isCollapsed}
+                      onSearchOpen={() => setSearchOpen(true)}
+                      getArtistImageByName={getArtistImageByName}
+                      getArtistByName={getArtistByName}
+                      getArtistColor={getArtistColor}
+                      genreColorMap={genreColorMap}
+                    />
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroup>
