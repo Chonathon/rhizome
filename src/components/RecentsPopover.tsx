@@ -113,6 +113,10 @@ export function RecentsPopover({
   if (!isCollapsed) {
     return (
       <div className="flex flex-col w-full h-full">
+        <div className="flex items-center gap-1 px-2 py-1.5">
+          {/* <History className="size-4 text-muted-foreground shrink-0" /> */}
+          <span className="text-sm font-semibold text-muted-foreground/60 tracking-wide">Recents</span>
+        </div>
         <div className="overflow-y-auto flex-1">
           {recentsList}
         </div>
@@ -161,6 +165,9 @@ export function RecentsPopover({
                           />
                         </div>
                         <span className="truncate">{item.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(item.timestamp).toLocaleDateString()}
+                        </span>
                       </div>
                       <div className="flex items-center flex-shrink-0">
                         <Button
