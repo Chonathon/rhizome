@@ -593,6 +593,7 @@ export function GenreInfo({
                     <div className="grid grid-cols-4 gap-4 w-full pb-1 -mx-1 px-1">
                       {topArtists.map((artist) => {
                         const accent = getArtistColor(artist!);
+                        const isInView = !!artist;
                         const img = typeof artist.image === 'string' && artist.image.trim()
                           ? fixWikiImageURL(artist.image as string)
                           : undefined;
@@ -607,6 +608,7 @@ export function GenreInfo({
                               name={artist.name}
                               imageUrl={img}
                               color={accent}
+                              isInView={isInView}
                               className="size-[64px] border-2 ring-2 ring-transparent group-hover:ring-primary/30 group-hover:scale-105 transition-all duration-200"
                               labelClassName="text-base"
                             />

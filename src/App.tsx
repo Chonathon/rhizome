@@ -170,6 +170,7 @@ function App() {
   const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
   const [genreTopArtistsCache, setGenreTopArtistsCache] = useState<Map<string, Artist[]>>(new Map());
   const artistImageCache = useRef<Map<string, string>>(new Map());
+  const artistObjectCache = useRef<Map<string, Artist>>(new Map());
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [artistClusterMethod, setArtistClusterMethod] = useState<ArtistClusterMode>(() => {
@@ -1570,31 +1571,38 @@ function App() {
     }
   }
 
-  // Populate image cache from all artist data sources
+  // Populate image + object caches from all artist data sources
   useEffect(() => {
-    const cache = artistImageCache.current;
+    const imgs = artistImageCache.current;
+    const objs = artistObjectCache.current;
     for (const a of currentArtists) {
-      if (a.name && a.image) cache.set(a.name, a.image as string);
+      if (a.name && a.image) imgs.set(a.name, a.image as string);
+      if (a.name) objs.set(a.name, a);
     }
   }, [currentArtists]);
 
   useEffect(() => {
-    const cache = artistImageCache.current;
+    const imgs = artistImageCache.current;
+    const objs = artistObjectCache.current;
     for (const a of similarArtists) {
-      if (a.name && a.image) cache.set(a.name, a.image as string);
+      if (a.name && a.image) imgs.set(a.name, a.image as string);
+      if (a.name) objs.set(a.name, a);
     }
   }, [similarArtists]);
 
   useEffect(() => {
-    const cache = artistImageCache.current;
+    const imgs = artistImageCache.current;
+    const objs = artistObjectCache.current;
     for (const a of (topArtists ?? [])) {
-      if (a.name && a.image) cache.set(a.name, a.image as string);
+      if (a.name && a.image) imgs.set(a.name, a.image as string);
+      if (a.name) objs.set(a.name, a);
     }
   }, [topArtists]);
 
   useEffect(() => {
-    if (selectedArtist?.name && selectedArtist.image) {
-      artistImageCache.current.set(selectedArtist.name, selectedArtist.image as string);
+    if (selectedArtist?.name) {
+      if (selectedArtist.image) artistImageCache.current.set(selectedArtist.name, selectedArtist.image as string);
+      artistObjectCache.current.set(selectedArtist.name, selectedArtist);
     }
   }, [selectedArtist]);
 
@@ -1606,6 +1614,11 @@ function App() {
 
   const getArtistByName = (name: string) => {
     return currentArtists.find((a) => a.name === name);
+  }
+
+  const getArtistColorByName = (name: string): string | undefined => {
+    const artist = artistObjectCache.current.get(name);
+    return artist ? getArtistColor(artist) : undefined;
   }
 
   const getGenreNameById = (id: string) => {
@@ -3073,6 +3086,7 @@ function App() {
                 onGenreClick={onGenreNameClick}
                 getArtistImageByName={getArtistImageByName}
                 getArtistByName={getArtistByName}
+                getArtistColorByName={getArtistColorByName}
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}

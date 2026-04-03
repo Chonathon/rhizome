@@ -37,6 +37,7 @@ interface ArtistInfoProps {
   onGenreClick?: (name: string) => void;
   getArtistImageByName?: (name: string) => string | undefined;
   getArtistByName?: (name: string) => Artist | undefined;
+  getArtistColorByName?: (name: string) => string | undefined;
   genreColorMap?: Map<string, string>;
   getArtistColor: (artist: Artist) => string;
   getGenreNameById?: (id: string) => string | undefined;
@@ -70,6 +71,7 @@ export function ArtistInfo({
   onGenreClick,
   getArtistImageByName,
   getArtistByName,
+  getArtistColorByName,
   genreColorMap,
   getArtistColor,
   getGenreNameById,
@@ -499,7 +501,9 @@ export function ArtistInfo({
                         const artistObj = getArtistByName?.(name);
                         const isInView = !!artistObj;
                         const img = getArtistImageByName?.(name);
-                        const genreColor = artistObj ? getArtistColor(artistObj) : undefined;
+                        const genreColor = artistObj
+                          ? getArtistColor(artistObj)
+                          : getArtistColorByName?.(name);
 
                         return (
                           <button

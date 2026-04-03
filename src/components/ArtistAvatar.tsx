@@ -59,12 +59,12 @@ export function ArtistAvatar({
 
       {/* Out-of-view: ArrowUp icon colored with genre color */}
       {isInView === false && (
-        <span className="absolute bottom-0 -right-1 size-5 rounded-full bg-accent flex items-center justify-center">
+        <span className="absolute bottom-0 -right-1 size-5 rounded-sm bg-accent flex items-center justify-center">
           <ChevronRight className="size-4" style={{ color: color }} />
         </span>
       )}
 
-      {/* In-graph: neutral GitFork badge — TODO: swap GitFork for the right icon */}
+      {/* In-graph: colored circle */}
       {isInView === true && (
         <span className="absolute bottom-0 -right-1 size-5 rounded-sm bg-accent flex items-center justify-center">
           <span
