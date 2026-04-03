@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { ArrowUp, GitFork } from 'lucide-react';
+import { ArrowUp, GitFork, ChevronRight } from 'lucide-react';
 
 interface ArtistAvatarProps {
   name: string;
@@ -35,10 +35,9 @@ export function ArtistAvatar({
     <span
       aria-hidden="true"
       className={cn(
-        'relative inline-flex size-5 items-center justify-center rounded-xl border',
+        'relative inline-flex size-12 items-center justify-center rounded-full border',
         className,
       )}
-      style={{ borderColor: color }}
     >
       {imageUrl ? (
         <img
@@ -58,20 +57,21 @@ export function ArtistAvatar({
         </span>
       )}
 
-      {/* Out-of-view: ArrowUp badge colored with genre color */}
+      {/* Out-of-view: ArrowUp icon colored with genre color */}
       {isInView === false && (
-        <span
-          className="absolute -bottom-0 -right-1 rounded-full p-1 flex items-center justify-center"
-          style={{ backgroundColor: color ?? 'hsl(var(--accent))' }}
-        >
-          <ArrowUp className="size-4 text-white" />
+        <span className="absolute bottom-0 -right-1 size-5 rounded-full bg-accent flex items-center justify-center">
+          <ChevronRight className="size-4" style={{ color: color }} />
         </span>
       )}
 
       {/* In-graph: neutral GitFork badge — TODO: swap GitFork for the right icon */}
       {isInView === true && (
-        <span className="absolute -bottom-0 -right-1 rounded-full bg-accent p-1 flex items-center justify-center">
-          <GitFork className="size-4 text-muted-foreground" />
+        <span className="absolute bottom-0 -right-1 size-5 rounded-sm bg-accent flex items-center justify-center">
+          <span
+            aria-hidden="true"
+            className="size-2.5 rounded-full"
+            style={{ backgroundColor: color ?? '#ffffff' }}
+          />
         </span>
       )}
     </span>
