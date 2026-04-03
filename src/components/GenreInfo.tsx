@@ -11,7 +11,7 @@ import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ArtistBadge from "@/components/ArtistBadge";
-import { BadgeIndicator } from "@/components/BadgeIndicator";
+import ArtistAvatar from "@/components/ArtistAvatar";
 import GenreBadge from "@/components/GenreBadge";
 import { SplitButton, SplitButtonAction, SplitButtonTrigger } from "@/components/ui/split-button";
 import {
@@ -603,8 +603,7 @@ export function GenreInfo({
                             title={`Go to ${artist.name}`}
                             className="flex flex-col items-center gap-2 flex-none w-auto group"
                           >
-                            <BadgeIndicator
-                              type="artist"
+                            <ArtistAvatar
                               name={artist.name}
                               imageUrl={img}
                               color={accent}

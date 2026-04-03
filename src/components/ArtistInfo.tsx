@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber } from "@/lib/utils";
-import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, EyeOff, Disc3 } from "lucide-react";
+import { CirclePlay, SquarePlus, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, Disc3} from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -19,7 +19,7 @@ import { SplitButton, SplitButtonAction, SplitButtonTrigger } from "@/components
 import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import GenreBadge from "@/components/GenreBadge";
-import { BadgeIndicator } from "@/components/BadgeIndicator";
+import ArtistAvatar from "@/components/ArtistAvatar";
 import { AddButton } from "./AddButton";
 import { Separator } from "@radix-ui/react-separator";
 import { ImageLightbox } from "@/components/ImageLightbox";
@@ -515,13 +515,12 @@ export function ArtistInfo({
                             title={isInView ? `Go to ${name}` : `View ${name}`}
                             className="flex flex-col items-center gap-2 flex-none w-auto group"
                           >
-                            <BadgeIndicator
-                              type="artist"
+                            <ArtistAvatar
                               name={name}
                               imageUrl={img}
                               color={genreColor}
-                              icon={!isInView ? EyeOff : undefined}
-                              className="size-[64px] border-2  group-active:scale-95 transition-all duration-200"
+                              isInView={isInView}
+                              className="size-[64px] border-2 group-active:scale-95 transition-all duration-200"
                               labelClassName="text-base"
                             />
                             <span className="text-[11px] leading-tight text-center line-clamp-2 w-full font-semibold group-hover:text-foreground transition-colors">

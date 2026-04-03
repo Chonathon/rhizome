@@ -41,7 +41,7 @@ export function BadgeIndicator({
     <span
       aria-hidden="true"
       className={cn(
-        'relative inline-flex size-5 items-center justify-center rounded-full border',
+        'relative inline-flex size-5 items-center justify-center rounded-xl border',
         className,
       )}
       style={{ borderColor: color }}

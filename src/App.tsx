@@ -169,6 +169,7 @@ function App() {
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
   const [genreTopArtistsCache, setGenreTopArtistsCache] = useState<Map<string, Artist[]>>(new Map());
+  const artistImageCache = useRef<Map<string, string>>(new Map());
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [artistClusterMethod, setArtistClusterMethod] = useState<ArtistClusterMode>(() => {
@@ -1569,9 +1570,37 @@ function App() {
     }
   }
 
+  // Populate image cache from all artist data sources
+  useEffect(() => {
+    const cache = artistImageCache.current;
+    for (const a of currentArtists) {
+      if (a.name && a.image) cache.set(a.name, a.image as string);
+    }
+  }, [currentArtists]);
+
+  useEffect(() => {
+    const cache = artistImageCache.current;
+    for (const a of similarArtists) {
+      if (a.name && a.image) cache.set(a.name, a.image as string);
+    }
+  }, [similarArtists]);
+
+  useEffect(() => {
+    const cache = artistImageCache.current;
+    for (const a of (topArtists ?? [])) {
+      if (a.name && a.image) cache.set(a.name, a.image as string);
+    }
+  }, [topArtists]);
+
+  useEffect(() => {
+    if (selectedArtist?.name && selectedArtist.image) {
+      artistImageCache.current.set(selectedArtist.name, selectedArtist.image as string);
+    }
+  }, [selectedArtist]);
+
   const getArtistImageByName = (name: string) => {
-    const a = currentArtists.find((x) => x.name === name);
-    const raw = a?.image as string | undefined;
+    const raw = artistImageCache.current.get(name)
+      ?? currentArtists.find((x) => x.name === name)?.image as string | undefined;
     return raw ? fixWikiImageURL(raw) : undefined;
   }
 
