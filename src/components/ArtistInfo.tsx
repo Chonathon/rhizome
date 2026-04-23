@@ -534,20 +534,20 @@ export function ArtistInfo({
                 {/* Genres */}
                 {selectedArtist?.genres && selectedArtist.genres.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    {onViewArtistGraph && selectedArtist ? (
-                      <button
-                        className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
-                        onClick={() => onViewArtistGraph(selectedArtist)}
-                        type="button"
-                        disabled={viewRelatedArtistsLoading}
-                        title={`Explore Related Genres for ${selectedArtist.name}`}
-                      >
-                        <span className="text-md font-semibold">Explore Related Genres</span>
-                        <ChevronRight className="shrink-0 text-muted-foreground size-5" />
-                      </button>
-                    ) : (
+                    <div className="flex items-center justify-between">
                       <span className="text-md font-semibold">Genres</span>
-                    )}
+                      {onViewArtistGraph && selectedArtist && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onViewArtistGraph(selectedArtist)}
+                          disabled={viewRelatedArtistsLoading}
+                          title={`Explore related genres for ${selectedArtist.name}`}
+                        >
+                          Graph <ChevronRight className="size-4" />
+                        </Button>
+                      )}
+                    </div>
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                       {selectedArtist.genres.map((genreId) => {
                         const name = getGenreNameById?.(genreId) ?? genreId;
