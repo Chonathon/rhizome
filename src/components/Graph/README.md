@@ -32,6 +32,7 @@ There is no separate Collections graph component. Collection mode uses the artis
 - A data signature is used to reheat the simulation only when node/link topology changes.
 - Labels fade in/out based on zoom and optional priority label logic.
 - Popularity clustering can enable a radial layout (concentric rings) via `d3.forceRadial`.
+- "By Genre" clustering (collection mode only) groups liked artists by root genre. Genre assignment is pre-computed in App.tsx via `artistGenreAssignments` useMemo and passed to `ClusteringEngine` as `genreAssignments`/`genreColors`/`genreNames`. Intra-genre links use KNN tag-vector similarity for force-directed pull.
 
 ## Entry Points Used by the App
 
