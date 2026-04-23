@@ -1613,8 +1613,6 @@ function App() {
     const uncached = selectedArtist.similar.filter((name) => !artistImageCache.current.has(name));
     if (!uncached.length) return;
     prefetchSimilarImages(selectedArtist).then((artists) => {
-      console.log('[prefetch] returned names:', artists.map(a => a.name));
-      console.log('[prefetch] similar string names:', selectedArtist.similar);
       const newEntries: [string, string][] = [];
       for (const a of artists) {
         if (a.name && a.image) {
@@ -1622,7 +1620,6 @@ function App() {
           newEntries.push([a.name, a.image as string]);
         }
       }
-      console.log('[prefetch] newEntries cached:', newEntries.map(([n]) => n));
       if (newEntries.length) {
         setPrefetchedImageCache((prev) => {
           const next = new Map(prev);
