@@ -189,6 +189,10 @@ function App() {
     const stored = localStorage.getItem('artistColorMode');
     return (stored === 'cluster' ? 'cluster' : 'genre') as 'genre' | 'cluster';
   });
+  const [showClusterOverlay, setShowClusterOverlay] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showClusterOverlay');
+    return stored === null ? true : stored === 'true';
+  });
   const [dagMode, setDagMode] = useState<boolean>(() => {
     const storedDagMode = localStorage.getItem('dagMode');
     return storedDagMode ? JSON.parse(storedDagMode) : false;
@@ -957,7 +961,7 @@ function App() {
 
   // Cluster hull overlays for "By Genre" mode
   const artistClusterOverlays = useMemo((): ClusterOverlay[] | undefined => {
-    if (!artistClusters || artistClusterMethod !== 'genre') return undefined;
+    if (!artistClusters || artistClusterMethod !== 'genre' || !showClusterOverlay) return undefined;
     const overlays: ClusterOverlay[] = [];
     for (const cluster of artistClusters.clusters.values()) {
       if (cluster.artistIds.length === 0) continue;
@@ -969,7 +973,7 @@ function App() {
       });
     }
     return overlays.length > 0 ? overlays : undefined;
-  }, [artistClusters, artistClusterMethod]);
+  }, [artistClusters, artistClusterMethod, showClusterOverlay]);
 
   // Compute radial layout from cluster tier data for popularity stratification
   const artistRadialLayout = useMemo(() => {
@@ -3028,6 +3032,11 @@ function App() {
                   artistClusters={(graph === 'artists' || graph === 'similarArtists') ? artistClusters : undefined}
                   clusteringInProgress={(graph === 'artists' || graph === 'similarArtists') ? clusteringInProgress : undefined}
                   collectionMode={collectionMode}
+                  showClusterOverlay={showClusterOverlay}
+                  setShowClusterOverlay={(v) => {
+                    setShowClusterOverlay(v);
+                    localStorage.setItem('showClusterOverlay', String(v));
+                  }}
                 />
               )}
               <DisplayPanel
