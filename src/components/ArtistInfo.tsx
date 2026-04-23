@@ -493,7 +493,7 @@ export function ArtistInfo({
                           onClick={() => onViewSimilarArtistGraph(selectedArtist)}
                           title={`Explore artists similar to ${selectedArtist.name}`}
                         >
-                          View Graph <ChevronRight className="size-4" />
+                          Graph <ChevronRight className="size-4" />
                         </Button>
                       )}
                     </div>

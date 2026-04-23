@@ -1560,15 +1560,11 @@ function App() {
     } else {
       const fetched = await fetchArtistBySearch(name);
       if (fetched) {
-        if (graph === 'similarArtists') {
-          await createSimilarArtistGraph(fetched);
-        } else {
-          setSelectedArtist(undefined);
-          setArtistInfoToShow(fetched);
-          setShowArtistCard(true);
-          addRecentSelection(fetched);
-          updateUrl({ type: 'artist', id: fetched.id, name: fetched.name });
-        }
+        setSelectedArtist(undefined);
+        setArtistInfoToShow(fetched);
+        setShowArtistCard(true);
+        addRecentSelection(fetched);
+        updateUrl({ type: 'artist', id: fetched.id, name: fetched.name });
       }
     }
   }
