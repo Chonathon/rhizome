@@ -47,11 +47,18 @@ export default function ClusteringPanel({
     const artistOptions = [
         { id: "similarArtists", label: "Similar Artists", description: "Uses the existing artist network structure to find communities. Artists connected by similar artist links form clusters." },
         { id: "popularity", label: "Popularity", description: "Arranges artists in concentric rings by listener count. Popular artists at center, underground at outer ring." },
-        ...(collectionMode ? [{
-            id: "genre",
-            label: "By Genre",
-            description: "Groups your liked artists into clusters by their primary genre — Rock, Electronic, Hip-Hop, and so on. Same-genre artists are physically pulled together.",
-        }] : []),
+        ...(collectionMode ? [
+            {
+                id: "genre",
+                label: "By Genre",
+                description: "Groups your liked artists into clusters by their primary genre — Rock, Electronic, Hip-Hop, and so on. Same-genre artists are physically pulled together.",
+            },
+            {
+                id: "byTags",
+                label: "By Tags",
+                description: "Combines tag-based similarity with your artist network structure to find communities. Blends musical similarity with direct connections.",
+            },
+        ] : []),
     ];
 
     const options = graphType === 'genres' ? genreOptions : artistOptions;
@@ -125,13 +132,13 @@ export default function ClusteringPanel({
                         </motion.div>
                     ))}
                 </RadioGroup>
-                {graphType === 'artists' && clusterMode === 'genre' && setShowClusterOverlay && (
+                {graphType === 'artists' && ['genre', 'byTags', 'popularity'].includes(clusterMode) && setShowClusterOverlay && (
                     <div className={`${feildsetStyles} flex items-center justify-between w-full p-3`}>
                         <div className="flex flex-col">
                             <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">Show cluster overlay</span>
-                            <span className="text-sm text-muted-foreground mt-1">Draw genre region hulls on the graph.</span>
+                            <span className="text-sm text-muted-foreground mt-1">Draw cluster region hulls on the graph.</span>
                         </div>
-                        <Switch checked={showClusterOverlay ?? true} onCheckedChange={setShowClusterOverlay} />
+                        <Switch checked={showClusterOverlay ?? false} onCheckedChange={setShowClusterOverlay} />
                     </div>
                 )}
                 {graphType === 'artists' && artistColorMode !== undefined && setArtistColorMode && (

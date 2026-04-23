@@ -5,7 +5,7 @@ import louvain from 'graphology-communities-louvain';
 import { buildNormalizedLocationMap, calculateLocationSimilarity } from './locationNormalization';
 import { getClusterColor, DEFAULT_DARK_NODE_COLOR, DEFAULT_LIGHT_NODE_COLOR } from "@/lib/colors";
 
-export type ClusteringMethod = 'similarArtists' | 'hybrid' | 'popularity' | 'genre';
+export type ClusteringMethod = 'similarArtists' | 'byTags' | 'popularity' | 'genre';
 
 export interface ClusterResult {
   method: ClusteringMethod;
@@ -35,7 +35,7 @@ export interface Cluster {
 export interface ClusteringOptions {
   method: ClusteringMethod;
   resolution?: number;  // For Louvain
-  hybridWeights?: {
+  tagWeights?: {
     vectors: number;
     louvain: number;
     location: number;  // Weight for location-based similarity (default: 0.2)
@@ -99,8 +99,8 @@ export class ClusteringEngine {
     switch (options.method) {
       case 'similarArtists':
         return this.clusterByLouvain(options.resolution || 1.0);
-      case 'hybrid':
-        return this.clusterHybrid(options.resolution || 1.0, options.hybridWeights, kNeighbors, minSimilarity);
+      case 'byTags':
+        return this.clusterByTags(options.resolution || 1.0, options.tagWeights, kNeighbors, minSimilarity);
       case 'popularity':
         return this.clusterByListeners();
       case 'genre':
@@ -208,8 +208,8 @@ export class ClusteringEngine {
     return this.formatLouvainClusters(communities, 'similarArtists', networkSim, minLinkWeight);
   }
 
-  // 3. HYBRID CLUSTERING - Louvain with combined weighted edges
-  private clusterHybrid(
+  // 3. BY TAGS CLUSTERING - Louvain with combined weighted edges
+  private clusterByTags(
     resolution: number,
     weights = { vectors: 0.6, louvain: 0.4, location: 0.3 },
     kNeighbors: number = 15,
@@ -281,8 +281,8 @@ export class ClusteringEngine {
       penalizedSim.set(key, sim * multiplier);
     });
 
-    //console.log(`[hybrid] Combined similarities: vectors=${vectorSim.size}, network=${networkSim.size}`);
-    //console.log(`[hybrid] Location penalties applied: same=${penaltyStats.same}, region=${penaltyStats.region}, different=${penaltyStats.different}`);
+    //console.log(`[byTags] Combined similarities: vectors=${vectorSim.size}, network=${networkSim.size}`);
+    //console.log(`[byTags] Location penalties applied: same=${penaltyStats.same}, region=${penaltyStats.region}, different=${penaltyStats.different}`);
 
     // Filter out weak similarities to reduce graph complexity
     // After location penalty, more edges will fall below threshold
@@ -298,9 +298,9 @@ export class ClusteringEngine {
       }
     });
 
-    //console.log(`[hybrid] Filtered from ${penalizedSim.size} to ${filteredCombinedSim.size} edges (min weight: ${minCombinedWeight.toFixed(3)})`);
+    //console.log(`[byTags] Filtered from ${penalizedSim.size} to ${filteredCombinedSim.size} edges (min weight: ${minCombinedWeight.toFixed(3)})`);
 
-    // Ensure each artist has at least one edge in the hybrid graph.
+    // Ensure each artist has at least one edge in the byTags graph.
     const degreeByArtist = new Map<string, number>();
     this.artists.forEach(artist => {
       degreeByArtist.set(artist.id, 0);
@@ -383,7 +383,7 @@ export class ClusteringEngine {
     const communities = louvain(graph, { resolution, randomWalk: false });
 
     // Reuse artistCount from above
-    return this.formatLouvainClusters(communities, 'hybrid', filteredCombinedSim, minCombinedWeight);
+    return this.formatLouvainClusters(communities, 'byTags', filteredCombinedSim, minCombinedWeight);
   }
 
   // 4. POPULARITY CLUSTERING - Dynamic percentile-based popularity tiers
@@ -465,7 +465,7 @@ export class ClusteringEngine {
       artistToCluster.set(artist.id, clusterId);
     });
 
-    // Reuse tag-vector KNN similarity from hybrid for intra-genre link generation.
+    // Reuse tag-vector KNN similarity from byTags for intra-genre link generation.
     // mutualOnly=false gives more edges within the (smaller) genre subsets without bees-nest density.
     const tagSimilarities = this.calculateTagSimilarities(10, 0.15, false);
 
@@ -627,7 +627,7 @@ export class ClusteringEngine {
     // Adaptive link weight threshold based on method and graph size
     const artistCount = this.artists.length;
     const minLinkWeight = minLinkWeightOverride ?? (
-      method === 'hybrid' && artistCount > 1000
+      method === 'byTags' && artistCount > 1000
         ? 0.25  // Higher threshold for expensive methods on large graphs
         : 0.2   // Standard threshold
     );
@@ -661,7 +661,7 @@ export class ClusteringEngine {
   private getClusterLabel(method: ClusteringMethod): string {
     switch (method) {
       case 'similarArtists': return 'Similar Artists';
-      case 'hybrid': return 'Hybrid';
+      case 'byTags': return 'By Tags';
       case 'popularity': return 'Popularity';
       case 'genre': return 'Genre';
       default: return 'Similar Artists';
