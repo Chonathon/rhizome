@@ -180,7 +180,7 @@ function App() {
     if (stored === 'listeners') {
       return 'popularity';
     }
-    if (stored === 'similarArtists' || stored === 'hybrid' || stored === 'popularity' || stored === 'genre') {
+    if (stored === 'similarArtists' || stored === 'byTags' || stored === 'popularity' || stored === 'genre') {
       return stored;
     }
     return DEFAULT_ARTIST_CLUSTER_MODE;
@@ -959,9 +959,9 @@ function App() {
     }
   }, [artistClusters, graph, currentArtistLinks, filterArtistLinksByClusters, currentArtists]);
 
-  // Cluster hull overlays for "By Genre" mode
+  // Cluster hull overlays for genre, byTags, and popularity modes
   const artistClusterOverlays = useMemo((): ClusterOverlay[] | undefined => {
-    if (!artistClusters || artistClusterMethod !== 'genre' || !showClusterOverlay) return undefined;
+    if (!artistClusters || !['genre', 'byTags', 'popularity'].includes(artistClusterMethod) || !showClusterOverlay) return undefined;
     const overlays: ClusterOverlay[] = [];
     for (const cluster of artistClusters.clusters.values()) {
       if (cluster.artistIds.length === 0) continue;

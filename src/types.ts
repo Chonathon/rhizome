@@ -63,7 +63,7 @@ export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'parentGenre';
 
 export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion';
 
-export type ArtistClusterMode = 'similarArtists' | 'hybrid' | 'popularity' | 'genre';
+export type ArtistClusterMode = 'similarArtists' | 'byTags' | 'popularity' | 'genre';
 
 export type LinkType = GenreClusterMode | 'similar';
 
