@@ -18,20 +18,24 @@ interface ClusteringPanelProps {
     artistClusters?: ClusterResult | null;
     clusteringInProgress?: boolean;
     collectionMode?: boolean;
+    showClusterOverlay?: boolean;
+    setShowClusterOverlay?: (v: boolean) => void;
 }
 
-export default function ClusteringPanel({ 
-    graphType, 
-    clusterMode, 
-    setClusterMode, 
-    dagMode, 
+export default function ClusteringPanel({
+    graphType,
+    clusterMode,
+    setClusterMode,
+    dagMode,
     setDagMode,
     artistColorMode,
     setArtistColorMode,
     genreColorLegend,
     artistClusters,
     clusteringInProgress,
-    collectionMode
+    collectionMode,
+    showClusterOverlay,
+    setShowClusterOverlay,
 }: ClusteringPanelProps) {
 
     const genreOptions = [
@@ -121,6 +125,15 @@ export default function ClusteringPanel({
                         </motion.div>
                     ))}
                 </RadioGroup>
+                {graphType === 'artists' && clusterMode === 'genre' && setShowClusterOverlay && (
+                    <div className={`${feildsetStyles} flex items-center justify-between w-full p-3`}>
+                        <div className="flex flex-col">
+                            <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">Show cluster overlay</span>
+                            <span className="text-sm text-muted-foreground mt-1">Draw genre region hulls on the graph.</span>
+                        </div>
+                        <Switch checked={showClusterOverlay ?? true} onCheckedChange={setShowClusterOverlay} />
+                    </div>
+                )}
                 {graphType === 'artists' && artistColorMode !== undefined && setArtistColorMode && (
                     <>
                         <div className={`${feildsetStyles} flex items-center justify-between w-full p-3 pt-3`}>

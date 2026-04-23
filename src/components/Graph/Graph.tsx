@@ -424,6 +424,9 @@ const Graph = forwardRef(function GraphInner<
 
   useEffect(() => {
     clusterOverlaysRef.current = clusterOverlays;
+    // autoPauseRedraw stops the canvas when the sim is idle, so poke it to
+    // repaint after the overlay data changes (on/off toggle, data update, etc.)
+    fgRef.current?.resumeAnimation?.();
   }, [clusterOverlays]);
 
   // Convert display control values to usable ranges (all centered at 50 = 1.0x)
