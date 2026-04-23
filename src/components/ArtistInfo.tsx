@@ -500,6 +500,7 @@ export function ArtistInfo({
                     <div className="grid grid-cols-4 gap-4 w-full pb-1 -mx-1 px-1">
                       {similarFilter(selectedArtist.similar).map((name) => {
                         const artistObj = getArtistByName?.(name);
+                        const isInView = !!artistObj;
                         const img = getArtistImageByName?.(name);
                         const genreColor = artistObj
                           ? getArtistColor(artistObj)
@@ -516,6 +517,7 @@ export function ArtistInfo({
                               name={name}
                               imageUrl={img}
                               color={genreColor}
+                              isInView={isInView || undefined}
                               className="size-[64px] border-2 group-active:scale-95 transition-all duration-200"
                               labelClassName="text-base"
                             />
