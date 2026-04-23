@@ -484,22 +484,22 @@ export function ArtistInfo({
                 {/* Similar Artists */}
                 {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
                   <div className="flex flex-col gap-3">
-                    {onViewSimilarArtistGraph && selectedArtist ? (
-                      <button
-                        className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
-                        onClick={() => onViewSimilarArtistGraph(selectedArtist)}
-                        title={`Explore artists similar to ${selectedArtist.name}`}
-                      >
-                        <span className="text-md font-semibold">Similar Artists</span>
-                        <ChevronRight className="shrink-0 text-muted-foreground size-5" />
-                      </button>
-                    ) : (
+                    <div className="flex items-center justify-between">
                       <span className="text-md font-semibold">Similar Artists</span>
-                    )}
+                      {onViewSimilarArtistGraph && selectedArtist && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onViewSimilarArtistGraph(selectedArtist)}
+                          title={`Explore artists similar to ${selectedArtist.name}`}
+                        >
+                          View Graph <ChevronRight className="size-4" />
+                        </Button>
+                      )}
+                    </div>
                     <div className="grid grid-cols-4 gap-4 w-full pb-1 -mx-1 px-1">
                       {similarFilter(selectedArtist.similar).map((name) => {
                         const artistObj = getArtistByName?.(name);
-                        const isInView = !!artistObj;
                         const img = getArtistImageByName?.(name);
                         const genreColor = artistObj
                           ? getArtistColor(artistObj)
@@ -508,22 +508,14 @@ export function ArtistInfo({
                         return (
                           <button
                             key={name}
-                            onClick={() => {
-                            const artist = getArtistByName?.(name);
-                            if (artist && onViewSimilarArtistGraph) {
-                              onViewSimilarArtistGraph(artist);
-                            } else {
-                              setArtistFromName(name);
-                            }
-                          }}
-                            title={isInView ? `Go to ${name}` : `View ${name}`}
+                            onClick={() => setArtistFromName(name)}
+                            title={`View ${name}`}
                             className="flex flex-col items-center gap-2 flex-none w-auto group"
                           >
                             <ArtistAvatar
                               name={name}
                               imageUrl={img}
                               color={genreColor}
-                              isInView={isInView}
                               className="size-[64px] border-2 group-active:scale-95 transition-all duration-200"
                               labelClassName="text-base"
                             />
