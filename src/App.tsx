@@ -179,7 +179,7 @@ function App() {
     if (stored === 'listeners') {
       return 'popularity';
     }
-    if (stored === 'similarArtists' || stored === 'hybrid' || stored === 'popularity') {
+    if (stored === 'similarArtists' || stored === 'hybrid' || stored === 'popularity' || stored === 'genre') {
       return stored;
     }
     return DEFAULT_ARTIST_CLUSTER_MODE;
@@ -769,6 +769,77 @@ function App() {
     });
   }, [graph]);
 
+  // Pre-compute per-artist root genre assignment for "By Genre" clustering (collection mode)
+  const artistGenreAssignments = useMemo((): {
+    assignments: Map<string, string>;
+    colors: Map<string, string>;
+    names: Map<string, string>;
+  } => {
+    const assignments = new Map<string, string>();
+    const colors = new Map<string, string>();
+    const names = new Map<string, string>();
+
+    if (!currentArtists.length || !genres.length) return { assignments, colors, names };
+
+    const isDark = resolvedTheme === 'dark';
+    const genreById = new Map(genres.map(g => [g.id, g]));
+    const genreByName = new Map(genres.map(g => [g.name, g]));
+    const rootIdLookup = new Set(genreRoots);
+    const genreNameById = new Map(genres.map(g => [g.id, g.name]));
+
+    const globalRootArtistCount = new Map<string, number>();
+    genres.forEach(genre => {
+      if (genre.rootGenres?.length) {
+        genre.rootGenres.forEach(rootId => {
+          globalRootArtistCount.set(rootId, (globalRootArtistCount.get(rootId) ?? 0) + genre.artistCount);
+        });
+      }
+      if (rootIdLookup.has(genre.id)) {
+        globalRootArtistCount.set(genre.id, (globalRootArtistCount.get(genre.id) ?? 0) + genre.artistCount);
+      }
+    });
+    const rootColorMap = assignRootGenreColors(genreRoots, isDark, globalRootArtistCount);
+
+    currentArtists.forEach(artist => {
+      let rootGenreId: string | null = null;
+
+      if (artist.tags?.length) {
+        const genreTags = artist.tags
+          .filter(t => genreByName.has(t.name))
+          .sort((a, b) => b.count - a.count);
+        if (genreTags.length > 0) {
+          const tagGenre = genreByName.get(genreTags[0].name);
+          if (tagGenre?.rootGenres?.[0]) rootGenreId = tagGenre.rootGenres[0];
+        }
+      }
+
+      if (!rootGenreId && artist.genres?.length) {
+        const firstGenre = genreById.get(artist.genres[0]);
+        if (firstGenre?.rootGenres?.[0]) {
+          rootGenreId = firstGenre.rootGenres[0];
+        } else if (firstGenre && rootIdLookup.has(firstGenre.id)) {
+          rootGenreId = firstGenre.id;
+        }
+      }
+
+      const finalRootId = rootGenreId ?? 'unknown';
+      assignments.set(artist.id, finalRootId);
+
+      if (finalRootId !== 'unknown' && !colors.has(finalRootId)) {
+        const color = rootColorMap.get(finalRootId);
+        if (color) {
+          colors.set(finalRootId, color);
+          names.set(finalRootId, genreNameById.get(finalRootId) ?? finalRootId);
+        }
+      }
+    });
+
+    colors.set('unknown', isDark ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR);
+    names.set('unknown', 'Unknown Genre');
+
+    return { assignments, colors, names };
+  }, [currentArtists, genres, genreRoots, resolvedTheme]);
+
   // Compute artist clusters using selected clustering method
   // Use async computation for large graphs to avoid blocking UI
   const [artistClusters, setArtistClusters] = useState<ClusterResult | null>(null);
@@ -806,6 +877,11 @@ function App() {
           const result = engine.cluster({
             method: artistClusterMethod,
             resolution: 1.0,
+            ...(artistClusterMethod === 'genre' && {
+              genreAssignments: artistGenreAssignments.assignments,
+              genreColors: artistGenreAssignments.colors,
+              genreNames: artistGenreAssignments.names,
+            }),
           });
           setArtistClusters(result);
         } catch (error) {
@@ -823,7 +899,7 @@ function App() {
         clearTimeout(clusteringTimeoutRef.current);
       }
     };
-  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod, resolvedTheme]);
+  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod, resolvedTheme, artistGenreAssignments]);
 
   // Use generated links from clustering (artists colored by parent genre)
   useEffect(() => {
@@ -2933,6 +3009,7 @@ function App() {
                   genreColorLegend={genreColorLegend}
                   artistClusters={(graph === 'artists' || graph === 'similarArtists') ? artistClusters : undefined}
                   clusteringInProgress={(graph === 'artists' || graph === 'similarArtists') ? clusteringInProgress : undefined}
+                  collectionMode={collectionMode}
                 />
               )}
               <DisplayPanel

@@ -3,9 +3,9 @@ import { ARTIST_LISTENER_TIERS } from '@/constants';
 import Graph from 'graphology';
 import louvain from 'graphology-communities-louvain';
 import { buildNormalizedLocationMap, calculateLocationSimilarity } from './locationNormalization';
-import {getClusterColor} from "@/lib/colors";
+import { getClusterColor, DEFAULT_DARK_NODE_COLOR, DEFAULT_LIGHT_NODE_COLOR } from "@/lib/colors";
 
-export type ClusteringMethod = 'similarArtists' | 'hybrid' | 'popularity';
+export type ClusteringMethod = 'similarArtists' | 'hybrid' | 'popularity' | 'genre';
 
 export interface ClusterResult {
   method: ClusteringMethod;
@@ -42,6 +42,10 @@ export interface ClusteringOptions {
   };
   kNeighbors?: number;  // Number of nearest neighbors to keep (default: 20)
   minSimilarity?: number;  // Minimum similarity threshold (0-1, default: 0.1)
+  // Only required when method === 'genre'
+  genreAssignments?: Map<string, string>;  // artistId -> rootGenreId
+  genreColors?: Map<string, string>;       // rootGenreId -> hex color
+  genreNames?: Map<string, string>;        // rootGenreId -> display name
 }
 
 export class ClusteringEngine {
@@ -99,6 +103,12 @@ export class ClusteringEngine {
         return this.clusterHybrid(options.resolution || 1.0, options.hybridWeights, kNeighbors, minSimilarity);
       case 'popularity':
         return this.clusterByListeners();
+      case 'genre':
+        return this.clusterByGenre(
+          options.genreAssignments ?? new Map(),
+          options.genreColors ?? new Map(),
+          options.genreNames
+        );
       default:
         return this.clusterByLouvain(options.resolution || 1.0);
     }
@@ -430,6 +440,48 @@ export class ClusteringEngine {
     };
   }
 
+  // 5. GENRE CLUSTERING - Deterministic assignment by root genre + tag-vector intra-genre links
+  private clusterByGenre(
+    genreAssignments: Map<string, string>,
+    genreColors: Map<string, string>,
+    genreNames?: Map<string, string>
+  ): ClusterResult {
+    const clusters = new Map<string, Cluster>();
+    const artistToCluster = new Map<string, string>();
+
+    // Assign each artist to its root genre cluster
+    this.artists.forEach(artist => {
+      const rootGenreId = genreAssignments.get(artist.id) ?? 'unknown';
+      const clusterId = `genre-${rootGenreId}`;
+      if (!clusters.has(clusterId)) {
+        clusters.set(clusterId, {
+          id: clusterId,
+          name: genreNames?.get(rootGenreId) ?? (rootGenreId === 'unknown' ? 'Unknown Genre' : rootGenreId),
+          artistIds: [],
+          color: genreColors.get(rootGenreId) ?? (this.isDark ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR),
+        });
+      }
+      clusters.get(clusterId)!.artistIds.push(artist.id);
+      artistToCluster.set(artist.id, clusterId);
+    });
+
+    // Reuse tag-vector KNN similarity from hybrid for intra-genre link generation.
+    // mutualOnly=false gives more edges within the (smaller) genre subsets without bees-nest density.
+    const tagSimilarities = this.calculateTagSimilarities(10, 0.15, false);
+
+    const links: Array<{ source: string; target: string; weight: number }> = [];
+    tagSimilarities.forEach((weight, key) => {
+      const [source, target] = key.split('|');
+      const sc = artistToCluster.get(source);
+      const tc = artistToCluster.get(target);
+      if (sc && tc && sc === tc) {
+        links.push({ source, target, weight });
+      }
+    });
+
+    return { method: 'genre', clusters, artistToCluster, links, stats: this.calculateStats(clusters) };
+  }
+
   // Build dynamic tiers based on percentiles of actual listener data
   private buildDynamicListenerTiers(): ListenerTier[] {
     const TIER_COUNT = 5;
@@ -611,6 +663,7 @@ export class ClusteringEngine {
       case 'similarArtists': return 'Similar Artists';
       case 'hybrid': return 'Hybrid';
       case 'popularity': return 'Popularity';
+      case 'genre': return 'Genre';
       default: return 'Similar Artists';
     }
   }
