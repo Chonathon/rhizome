@@ -6,6 +6,7 @@ import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
 import useGenreTopArtists from "@/hooks/useGenreTopArtists";
 import ArtistsForceGraph, { type GraphHandle } from "@/components/ArtistsForceGraph";
+import type { ClusterOverlay } from "@/components/Graph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
   Artist, ArtistClusterMode, ArtistNodeLimitType, BadDataReport, ContextAction, FindOption,
@@ -953,6 +954,22 @@ function App() {
       setFilteredArtistLinks(currentArtistLinks);
     }
   }, [artistClusters, graph, currentArtistLinks, filterArtistLinksByClusters, currentArtists]);
+
+  // Cluster hull overlays for "By Genre" mode
+  const artistClusterOverlays = useMemo((): ClusterOverlay[] | undefined => {
+    if (!artistClusters || artistClusterMethod !== 'genre') return undefined;
+    const overlays: ClusterOverlay[] = [];
+    for (const cluster of artistClusters.clusters.values()) {
+      if (cluster.artistIds.length === 0) continue;
+      overlays.push({
+        id: cluster.id,
+        name: cluster.name,
+        color: cluster.color,
+        nodeIds: new Set(cluster.artistIds),
+      });
+    }
+    return overlays.length > 0 ? overlays : undefined;
+  }, [artistClusters, artistClusterMethod]);
 
   // Compute radial layout from cluster tier data for popularity stratification
   const artistRadialLayout = useMemo(() => {
@@ -2882,6 +2899,7 @@ function App() {
                   disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
                   radialLayout={artistRadialLayout}
                   priorityLabelIds={centralArtistLabelIds}
+                  clusterOverlays={artistClusterOverlays}
                 />
 
           {/* Genre hover preview */}

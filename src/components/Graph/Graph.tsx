@@ -1,6 +1,7 @@
 import {
   forwardRef,
   memo,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -87,6 +88,195 @@ export type NodeRenderer<T> = (ctx: NodeRenderContext<T>) => void;
 export type SelectionRenderer<T> = (ctx: SelectionRenderContext<T>) => void;
 export type LabelRenderer<T> = (ctx: LabelRenderContext<T>) => void;
 
+export interface ClusterOverlay {
+  id: string;
+  name: string;
+  color: string;
+  nodeIds: Set<string>;
+}
+
+// --- Cluster hull drawing helpers ---
+
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function cross2d(O: [number, number], A: [number, number], B: [number, number]): number {
+  return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
+}
+
+function computeConvexHull(pts: [number, number][]): [number, number][] {
+  const n = pts.length;
+  if (n < 2) return [...pts];
+  const sorted = [...pts].sort((a, b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]);
+  const lower: [number, number][] = [];
+  for (const p of sorted) {
+    while (lower.length >= 2 && cross2d(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper: [number, number][] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const p = sorted[i];
+    while (upper.length >= 2 && cross2d(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  lower.pop();
+  upper.pop();
+  return [...lower, ...upper];
+}
+
+// Smooth polygon via midpoint-quadratic-bezier (round corners without external deps)
+function drawSmoothPolygon(ctx: CanvasRenderingContext2D, pts: [number, number][]): void {
+  const n = pts.length;
+  if (n === 0) return;
+  const mid = (a: [number, number], b: [number, number]): [number, number] => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const start = mid(pts[n - 1], pts[0]);
+  ctx.moveTo(start[0], start[1]);
+  for (let i = 0; i < n; i++) {
+    const curr = pts[i];
+    const next = pts[(i + 1) % n];
+    const m = mid(curr, next);
+    ctx.quadraticCurveTo(curr[0], curr[1], m[0], m[1]);
+  }
+  ctx.closePath();
+}
+
+type NodePosEntry = { x?: number; y?: number; radius: number };
+
+function buildClusterShape(
+  positions: [number, number][],
+  padding: number,
+  cx: number,
+  cy: number,
+): { kind: 'circle'; x: number; y: number; r: number } | { kind: 'poly'; pts: [number, number][] } {
+  if (positions.length === 1) {
+    return { kind: 'circle', x: positions[0][0], y: positions[0][1], r: padding };
+  }
+  if (positions.length === 2) {
+    const dx = positions[1][0] - positions[0][0];
+    const dy = positions[1][1] - positions[0][1];
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const nx = (-dy / len) * padding;
+    const ny = (dx / len) * padding;
+    const ax = positions[0][0] - (dx / len) * padding;
+    const ay = positions[0][1] - (dy / len) * padding;
+    const bx = positions[1][0] + (dx / len) * padding;
+    const by = positions[1][1] + (dy / len) * padding;
+    return {
+      kind: 'poly',
+      pts: [
+        [ax + nx, ay + ny],
+        [bx + nx, by + ny],
+        [bx - nx, by - ny],
+        [ax - nx, ay - ny],
+      ],
+    };
+  }
+  const hull = computeConvexHull(positions);
+  const expanded: [number, number][] = hull.map(p => {
+    const dx = p[0] - cx;
+    const dy = p[1] - cy;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 1e-6) return [p[0] + padding, p[1]] as [number, number];
+    return [p[0] + (dx / len) * padding, p[1] + (dy / len) * padding] as [number, number];
+  });
+  return { kind: 'poly', pts: expanded };
+}
+
+function traceClusterShape(ctx: CanvasRenderingContext2D, shape: ReturnType<typeof buildClusterShape>): void {
+  ctx.beginPath();
+  if (shape.kind === 'circle') {
+    ctx.arc(shape.x, shape.y, shape.r, 0, 2 * Math.PI);
+  } else {
+    drawSmoothPolygon(ctx, shape.pts);
+  }
+}
+
+const CLUSTER_HULL_PADDING = 48;
+const CLUSTER_LABEL_SCREEN_PX = 13;
+const CLUSTER_LABEL_STROKE_SCREEN_PX = 1.5;
+
+function drawClusterHulls(
+  ctx: CanvasRenderingContext2D,
+  overlays: ClusterOverlay[],
+  nodeMap: Map<string, NodePosEntry>,
+  globalScale: number,
+): void {
+  for (const overlay of overlays) {
+    const positions: [number, number][] = [];
+    for (const id of overlay.nodeIds) {
+      const node = nodeMap.get(id);
+      if (node?.x !== undefined && node.y !== undefined) {
+        positions.push([node.x, node.y]);
+      }
+    }
+    if (positions.length === 0) continue;
+
+    const cx = positions.reduce((s, p) => s + p[0], 0) / positions.length;
+    const cy = positions.reduce((s, p) => s + p[1], 0) / positions.length;
+    const shape = buildClusterShape(positions, CLUSTER_HULL_PADDING, cx, cy);
+
+    let fillColor: string;
+    let strokeColor: string;
+    try {
+      fillColor = hexToRgba(overlay.color, 0.1);
+      strokeColor = hexToRgba(overlay.color, 0.4);
+    } catch {
+      fillColor = overlay.color + '1A';
+      strokeColor = overlay.color + '66';
+    }
+
+    traceClusterShape(ctx, shape);
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = CLUSTER_LABEL_STROKE_SCREEN_PX / globalScale;
+    ctx.stroke();
+  }
+}
+
+function drawClusterLabels(
+  ctx: CanvasRenderingContext2D,
+  overlays: ClusterOverlay[],
+  nodeMap: Map<string, NodePosEntry>,
+  globalScale: number,
+): void {
+  const fontSize = CLUSTER_LABEL_SCREEN_PX / globalScale;
+
+  for (const overlay of overlays) {
+    const positions: [number, number][] = [];
+    for (const id of overlay.nodeIds) {
+      const node = nodeMap.get(id);
+      if (node?.x !== undefined && node.y !== undefined) {
+        positions.push([node.x, node.y]);
+      }
+    }
+    if (positions.length === 0) continue;
+
+    const cx = positions.reduce((s, p) => s + p[0], 0) / positions.length;
+    const minY = Math.min(...positions.map(p => p[1]));
+    const labelY = minY - CLUSTER_HULL_PADDING - fontSize * 0.7;
+
+    let labelColor: string;
+    try {
+      labelColor = hexToRgba(overlay.color, 0.85);
+    } catch {
+      labelColor = overlay.color;
+    }
+
+    ctx.save();
+    ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = labelColor;
+    ctx.fillText(overlay.name, cx, labelY);
+    ctx.restore();
+  }
+}
+
 export interface GraphProps<T, L extends SharedGraphLink> {
   nodes: SharedGraphNode<T>[];
   links: L[];
@@ -121,6 +311,8 @@ export interface GraphProps<T, L extends SharedGraphLink> {
     nodeToRadius: Map<string, number>;
     strength?: number;
   };
+  // Cluster hull overlays (genre mode)
+  clusterOverlays?: ClusterOverlay[];
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -192,6 +384,7 @@ const Graph = forwardRef(function GraphInner<
     disableDimming = false,
     priorityLabelIds: priorityLabelIdsProp,
     radialLayout,
+    clusterOverlays,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -200,6 +393,7 @@ const Graph = forwardRef(function GraphInner<
   const zoomRef = useRef<number>(1);
   const showNodesRef = useRef<boolean>(showNodes);
   const showLinksRef = useRef<boolean>(showLinks);
+  const clusterOverlaysRef = useRef<ClusterOverlay[] | undefined>(undefined);
   const { resolvedTheme } = useTheme();
   const { state: sidebarState } = useSidebar();
   const sidebarExpanded = sidebarState === "expanded";
@@ -227,6 +421,10 @@ const Graph = forwardRef(function GraphInner<
     showNodesRef.current = showNodes;
     showLinksRef.current = showLinks;
   }, [showNodes, showLinks]);
+
+  useEffect(() => {
+    clusterOverlaysRef.current = clusterOverlays;
+  }, [clusterOverlays]);
 
   // Convert display control values to usable ranges (all centered at 50 = 1.0x)
   const nodeScaleFactor = useMemo(() => {
@@ -693,6 +891,26 @@ const Graph = forwardRef(function GraphInner<
     };
   }, [disableDimming]);
 
+  const handleRenderFramePre = useCallback((ctx: CanvasRenderingContext2D, globalScale: number) => {
+    const overlays = clusterOverlaysRef.current;
+    if (!overlays?.length) return;
+    const nodes = preparedDataRef.current?.nodes;
+    if (!nodes?.length) return;
+    const nodeMap = new Map<string, NodePosEntry>();
+    for (const n of nodes) nodeMap.set(n.id, n);
+    drawClusterHulls(ctx, overlays, nodeMap, globalScale);
+  }, []);
+
+  const handleRenderFramePost = useCallback((ctx: CanvasRenderingContext2D, globalScale: number) => {
+    const overlays = clusterOverlaysRef.current;
+    if (!overlays?.length) return;
+    const nodes = preparedDataRef.current?.nodes;
+    if (!nodes?.length) return;
+    const nodeMap = new Map<string, NodePosEntry>();
+    for (const n of nodes) nodeMap.set(n.id, n);
+    drawClusterLabels(ctx, overlays, nodeMap, globalScale);
+  }, []);
+
   return (
     <div
       ref={containerRef}
@@ -907,6 +1125,8 @@ const Graph = forwardRef(function GraphInner<
           ctx.fill();
         }}
         nodeVal={(node) => node.radius}
+        onRenderFramePre={handleRenderFramePre}
+        onRenderFramePost={handleRenderFramePost}
       />
       </div>
     </div>
