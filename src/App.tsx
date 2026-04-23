@@ -172,8 +172,38 @@ function App() {
   const [genreTopArtistsCache, setGenreTopArtistsCache] = useState<Map<string, Artist[]>>(new Map());
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
-  const [artistClusterMethod, setArtistClusterMethod] = useState<ArtistClusterMode>(() => {
-    const stored = localStorage.getItem('artistClusterMethod');
+  const [collectionArtistClusterMethod, setCollectionArtistClusterMethod] = useState<ArtistClusterMode>(() => {
+    // Try new key first, fall back to old key for backward compatibility
+    let stored = localStorage.getItem('collectionArtistClusterMethod');
+    if (!stored) {
+      stored = localStorage.getItem('artistClusterMethod');
+    }
+    if (stored === 'louvain') {
+      return 'similarArtists';
+    }
+    if (stored === 'listeners') {
+      return 'popularity';
+    }
+    if (stored === 'similarArtists' || stored === 'byTags' || stored === 'popularity' || stored === 'genre') {
+      return stored;
+    }
+    return DEFAULT_ARTIST_CLUSTER_MODE;
+  });
+  const [exploreArtistClusterMethod, setExploreArtistClusterMethod] = useState<ArtistClusterMode>(() => {
+    const stored = localStorage.getItem('exploreArtistClusterMethod');
+    if (stored === 'louvain') {
+      return 'similarArtists';
+    }
+    if (stored === 'listeners') {
+      return 'popularity';
+    }
+    if (stored === 'similarArtists' || stored === 'byTags' || stored === 'popularity' || stored === 'genre') {
+      return stored;
+    }
+    return DEFAULT_ARTIST_CLUSTER_MODE;
+  });
+  const [similarArtistClusterMethod, setSimilarArtistClusterMethod] = useState<ArtistClusterMode>(() => {
+    const stored = localStorage.getItem('similarArtistClusterMethod');
     if (stored === 'louvain') {
       return 'similarArtists';
     }
@@ -864,6 +894,16 @@ function App() {
 
     setClusteringInProgress(true);
 
+    // Select the appropriate clustering method based on the current view
+    let artistClusterMethod: ArtistClusterMode;
+    if (graph === 'similarArtists') {
+      artistClusterMethod = similarArtistClusterMethod;
+    } else if (graph === 'artists' && collectionMode) {
+      artistClusterMethod = collectionArtistClusterMethod;
+    } else {
+      artistClusterMethod = exploreArtistClusterMethod;
+    }
+
     // Debounce clustering computation and run it async
     clusteringTimeoutRef.current = setTimeout(() => {
       // Use requestIdleCallback if available, otherwise setTimeout with delay
@@ -904,7 +944,7 @@ function App() {
         clearTimeout(clusteringTimeoutRef.current);
       }
     };
-  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod, resolvedTheme, artistGenreAssignments]);
+  }, [currentArtists, currentArtistLinks, graph, collectionMode, collectionArtistClusterMethod, exploreArtistClusterMethod, similarArtistClusterMethod, resolvedTheme, artistGenreAssignments]);
 
   // Use generated links from clustering (artists colored by parent genre)
   useEffect(() => {
@@ -961,6 +1001,14 @@ function App() {
 
   // Cluster hull overlays for genre, byTags, and popularity modes
   const artistClusterOverlays = useMemo((): ClusterOverlay[] | undefined => {
+    let artistClusterMethod: ArtistClusterMode;
+    if (graph === 'similarArtists') {
+      artistClusterMethod = similarArtistClusterMethod;
+    } else if (graph === 'artists' && collectionMode) {
+      artistClusterMethod = collectionArtistClusterMethod;
+    } else {
+      artistClusterMethod = exploreArtistClusterMethod;
+    }
     if (!artistClusters || !['genre', 'byTags', 'popularity'].includes(artistClusterMethod) || !showClusterOverlay) return undefined;
     const overlays: ClusterOverlay[] = [];
     for (const cluster of artistClusters.clusters.values()) {
@@ -973,7 +1021,7 @@ function App() {
       });
     }
     return overlays.length > 0 ? overlays : undefined;
-  }, [artistClusters, artistClusterMethod, showClusterOverlay]);
+  }, [artistClusters, graph, collectionMode, collectionArtistClusterMethod, exploreArtistClusterMethod, similarArtistClusterMethod, showClusterOverlay]);
 
   // Compute radial layout from cluster tier data for popularity stratification
   const artistRadialLayout = useMemo(() => {
@@ -3011,14 +3059,22 @@ function App() {
               {(graph === 'genres' || graph === 'artists' || graph === 'similarArtists') && (
                 <ClusteringPanel
                   graphType={graph === 'genres' ? 'genres' : 'artists'}
-                  clusterMode={graph === 'genres' ? genreClusterMode[0] : artistClusterMethod}
+                  clusterMode={graph === 'genres' ? genreClusterMode[0] : (graph === 'similarArtists' ? similarArtistClusterMethod : (collectionMode ? collectionArtistClusterMethod : exploreArtistClusterMethod))}
                   setClusterMode={(mode) => {
                     if (graph === 'genres') {
                       onGenreClusterModeChange(mode as GenreClusterMode[]);
                     } else {
                       const newMethod = (Array.isArray(mode) ? mode[0] : mode) as ArtistClusterMode;
-                      setArtistClusterMethod(newMethod);
-                      localStorage.setItem('artistClusterMethod', newMethod);
+                      if (graph === 'similarArtists') {
+                        setSimilarArtistClusterMethod(newMethod);
+                        localStorage.setItem('similarArtistClusterMethod', newMethod);
+                      } else if (collectionMode) {
+                        setCollectionArtistClusterMethod(newMethod);
+                        localStorage.setItem('collectionArtistClusterMethod', newMethod);
+                      } else {
+                        setExploreArtistClusterMethod(newMethod);
+                        localStorage.setItem('exploreArtistClusterMethod', newMethod);
+                      }
                     }
                   }}
                   dagMode={dagMode}
