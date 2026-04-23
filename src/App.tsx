@@ -170,6 +170,7 @@ function App() {
   const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
   const [genreTopArtistsCache, setGenreTopArtistsCache] = useState<Map<string, Artist[]>>(new Map());
   const artistImageCache = useRef<Map<string, string>>(new Map());
+  const [prefetchedImageCache, setPrefetchedImageCache] = useState<Map<string, string>>(new Map());
   const artistObjectCache = useRef<Map<string, Artist>>(new Map());
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
@@ -299,6 +300,7 @@ function App() {
     fetchArtistBySearch,
     similarArtists,
     fetchSimilarArtists,
+    prefetchSimilarImages,
   } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode);
 
   // Fetch top artists for the currently displayed genre info or the active filter
@@ -1606,8 +1608,34 @@ function App() {
     }
   }, [selectedArtist]);
 
+  useEffect(() => {
+    if (!selectedArtist?.id || !selectedArtist.similar?.length) return;
+    const uncached = selectedArtist.similar.filter((name) => !artistImageCache.current.has(name));
+    if (!uncached.length) return;
+    prefetchSimilarImages(selectedArtist).then((artists) => {
+      console.log('[prefetch] returned names:', artists.map(a => a.name));
+      console.log('[prefetch] similar string names:', selectedArtist.similar);
+      const newEntries: [string, string][] = [];
+      for (const a of artists) {
+        if (a.name && a.image) {
+          artistImageCache.current.set(a.name, a.image as string);
+          newEntries.push([a.name, a.image as string]);
+        }
+      }
+      console.log('[prefetch] newEntries cached:', newEntries.map(([n]) => n));
+      if (newEntries.length) {
+        setPrefetchedImageCache((prev) => {
+          const next = new Map(prev);
+          for (const [name, img] of newEntries) next.set(name, img);
+          return next;
+        });
+      }
+    });
+  }, [selectedArtist?.id]);
+
   const getArtistImageByName = (name: string) => {
     const raw = artistImageCache.current.get(name)
+      ?? prefetchedImageCache.get(name)
       ?? currentArtists.find((x) => x.name === name)?.image as string | undefined;
     return raw ? fixWikiImageURL(raw) : undefined;
   }

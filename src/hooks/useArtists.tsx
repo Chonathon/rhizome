@@ -194,6 +194,15 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         setArtistsLoading(false);
     }
 
+    const prefetchSimilarImages = async (artist: Artist): Promise<Artist[]> => {
+        try {
+            const response = await axios.get(`${url}/artists/fetch/similar/${artist.id}`);
+            return [artist, ...response.data] as Artist[];
+        } catch {
+            return [];
+        }
+    }
+
     const resetArtistsError = () => setArtistsError(undefined);
     const resetArtistsYTError = () => setArtistsPlayIDsError(undefined);
     const resetArtistsDataFlagError = () => setArtistsDataFlagError(undefined);
@@ -221,6 +230,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         fetchArtistBySearch,
         similarArtists,
         fetchSimilarArtists,
+        prefetchSimilarImages,
     };
 }
 
