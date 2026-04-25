@@ -198,8 +198,6 @@ function traceClusterShape(ctx: CanvasRenderingContext2D, shape: ReturnType<type
 const CLUSTER_HULL_PADDING = 48;
 const CLUSTER_LABEL_SCREEN_PX = 13;
 const CLUSTER_LABEL_STROKE_SCREEN_PX = 1.2;
-const CLUSTER_LABEL_MIN_NODES = 1;
-const CLUSTER_LABEL_MAX_NODES_FOR_SCALE = 40;
 
 function drawClusterHulls(
   ctx: CanvasRenderingContext2D,
@@ -259,7 +257,7 @@ function drawClusterLabels(
   nodeMap: Map<string, NodePosEntry>,
   globalScale: number,
 ): void {
-  const baseFontSize = CLUSTER_LABEL_SCREEN_PX / globalScale;
+  const fontSize = CLUSTER_LABEL_SCREEN_PX / globalScale;
 
   for (const overlay of overlays) {
     const positions: [number, number][] = [];
@@ -269,11 +267,7 @@ function drawClusterLabels(
         positions.push([node.x, node.y]);
       }
     }
-    if (positions.length < CLUSTER_LABEL_MIN_NODES) continue;
-
-    // Scale font: small clusters get ~70% of base, large clusters get up to 140%
-    const t = Math.min(1, (positions.length - CLUSTER_LABEL_MIN_NODES) / (CLUSTER_LABEL_MAX_NODES_FOR_SCALE - CLUSTER_LABEL_MIN_NODES));
-    const fontSize = baseFontSize * (0.7 + t * 0.7);
+    if (positions.length === 0) continue;
 
     const cx = positions.reduce((s, p) => s + p[0], 0) / positions.length;
     const minY = Math.min(...positions.map(p => p[1]));
