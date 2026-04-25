@@ -272,6 +272,11 @@ function drawClusterLabels(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = labelColor;
+    // Add shadow for contrast (same as node labels)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
     ctx.fillText(overlay.name, cx, labelY);
     ctx.restore();
   }
