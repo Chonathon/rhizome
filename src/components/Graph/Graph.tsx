@@ -990,7 +990,7 @@ const Graph = forwardRef(function GraphInner<
               const target = typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
               return source === effectiveSelectedId || target === effectiveSelectedId ? 2 : 0.3;
             })()
-          ) : 0.5; // Reduced for less visual noise
+          ) : 0.8; // Reduced for less visual noise
           return baseWidth * linkThicknessScale;
         }}
         linkCurvature={dagMode ? 0 : linkCurvatureValue}

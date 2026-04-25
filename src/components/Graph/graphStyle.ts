@@ -292,7 +292,7 @@ export function drawSelectedNodeFill(
 
 // Default node radius bounds
 export const DEFAULT_MIN_RADIUS = 3;
-export const DEFAULT_MAX_RADIUS = 35;
+export const DEFAULT_MAX_RADIUS = 25;
 // Exponent for node size scaling (higher = more dramatic size differences)
 export const NODE_SIZE_EXPONENT = 2;
 
