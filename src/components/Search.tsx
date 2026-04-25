@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
 import { BadgeIndicator } from "@/components/BadgeIndicator"
-import { useRecentSelections } from "@/hooks/useRecentSelections"
+import { useRecentSelections, groupByTime } from "@/hooks/useRecentSelections"
 import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon } from "lucide-react"
 import { motion } from "framer-motion";
 import { isGenre } from "@/lib/utils"
@@ -180,7 +180,7 @@ export function Search({
     } else {
       onArtistSelect(selection as Artist);
     }
-    addRecentSelection(selection);
+    addRecentSelection(selection, isGenre(selection) ? 'genre' : 'artist');
     setOpen(false);
   }
   // Checks which modifier keys are held and performs the appropriate action
@@ -194,7 +194,7 @@ export function Search({
       } else if (!isGenreItem && onArtistGoTo) {
         onArtistGoTo(item as Artist);
       }
-      addRecentSelection(item);
+      addRecentSelection(item, isGenre(item) ? 'genre' : 'artist');
       setOpen(false);
     }
     // Alt + Click: View Similar
@@ -204,7 +204,7 @@ export function Search({
       } else if (!isGenreItem && onArtistViewSimilar) {
         onArtistViewSimilar(item as Artist);
       }
-      addRecentSelection(item);
+      addRecentSelection(item, isGenre(item) ? 'genre' : 'artist');
       setOpen(false);
     }
     // Shift + Click: Play
@@ -214,7 +214,7 @@ export function Search({
       } else if (!isGenreItem && onArtistPlay) {
         onArtistPlay(item as Artist);
       }
-      addRecentSelection(item);
+      addRecentSelection(item, isGenre(item) ? 'genre' : 'artist');
       setOpen(false);
     }
     // No modifiers: Default select
@@ -314,7 +314,7 @@ export function Search({
       } else if (!isGenreItem && onArtistGoTo) {
         onArtistGoTo(selectedItem as Artist);
       }
-      addRecentSelection(selectedItem);
+      addRecentSelection(selectedItem, isGenre(selectedItem) ? 'genre' : 'artist');
       setOpen(false);
     }
     // Alt + Enter: View Similar
@@ -324,7 +324,7 @@ export function Search({
       } else if (!isGenreItem && onArtistViewSimilar) {
         onArtistViewSimilar(selectedItem as Artist);
       }
-      addRecentSelection(selectedItem);
+      addRecentSelection(selectedItem, isGenre(selectedItem) ? 'genre' : 'artist');
       setOpen(false);
     }
     // Shift + Enter: Play
@@ -334,7 +334,7 @@ export function Search({
       } else if (!isGenreItem && onArtistPlay) {
         onArtistPlay(selectedItem as Artist);
       }
-      addRecentSelection(selectedItem);
+      addRecentSelection(selectedItem, isGenre(selectedItem) ? 'genre' : 'artist');
       setOpen(false);
     }
   };
@@ -430,58 +430,57 @@ export function Search({
               </CommandGroup>
           )}
 
-          {!inputValue && recentSelections.length > 0 && (
-            <CommandGroup heading="Recent Selections">
-              {recentSelections.map((selection) => {
-                const meta = getIndicatorMeta(selection);
-                const isGenreSelection = meta.type === 'genre';
-
-                return (
-                  <CommandItem
-                    key={selection.id}
-                    value={selection.id}
-                    onSelect={() => handleItemAction(selection)}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      {shiftHeld && selectedValue === selection.id ? (
-                        <CirclePlay className="size-4 flex-shrink-0" />
-                      ) : (
-                        <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
-                          <BadgeIndicator
-                            type={meta.type}
-                            name={selection.name}
-                            color={meta.color}
-                            imageUrl={meta.imageUrl}
-                            className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
-                          />
-                        </div>
-                      )}
-                      <span className="truncate">{selection.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {getActionHint(selection, selectedValue === selection.id) && (
-                        <span className="text-xs text-muted-foreground">
-                          {getActionHint(selection, selectedValue === selection.id)}
-                        </span>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeRecentSelection(selection.id);
-                        }}
-                        className="-m-2"
-                      >
-                        <X />
-                      </Button>
-                    </div>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          )}
+          {!inputValue && recentSelections.length > 0 && groupByTime(recentSelections).map((bucket) => (
+              <CommandGroup key={bucket.label} heading={bucket.label}>
+                {bucket.items.map((selection) => {
+                  const meta = getIndicatorMeta(selection);
+                  const isGenreSelection = meta.type === 'genre';
+                  return (
+                    <CommandItem
+                      key={selection.id}
+                      value={selection.id}
+                      onSelect={() => handleItemAction(selection)}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        {shiftHeld && selectedValue === selection.id ? (
+                          <CirclePlay className="size-4 flex-shrink-0" />
+                        ) : (
+                          <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
+                            <BadgeIndicator
+                              type={meta.type}
+                              name={selection.name}
+                              color={meta.color}
+                              imageUrl={meta.imageUrl}
+                              className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
+                            />
+                          </div>
+                        )}
+                        <span className="truncate">{selection.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {getActionHint(selection, selectedValue === selection.id) && (
+                          <span className="text-xs text-muted-foreground">
+                            {getActionHint(selection, selectedValue === selection.id)}
+                          </span>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeRecentSelection(selection.id);
+                          }}
+                          className="-m-2"
+                        >
+                          <X />
+                        </Button>
+                      </div>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            ))}
           {filteredActions.length > 0 && (
           <CommandGroup heading="Actions">
             {filteredActions.map((action) => {

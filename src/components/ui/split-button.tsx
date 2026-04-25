@@ -33,7 +33,7 @@ function SplitButton({
 
   return (
     <SplitButtonContext.Provider value={contextValue}>
-      <ButtonGroup className={cn("self-start", className)} {...props}>
+      <ButtonGroup className={cn("self-start space-x-0.5 rounded-full overflow-clip", className)} {...props}>
         {children}
       </ButtonGroup>
     </SplitButtonContext.Provider>
@@ -52,7 +52,7 @@ const SplitButtonAction = React.forwardRef<HTMLButtonElement, React.ComponentPro
         disabled={disabled}
         className={cn(
           buttonVariants({ variant, size }),
-          "!pr-1.5",
+          "!pr-3.5 !rounded-[2px]",
           className
         )}
         {...props}
@@ -91,7 +91,7 @@ const SplitButtonTrigger = React.forwardRef<HTMLButtonElement, SplitButtonTrigge
         aria-label={ariaLabel}
         className={cn(
           buttonVariants({ variant, size }),
-          "h-auto !pl-1 !pr-2",
+          "h-auto !pl-2 !pr-3 !rounded-[2px]",
           className
         )}
         {...props}

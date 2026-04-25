@@ -50,3 +50,17 @@ export const lastFMRefresh = async (userID: string, force = true) => {
     const response = await axios.put(`${url}/users/lastfm/sync/${userID}/${force}`);
     return response.status === 200;
 }
+
+export const lastFMRecentTracks = async (lfmUsername: string, limit = 20) => {
+    const response = await axios.get(`${url}/users/lastfm/recenttracks/${encodeURIComponent(lfmUsername)}`, {
+        params: { limit },
+    });
+    return response.data.tracks as {
+        name: string;
+        artist: string;
+        album: string;
+        timestamp: number;
+        nowPlaying: boolean;
+        imageUrl: string | null;
+    }[];
+}
