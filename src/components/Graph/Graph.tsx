@@ -711,7 +711,7 @@ const Graph = forwardRef(function GraphInner<
     // Charge force: nodes repel each other (D3 default is -30)
     // More negative = stronger repulsion/more spread out, Less negative = nodes closer together
     // KEY FIX: Reducing from -200 to -100 greatly reduced the "floating outward" drag effect
-    fg.d3Force("charge")?.strength(dagMode ? -1230 : -120);
+    fg.d3Force("charge")?.strength(dagMode ? -1230 : -190);
 
     // Link force: connected nodes attract each other
     const linkForce = fg.d3Force("link") as d3.ForceLink<PreparedNode<T>, L> | undefined;
@@ -946,7 +946,7 @@ const Graph = forwardRef(function GraphInner<
         dagLevelDistance={dagMode ? 200 : undefined}
         // How quickly the simulation "cools down" (D3 default is 0.0228)
         // Higher = faster settling but less accurate layout, Lower = slower but more precise
-        d3AlphaDecay={0.01}
+        d3AlphaDecay={0.05}
         // Friction/damping on node velocity (D3 default is 0.4, using slightly higher for stability)
         // Higher = nodes stop faster/less drift, Lower = more fluid movement
         d3VelocityDecay={0.4}
