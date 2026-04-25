@@ -107,7 +107,8 @@ export class ClusteringEngine {
         return this.clusterByGenre(
           options.genreAssignments ?? new Map(),
           options.genreColors ?? new Map(),
-          options.genreNames
+          options.genreNames,
+          minSimilarity
         );
       default:
         return this.clusterByLouvain(options.resolution || 1.0);
@@ -213,7 +214,7 @@ export class ClusteringEngine {
     resolution: number,
     weights = { vectors: 0.6, louvain: 0.4, location: 0.3 },
     kNeighbors: number = 15,
-    minSimilarity: number = 0.2
+    minSimilarity: number = 0.8
   ): ClusterResult {
     // Normalize vector/louvain weights to sum to 1.0 (location is a separate multiplier)
     const baseTotal = weights.vectors + weights.louvain;
@@ -444,7 +445,8 @@ export class ClusteringEngine {
   private clusterByGenre(
     genreAssignments: Map<string, string>,
     genreColors: Map<string, string>,
-    genreNames?: Map<string, string>
+    genreNames?: Map<string, string>,
+    minSimilarity: number = 0.9
   ): ClusterResult {
     const clusters = new Map<string, Cluster>();
     const artistToCluster = new Map<string, string>();
@@ -467,15 +469,52 @@ export class ClusteringEngine {
 
     // Reuse tag-vector KNN similarity from byTags for intra-genre link generation.
     // mutualOnly=false gives more edges within the (smaller) genre subsets without bees-nest density.
-    const tagSimilarities = this.calculateTagSimilarities(10, 0.15, false);
+    const tagSimilarities = this.calculateTagSimilarities(10, minSimilarity, false);
 
-    const links: Array<{ source: string; target: string; weight: number }> = [];
+    // Limit connections per node to reduce density in large clusters
+    const MAX_DEGREE_PER_NODE = 10;
+    const nodeConnections = new Map<string, Array<{ otherId: string; weight: number }>>();
+
+    // Collect intra-cluster connections for each node
     tagSimilarities.forEach((weight, key) => {
       const [source, target] = key.split('|');
       const sc = artistToCluster.get(source);
       const tc = artistToCluster.get(target);
-      if (sc && tc && sc === tc) {
-        links.push({ source, target, weight });
+
+      if (!sc || !tc || sc !== tc) return; // Skip inter-cluster
+
+      if (!nodeConnections.has(source)) nodeConnections.set(source, []);
+      if (!nodeConnections.has(target)) nodeConnections.set(target, []);
+
+      nodeConnections.get(source)!.push({ otherId: target, weight });
+      nodeConnections.get(target)!.push({ otherId: source, weight });
+    });
+
+    // Keep only top K connections per node by weight
+    const topConnectionsByNode = new Map<string, Set<string>>();
+    nodeConnections.forEach((connections, nodeId) => {
+      connections.sort((a, b) => b.weight - a.weight);
+      const topK = connections.slice(0, MAX_DEGREE_PER_NODE);
+      topConnectionsByNode.set(nodeId, new Set(topK.map(c => c.otherId)));
+    });
+
+    // Build final links (only if both endpoints kept each other in top K)
+    const links: Array<{ source: string; target: string; weight: number }> = [];
+    const addedEdges = new Set<string>();
+
+    tagSimilarities.forEach((weight, key) => {
+      const [source, target] = key.split('|');
+      const sc = artistToCluster.get(source);
+      const tc = artistToCluster.get(target);
+
+      if (!sc || !tc || sc !== tc) return; // Skip inter-cluster
+
+      // Only include if both nodes kept each other in their top K
+      if (topConnectionsByNode.get(source)?.has(target) && topConnectionsByNode.get(target)?.has(source)) {
+        if (!addedEdges.has(key)) {
+          links.push({ source, target, weight });
+          addedEdges.add(key);
+        }
       }
     });
 
