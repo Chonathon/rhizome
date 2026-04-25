@@ -383,8 +383,12 @@ export class ClusteringEngine {
     const graph = this.buildWeightedGraph(filteredCombinedSim);
     const communities = louvain(graph, { resolution, randomWalk: false });
 
-    // Reuse artistCount from above
-    return this.formatLouvainClusters(communities, 'byTags', filteredCombinedSim, minCombinedWeight);
+    // Get initial result and apply degree capping to reduce density
+    const result = this.formatLouvainClusters(communities, 'byTags', filteredCombinedSim, minCombinedWeight);
+    if (result.links && result.links.length > 0) {
+      result.links = this.capNodeDegree(result.links, 12);
+    }
+    return result;
   }
 
   // 4. POPULARITY CLUSTERING - Dynamic percentile-based popularity tiers
@@ -471,52 +475,20 @@ export class ClusteringEngine {
     // mutualOnly=false gives more edges within the (smaller) genre subsets without bees-nest density.
     const tagSimilarities = this.calculateTagSimilarities(10, minSimilarity, false);
 
-    // Limit connections per node to reduce density in large clusters
-    const MAX_DEGREE_PER_NODE = 10;
-    const nodeConnections = new Map<string, Array<{ otherId: string; weight: number }>>();
-
-    // Collect intra-cluster connections for each node
+    // Filter to intra-cluster links
+    const intraClusterLinks: Array<{ source: string; target: string; weight: number }> = [];
     tagSimilarities.forEach((weight, key) => {
       const [source, target] = key.split('|');
       const sc = artistToCluster.get(source);
       const tc = artistToCluster.get(target);
 
-      if (!sc || !tc || sc !== tc) return; // Skip inter-cluster
-
-      if (!nodeConnections.has(source)) nodeConnections.set(source, []);
-      if (!nodeConnections.has(target)) nodeConnections.set(target, []);
-
-      nodeConnections.get(source)!.push({ otherId: target, weight });
-      nodeConnections.get(target)!.push({ otherId: source, weight });
-    });
-
-    // Keep only top K connections per node by weight
-    const topConnectionsByNode = new Map<string, Set<string>>();
-    nodeConnections.forEach((connections, nodeId) => {
-      connections.sort((a, b) => b.weight - a.weight);
-      const topK = connections.slice(0, MAX_DEGREE_PER_NODE);
-      topConnectionsByNode.set(nodeId, new Set(topK.map(c => c.otherId)));
-    });
-
-    // Build final links (only if both endpoints kept each other in top K)
-    const links: Array<{ source: string; target: string; weight: number }> = [];
-    const addedEdges = new Set<string>();
-
-    tagSimilarities.forEach((weight, key) => {
-      const [source, target] = key.split('|');
-      const sc = artistToCluster.get(source);
-      const tc = artistToCluster.get(target);
-
-      if (!sc || !tc || sc !== tc) return; // Skip inter-cluster
-
-      // Only include if both nodes kept each other in their top K
-      if (topConnectionsByNode.get(source)?.has(target) && topConnectionsByNode.get(target)?.has(source)) {
-        if (!addedEdges.has(key)) {
-          links.push({ source, target, weight });
-          addedEdges.add(key);
-        }
+      if (sc && tc && sc === tc) {
+        intraClusterLinks.push({ source, target, weight });
       }
     });
+
+    // Cap node degree to reduce density in large clusters
+    const links = this.capNodeDegree(intraClusterLinks, 10);
 
     return { method: 'genre', clusters, artistToCluster, links, stats: this.calculateStats(clusters) };
   }
@@ -793,6 +765,48 @@ export class ClusteringEngine {
   }
 
   // STATS AND UTILITIES
+
+  // Cap node degree by keeping only strongest mutual connections
+  private capNodeDegree(
+    links: Array<{ source: string; target: string; weight: number }>,
+    maxDegreePerNode: number
+  ): Array<{ source: string; target: string; weight: number }> {
+    const nodeConnections = new Map<string, Array<{ otherId: string; weight: number }>>();
+
+    // Collect connections for each node
+    links.forEach(({ source, target, weight }) => {
+      if (!nodeConnections.has(source)) nodeConnections.set(source, []);
+      if (!nodeConnections.has(target)) nodeConnections.set(target, []);
+
+      nodeConnections.get(source)!.push({ otherId: target, weight });
+      nodeConnections.get(target)!.push({ otherId: source, weight });
+    });
+
+    // Keep only top connections per node by weight
+    const topConnectionsByNode = new Map<string, Set<string>>();
+    nodeConnections.forEach((connections, nodeId) => {
+      connections.sort((a, b) => b.weight - a.weight);
+      const topK = connections.slice(0, maxDegreePerNode);
+      topConnectionsByNode.set(nodeId, new Set(topK.map(c => c.otherId)));
+    });
+
+    // Build result: only include if both endpoints kept each other
+    const result: Array<{ source: string; target: string; weight: number }> = [];
+    const addedEdges = new Set<string>();
+
+    links.forEach(({ source, target, weight }) => {
+      const key = source < target ? `${source}|${target}` : `${target}|${source}`;
+
+      if (!addedEdges.has(key) &&
+          topConnectionsByNode.get(source)?.has(target) &&
+          topConnectionsByNode.get(target)?.has(source)) {
+        result.push({ source, target, weight });
+        addedEdges.add(key);
+      }
+    });
+
+    return result;
+  }
 
   private calculateStats(clusters: Map<string, Cluster>) {
     const sizes = Array.from(clusters.values()).map(c => c.artistIds.length);
