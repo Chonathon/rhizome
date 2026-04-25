@@ -3,9 +3,9 @@ import { ARTIST_LISTENER_TIERS } from '@/constants';
 import Graph from 'graphology';
 import louvain from 'graphology-communities-louvain';
 import { buildNormalizedLocationMap, calculateLocationSimilarity } from './locationNormalization';
-import {getClusterColor} from "@/lib/colors";
+import { getClusterColor, DEFAULT_DARK_NODE_COLOR, DEFAULT_LIGHT_NODE_COLOR } from "@/lib/colors";
 
-export type ClusteringMethod = 'similarArtists' | 'hybrid' | 'popularity';
+export type ClusteringMethod = 'similarArtists' | 'byTags' | 'popularity' | 'genre';
 
 export interface ClusterResult {
   method: ClusteringMethod;
@@ -35,13 +35,17 @@ export interface Cluster {
 export interface ClusteringOptions {
   method: ClusteringMethod;
   resolution?: number;  // For Louvain
-  hybridWeights?: {
+  tagWeights?: {
     vectors: number;
     louvain: number;
     location: number;  // Weight for location-based similarity (default: 0.2)
   };
   kNeighbors?: number;  // Number of nearest neighbors to keep (default: 20)
   minSimilarity?: number;  // Minimum similarity threshold (0-1, default: 0.1)
+  // Only required when method === 'genre'
+  genreAssignments?: Map<string, string>;  // artistId -> rootGenreId
+  genreColors?: Map<string, string>;       // rootGenreId -> hex color
+  genreNames?: Map<string, string>;        // rootGenreId -> display name
 }
 
 export class ClusteringEngine {
@@ -95,10 +99,17 @@ export class ClusteringEngine {
     switch (options.method) {
       case 'similarArtists':
         return this.clusterByLouvain(options.resolution || 1.0);
-      case 'hybrid':
-        return this.clusterHybrid(options.resolution || 1.0, options.hybridWeights, kNeighbors, minSimilarity);
+      case 'byTags':
+        return this.clusterByTags(options.resolution || 1.0, options.tagWeights, kNeighbors, minSimilarity);
       case 'popularity':
         return this.clusterByListeners();
+      case 'genre':
+        return this.clusterByGenre(
+          options.genreAssignments ?? new Map(),
+          options.genreColors ?? new Map(),
+          options.genreNames,
+          minSimilarity
+        );
       default:
         return this.clusterByLouvain(options.resolution || 1.0);
     }
@@ -198,12 +209,12 @@ export class ClusteringEngine {
     return this.formatLouvainClusters(communities, 'similarArtists', networkSim, minLinkWeight);
   }
 
-  // 3. HYBRID CLUSTERING - Louvain with combined weighted edges
-  private clusterHybrid(
+  // 3. BY TAGS CLUSTERING - Louvain with combined weighted edges
+  private clusterByTags(
     resolution: number,
     weights = { vectors: 0.6, louvain: 0.4, location: 0.3 },
     kNeighbors: number = 15,
-    minSimilarity: number = 0.2
+    minSimilarity: number = 0.8
   ): ClusterResult {
     // Normalize vector/louvain weights to sum to 1.0 (location is a separate multiplier)
     const baseTotal = weights.vectors + weights.louvain;
@@ -271,8 +282,8 @@ export class ClusteringEngine {
       penalizedSim.set(key, sim * multiplier);
     });
 
-    //console.log(`[hybrid] Combined similarities: vectors=${vectorSim.size}, network=${networkSim.size}`);
-    //console.log(`[hybrid] Location penalties applied: same=${penaltyStats.same}, region=${penaltyStats.region}, different=${penaltyStats.different}`);
+    //console.log(`[byTags] Combined similarities: vectors=${vectorSim.size}, network=${networkSim.size}`);
+    //console.log(`[byTags] Location penalties applied: same=${penaltyStats.same}, region=${penaltyStats.region}, different=${penaltyStats.different}`);
 
     // Filter out weak similarities to reduce graph complexity
     // After location penalty, more edges will fall below threshold
@@ -288,9 +299,9 @@ export class ClusteringEngine {
       }
     });
 
-    //console.log(`[hybrid] Filtered from ${penalizedSim.size} to ${filteredCombinedSim.size} edges (min weight: ${minCombinedWeight.toFixed(3)})`);
+    //console.log(`[byTags] Filtered from ${penalizedSim.size} to ${filteredCombinedSim.size} edges (min weight: ${minCombinedWeight.toFixed(3)})`);
 
-    // Ensure each artist has at least one edge in the hybrid graph.
+    // Ensure each artist has at least one edge in the byTags graph.
     const degreeByArtist = new Map<string, number>();
     this.artists.forEach(artist => {
       degreeByArtist.set(artist.id, 0);
@@ -372,8 +383,12 @@ export class ClusteringEngine {
     const graph = this.buildWeightedGraph(filteredCombinedSim);
     const communities = louvain(graph, { resolution, randomWalk: false });
 
-    // Reuse artistCount from above
-    return this.formatLouvainClusters(communities, 'hybrid', filteredCombinedSim, minCombinedWeight);
+    // Get initial result and apply degree capping to reduce density
+    const result = this.formatLouvainClusters(communities, 'byTags', filteredCombinedSim, minCombinedWeight);
+    if (result.links && result.links.length > 0) {
+      result.links = this.capNodeDegree(result.links, 12);
+    }
+    return result;
   }
 
   // 4. POPULARITY CLUSTERING - Dynamic percentile-based popularity tiers
@@ -428,6 +443,54 @@ export class ClusteringEngine {
         tiers: dynamicTiers,
       },
     };
+  }
+
+  // 5. GENRE CLUSTERING - Deterministic assignment by root genre + tag-vector intra-genre links
+  private clusterByGenre(
+    genreAssignments: Map<string, string>,
+    genreColors: Map<string, string>,
+    genreNames?: Map<string, string>,
+    minSimilarity: number = 0.9
+  ): ClusterResult {
+    const clusters = new Map<string, Cluster>();
+    const artistToCluster = new Map<string, string>();
+
+    // Assign each artist to its root genre cluster
+    this.artists.forEach(artist => {
+      const rootGenreId = genreAssignments.get(artist.id) ?? 'unknown';
+      const clusterId = `genre-${rootGenreId}`;
+      if (!clusters.has(clusterId)) {
+        clusters.set(clusterId, {
+          id: clusterId,
+          name: genreNames?.get(rootGenreId) ?? (rootGenreId === 'unknown' ? 'Unknown Genre' : rootGenreId),
+          artistIds: [],
+          color: genreColors.get(rootGenreId) ?? (this.isDark ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR),
+        });
+      }
+      clusters.get(clusterId)!.artistIds.push(artist.id);
+      artistToCluster.set(artist.id, clusterId);
+    });
+
+    // Reuse tag-vector KNN similarity from byTags for intra-genre link generation.
+    // mutualOnly=false gives more edges within the (smaller) genre subsets without bees-nest density.
+    const tagSimilarities = this.calculateTagSimilarities(10, minSimilarity, false);
+
+    // Filter to intra-cluster links
+    const intraClusterLinks: Array<{ source: string; target: string; weight: number }> = [];
+    tagSimilarities.forEach((weight, key) => {
+      const [source, target] = key.split('|');
+      const sc = artistToCluster.get(source);
+      const tc = artistToCluster.get(target);
+
+      if (sc && tc && sc === tc) {
+        intraClusterLinks.push({ source, target, weight });
+      }
+    });
+
+    // Cap node degree to reduce density in large clusters
+    const links = this.capNodeDegree(intraClusterLinks, 10);
+
+    return { method: 'genre', clusters, artistToCluster, links, stats: this.calculateStats(clusters) };
   }
 
   // Build dynamic tiers based on percentiles of actual listener data
@@ -575,7 +638,7 @@ export class ClusteringEngine {
     // Adaptive link weight threshold based on method and graph size
     const artistCount = this.artists.length;
     const minLinkWeight = minLinkWeightOverride ?? (
-      method === 'hybrid' && artistCount > 1000
+      method === 'byTags' && artistCount > 1000
         ? 0.25  // Higher threshold for expensive methods on large graphs
         : 0.2   // Standard threshold
     );
@@ -609,8 +672,9 @@ export class ClusteringEngine {
   private getClusterLabel(method: ClusteringMethod): string {
     switch (method) {
       case 'similarArtists': return 'Similar Artists';
-      case 'hybrid': return 'Hybrid';
+      case 'byTags': return 'By Tags';
       case 'popularity': return 'Popularity';
+      case 'genre': return 'Genre';
       default: return 'Similar Artists';
     }
   }
@@ -701,6 +765,48 @@ export class ClusteringEngine {
   }
 
   // STATS AND UTILITIES
+
+  // Cap node degree by keeping only strongest mutual connections
+  private capNodeDegree(
+    links: Array<{ source: string; target: string; weight: number }>,
+    maxDegreePerNode: number
+  ): Array<{ source: string; target: string; weight: number }> {
+    const nodeConnections = new Map<string, Array<{ otherId: string; weight: number }>>();
+
+    // Collect connections for each node
+    links.forEach(({ source, target, weight }) => {
+      if (!nodeConnections.has(source)) nodeConnections.set(source, []);
+      if (!nodeConnections.has(target)) nodeConnections.set(target, []);
+
+      nodeConnections.get(source)!.push({ otherId: target, weight });
+      nodeConnections.get(target)!.push({ otherId: source, weight });
+    });
+
+    // Keep only top connections per node by weight
+    const topConnectionsByNode = new Map<string, Set<string>>();
+    nodeConnections.forEach((connections, nodeId) => {
+      connections.sort((a, b) => b.weight - a.weight);
+      const topK = connections.slice(0, maxDegreePerNode);
+      topConnectionsByNode.set(nodeId, new Set(topK.map(c => c.otherId)));
+    });
+
+    // Build result: only include if both endpoints kept each other
+    const result: Array<{ source: string; target: string; weight: number }> = [];
+    const addedEdges = new Set<string>();
+
+    links.forEach(({ source, target, weight }) => {
+      const key = source < target ? `${source}|${target}` : `${target}|${source}`;
+
+      if (!addedEdges.has(key) &&
+          topConnectionsByNode.get(source)?.has(target) &&
+          topConnectionsByNode.get(target)?.has(source)) {
+        result.push({ source, target, weight });
+        addedEdges.add(key);
+      }
+    });
+
+    return result;
+  }
 
   private calculateStats(clusters: Map<string, Cluster>) {
     const sizes = Array.from(clusters.values()).map(c => c.artistIds.length);

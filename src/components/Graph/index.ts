@@ -10,4 +10,5 @@ export type {
   NodeRenderer,
   SelectionRenderer,
   LabelRenderer,
+  ClusterOverlay,
 } from './Graph';
