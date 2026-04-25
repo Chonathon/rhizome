@@ -1009,7 +1009,7 @@ function App() {
     } else {
       artistClusterMethod = exploreArtistClusterMethod;
     }
-    if (!artistClusters || !['genre', 'byTags', 'popularity'].includes(artistClusterMethod) || !showClusterOverlay) return undefined;
+    if (!artistClusters || !['genre', 'popularity'].includes(artistClusterMethod) || !showClusterOverlay) return undefined;
     const overlays: ClusterOverlay[] = [];
     for (const cluster of artistClusters.clusters.values()) {
       if (cluster.artistIds.length === 0) continue;

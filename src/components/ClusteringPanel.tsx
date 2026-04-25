@@ -132,7 +132,7 @@ export default function ClusteringPanel({
                         </motion.div>
                     ))}
                 </RadioGroup>
-                {graphType === 'artists' && ['genre', 'byTags', 'popularity'].includes(clusterMode) && setShowClusterOverlay && (
+                {graphType === 'artists' && ['genre', 'popularity'].includes(clusterMode) && setShowClusterOverlay && (
                     <div className={`${feildsetStyles} flex items-center justify-between w-full p-3`}>
                         <div className="flex flex-col">
                             <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">Show cluster overlay</span>
