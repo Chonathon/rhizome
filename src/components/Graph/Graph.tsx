@@ -197,7 +197,9 @@ function traceClusterShape(ctx: CanvasRenderingContext2D, shape: ReturnType<type
 
 const CLUSTER_HULL_PADDING = 48;
 const CLUSTER_LABEL_SCREEN_PX = 13;
-const CLUSTER_LABEL_STROKE_SCREEN_PX = 1.5;
+const CLUSTER_LABEL_STROKE_SCREEN_PX = 1.2;
+const CLUSTER_LABEL_MIN_NODES = 1;
+const CLUSTER_LABEL_MAX_NODES_FOR_SCALE = 40;
 
 function drawClusterHulls(
   ctx: CanvasRenderingContext2D,
@@ -219,22 +221,35 @@ function drawClusterHulls(
     const cy = positions.reduce((s, p) => s + p[1], 0) / positions.length;
     const shape = buildClusterShape(positions, CLUSTER_HULL_PADDING, cx, cy);
 
-    let fillColor: string;
     let strokeColor: string;
+    let r: number, g: number, b: number;
     try {
-      fillColor = hexToRgba(overlay.color, 0.1);
-      strokeColor = hexToRgba(overlay.color, 0.4);
+      r = parseInt(overlay.color.slice(1, 3), 16);
+      g = parseInt(overlay.color.slice(3, 5), 16);
+      b = parseInt(overlay.color.slice(5, 7), 16);
+      strokeColor = hexToRgba(overlay.color, 0.2);
     } catch {
-      fillColor = overlay.color + '1A';
-      strokeColor = overlay.color + '66';
+      r = 128; g = 128; b = 128;
+      strokeColor = overlay.color + '33';
     }
 
+    // Radial gradient: transparent center fading to slight color at edges
+    const radius = shape.kind === 'circle'
+      ? shape.r
+      : Math.max(...shape.pts.map(p => Math.hypot(p[0] - cx, p[1] - cy)));
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius + CLUSTER_HULL_PADDING);
+    grad.addColorStop(0, `rgba(${r},${g},${b},0)`);
+    grad.addColorStop(0.6, `rgba(${r},${g},${b},0.02)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0.07)`);
+
     traceClusterShape(ctx, shape);
-    ctx.fillStyle = fillColor;
+    ctx.fillStyle = grad;
     ctx.fill();
     ctx.strokeStyle = strokeColor;
     ctx.lineWidth = CLUSTER_LABEL_STROKE_SCREEN_PX / globalScale;
+    ctx.setLineDash([4 / globalScale, 6 / globalScale]);
     ctx.stroke();
+    ctx.setLineDash([]);
   }
 }
 
@@ -244,7 +259,7 @@ function drawClusterLabels(
   nodeMap: Map<string, NodePosEntry>,
   globalScale: number,
 ): void {
-  const fontSize = CLUSTER_LABEL_SCREEN_PX / globalScale;
+  const baseFontSize = CLUSTER_LABEL_SCREEN_PX / globalScale;
 
   for (const overlay of overlays) {
     const positions: [number, number][] = [];
@@ -254,7 +269,11 @@ function drawClusterLabels(
         positions.push([node.x, node.y]);
       }
     }
-    if (positions.length === 0) continue;
+    if (positions.length < CLUSTER_LABEL_MIN_NODES) continue;
+
+    // Scale font: small clusters get ~70% of base, large clusters get up to 140%
+    const t = Math.min(1, (positions.length - CLUSTER_LABEL_MIN_NODES) / (CLUSTER_LABEL_MAX_NODES_FOR_SCALE - CLUSTER_LABEL_MIN_NODES));
+    const fontSize = baseFontSize * (0.7 + t * 0.7);
 
     const cx = positions.reduce((s, p) => s + p[0], 0) / positions.length;
     const minY = Math.min(...positions.map(p => p[1]));
@@ -272,7 +291,6 @@ function drawClusterLabels(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = labelColor;
-    // Add shadow for contrast (same as node labels)
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     ctx.shadowBlur = 4;
     ctx.shadowOffsetX = 0;
