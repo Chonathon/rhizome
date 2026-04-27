@@ -35,7 +35,7 @@ export function ArtistAvatar({
     <span
       aria-hidden="true"
       className={cn(
-        'relative inline-flex size-12 items-center justify-center rounded-full border',
+        'relative inline-flex size-12 items-center justify-center rounded-full active:scale-95 transition-transform border ring-2 ring-transparent group-hover:ring-primary/30',
         className,
       )}
     >
@@ -43,7 +43,7 @@ export function ArtistAvatar({
         <img
           src={imageUrl}
           alt={`${name} avatar`}
-          className="h-full w-full rounded-full object-cover"
+          className="h-full w-full rounded-full object-cover "
           loading="lazy"
         />
       ) : (

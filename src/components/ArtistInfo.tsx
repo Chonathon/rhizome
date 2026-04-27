@@ -518,7 +518,7 @@ export function ArtistInfo({
                               imageUrl={img}
                               color={genreColor}
                               isInView={isInView || undefined}
-                              className="size-[64px] border-2 group-active:scale-95 transition-all duration-200"
+                              className="size-[64px] border-2 transition-all duration-200"
                               labelClassName="text-base"
                             />
                             <span className="text-[11px] leading-tight text-center line-clamp-2 w-full font-semibold group-hover:text-foreground transition-colors">
