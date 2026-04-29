@@ -30,3 +30,37 @@ export const validateAccessCode = async (email: string, accessCode: string) => {
     const response = await axios.get(`${url}/users/verify-access-code/${encodeURIComponent(accessCode)}/${encodeURIComponent(email)}`, {});
     return response.status === 200;
 }
+
+export const lastFMPreview = async (lfmUsername: string) => {
+    const response = await axios.get(`${url}/users/lastfm/userpreview/${lfmUsername}`);
+    return response.data.preview;
+}
+
+export const lastFMConnect = async (lfmUsername: string, userID: string) => {
+    const response = await axios.put(`${url}/users/lastfm/${userID}/${lfmUsername}`);
+    return response.status === 200;
+}
+
+export const lastFMRemove = async (userID: string, removeArtists: boolean) => {
+    const response = await axios.put(`${url}/users/lastfm/remove/user/${userID}/${removeArtists}`);
+    return response.status === 200;
+}
+
+export const lastFMRefresh = async (userID: string, force = true) => {
+    const response = await axios.put(`${url}/users/lastfm/sync/${userID}/${force}`);
+    return response.status === 200;
+}
+
+export const lastFMRecentTracks = async (lfmUsername: string, limit = 20) => {
+    const response = await axios.get(`${url}/users/lastfm/recenttracks/${encodeURIComponent(lfmUsername)}`, {
+        params: { limit },
+    });
+    return response.data.tracks as {
+        name: string;
+        artist: string;
+        album: string;
+        timestamp: number;
+        nowPlaying: boolean;
+        imageUrl: string | null;
+    }[];
+}

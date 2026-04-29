@@ -8,9 +8,9 @@ import {
     signOutUser,
     signUpUser, updateUserAccount
 } from "@/apis/authApi";
-import {BetterAuthError, InferSessionFromClient, InferUserFromClient} from "better-auth";
-import {getUserData} from "@/apis/usersApi";
-import {DEFAULT_PLAYER, DEFAULT_THEME} from "@/constants";
+import {BetterAuthError, InferSessionFromClient, InferUserFromClient, SessionQueryParams} from "better-auth";
+import {getUserData, lastFMRefresh} from "@/apis/usersApi";
+import {DEFAULT_PREFERENCES} from "@/constants";
 import {authClient} from "@/lib/auth-client";
 import {until} from "@/lib/utils";
 
@@ -30,6 +30,7 @@ interface AuthContextType {
     validSession: (userID?: string) => boolean,
     forgotPassword: (email: string) => Promise<boolean>,
     resetPassword: (newPassword: string, token: string) => Promise<boolean>,
+    refetchSession: (queryParams?: ({ query?: SessionQueryParams } | undefined)) => Promise<void>,
 }
 
 // Dummy context to avoid TS errors
@@ -49,6 +50,7 @@ const noUserContext = {
     validSession: (userID?: string) => false,
     forgotPassword: (email: string) => new Promise<boolean>((resolve, reject) => {}),
     resetPassword: (newPassword: string, token: string) => new Promise<boolean>((resolve, reject) => {}),
+    refetchSession: () => new Promise<void>((resolve, reject) => {}),
 }
 
 export const AuthContext = createContext<AuthContextType>(noUserContext);
@@ -90,7 +92,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                     email: data.user.email,
                     image: data.user.image || undefined,
                     liked: [],
-                    preferences: { theme: DEFAULT_THEME, player: DEFAULT_PLAYER },
+                    preferences: DEFAULT_PREFERENCES,
                     //@ts-expect-error (type inference should work here but isn't currently)
                     appAccess: data.user.appAccess,
                 });
@@ -257,11 +259,21 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                         name: session.user.name,
                         email: session.user.email,
                         liked: userData.liked ? userData.liked : [],
-                        preferences: userData.preferences,
+                        preferences: { ...DEFAULT_PREFERENCES, ...userData.preferences },
                         socialUser: userData.socialUser,
                         image: userData.image,
                         appAccess: session.user.appAccess,
+                        lfmUsername: userData.lfmUsername,
+                        lfmLastSync: userData.lfmLastSync,
                     });
+                    // Attempt to auto-refresh user last.fm data
+                    if (userData.lfmUsername && userData.lfmLastSync) {
+                        lastFMRefresh(session.user.id, false).then(response => {
+                            if (!response) {
+                                setError('Error: could not refresh user account.');
+                            }
+                        });
+                    }
                 } else {
                     setError(`Error: no user data found in db.`);
                 }
@@ -289,6 +301,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
             updateUserAppAccess,
             forgotPassword,
             resetPassword,
+            refetchSession,
         }}>
             {children}
         </AuthContext.Provider>

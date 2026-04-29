@@ -1,8 +1,6 @@
 import { Artist } from '@/types'
-import { fixWikiImageURL, formatNumberCompact, formatDate } from '@/lib/utils'
-import { useMemo } from 'react'
-import { Button } from './ui/button'
-import { CirclePlay, ArrowRight, SquarePlus, Loader2, Check } from 'lucide-react'
+import { fixWikiImageURL, formatNumberCompact, formatDate, formatNumber } from '@/lib/utils'
+import { useMemo, useState, useEffect } from 'react'
 import GenreBadge from '@/components/GenreBadge'
 import GraphCard from './GraphCard'
 import ArtistBadge from './ArtistBadge'
@@ -13,6 +11,7 @@ interface ArtistPreviewProps {
   getGenreNameById?: (id: string) => string | undefined
   onNavigate?: (artist: Artist) => void
   onPlay?: (artist: Artist) => void
+  onPreview?: (artist: Artist) => void
   onToggle?: (artistId: string) => void
   playLoading?: boolean
   isInCollection?: boolean
@@ -34,6 +33,7 @@ export function ArtistPreview({
   getGenreNameById,
   onNavigate,
   onPlay,
+  onPreview,
   onToggle,
   playLoading,
   isInCollection,
@@ -47,6 +47,23 @@ export function ArtistPreview({
   onShow,
 }: ArtistPreviewProps) {
   const initial = artist?.name?.[0]?.toUpperCase() ?? '?'
+
+  // Read preview mode preference from localStorage
+  const [previewModeEnabled, setPreviewModeEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('previewModeEnabled') === 'true';
+    }
+    return false;
+  });
+
+  // Listen for storage changes (in case other components update the preference)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setPreviewModeEnabled(localStorage.getItem('previewModeEnabled') === 'true');
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const imageUrl = useMemo(() => {
     const raw = artist?.image
@@ -65,15 +82,37 @@ export function ArtistPreview({
     [artist?.similar]
   )
 
+  // Track the actual cursor position so the preview follows the mouse
+  const [cursorPosition, setCursorPosition] = useState(position)
+
+  // Keep local cursor position in sync with the last graph-provided position
+  useEffect(() => {
+    setCursorPosition(position)
+  }, [position.x, position.y])
+
+  // When visible, follow the real cursor position
+  useEffect(() => {
+    if (!visible || typeof window === 'undefined') return
+
+    const handleMouseMove = (event: MouseEvent) => {
+      setCursorPosition({ x: event.clientX, y: event.clientY })
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+    }
+  }, [visible])
+
   if (!visible) return null
 
   return (
     <div
-      className="absolute pointer-events-auto"
+      className="fixed pointer-events-none z-50"
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        transform: 'translate(-50%, calc(-100% - 8px))', // Center horizontally, position above node with 8px spacing
+        left: `${cursorPosition.x}px`,
+        top: `${cursorPosition.y}px`,
+        transform: 'translate(24px, -8px)', 
       }}
     >
       <GraphCard
@@ -86,7 +125,7 @@ export function ArtistPreview({
 
         thumbnail={
           imageUrl ? (
-            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border">
+            <div className="w-24 h-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border aspect-square">
               <img
                 className="w-full h-full object-cover"
                 src={imageUrl}
@@ -95,7 +134,7 @@ export function ArtistPreview({
               />
             </div>
           ) : (
-            <div className="w-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-gradient-to-br from-gray-300/30 to-gray-300/30 dark:from-gray-400/20 dark:to-gray-400/20">
+            <div className="w-24 h-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-linear-to-br from-neutral-300/30 to-neutral-300/30 dark:from-neutral-400/20 dark:to-neutral-400/20">
               <span className="text-4xl font-semibold">{initial}</span>
             </div>
           )
@@ -109,24 +148,27 @@ export function ArtistPreview({
 
         meta={
           <>
+              <h3><span>
             {typeof artist.listeners === 'number' && (
-              <h3>
+              <>
                 {formatNumberCompact(artist.listeners)}{' '}
                 <span className="">Listeners</span>
-              </h3>
-            )}
+              </>
+              )}
+              </span>
             {/* {artist.startDate && (
               <h3>
-                <span className="font-medium">Founded:</span>{' '}
-                {formatDate(artist.startDate)}
+              <span className="font-medium">Founded:</span>{' '}
+              {formatDate(artist.startDate)}
               </h3>
-            )} */}
-            {/* {typeof artist.playcount === 'number' && (
-              <h3>
-                <span className="font-medium">Plays:</span>{' '}
-                {formatNumber(artist.playcount)}
-              </h3>
-            )} */}
+              )} */}
+            {typeof artist.location && (
+              <span>
+                {' '}<span className="font-medium">·</span>{' '}
+                {artist.location}
+              </span>
+            )}
+            </h3>
           </>
         }
 
@@ -164,44 +206,6 @@ export function ArtistPreview({
           </>
         }
 
-        actions={
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => onPlay?.(artist)}
-              disabled={playLoading}
-              className="flex-1 disabled:opacity-100"
-            >
-              {playLoading ? (
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-              ) : (
-                <CirclePlay />
-              )}
-              Play
-            </Button>
-            <Button
-              size="sm"
-              variant={isInCollection ? 'secondary' : 'secondary'}
-              onClick={() => onToggle?.(artist.id)}
-              className="flex-1"
-            >
-              {isInCollection ? (
-                <Check />
-              ) : (
-                <SquarePlus />
-              )}
-              {isInCollection ? 'Added' : 'Add'}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onNavigate?.(artist)}
-            >
-              <ArrowRight />
-            </Button>
-          </div>
-        }
       />
     </div>
   )

@@ -58,6 +58,11 @@ export interface ResponsiveDrawerProps {
    */
   onCanvasDragStart?: () => void;
   /**
+   * When enabled, clicking outside the drawer (on the canvas/graph) will dismiss it entirely.
+   * @default false
+   */
+  dismissOnCanvasClick?: boolean;
+  /**
    * When provided, the drawer portals into this container element instead of the document body.
    * Forces bottom-sheet mode, disables overlay and desktop side-drawer behavior.
    */
@@ -105,6 +110,7 @@ export function ResponsiveDrawer({
   scrollContainerSelector = '[data-drawer-scroll]',
   minimizeOnCanvasTouch = false,
   onCanvasDragStart,
+  dismissOnCanvasClick = false,
   container,
   contentKey,
   expandToMiddleTrigger,
@@ -129,10 +135,52 @@ export function ResponsiveDrawer({
   const scrollElRef = React.useRef<HTMLElement | null>(null);
   const closeTimerRef = React.useRef<number | null>(null);
   const canvasDragStartRef = React.useRef<{ x: number; y: number } | null>(null);
+  const openTimeRef = React.useRef<number>(0);
+
+  // Control whether we apply the desktop side offset margin. We turn it off just before closing
+  // so the Vaul translate animation can fully dismiss without leaving a sliver at the sidebar gap.
+  const [useDesktopOffset, setUseDesktopOffset] = useState(true);
+  const desktopSideOffset: React.CSSProperties | undefined = React.useMemo(() => {
+    if (!isDesktop || !useDesktopOffset) return undefined;
+    if (directionDesktop === "left") {
+      return { left: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
+    }
+    return { right: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
+  }, [isDesktop, useDesktopOffset, directionDesktop]);
+
+  // Prevent overlay from covering the sidebar region on desktop
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!isDesktop) {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "0px");
+      root.style.setProperty("--overlay-top", "0px");
+      root.style.setProperty("--overlay-bottom", "0px");
+      return;
+    }
+    if (directionDesktop === "left") {
+      root.style.setProperty("--overlay-left", "var(--sidebar-gap)");
+      root.style.setProperty("--overlay-right", "0px");
+    } else {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "var(--sidebar-gap)");
+    }
+    root.style.setProperty("--overlay-top", "calc(var(--app-header-height, 52px) + 8px)");
+    root.style.setProperty("--overlay-bottom", "12px");
+
+    return () => {
+      root.style.setProperty("--overlay-left", "0px");
+      root.style.setProperty("--overlay-right", "0px");
+      root.style.setProperty("--overlay-top", "0px");
+      root.style.setProperty("--overlay-bottom", "0px");
+    };
+  }, [isDesktop, directionDesktop, sidebarState]);
 
   // keep open state in sync with `show`
   useEffect(() => {
     if (show) {
+      openTimeRef.current = Date.now();
+      setUseDesktopOffset(true); // Reset offset when reopening (state persists across show/hide)
       setOpen(true);
     } else {
       setOpen(false);
@@ -318,6 +366,10 @@ export function ResponsiveDrawer({
     };
   }, [minimizeOnCanvasTouch, isAtMinSnap, onCanvasDragStart, isDesktop]);
 
+  // Dismiss drawer when clicking outside (on the canvas)
+  // Deferred so that node clicks can cancel the dismiss before it fires
+  const dismissTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Control whether we apply the desktop side offset margin. We turn it off just before closing
   // so the Vaul translate animation can fully dismiss without leaving a sliver at the sidebar gap.
   const [useDesktopOffset, setUseDesktopOffset] = useState(true);
@@ -331,6 +383,40 @@ export function ResponsiveDrawer({
 
   // Prevent overlay from covering the sidebar region on desktop
   useEffect(() => {
+    if (!dismissOnCanvasClick || !open) return;
+
+    const handleClick = (e: MouseEvent) => {
+      if (Date.now() - openTimeRef.current < 10) return;
+      const card = cardRef.current;
+      const target = e.target as HTMLElement;
+      if (card && !card.contains(target)) {
+        // Only dismiss when clicking the graph canvas
+        if (target.tagName !== 'CANVAS') return;
+        dismissTimeoutRef.current = setTimeout(() => {
+          onDismiss();
+        }, 50);
+      }
+    };
+
+    document.addEventListener('click', handleClick);
+
+    return () => {
+      document.removeEventListener('click', handleClick);
+      if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
+    };
+  }, [dismissOnCanvasClick, open, onDismiss]);
+
+  // Cancel pending dismiss when new content arrives (e.g., clicking a different node)
+  useEffect(() => {
+    if (dismissTimeoutRef.current) {
+      clearTimeout(dismissTimeoutRef.current);
+      dismissTimeoutRef.current = null;
+    }
+  }, [contentKey]);
+
+  if (!show) return null;
+
+  const drawerKey = isDesktop ? "desktop" : "mobile";
     if (container) return; // Skip overlay management in container mode
     const root = document.documentElement;
     if (!isDesktop) {

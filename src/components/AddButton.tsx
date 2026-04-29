@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { CheckSquare, PlusSquare } from "lucide-react";
+import { Bookmark, CheckSquare, PlusSquare, Save } from "lucide-react";
 import { BookOpen } from "./Icon"
 import { ToggleButton } from "./ui/ToggleButton";
 
@@ -20,10 +20,10 @@ export function AddButton({ isInCollection, onToggle, isDesktop, className, logg
     <ToggleButton
       isActive={isInCollection}
       onToggle={onToggle}
-      activeLabel="Added"
-      inactiveLabel="Add to Collection"
+      activeLabel="Saved"
+      inactiveLabel={`${isDesktop ? "Save" : "Save"}`}
       activeIcon={<BookOpen />}
-      inactiveIcon={<PlusSquare />}
+      inactiveIcon={<Bookmark />}
       className={className || (isDesktop ? "px-4 self-start" : "px-4 flex-1")}
       size={isDesktop ? "lg" : "xl"}
     />

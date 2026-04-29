@@ -1,6 +1,6 @@
 import './App.css'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
-import { ChevronDown, Divide, Settings, X } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Divide, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
@@ -44,6 +44,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
+import { useUrlState } from './hooks/useUrlState';
+import { toSlug } from '@/lib/urlUtils';
 import DisplayPanel from './components/DisplayPanel';
 import SharePanel from './components/SharePanel';
 import NodeLimiter from './components/NodeLimiter'
@@ -77,6 +79,8 @@ import AuthOverlay from '@/components/AuthOverlay';
 import AlphaAccessDialog from '@/components/AlphaAccessDialog';
 import { useAlphaAccess } from '@/hooks/useAlphaAccess';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
+import OnboardingOverlay from '@/components/OnboardingOverlay';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
 import { showNotiToast } from '@/components/NotiToast';
@@ -94,6 +98,7 @@ import {
   DEFAULT_LIGHT_NODE_COLOR,
   mixColors
 } from "@/lib/colors";
+import {lastFMConnect, lastFMPreview} from "@/apis/usersApi";
 
 function SidebarLogoTrigger() {
   const { toggleSidebar } = useSidebar()
@@ -314,6 +319,7 @@ function App() {
   const [playerSource, setPlayerSource] = useState<'artist' | 'genre' | undefined>(undefined);
   const [playerEntityName, setPlayerEntityName] = useState<string | undefined>(undefined);
   const [playerStartIndex, setPlayerStartIndex] = useState<number>(0);
+  const [playerPreviewMode, setPlayerPreviewMode] = useState<boolean>(false);
   // TODO: prob need to make playerIDQueue an array or update state differently as it sometimes is out of sync with the ui
   const [playerIDQueue, setPlayerIDQueue] = useState<FixedOrderedMap<string, TopTrack[]>>(new FixedOrderedMap(MAX_YTID_QUEUE_SIZE));
   const [autoFocusGraph, setAutoFocusGraph] = useState<boolean>(true);
@@ -329,6 +335,8 @@ function App() {
     likedArtists,
     isSocialUser,
     userAccess,
+    lfmUsername,
+    lfmLastSync,
     signIn,
     signInSocial,
     signUp,
@@ -345,9 +353,14 @@ function App() {
     resetPassword,
     authError,
     authLoading,
+    onLFMPreview,
+    onLFMConnect,
+    onLFMRemove,
+    onLFMRefresh,
   } = useAuth();
 
   const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess(userAccess);
+  const { hasCompletedOnboarding, setOnboardingCompleted } = useOnboarding();
   const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
 
   // Keep alpha dialog open state in sync with validation
@@ -370,6 +383,36 @@ function App() {
   }, []);
   const navigate = useNavigate();
 
+  // URL State: Lookup function to find genres by slug
+  const findGenreBySlug = useCallback((slug: string): Genre | undefined => {
+    return genres.find(g => toSlug(g.name) === slug);
+  }, [genres]);
+
+  // URL State: Open/close drawers from URL (initial load + browser back/forward)
+  const { updateUrl, canGoBack, canGoForward, goBack, goForward } = useUrlState({
+    findGenreBySlug,
+    fetchArtistById: (id) => fetchSingleArtist(id, false),
+    onGenreFromUrl: (genre) => {
+      setGenreInfoToShow(genre);
+      setShowGenreCard(true);
+      addRecentSelection(genre, 'genre');
+    },
+    onArtistFromUrl: (artist) => {
+      setArtistInfoToShow(artist);
+      setShowArtistCard(true);
+      addRecentSelection(artist, 'artist');
+    },
+    onGenreClearedFromUrl: () => {
+      setShowGenreCard(false);
+      setGenreInfoToShow(undefined);
+    },
+    onArtistClearedFromUrl: () => {
+      setShowArtistCard(false);
+      setArtistInfoToShow(undefined);
+    },
+    genresLoaded: genres.length > 0 && !genresLoading,
+  });
+
   const artistsAddedRef = useRef(0);
 
   // Get hovered artist data for preview
@@ -385,6 +428,14 @@ function App() {
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
+
+  // Auto-trigger onboarding after alpha validation
+  useEffect(() => {
+    if (isAlphaValidated && !authLoading && !hasCompletedOnboarding) {
+      window.dispatchEvent(new Event("onboarding:open"));
+    }
+  }, [isAlphaValidated, authLoading, hasCompletedOnboarding]);
+
 
   // Setup alpha feedback timer on mount
   useEffect(() => {
@@ -1237,9 +1288,10 @@ function App() {
   }
 
   // Play handlers using embedded YouTube player
-  const onPlayArtist = async (artist: Artist) => {
+  const onPlayArtist = async (artist: Artist, options?: { preview?: boolean }) => {
     const req = ++playRequest.current;
     const artistLoadingKey = `artist:${artist.id}`;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerLoadingKey(artistLoadingKey);
     setPlayerSource('artist');
@@ -1284,9 +1336,15 @@ function App() {
     }
   };
 
-  const onPlayGenre = async (genre: Genre) => {
+  // Preview mode: plays from ~30% into track for 30 seconds
+  const onPreviewArtist = async (artist: Artist) => {
+    await onPlayArtist(artist, { preview: true });
+  };
+
+  const onPlayGenre = async (genre: Genre, options?: { preview?: boolean }) => {
     const req = ++playRequest.current;
     const genreLoadingKey = `genre:${genre.id}`;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerLoadingKey(genreLoadingKey);
     setPlayerSource('genre');
@@ -1337,12 +1395,13 @@ function App() {
     }
   };
 
-  const onPlayArtistTrack = async (tracks: TopTrack[], startIndex: number) => {
+  const onPlayArtistTrack = async (tracks: TopTrack[], startIndex: number, options?: { preview?: boolean }) => {
     if (!tracks || tracks.length === 0) {
       toast.error('No tracks available');
       return;
     }
     const req = ++playRequest.current;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerSource('artist');
     // Extract video IDs based on DEFAULT_PLAYER preference
@@ -1385,12 +1444,13 @@ function App() {
     }
   };
 
-  const onPlayGenreTrack = async (tracks: TopTrack[], startIndex: number) => {
+  const onPlayGenreTrack = async (tracks: TopTrack[], startIndex: number, options?: { preview?: boolean }) => {
     if (!tracks || tracks.length === 0) {
       toast.error('No tracks available');
       return;
     }
     const req = ++playRequest.current;
+    setPlayerPreviewMode(options?.preview ?? false);
     setPlayerLoading(true);
     setPlayerSource('genre');
     // Extract video IDs based on DEFAULT_PLAYER preference
@@ -1613,7 +1673,8 @@ function App() {
     setShowGenreCard(true);
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
     setAutoFocusGraph(true); // Enable auto-focus for node clicks
-    addRecentSelection(genre);
+    addRecentSelection(genre, 'genre');
+    updateUrl({ type: 'genre', name: genre.name });
   };
 
   // Trigger full artist view for a genre from UI (e.g., GenreInfo "All Artists")
@@ -1645,7 +1706,7 @@ function App() {
     // Switch to artists view (or stay there)
     setGraph('artists');
     setAutoFocusGraph(true); // Enable auto-focus for this navigation
-    addRecentSelection(genre);
+    addRecentSelection(genre, 'genre');
   }
 
   // Switch to artists graph and select the clicked artist
@@ -1670,10 +1731,11 @@ function App() {
     setArtistInfoToShow(artist); // For drawer display
     setShowArtistCard(true);
     setAutoFocusGraph(true); // Enable auto-focus for top artist clicks
-    addRecentSelection(artist);
+    addRecentSelection(artist, 'artist');
     // Hide genre card but mark it for restoration when artist card is dismissed
     setShowGenreCard(false);
     setRestoreGenreCardOnArtistDismiss(true);
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   }
 
   const handleGenreCanvasDragStart = () => {
@@ -1709,7 +1771,7 @@ function App() {
         setShowGenreCard(false);
       }
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
-      addRecentSelection(artist);
+      addRecentSelection(artist, 'artist');
     }
     if (graph === 'similarArtists') {
       // Just select the artist without changing the similar filter
@@ -1719,8 +1781,9 @@ function App() {
       setShowArtistCard(true);
       setShowGenreCard(false); // Hide genre card but preserve selection for tab switching
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
-      addRecentSelection(artist);
+      addRecentSelection(artist, 'artist');
     }
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   };
 
   const focusArtistInCurrentView = (artist: Artist, opts?: { forceRefocus?: boolean }) => {
@@ -1741,7 +1804,7 @@ function App() {
     } else {
       setAutoFocusGraph(true);
     }
-    addRecentSelection(artist);
+    addRecentSelection(artist, 'artist');
   }
 
   const focusGenreInCurrentView = (genre: Genre, opts?: { forceRefocus?: boolean }) => {
@@ -1755,7 +1818,7 @@ function App() {
     setShowArtistCard(false); // Hide artist card but preserve selection for tab switching
     setSelectedGenres([genre]);
     // Don't set initialGenreFilter here - focusing a genre is just for viewing, not filtering
-    addRecentSelection(genre);
+    addRecentSelection(genre, 'genre');
     if (shouldTriggerRefocus) {
       setAutoFocusGraph(false);
       setTimeout(() => setAutoFocusGraph(true), 16);
@@ -1775,7 +1838,8 @@ function App() {
     // Don't change graph selection/filters - just show the info card as a preview
     // This prevents unwanted graph dimming during search
 
-    addRecentSelection(genre);
+    addRecentSelection(genre, 'genre');
+    updateUrl({ type: 'genre', name: genre.name });
   }
 
   const onSearchArtistSelect = (artist: Artist) => {
@@ -1793,7 +1857,8 @@ function App() {
     });
     setArtistInfoToShow(artist); // Use drawer state, not selectedArtist (prevents graph dimming)
     setShowArtistCard(true);
-    addRecentSelection(artist);
+    addRecentSelection(artist, 'artist');
+    updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   }
 
   const handleFindSelect = (option: FindOption) => {
@@ -1806,7 +1871,8 @@ function App() {
       setArtistInfoToShow(artist); // For drawer display
       setShowArtistCard(true);
       setAutoFocusGraph(true); // Enable auto-focus for find filter selections
-      addRecentSelection(artist);
+      addRecentSelection(artist, 'artist');
+      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
       if (graph !== 'artists' && graph !== 'similarArtists') {
         setGraph('artists');
       }
@@ -1860,6 +1926,7 @@ function App() {
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
     setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
+    updateUrl(null);
   }
 
   const deselectArtist = () => {
@@ -1868,6 +1935,7 @@ function App() {
     setArtistInfoToShow(undefined);
     setShowArtistCard(false);
     setArtistPreviewStack([]);
+    updateUrl(null);
   }
 
   // Force the drawer to remount when restoring a previously focused artist without flashing the genre card
@@ -2406,12 +2474,20 @@ function App() {
       } else {
         toast.info("You haven't added any artists yet!");
       }
+
     } else {
       const action: ContextAction = {type: 'viewCollection'};
       localStorage.setItem('unregisteredAction', JSON.stringify(action));
       window.dispatchEvent(new Event('auth:open'));
     }
   }
+
+  // Listen for collection:open event (dispatched from auth overlay post-connect)
+  useEffect(() => {
+    const handleCollectionOpen = () => onCollectionClick();
+    window.addEventListener("collection:open", handleCollectionOpen);
+    return () => window.removeEventListener("collection:open", handleCollectionOpen);
+  }, [onCollectionClick]);
 
   const onExploreClick = () => {
     resetAppState();
@@ -2483,6 +2559,18 @@ function App() {
         resetAppState={resetAppState}
         onCollectionClick={onCollectionClick}
         onExploreClick={onExploreClick}
+        getArtistImageByName={getArtistImageByName}
+        getArtistByName={getArtistByName}
+        getArtistColor={getArtistColor}
+        genreColorMap={genreColorMap}
+        onRecentsSelect={(item) => {
+          if (item.nodeType === 'genre') {
+            window.history.pushState({}, '', `?genre=${encodeURIComponent(item.name.toLowerCase().replace(/\s+/g, '-'))}`);
+          } else {
+            window.history.pushState({}, '', `?artist=${encodeURIComponent(item.id)}`);
+          }
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
         onFeedClick={onFeedClick}
         isFeedMode={feedMode}
         signedInUser={!!userID}
@@ -2498,6 +2586,7 @@ function App() {
         playerHeaderPreferProvidedTitle={playerSource === 'genre'}
         onPlayerTitleClick={handlePlayerTitleClick}
         playerStartIndex={playerStartIndex}
+        playerPreviewMode={playerPreviewMode}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -2550,7 +2639,7 @@ function App() {
               layout
               transition={{ layout: { duration: 0.25, ease: [0.22, 1, 0.36, 1] } }}
               className={
-                "fixed top-0 left-0 z-70 pt-3 pl-3 flex justify-left flex-col items-start md:flex-row gap-3"
+                "fixed top-0 left-0 z-70 pt-3 pl-3 flex justify-left flex-col items-start sm:flex-row gap-3"
               }
               style={{ left: "var(--sidebar-gap)" }}
             >
@@ -2583,25 +2672,48 @@ function App() {
                   }
               /> */}
               <AnimatePresence initial={false} mode="popLayout">
+                <div className="flex flex-col md sm:flex-row items-start gap-3">
+                {!isMobile &&
+                <div className="flex gap-1">
+                   <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={goBack}
+                  disabled={!canGoBack}
+                  aria-label="Go back"
+                  >
+                  <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={goForward}
+                  disabled={!canGoForward}
+                  aria-label="Go forward"
+                  >
+                  <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>}
                 {!collectionMode && (
                   <motion.div
-                    key="tabs"
-                    layout
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  key="tabs"
+                  layout
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <Tabs
-                      value={graph === 'similarArtists' ? 'artists' : graph}
-                      onValueChange={(val) => onTabChange(val as GraphType)}>
-                        <TabsList>
-                          <TabsTrigger value="genres">Genres</TabsTrigger>
-                          <TabsTrigger value="artists">Artists</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
+                  <Tabs
+                    value={graph === 'similarArtists' ? 'artists' : graph}
+                    onValueChange={(val) => onTabChange(val as GraphType)}>
+                    <TabsList>
+                      <TabsTrigger value="genres">Genres</TabsTrigger>
+                      <TabsTrigger value="artists">Artists</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                   </motion.div>
                 )}
+                </div>
               </AnimatePresence>
               <AnimatePresence initial={false} mode="popLayout">
                 {graph === 'similarArtists' && similarArtistAnchor && (
@@ -2684,22 +2796,6 @@ function App() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <motion.div layout>
-                <FindFilter
-                  items={findOptions}
-                  onSelect={handleFindSelect}
-                  onClear={hasFindSelection ? handleFindClear : undefined}
-                  disabled={findPanelDisabled}
-                  placeholder={graph === 'genres' ? 'Find genres in view...' : 'Find artists in view...'}
-                  emptyText={graph === 'genres' ? 'No genres match this view.' : 'No artists match this view.'}
-                  triggerClassName="self-start"
-                  open={isFindFilterOpen}
-                  onOpenChange={(open) => {
-                    if (findPanelDisabled && open) return;
-                    setIsFindFilterOpen(open);
-                  }}
-                />
-              </motion.div>
           </motion.div>
           </AnimatePresence>
                 <GenresForceGraph
@@ -2791,6 +2887,7 @@ function App() {
                       getGenreNameById={getGenreNameById}
                       onNavigate={(artist) => onArtistNodeClick(artist)}
                       onPlay={onPlayArtist}
+                      onPreview={onPreviewArtist}
                       onToggle={onAddArtistButtonToggle}
                       playLoading={playerLoading}
                       isInCollection={isInCollection(hoveredArtistData.id)}
@@ -2849,9 +2946,23 @@ function App() {
             {/*    show={graph === 'artists' && collectionMode}*/}
             {/*/>*/}
           </div>}
-          {/* right controls */}
+          {/* Utility buttons - find, clustering, display settings, share/export, zoom */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               {/* <ModeToggle /> */}
+              <FindFilter
+                items={findOptions}
+                onSelect={handleFindSelect}
+                onClear={hasFindSelection ? handleFindClear : undefined}
+                disabled={findPanelDisabled}
+                placeholder={graph === 'genres' ? 'Find genres in view...' : 'Find artists in view...'}
+                emptyText={graph === 'genres' ? 'No genres match this view.' : 'No artists match this view.'}
+                open={isFindFilterOpen}
+                onOpenChange={(open) => {
+                  if (findPanelDisabled && open) return;
+                  setIsFindFilterOpen(open);
+                }}
+                iconOnly={true}
+              />
               {(graph === 'genres' || graph === 'artists' || graph === 'similarArtists') && (
                 <ClusteringPanel
                   graphType={graph === 'genres' ? 'genres' : 'artists'}
@@ -2984,6 +3095,7 @@ function App() {
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
                 onPlay={onPlayArtist}
+                onPreview={onPreviewArtist}
                 onFocusInArtistsView={focusArtistInCurrentView}
                 onViewArtistGraph={focusArtistRelatedGenres}
                 onViewSimilarArtistGraph={createSimilarArtistGraph}
@@ -2991,6 +3103,7 @@ function App() {
                 viewRelatedArtistsLoading={!!pendingArtistGenreGraph}
                 onArtistToggle={onAddArtistButtonToggle}
                 isInCollection={isInCollection(artistInfoToShow?.id)}
+                collectionMode={collectionMode}
                 onPlayTrack={onPlayArtistTrack}
                 shouldShowChevron={showArtistGoTo}
                 onDrawerSnapChange={setIsArtistDrawerAtMinSnap}
@@ -3016,6 +3129,45 @@ function App() {
                   // className={`${graph === 'artists' ? 'flex-grow' : ''}`}
                   className='hidden'
                 >
+                  <Search
+                    onGenreSelect={onSearchGenreSelect}
+                    onArtistSelect={onSearchArtistSelect}
+                    currentArtists={currentArtists}
+                    genres={currentGenres?.nodes}
+                    graphState={graph}
+                    selectedGenres={selectedGenres}
+                    selectedArtist={selectedArtist}
+                    open={searchOpen}
+                    setOpen={setSearchOpen}
+                    genreColorMap={genreColorMap}
+                    getArtistColor={getArtistColor}
+                    onArtistPlay={onPlayArtist}
+                    onGenrePlay={onPlayGenre}
+                    onArtistGoTo={(artist) => {
+                      // For artists: Explore Related Genres (since artist might not be in current view)
+                      focusArtistRelatedGenres(artist);
+                      setArtistInfoToShow(artist);
+                      setShowArtistCard(true);
+                      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
+                    }}
+                    onGenreGoTo={(genre) => {
+                      // For genres: Go To (switches to genres view and focuses the genre)
+                      focusGenreInCurrentView(genre, { forceRefocus: true });
+                      updateUrl({ type: 'genre', name: genre.name });
+                    }}
+                    onArtistViewSimilar={async (artist) => {
+                      await createSimilarArtistGraph(artist);
+                      setArtistInfoToShow(artist);
+                      setShowArtistCard(true);
+                      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
+                    }}
+                    onGenreViewSimilar={(genre) => {
+                      // For genres: View Similar also navigates to genres view
+                      focusGenreInCurrentView(genre, { forceRefocus: true });
+                      updateUrl({ type: 'genre', name: genre.name });
+                    }}
+                  />
+
                 </motion.div>
               </div>
             </motion.div>
@@ -3043,18 +3195,26 @@ function App() {
         email={userEmail || ''}
         preferences={preferences || DEFAULT_PREFERENCES}
         socialUser={isSocialUser || false}
+        lfmUsername={lfmUsername}
+        lfmLastSync={lfmLastSync}
         onLogout={signOut}
         onChangeEmail={changeEmail}
         onChangePassword={changePassword}
         onDeleteAccount={deleteUser}
         onChangeName={updateUser}
         onChangePreferences={updatePreferences}
+        onLastFMPreview={onLFMPreview}
+        onLastFMConnect={onLFMConnect}
+        onLastFMRemove={onLFMRemove}
+        onLastFMRefresh={onLFMRefresh}
       />
       <AuthOverlay
           onSignUp={signUp}
           onSignInSocial={signInSocial}
           onSignIn={signIn}
           onForgotPassword={forgotPassword}
+          onLastFMPreview={onLFMPreview}
+          onLastFMConnect={onLFMConnect}
       />
       <AlphaAccessDialog
         open={!isAlphaValidated && !authLoading}
@@ -3063,6 +3223,10 @@ function App() {
           setAlphaOpen(false);
         }}
         onValidatePassword={validatePassword}
+      />
+      <OnboardingOverlay
+        onComplete={setOnboardingCompleted}
+        onCreateAccount={() => window.dispatchEvent(new Event('auth:open'))}
       />
       <FeedbackOverlay
         onSubmit={submitFeedback}
