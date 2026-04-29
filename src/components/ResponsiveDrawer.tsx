@@ -150,6 +150,7 @@ export function ResponsiveDrawer({
 
   // Prevent overlay from covering the sidebar region on desktop
   useEffect(() => {
+    if (container) return;
     const root = document.documentElement;
     if (!isDesktop) {
       root.style.setProperty("--overlay-left", "0px");
@@ -174,7 +175,7 @@ export function ResponsiveDrawer({
       root.style.setProperty("--overlay-top", "0px");
       root.style.setProperty("--overlay-bottom", "0px");
     };
-  }, [isDesktop, directionDesktop, sidebarState]);
+  }, [isDesktop, directionDesktop, sidebarState, container]);
 
   // keep open state in sync with `show`
   useEffect(() => {
@@ -370,17 +371,6 @@ export function ResponsiveDrawer({
   // Deferred so that node clicks can cancel the dismiss before it fires
   const dismissTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Control whether we apply the desktop side offset margin. We turn it off just before closing
-  // so the Vaul translate animation can fully dismiss without leaving a sliver at the sidebar gap.
-  const [useDesktopOffset, setUseDesktopOffset] = useState(true);
-  const desktopSideOffset: React.CSSProperties | undefined = React.useMemo(() => {
-    if (!isDesktop || !useDesktopOffset) return undefined;
-    if (directionDesktop === "left") {
-      return { left: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
-    }
-    return { right: "calc(var(--sidebar-gap, 0px) + 8px)" } as React.CSSProperties;
-  }, [isDesktop, useDesktopOffset, directionDesktop]);
-
   // Prevent overlay from covering the sidebar region on desktop
   useEffect(() => {
     if (!dismissOnCanvasClick || !open) return;
@@ -413,39 +403,6 @@ export function ResponsiveDrawer({
       dismissTimeoutRef.current = null;
     }
   }, [contentKey]);
-
-  if (!show) return null;
-
-  const drawerKey = isDesktop ? "desktop" : "mobile";
-    if (container) return; // Skip overlay management in container mode
-    const root = document.documentElement;
-    if (!isDesktop) {
-      root.style.setProperty("--overlay-left", "0px");
-      root.style.setProperty("--overlay-right", "0px");
-      root.style.setProperty("--overlay-top", "0px");
-      root.style.setProperty("--overlay-bottom", "0px");
-      root.style.setProperty("--overlay-top", "0px");
-      root.style.setProperty("--overlay-bottom", "0px");
-      return;
-    }
-    if (directionDesktop === "left") {
-      root.style.setProperty("--overlay-left", "var(--sidebar-gap)");
-      root.style.setProperty("--overlay-right", "0px");
-    } else {
-      root.style.setProperty("--overlay-left", "0px");
-      root.style.setProperty("--overlay-right", "var(--sidebar-gap)");
-    }
-    // Keep the overlay vertically aligned with the floating drawer on desktop
-    root.style.setProperty("--overlay-top", "calc(var(--app-header-height, 52px) + 8px)");
-    root.style.setProperty("--overlay-bottom", "12px");
-
-    return () => {
-      root.style.setProperty("--overlay-left", "0px");
-      root.style.setProperty("--overlay-right", "0px");
-      root.style.setProperty("--overlay-top", "0px");
-      root.style.setProperty("--overlay-bottom", "0px");
-    };
-  }, [isDesktop, directionDesktop, sidebarState, container]);
 
   if (!show) return null;
 
