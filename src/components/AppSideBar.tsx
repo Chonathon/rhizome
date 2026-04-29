@@ -198,6 +198,15 @@ export function AppSidebar({
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Feed" size="xl" isActive={isFeedMode}>
+                      <button onClick={onFeedClick}>
+                        <Rss />
+                        <span className="truncate">Feed</span>
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  
                   <SidebarMenuItem className={!isCollapsed ? "flex-1 min-h-0 overflow-hidden" : ""}>
                     <RecentsPopover
                       onItemSelect={onRecentsSelect}
@@ -210,14 +219,6 @@ export function AppSidebar({
                     />
                   </SidebarMenuItem>
 
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Feed" size="xl" isActive={isFeedMode}>
-                      <button onClick={onFeedClick}>
-                        <Rss />
-                        <span className="truncate">Feed</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroup>
               <SidebarGroup>
