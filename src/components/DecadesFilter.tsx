@@ -12,7 +12,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { toast } from "sonner";
 
 // Dummy data: decades from 1930s to 2020s
 const DECADES = [
@@ -165,8 +164,7 @@ export default function DecadesFilter({
                   key={decade.id}
                   value={decade.name}
                   onSelect={() => {
-                    toggleDecade(decade.id)
-                    toast(`You selected the ${decade.name} decade but's the feature isn't implemented yet 🙃`);
+                    toggleDecade(decade.id);
                   }}
                   className="flex items-center gap-2"
                 >

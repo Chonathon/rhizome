@@ -296,7 +296,7 @@ function App() {
     fetchSingleArtist,
     similarArtists,
     fetchSimilarArtists,
-  } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode);
+  } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode, selectedDecades);
 
   // Fetch top artists for the currently displayed genre info or the active filter
   const [topArtistsGenreId, setTopArtistsGenreId] = useState<string | undefined>(undefined);
@@ -2288,7 +2288,6 @@ function App() {
 
   const onDecadeSelectionChange = (selectedIDs: string[]) => {
     setSelectedDecades(selectedIDs);
-    // TODO: Implement decade filtering logic
   }
 
   // Generic collection filter handler - works for any filter type
