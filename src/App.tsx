@@ -386,8 +386,8 @@ function App() {
     return genres.find(g => toSlug(g.name) === slug);
   }, [genres]);
 
-  // URL State: Open/close drawers from URL (initial load + browser back/forward)
-  const { updateUrl, canGoBack, canGoForward, goBack, goForward } = useUrlState({
+  // URL State: Open/close drawers and restore nav state from URL (initial load + browser back/forward)
+  const { updateUrl, updateNavUrl, canGoBack, canGoForward, goBack, goForward } = useUrlState({
     findGenreBySlug,
     fetchArtistById: (id) => fetchSingleArtist(id, false),
     onGenreFromUrl: (genre) => {
@@ -407,6 +407,25 @@ function App() {
     onArtistClearedFromUrl: () => {
       setShowArtistCard(false);
       setArtistInfoToShow(undefined);
+    },
+    onViewFromUrl: (view) => {
+      if (view === 'artists') {
+        setIsBeforeArtistLoad(false);
+        setGraph('artists');
+      } else {
+        setGraph('genres');
+      }
+    },
+    onAnchorFromUrl: async (artist) => {
+      setIsBeforeArtistLoad(false);
+      await createSimilarArtistGraph(artist);
+    },
+    onAnchorClearedFromUrl: () => {
+      setSimilarArtistAnchor(undefined);
+    },
+    getInitialView: () => {
+      if (graph === 'similarArtists') return 'similar';
+      return graph as 'genres' | 'artists';
     },
     genresLoaded: genres.length > 0 && !genresLoading,
   });
@@ -1911,6 +1930,7 @@ function App() {
     setCollectionMode(false);
     // Clear collection mode filters when exiting to explore mode
     setCollectionFilters({ genres: [], decades: [] });
+    updateNavUrl('genres', null);
   }
 
   const deselectGenre = () => {
@@ -2079,6 +2099,7 @@ function App() {
         setSimilarArtistAnchor(undefined);
       }
       setGraph('genres');
+      updateNavUrl('genres', null);
       // Don't clear currentArtists/currentArtistLinks - preserve them like genre graph does
       // Just hide the artist graph with the show prop
       setShowArtistCard(false);
@@ -2097,6 +2118,7 @@ function App() {
       }
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
+      updateNavUrl('artists', null);
 
       // Restore card visibility based on selections
       if (selectedArtist) {
@@ -2522,8 +2544,8 @@ function App() {
               let artist = artists.find(a => a.id === action.artistID);
               if (!artist) artist = await fetchSingleArtist(action.artistID);
               if (artist) {
-                setGraph('similarArtists');
-                createSimilarArtistGraph(artist);
+                await createSimilarArtistGraph(artist);
+                updateNavUrl('similar', artist.id);
               }
             }
             await onAddArtistButtonToggle(action.artistID);
@@ -3045,7 +3067,10 @@ function App() {
                 onPreview={onPreviewArtist}
                 onFocusInArtistsView={focusArtistInCurrentView}
                 onViewArtistGraph={focusArtistRelatedGenres}
-                onViewSimilarArtistGraph={createSimilarArtistGraph}
+                onViewSimilarArtistGraph={async (artist) => {
+                  await createSimilarArtistGraph(artist);
+                  updateNavUrl('similar', artist.id);
+                }}
                 playLoading={isPlayerLoadingArtist()}
                 viewRelatedArtistsLoading={!!pendingArtistGenreGraph}
                 onArtistToggle={onAddArtistButtonToggle}
@@ -3106,7 +3131,7 @@ function App() {
                       await createSimilarArtistGraph(artist);
                       setArtistInfoToShow(artist);
                       setShowArtistCard(true);
-                      updateUrl({ type: 'artist', id: artist.id, name: artist.name });
+                      updateUrl({ type: 'artist', id: artist.id, name: artist.name }, { view: 'similar', anchor: artist.id });
                     }}
                     onGenreViewSimilar={(genre) => {
                       // For genres: View Similar also navigates to genres view

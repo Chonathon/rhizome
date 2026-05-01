@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toSlug } from '@/lib/urlUtils';
-import type { Artist, Genre } from '@/types';
+import type { Artist, Genre, UrlView } from '@/types';
+
+interface NavUpdate {
+  view?: UrlView | null;
+  anchor?: string | null;
+}
 
 interface UseUrlStateOptions {
   findGenreBySlug: (slug: string) => Genre | undefined;
@@ -9,6 +14,10 @@ interface UseUrlStateOptions {
   onArtistFromUrl?: (artist: Artist) => void;
   onGenreClearedFromUrl?: () => void;
   onArtistClearedFromUrl?: () => void;
+  onViewFromUrl?: (view: 'genres' | 'artists') => void;
+  onAnchorFromUrl?: (artist: Artist) => void;
+  onAnchorClearedFromUrl?: () => void;
+  getInitialView?: () => UrlView | null;
   genresLoaded: boolean;
 }
 
@@ -24,7 +33,8 @@ export type UrlEntity =
   | null;
 
 export interface UrlStateResult {
-  updateUrl: (entity: UrlEntity) => void;
+  updateUrl: (entity: UrlEntity, nav?: NavUpdate) => void;
+  updateNavUrl: (view: UrlView | null, anchor?: string | null) => void;
   canGoBack: boolean;
   canGoForward: boolean;
   goBack: () => void;
@@ -40,30 +50,37 @@ const getStoredHistoryIndex = (): number =>
   window.history.state?.historyIndex ?? 0;
 
 /**
- * Syncs artist/genre drawer state to the URL via `window.history.pushState`.
- * Handles initial page load and browser back/forward (popstate).
+ * Syncs drawer state and core navigation (view tab, similar-artists anchor) to
+ * the URL via `window.history.pushState`. Handles initial page load and browser
+ * back/forward (popstate).
  *
- * Call `updateUrl` in any handler that opens or closes a drawer:
+ * URL params managed:
+ *   ?genre=<slug>   — genre info drawer
+ *   ?artist=<id>    — artist info drawer
+ *   ?view=<view>    — active tab: 'genres' | 'artists' | 'similar'
+ *   ?anchor=<id>    — similar-artists anchor artist ID
+ *
+ * Call `updateUrl` when opening/closing a drawer:
  * ```ts
- * // Opening an artist drawer — always include id and name
  * updateUrl({ type: 'artist', id: artist.id, name: artist.name });
- *
- * // Opening a genre drawer
  * updateUrl({ type: 'genre', name: genre.name });
- *
- * // Closing (dismiss / clear)
- * updateUrl(null);
+ * updateUrl(null); // dismiss
+ * // Optionally update nav in the same push:
+ * updateUrl({ type: 'artist', ... }, { view: 'similar', anchor: artist.id });
  * ```
  *
- * Rule of thumb: if a handler calls `setShowArtistCard(true)` or
- * `setShowGenreCard(true)`, it needs a matching `updateUrl` call.
- *
- * `goBack` / `goForward` navigate the app's own URL history.
- * `canGoBack` / `canGoForward` reflect whether navigation is possible.
+ * Call `updateNavUrl` for tab switches and similar-artists entry/exit:
+ * ```ts
+ * updateNavUrl('artists');              // switch to artists tab
+ * updateNavUrl('similar', artist.id);  // enter similar-artists view
+ * updateNavUrl('genres', null);        // back to genres, clear anchor
+ * ```
  */
 export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const prevGenreSlug = useRef<string | null>(null);
   const prevArtistSlug = useRef<string | null>(null);
+  const prevView = useRef<string | null>(null);
+  const prevAnchorId = useRef<string | null>(null);
   const initialLoadProcessed = useRef(false);
 
   // historyIndex is seeded from window.history.state on every mount (survives refresh).
@@ -79,8 +96,13 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const callbacksRef = useRef(options);
   callbacksRef.current = options;
 
-  // Shared logic: resolve URL slugs → open/close drawers
-  const processUrlParams = useCallback((genreSlug: string | null, artistSlug: string | null) => {
+  // Shared logic: resolve URL slugs → open/close drawers and restore nav state
+  const processUrlParams = useCallback((
+    genreSlug: string | null,
+    artistSlug: string | null,
+    view: string | null,
+    anchorId: string | null,
+  ) => {
     if (genreSlug !== prevGenreSlug.current) {
       prevGenreSlug.current = genreSlug;
       if (genreSlug) {
@@ -101,14 +123,52 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
         callbacksRef.current.onArtistClearedFromUrl?.();
       }
     }
+
+    // Normalize view: only 'genres' and 'artists' trigger onViewFromUrl.
+    // 'similar' is handled exclusively via onAnchorFromUrl.
+    const normalizedView = (view === 'genres' || view === 'artists') ? view : null;
+    if (normalizedView !== prevView.current) {
+      prevView.current = normalizedView;
+      if (normalizedView) {
+        callbacksRef.current.onViewFromUrl?.(normalizedView);
+      }
+    }
+
+    if (anchorId !== prevAnchorId.current) {
+      prevAnchorId.current = anchorId;
+      if (anchorId) {
+        callbacksRef.current.fetchArtistById(anchorId).then((artist) => {
+          if (artist) callbacksRef.current.onAnchorFromUrl?.(artist);
+        });
+      } else {
+        callbacksRef.current.onAnchorClearedFromUrl?.();
+      }
+    }
   }, []);
 
-  // Initial load: process URL params once genres are ready
+  // Initial load: process URL params once genres are ready.
+  // If no view is in the URL, replaceState to add it so the URL always reflects the current tab.
   useEffect(() => {
     if (!genresLoaded || initialLoadProcessed.current) return;
     initialLoadProcessed.current = true;
     const params = new URLSearchParams(window.location.search);
-    processUrlParams(params.get('genre'), params.get('artist'));
+    processUrlParams(
+      params.get('genre'),
+      params.get('artist'),
+      params.get('view'),
+      params.get('anchor'),
+    );
+
+    if (!params.has('view')) {
+      const view = callbacksRef.current.getInitialView?.();
+      if (view) {
+        params.set('view', view);
+        const search = params.toString();
+        const newUrl = search ? `${window.location.pathname}?${search}` : window.location.pathname;
+        window.history.replaceState(window.history.state, '', newUrl);
+        prevView.current = (view === 'genres' || view === 'artists') ? view : null;
+      }
+    }
   }, [genresLoaded, processUrlParams]);
 
   // Browser back/forward: popstate listener reads directly from window.location.
@@ -118,7 +178,12 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
       if (!callbacksRef.current.genresLoaded) return;
 
       const params = new URLSearchParams(window.location.search);
-      processUrlParams(params.get('genre'), params.get('artist'));
+      processUrlParams(
+        params.get('genre'),
+        params.get('artist'),
+        params.get('view'),
+        params.get('anchor'),
+      );
 
       // Sync history index from the restored history entry's state.
       const newIndex: number = event.state?.historyIndex ?? 0;
@@ -141,24 +206,8 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [processUrlParams]);
 
-  // App → URL: pushState with historyIndex embedded in state so it survives refresh.
-  const updateUrl = useCallback((entity: UrlEntity) => {
-    const params = new URLSearchParams(window.location.search);
-
-    if (entity === null) {
-      params.delete('genre');
-      params.delete('artist');
-    } else if (entity.type === 'genre') {
-      params.set('genre', toSlug(entity.name));
-      params.delete('artist');
-    } else {
-      params.set('artist', entity.id);
-      params.delete('genre');
-    }
-
-    prevGenreSlug.current = params.get('genre');
-    prevArtistSlug.current = params.get('artist');
-
+  // Shared push-state helper — applies and commits all param changes.
+  const pushUrlState = useCallback((params: URLSearchParams) => {
     const search = params.toString();
     const newUrl = search
       ? `${window.location.pathname}?${search}`
@@ -172,6 +221,56 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     setCanGoBack(true);
     setCanGoForward(false);
   }, []);
+
+  // App → URL: update entity (genre/artist drawer) and optionally nav state in one push.
+  const updateUrl = useCallback((entity: UrlEntity, nav?: NavUpdate) => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (entity === null) {
+      params.delete('genre');
+      params.delete('artist');
+    } else if (entity.type === 'genre') {
+      params.set('genre', toSlug(entity.name));
+      params.delete('artist');
+    } else {
+      params.set('artist', entity.id);
+      params.delete('genre');
+    }
+
+    if (nav !== undefined) {
+      if (nav.view !== undefined) {
+        if (nav.view) params.set('view', nav.view);
+        else params.delete('view');
+      }
+      if (nav.anchor !== undefined) {
+        if (nav.anchor) params.set('anchor', nav.anchor);
+        else params.delete('anchor');
+      }
+    }
+
+    prevGenreSlug.current = params.get('genre');
+    prevArtistSlug.current = params.get('artist');
+
+    pushUrlState(params);
+  }, [pushUrlState]);
+
+  // App → URL: update nav state (view tab + anchor) without touching entity params.
+  const updateNavUrl = useCallback((view: UrlView | null, anchor?: string | null) => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (view) params.set('view', view);
+    else params.delete('view');
+
+    if (anchor !== undefined) {
+      if (anchor) params.set('anchor', anchor);
+      else params.delete('anchor');
+    }
+
+    prevView.current = (view === 'genres' || view === 'artists') ? view : null;
+    if (anchor !== undefined) prevAnchorId.current = anchor;
+
+    pushUrlState(params);
+  }, [pushUrlState]);
 
   const goBack = useCallback(() => {
     if (historyIndex.current <= 0) return;
@@ -194,5 +293,5 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     setCanGoForward(forwardCount.current > 0);
   }, []);
 
-  return { updateUrl, canGoBack, canGoForward, goBack, goForward };
+  return { updateUrl, updateNavUrl, canGoBack, canGoForward, goBack, goForward };
 }
