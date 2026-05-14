@@ -786,6 +786,10 @@ function App() {
       clearTimeout(clusteringTimeoutRef.current);
     }
 
+    // Reset clusters so the graph hides while recomputing — prevents showing nodes without
+    // edges if artists load before links (race condition on first load).
+    setArtistClusters(null);
+
     setClusteringInProgress(true);
 
     // Debounce clustering computation and run it async
