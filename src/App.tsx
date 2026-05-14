@@ -885,6 +885,7 @@ function App() {
   const [artistClusters, setArtistClusters] = useState<ClusterResult | null>(null);
   const [clusteringInProgress, setClusteringInProgress] = useState(false);
   const clusteringTimeoutRef = useRef<any | null>(null);
+  const clusteringGenerationRef = useRef(0);
 
   useEffect(() => {
     if ((graph !== 'artists' && graph !== 'similarArtists') || !currentArtists.length) {
@@ -913,6 +914,10 @@ function App() {
       artistClusterMethod = exploreArtistClusterMethod;
     }
 
+    // Increment generation so any in-flight requestIdleCallback from a previous run is
+    // treated as stale and discarded (clearTimeout only cancels the debounce, not the idle callback).
+    const generation = ++clusteringGenerationRef.current;
+
     // Debounce clustering computation and run it async
     clusteringTimeoutRef.current = setTimeout(() => {
       // Use requestIdleCallback if available, otherwise setTimeout with delay
@@ -925,6 +930,7 @@ function App() {
       };
 
       scheduleClustering(() => {
+        if (clusteringGenerationRef.current !== generation) return;
         try {
           const isDark = resolvedTheme === 'dark';
           const engine = new ClusteringEngine(currentArtists, currentArtistLinks, isDark);
