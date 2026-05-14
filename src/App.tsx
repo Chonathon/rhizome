@@ -777,7 +777,7 @@ function App() {
   const clusteringGenerationRef = useRef(0);
 
   useEffect(() => {
-    if ((graph !== 'artists' && graph !== 'similarArtists') || !currentArtists.length) {
+    if (graph !== 'artists' || !currentArtists.length) {
       setArtistClusters(null);
       return;
     }
