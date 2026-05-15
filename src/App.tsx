@@ -301,6 +301,7 @@ function App() {
     similarArtists,
     fetchSimilarArtists,
     prefetchSimilarImages,
+    fetchArtistByName,
   } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode);
 
   // Fetch top artists for the currently displayed genre info or the active filter
@@ -1558,13 +1559,14 @@ function App() {
     if (artist) {
       onArtistNodeClick(artist);
     } else {
-      const fetched = await fetchArtistBySearch(name);
-      if (fetched) {
-        setSelectedArtist(undefined);
-        setArtistInfoToShow(fetched);
-        setShowArtistCard(true);
-        addRecentSelection(fetched);
-        updateUrl({ type: 'artist', id: fetched.id, name: fetched.name });
+      const cachedArtist = artistObjectCache.current.get(name);
+      if (cachedArtist) {
+        onArtistNodeClick(cachedArtist);
+      } else {
+        const fetched = await fetchArtistByName(name);
+        if (fetched) {
+          onArtistNodeClick(fetched);
+        }
       }
     }
   }

@@ -169,6 +169,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         }
     }
 
+    // Don't use this unless you want very fuzzy results
     const fetchArtistBySearch = async (query: string): Promise<Artist | undefined> => {
         try {
             const response = await axios.get(`${url}/search/${query}`);
@@ -177,6 +178,18 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
             return results.find((r): r is Artist => 'listeners' in r);
         } catch {
             return undefined;
+        }
+    }
+
+    const fetchArtistByName = async (name: string): Promise<Artist | undefined> => {
+        resetArtistsError();
+        try {
+            const response = await axios.get(`${url}/artists/fetch/name/${name}`);
+            return response.data;
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setArtistsError(err);
+            }
         }
     }
 
@@ -197,6 +210,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
     const prefetchSimilarImages = async (artist: Artist): Promise<Artist[]> => {
         try {
             const response = await axios.get(`${url}/artists/fetch/similar/${artist.id}`);
+            setSimilarArtists([artist, ...response.data]);
             return [artist, ...response.data] as Artist[];
         } catch {
             return [];
@@ -231,6 +245,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         similarArtists,
         fetchSimilarArtists,
         prefetchSimilarImages,
+        fetchArtistByName,
     };
 }
 
