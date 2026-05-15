@@ -6,6 +6,7 @@ import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
 import useGenreTopArtists from "@/hooks/useGenreTopArtists";
 import ArtistsForceGraph, { type GraphHandle } from "@/components/ArtistsForceGraph";
+import type { ClusterOverlay } from "@/components/Graph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
   Artist, ArtistClusterMode, ArtistNodeLimitType, BadDataReport, ContextAction, FindOption,
@@ -171,15 +172,45 @@ function App() {
   const [genreTopArtistsCache, setGenreTopArtistsCache] = useState<Map<string, Artist[]>>(new Map());
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
-  const [artistClusterMethod, setArtistClusterMethod] = useState<ArtistClusterMode>(() => {
-    const stored = localStorage.getItem('artistClusterMethod');
+  const [collectionArtistClusterMethod, setCollectionArtistClusterMethod] = useState<ArtistClusterMode>(() => {
+    // Try new key first, fall back to old key for backward compatibility
+    let stored = localStorage.getItem('collectionArtistClusterMethod');
+    if (!stored) {
+      stored = localStorage.getItem('artistClusterMethod');
+    }
     if (stored === 'louvain') {
       return 'similarArtists';
     }
     if (stored === 'listeners') {
       return 'popularity';
     }
-    if (stored === 'similarArtists' || stored === 'hybrid' || stored === 'popularity') {
+    if (stored === 'similarArtists' || stored === 'byTags' || stored === 'popularity' || stored === 'genre') {
+      return stored;
+    }
+    return DEFAULT_ARTIST_CLUSTER_MODE;
+  });
+  const [exploreArtistClusterMethod, setExploreArtistClusterMethod] = useState<ArtistClusterMode>(() => {
+    const stored = localStorage.getItem('exploreArtistClusterMethod');
+    if (stored === 'louvain') {
+      return 'similarArtists';
+    }
+    if (stored === 'listeners') {
+      return 'popularity';
+    }
+    if (stored === 'similarArtists' || stored === 'byTags' || stored === 'popularity' || stored === 'genre') {
+      return stored;
+    }
+    return DEFAULT_ARTIST_CLUSTER_MODE;
+  });
+  const [similarArtistClusterMethod, setSimilarArtistClusterMethod] = useState<ArtistClusterMode>(() => {
+    const stored = localStorage.getItem('similarArtistClusterMethod');
+    if (stored === 'louvain') {
+      return 'similarArtists';
+    }
+    if (stored === 'listeners') {
+      return 'popularity';
+    }
+    if (stored === 'similarArtists' || stored === 'byTags' || stored === 'popularity' || stored === 'genre') {
       return stored;
     }
     return DEFAULT_ARTIST_CLUSTER_MODE;
@@ -187,6 +218,10 @@ function App() {
   const [artistColorMode, setArtistColorMode] = useState<'genre' | 'cluster'>(() => {
     const stored = localStorage.getItem('artistColorMode');
     return (stored === 'cluster' ? 'cluster' : 'genre') as 'genre' | 'cluster';
+  });
+  const [showClusterOverlay, setShowClusterOverlay] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showClusterOverlay');
+    return stored === null ? true : stored === 'true';
   });
   const [dagMode, setDagMode] = useState<boolean>(() => {
     const storedDagMode = localStorage.getItem('dagMode');
@@ -769,6 +804,77 @@ function App() {
     });
   }, [graph]);
 
+  // Pre-compute per-artist root genre assignment for "By Genre" clustering (collection mode)
+  const artistGenreAssignments = useMemo((): {
+    assignments: Map<string, string>;
+    colors: Map<string, string>;
+    names: Map<string, string>;
+  } => {
+    const assignments = new Map<string, string>();
+    const colors = new Map<string, string>();
+    const names = new Map<string, string>();
+
+    if (!currentArtists.length || !genres.length) return { assignments, colors, names };
+
+    const isDark = resolvedTheme === 'dark';
+    const genreById = new Map(genres.map(g => [g.id, g]));
+    const genreByName = new Map(genres.map(g => [g.name, g]));
+    const rootIdLookup = new Set(genreRoots);
+    const genreNameById = new Map(genres.map(g => [g.id, g.name]));
+
+    const globalRootArtistCount = new Map<string, number>();
+    genres.forEach(genre => {
+      if (genre.rootGenres?.length) {
+        genre.rootGenres.forEach(rootId => {
+          globalRootArtistCount.set(rootId, (globalRootArtistCount.get(rootId) ?? 0) + genre.artistCount);
+        });
+      }
+      if (rootIdLookup.has(genre.id)) {
+        globalRootArtistCount.set(genre.id, (globalRootArtistCount.get(genre.id) ?? 0) + genre.artistCount);
+      }
+    });
+    const rootColorMap = assignRootGenreColors(genreRoots, isDark, globalRootArtistCount);
+
+    currentArtists.forEach(artist => {
+      let rootGenreId: string | null = null;
+
+      if (artist.tags?.length) {
+        const genreTags = artist.tags
+          .filter(t => genreByName.has(t.name))
+          .sort((a, b) => b.count - a.count);
+        if (genreTags.length > 0) {
+          const tagGenre = genreByName.get(genreTags[0].name);
+          if (tagGenre?.rootGenres?.[0]) rootGenreId = tagGenre.rootGenres[0];
+        }
+      }
+
+      if (!rootGenreId && artist.genres?.length) {
+        const firstGenre = genreById.get(artist.genres[0]);
+        if (firstGenre?.rootGenres?.[0]) {
+          rootGenreId = firstGenre.rootGenres[0];
+        } else if (firstGenre && rootIdLookup.has(firstGenre.id)) {
+          rootGenreId = firstGenre.id;
+        }
+      }
+
+      const finalRootId = rootGenreId ?? 'unknown';
+      assignments.set(artist.id, finalRootId);
+
+      if (finalRootId !== 'unknown' && !colors.has(finalRootId)) {
+        const color = rootColorMap.get(finalRootId);
+        if (color) {
+          colors.set(finalRootId, color);
+          names.set(finalRootId, genreNameById.get(finalRootId) ?? finalRootId);
+        }
+      }
+    });
+
+    colors.set('unknown', isDark ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR);
+    names.set('unknown', 'Unknown Genre');
+
+    return { assignments, colors, names };
+  }, [currentArtists, genres, genreRoots, resolvedTheme]);
+
   // Compute artist clusters using selected clustering method
   // Use async computation for large graphs to avoid blocking UI
   const [artistClusters, setArtistClusters] = useState<ClusterResult | null>(null);
@@ -788,6 +894,16 @@ function App() {
 
     setClusteringInProgress(true);
 
+    // Select the appropriate clustering method based on the current view
+    let artistClusterMethod: ArtistClusterMode;
+    if (graph === 'similarArtists') {
+      artistClusterMethod = similarArtistClusterMethod;
+    } else if (graph === 'artists' && collectionMode) {
+      artistClusterMethod = collectionArtistClusterMethod;
+    } else {
+      artistClusterMethod = exploreArtistClusterMethod;
+    }
+
     // Debounce clustering computation and run it async
     clusteringTimeoutRef.current = setTimeout(() => {
       // Use requestIdleCallback if available, otherwise setTimeout with delay
@@ -806,6 +922,11 @@ function App() {
           const result = engine.cluster({
             method: artistClusterMethod,
             resolution: 1.0,
+            ...(artistClusterMethod === 'genre' && {
+              genreAssignments: artistGenreAssignments.assignments,
+              genreColors: artistGenreAssignments.colors,
+              genreNames: artistGenreAssignments.names,
+            }),
           });
           setArtistClusters(result);
         } catch (error) {
@@ -823,7 +944,7 @@ function App() {
         clearTimeout(clusteringTimeoutRef.current);
       }
     };
-  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod, resolvedTheme]);
+  }, [currentArtists, currentArtistLinks, graph, collectionMode, collectionArtistClusterMethod, exploreArtistClusterMethod, similarArtistClusterMethod, resolvedTheme, artistGenreAssignments]);
 
   // Use generated links from clustering (artists colored by parent genre)
   useEffect(() => {
@@ -877,6 +998,30 @@ function App() {
       setFilteredArtistLinks(currentArtistLinks);
     }
   }, [artistClusters, graph, currentArtistLinks, filterArtistLinksByClusters, currentArtists]);
+
+  // Cluster hull overlays for genre, byTags, and popularity modes
+  const artistClusterOverlays = useMemo((): ClusterOverlay[] | undefined => {
+    let artistClusterMethod: ArtistClusterMode;
+    if (graph === 'similarArtists') {
+      artistClusterMethod = similarArtistClusterMethod;
+    } else if (graph === 'artists' && collectionMode) {
+      artistClusterMethod = collectionArtistClusterMethod;
+    } else {
+      artistClusterMethod = exploreArtistClusterMethod;
+    }
+    if (!artistClusters || !['genre', 'popularity'].includes(artistClusterMethod) || !showClusterOverlay) return undefined;
+    const overlays: ClusterOverlay[] = [];
+    for (const cluster of artistClusters.clusters.values()) {
+      if (cluster.artistIds.length === 0) continue;
+      overlays.push({
+        id: cluster.id,
+        name: cluster.name,
+        color: cluster.color,
+        nodeIds: new Set(cluster.artistIds),
+      });
+    }
+    return overlays.length > 0 ? overlays : undefined;
+  }, [artistClusters, graph, collectionMode, collectionArtistClusterMethod, exploreArtistClusterMethod, similarArtistClusterMethod, showClusterOverlay]);
 
   // Compute radial layout from cluster tier data for popularity stratification
   const artistRadialLayout = useMemo(() => {
@@ -2806,6 +2951,7 @@ function App() {
                   disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
                   radialLayout={artistRadialLayout}
                   priorityLabelIds={centralArtistLabelIds}
+                  clusterOverlays={artistClusterOverlays}
                 />
 
           {/* Genre hover preview */}
@@ -2913,14 +3059,22 @@ function App() {
               {(graph === 'genres' || graph === 'artists' || graph === 'similarArtists') && (
                 <ClusteringPanel
                   graphType={graph === 'genres' ? 'genres' : 'artists'}
-                  clusterMode={graph === 'genres' ? genreClusterMode[0] : artistClusterMethod}
+                  clusterMode={graph === 'genres' ? genreClusterMode[0] : (graph === 'similarArtists' ? similarArtistClusterMethod : (collectionMode ? collectionArtistClusterMethod : exploreArtistClusterMethod))}
                   setClusterMode={(mode) => {
                     if (graph === 'genres') {
                       onGenreClusterModeChange(mode as GenreClusterMode[]);
                     } else {
                       const newMethod = (Array.isArray(mode) ? mode[0] : mode) as ArtistClusterMode;
-                      setArtistClusterMethod(newMethod);
-                      localStorage.setItem('artistClusterMethod', newMethod);
+                      if (graph === 'similarArtists') {
+                        setSimilarArtistClusterMethod(newMethod);
+                        localStorage.setItem('similarArtistClusterMethod', newMethod);
+                      } else if (collectionMode) {
+                        setCollectionArtistClusterMethod(newMethod);
+                        localStorage.setItem('collectionArtistClusterMethod', newMethod);
+                      } else {
+                        setExploreArtistClusterMethod(newMethod);
+                        localStorage.setItem('exploreArtistClusterMethod', newMethod);
+                      }
                     }
                   }}
                   dagMode={dagMode}
@@ -2933,6 +3087,12 @@ function App() {
                   genreColorLegend={genreColorLegend}
                   artistClusters={(graph === 'artists' || graph === 'similarArtists') ? artistClusters : undefined}
                   clusteringInProgress={(graph === 'artists' || graph === 'similarArtists') ? clusteringInProgress : undefined}
+                  collectionMode={collectionMode}
+                  showClusterOverlay={showClusterOverlay}
+                  setShowClusterOverlay={(v) => {
+                    setShowClusterOverlay(v);
+                    localStorage.setItem('showClusterOverlay', String(v));
+                  }}
                 />
               )}
               <DisplayPanel
