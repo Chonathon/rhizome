@@ -9,6 +9,7 @@ interface BadgeIndicatorProps {
   color?: string;
   imageUrl?: string;
   className?: string;
+  labelClassName?: string;
   icon?: LucideIcon;
 }
 
@@ -21,6 +22,7 @@ export function BadgeIndicator({
   color,
   imageUrl,
   className,
+  labelClassName,
   icon: Icon,
 }: BadgeIndicatorProps) {
   if (type === 'genre') {
@@ -39,14 +41,12 @@ export function BadgeIndicator({
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex size-5 items-center justify-center rounded-full border',
+        'relative inline-flex size-5 items-center justify-center rounded-xl border',
         className,
       )}
       style={{ borderColor: color }}
     >
-      {Icon ? (
-        <Icon className="size-3 text-muted-foreground" />
-      ) : imageUrl ? (
+      {imageUrl ? (
         <img
           src={imageUrl}
           alt={`${name} avatar`}
@@ -54,8 +54,13 @@ export function BadgeIndicator({
           loading="lazy"
         />
       ) : (
-        <span className="h-full w-full rounded-full bg-muted text-center text-[10px] leading-5">
+        <span className={cn("h-full w-full rounded-full bg-muted flex items-center justify-center text-[10px]", labelClassName)}>
           {initial}
+        </span>
+      )}
+      {Icon && (
+        <span className="absolute -bottom-0 -right-1 rounded-full bg-accent p-1 flex items-center justify-center">
+          <Icon className="size-4 text-muted-foreground" />
         </span>
       )}
     </span>

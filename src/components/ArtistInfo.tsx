@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber, clientUrl } from "@/lib/utils";
-import { CirclePlay, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, EyeOff, Disc3, Link, Check } from "lucide-react";
+import { CirclePlay, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, Disc3, Link, Check} from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -18,8 +18,8 @@ import {
 import { SplitButton, SplitButtonAction, SplitButtonTrigger } from "@/components/ui/split-button"
 import ReportIncorrectInfoDialog from "@/components/ReportIncorrectInfoDialog";
 import { Alert, AlertDescription } from "./ui/alert";
-import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
+import ArtistAvatar from "@/components/ArtistAvatar";
 import { AddButton } from "./AddButton";
 import { Separator } from "@radix-ui/react-separator";
 import { ImageLightbox } from "@/components/ImageLightbox";
@@ -37,6 +37,7 @@ interface ArtistInfoProps {
   onGenreClick?: (name: string) => void;
   getArtistImageByName?: (name: string) => string | undefined;
   getArtistByName?: (name: string) => Artist | undefined;
+  getArtistColorByName?: (name: string) => string | undefined;
   genreColorMap?: Map<string, string>;
   getArtistColor: (artist: Artist) => string;
   getGenreNameById?: (id: string) => string | undefined;
@@ -70,6 +71,7 @@ export function ArtistInfo({
   onGenreClick,
   getArtistImageByName,
   getArtistByName,
+  getArtistColorByName,
   genreColorMap,
   getArtistColor,
   getGenreNameById,
@@ -487,43 +489,48 @@ export function ArtistInfo({
 
                 {/* Similar Artists */}
                 {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    {onViewSimilarArtistGraph && selectedArtist ? (
-                      <button
-                        className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
-                        onClick={() => onViewSimilarArtistGraph(selectedArtist)}
-                        title={`Explore artists similar to ${selectedArtist.name}`}
-                      >
-                        <span className="text-md font-semibold">Similar Artists</span>
-                        <ChevronRight className="shrink-0 text-muted-foreground size-5"/>
-                      </button>
-                    ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
                       <span className="text-md font-semibold">Similar Artists</span>
-                    )}
-                    <div className="flex flex-wrap items-center gap-1.5">
+                      {onViewSimilarArtistGraph && selectedArtist && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onViewSimilarArtistGraph(selectedArtist)}
+                          title={`Explore artists similar to ${selectedArtist.name}`}
+                        >
+                          Graph <ChevronRight className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-4 gap-4 w-full pb-1 -mx-1 px-1">
                       {similarFilter(selectedArtist.similar).map((name) => {
                         const artistObj = getArtistByName?.(name);
                         const isInView = !!artistObj;
                         const img = getArtistImageByName?.(name);
-                        const genreColor = artistObj ? getArtistColor(artistObj) : undefined;
+                        const genreColor = artistObj
+                          ? getArtistColor(artistObj)
+                          : getArtistColorByName?.(name);
 
                         return (
-                          // TODO: Provide navigation options for artists not in view
-                          <ArtistBadge
+                          <button
                             key={name}
-                            name={name}
-                            imageUrl={isInView ? img : undefined}
-                            genreColor={genreColor}
-                            onClick={() => {
-                              if (isInView) {
-                                setArtistFromName(name);
-                              } else {
-                                toast.info(`${name} is not in the current view.`);
-                              }
-                            }}
-                            title={!isInView ? `${name} is not in the current view` : `Go to ${name}`}
-                            icon={!isInView ? EyeOff : undefined}
-                          />
+                            onClick={() => setArtistFromName(name)}
+                            title={`View ${name}`}
+                            className="flex flex-col items-center gap-2 flex-none w-auto group"
+                          >
+                            <ArtistAvatar
+                              name={name}
+                              imageUrl={img}
+                              color={genreColor}
+                              isInView={isInView || undefined}
+                              className="size-[64px] border-2 transition-all duration-200"
+                              labelClassName="text-base"
+                            />
+                            <span className="text-[11px] leading-tight text-center line-clamp-2 w-full font-semibold group-hover:text-foreground transition-colors">
+                              {name}
+                            </span>
+                          </button>
                         );
                       })}
                     </div>
@@ -533,20 +540,20 @@ export function ArtistInfo({
                 {/* Genres */}
                 {selectedArtist?.genres && selectedArtist.genres.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    {onViewArtistGraph && selectedArtist ? (
-                      <button
-                        className="hover:opacity-70 transition-opacity cursor-pointer text-left inline-flex items-center flex-wrap"
-                        onClick={() => onViewArtistGraph(selectedArtist)}
-                        type="button"
-                        disabled={viewRelatedArtistsLoading}
-                        title={`Explore Related Genres for ${selectedArtist.name}`}
-                      >
-                        <span className="text-md font-semibold">Explore Related Genres</span>
-                        <ChevronRight className="shrink-0 text-muted-foreground size-5" />
-                      </button>
-                    ) : (
+                    <div className="flex items-center justify-between">
                       <span className="text-md font-semibold">Genres</span>
-                    )}
+                      {onViewArtistGraph && selectedArtist && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onViewArtistGraph(selectedArtist)}
+                          disabled={viewRelatedArtistsLoading}
+                          title={`Explore related genres for ${selectedArtist.name}`}
+                        >
+                          Graph <ChevronRight className="size-4" />
+                        </Button>
+                      )}
+                    </div>
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                       {selectedArtist.genres.map((genreId) => {
                         const name = getGenreNameById?.(genreId) ?? genreId;
