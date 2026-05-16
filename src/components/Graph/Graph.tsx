@@ -808,6 +808,61 @@ const Graph = forwardRef(function GraphInner<
     }
   }, [dataSignature, dagMode, preparedData, selectedId, show, radialLayout]);
 
+  // Cluster centroid force: pulls every node toward its cluster's live centroid each simulation tick.
+  // Uses the same nodeIds that determine cluster color, so the force is always consistent with the overlay.
+  // Runs in a separate effect so it can update independently of the main data signature.
+  useEffect(() => {
+    if (!show || !fgRef.current) return;
+    const fg = fgRef.current;
+
+    if (clusterOverlays && clusterOverlays.length > 0 && !radialLayout?.enabled) {
+      const nodeToClusterId = new Map<string, string>();
+      clusterOverlays.forEach(overlay => {
+        overlay.nodeIds.forEach(nodeId => nodeToClusterId.set(nodeId, overlay.id));
+      });
+
+      const CLUSTER_STRENGTH = 0.12;
+      const simNodes: any[] = [];
+
+      const centroidForce = Object.assign(
+        function(alpha: number) {
+          const centroids = new Map<string, { x: number; y: number; count: number }>();
+          simNodes.forEach(node => {
+            const cid = nodeToClusterId.get(node.id);
+            if (cid === undefined) return;
+            let c = centroids.get(cid);
+            if (!c) { c = { x: 0, y: 0, count: 0 }; centroids.set(cid, c); }
+            c.x += node.x ?? 0;
+            c.y += node.y ?? 0;
+            c.count++;
+          });
+          centroids.forEach(c => { c.x /= c.count; c.y /= c.count; });
+
+          simNodes.forEach(node => {
+            const cid = nodeToClusterId.get(node.id);
+            if (cid === undefined) return;
+            const centroid = centroids.get(cid);
+            if (!centroid) return;
+            node.vx = (node.vx ?? 0) - (node.x - centroid.x) * alpha * CLUSTER_STRENGTH;
+            node.vy = (node.vy ?? 0) - (node.y - centroid.y) * alpha * CLUSTER_STRENGTH;
+          });
+        },
+        {
+          initialize(nodes: any[]) {
+            simNodes.length = 0;
+            simNodes.push(...nodes);
+          },
+        }
+      );
+
+      fg.d3Force('cluster-centroid', centroidForce);
+    } else {
+      fg.d3Force('cluster-centroid', null);
+    }
+
+    fg.d3ReheatSimulation?.();
+  }, [clusterOverlays, radialLayout, show]);
+
   useEffect(() => {
     if (!autoFocus || !show || !selectedId || !fgRef.current) return;
     const node = preparedData.nodes.find((n) => n.id === selectedId);
