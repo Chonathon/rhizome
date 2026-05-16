@@ -26,7 +26,7 @@ Artist[] + NodeLink[]
 - `similarArtists`: Louvain community detection on the existing similar-artist network.
 - `hybrid`: weighted blend of tag-vector similarity + network links, with an optional location penalty. (Currently unused in the UI — replaced by `genre` for collection mode.)
 - `popularity`: percentile-based listener tiers (used for radial layout in the UI).
-- `genre`: deterministic assignment by root genre (Rock, Electronic, etc.). Requires `genreAssignments`, `genreColors`, and `genreNames` in `ClusteringOptions`. Intra-cluster links are generated from KNN tag-vector similarity (reuses hybrid's `calculateTagSimilarities`). Only surfaced in collection mode.
+- `genre`: deterministic assignment by root genre (Rock, Electronic, etc.). Requires `genreAssignments`, `genreColors`, and `genreNames` in `ClusteringOptions`. Intra-cluster links use a two-factor model: shared parent genre is the primary bond (every cluster-mate gets a guaranteed `BASE_WEIGHT=0.2` attraction so same-parent nodes always pull together), and tag-vector cosine similarity boosts the weight up to 1.0 as a secondary factor. Each artist connects to its top-8 cluster-mates by this combined score. Only surfaced in collection mode.
 
 `popularity` returns `tierData` for concentric-ring layouts. `genre` requires pre-computed genre maps passed from App.tsx via `ClusteringOptions`.
 

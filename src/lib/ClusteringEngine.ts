@@ -107,8 +107,7 @@ export class ClusteringEngine {
         return this.clusterByGenre(
           options.genreAssignments ?? new Map(),
           options.genreColors ?? new Map(),
-          options.genreNames,
-          minSimilarity
+          options.genreNames
         );
       default:
         return this.clusterByLouvain(options.resolution || 1.0);
@@ -445,12 +444,13 @@ export class ClusteringEngine {
     };
   }
 
-  // 5. GENRE CLUSTERING - Deterministic assignment by root genre + tag-vector intra-genre links
+  // 5. GENRE CLUSTERING - Deterministic assignment by root genre + parent-genre-primary link generation
+  // Primary bond: shared parent genre (all cluster-mates get a guaranteed baseline attraction)
+  // Secondary factor: tag similarity boosts link weight for more similar artists
   private clusterByGenre(
     genreAssignments: Map<string, string>,
     genreColors: Map<string, string>,
     genreNames?: Map<string, string>,
-    minSimilarity: number = 0.9
   ): ClusterResult {
     const clusters = new Map<string, Cluster>();
     const artistToCluster = new Map<string, string>();
@@ -471,23 +471,44 @@ export class ClusteringEngine {
       artistToCluster.set(artist.id, clusterId);
     });
 
-    // Reuse tag-vector KNN similarity from byTags for intra-genre link generation.
-    // mutualOnly=false gives more edges within the (smaller) genre subsets without bees-nest density.
-    const tagSimilarities = this.calculateTagSimilarities(10, minSimilarity, false);
+    // Build tag vectors once for the whole artist set
+    const vectors = this.buildTagVectors();
 
-    // Filter to intra-cluster links
+    // For each cluster, connect each artist to its K nearest cluster-mates.
+    // Weight = BASE_WEIGHT + (1 - BASE_WEIGHT) * tagSimilarity
+    // BASE_WEIGHT guarantees every cluster-mate pair has attraction even with zero shared tags,
+    // so same-parent-genre nodes always pull together regardless of tag overlap.
+    const BASE_WEIGHT = 0.2;
+    const K_INTRA = 8;
+    const seen = new Set<string>();
     const intraClusterLinks: Array<{ source: string; target: string; weight: number }> = [];
-    tagSimilarities.forEach((weight, key) => {
-      const [source, target] = key.split('|');
-      const sc = artistToCluster.get(source);
-      const tc = artistToCluster.get(target);
 
-      if (sc && tc && sc === tc) {
-        intraClusterLinks.push({ source, target, weight });
-      }
+    clusters.forEach((cluster) => {
+      const ids = cluster.artistIds;
+      if (ids.length <= 1) return;
+
+      ids.forEach((artistId) => {
+        const vecA = vectors.get(artistId);
+        const scores: Array<{ id: string; weight: number }> = [];
+
+        ids.forEach((otherId) => {
+          if (otherId === artistId) return;
+          const vecB = vectors.get(otherId);
+          const tagSim = vecA && vecB ? this.cosineSimilarity(vecA, vecB) : 0;
+          scores.push({ id: otherId, weight: BASE_WEIGHT + (1 - BASE_WEIGHT) * tagSim });
+        });
+
+        scores.sort((a, b) => b.weight - a.weight);
+        scores.slice(0, K_INTRA).forEach(({ id, weight }) => {
+          const key = artistId < id ? `${artistId}|${id}` : `${id}|${artistId}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            intraClusterLinks.push({ source: artistId, target: id, weight });
+          }
+        });
+      });
     });
 
-    // Cap node degree to reduce density in large clusters
     const links = this.capNodeDegree(intraClusterLinks, 10);
 
     return { method: 'genre', clusters, artistToCluster, links, stats: this.calculateStats(clusters) };
