@@ -43,9 +43,10 @@ export interface ClusteringOptions {
   kNeighbors?: number;  // Number of nearest neighbors to keep (default: 20)
   minSimilarity?: number;  // Minimum similarity threshold (0-1, default: 0.1)
   // Only required when method === 'genre'
-  genreAssignments?: Map<string, string>;  // artistId -> rootGenreId
-  genreColors?: Map<string, string>;       // rootGenreId -> hex color
-  genreNames?: Map<string, string>;        // rootGenreId -> display name
+  genreAssignments?: Map<string, string>;       // artistId -> rootGenreId
+  genreColors?: Map<string, string>;            // rootGenreId -> hex color
+  genreNames?: Map<string, string>;             // rootGenreId -> display name
+  artistPrimaryGenreTags?: Map<string, string>; // artistId -> top genre tag name (e.g. "black metal")
 }
 
 export class ClusteringEngine {
@@ -107,7 +108,8 @@ export class ClusteringEngine {
         return this.clusterByGenre(
           options.genreAssignments ?? new Map(),
           options.genreColors ?? new Map(),
-          options.genreNames
+          options.genreNames,
+          options.artistPrimaryGenreTags
         );
       default:
         return this.clusterByLouvain(options.resolution || 1.0);
@@ -444,13 +446,16 @@ export class ClusteringEngine {
     };
   }
 
-  // 5. GENRE CLUSTERING - Deterministic assignment by root genre + parent-genre-primary link generation
-  // Primary bond: shared parent genre (all cluster-mates get a guaranteed baseline attraction)
-  // Secondary factor: tag similarity boosts link weight for more similar artists
+  // 5. GENRE CLUSTERING
+  // Bond hierarchy:
+  //   1. Shared primary genre tag (e.g. "black metal") → guaranteed link regardless of cosine sim
+  //   2. Shared parent genre (same cluster) → KNN backbone with BASE_WEIGHT floor
+  //   3. Full tag cosine similarity → boosts weight within both groups
   private clusterByGenre(
     genreAssignments: Map<string, string>,
     genreColors: Map<string, string>,
     genreNames?: Map<string, string>,
+    artistPrimaryGenreTags?: Map<string, string>,
   ): ClusterResult {
     const clusters = new Map<string, Cluster>();
     const artistToCluster = new Map<string, string>();
@@ -471,22 +476,53 @@ export class ClusteringEngine {
       artistToCluster.set(artist.id, clusterId);
     });
 
-    // Build tag vectors once for the whole artist set
     const vectors = this.buildTagVectors();
-
-    // For each cluster, connect each artist to its K nearest cluster-mates.
-    // Weight = BASE_WEIGHT + (1 - BASE_WEIGHT) * tagSimilarity
-    // BASE_WEIGHT guarantees every cluster-mate pair has attraction even with zero shared tags,
-    // so same-parent-genre nodes always pull together regardless of tag overlap.
     const BASE_WEIGHT = 0.2;
     const K_INTRA = 8;
     const seen = new Set<string>();
     const intraClusterLinks: Array<{ source: string; target: string; weight: number }> = [];
 
+    const addLink = (a: string, b: string, weight: number) => {
+      const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        intraClusterLinks.push({ source: a, target: b, weight });
+      }
+    };
+
     clusters.forEach((cluster) => {
       const ids = cluster.artistIds;
       if (ids.length <= 1) return;
 
+      // --- Pass 1: guarantee links for artists sharing the same primary genre tag ---
+      // TF-IDF cosine sim can rank artists with the same specific genre tag (e.g. "black metal")
+      // below K_INTRA if their broader tag profiles diverge. This pass fixes that.
+      if (artistPrimaryGenreTags) {
+        const byTag = new Map<string, string[]>();
+        ids.forEach(id => {
+          const tag = artistPrimaryGenreTags.get(id);
+          if (tag) {
+            if (!byTag.has(tag)) byTag.set(tag, []);
+            byTag.get(tag)!.push(id);
+          }
+        });
+
+        byTag.forEach(tagGroup => {
+          if (tagGroup.length <= 1) return;
+          tagGroup.forEach(a => {
+            tagGroup.forEach(b => {
+              if (a >= b) return;
+              const vecA = vectors.get(a);
+              const vecB = vectors.get(b);
+              const tagSim = vecA && vecB ? this.cosineSimilarity(vecA, vecB) : 0;
+              addLink(a, b, BASE_WEIGHT + (1 - BASE_WEIGHT) * tagSim);
+            });
+          });
+        });
+      }
+
+      // --- Pass 2: KNN backbone — connect each artist to its K nearest cluster-mates ---
+      // BASE_WEIGHT floor ensures same-parent-genre nodes always attract even with zero shared tags.
       ids.forEach((artistId) => {
         const vecA = vectors.get(artistId);
         const scores: Array<{ id: string; weight: number }> = [];
@@ -499,13 +535,7 @@ export class ClusteringEngine {
         });
 
         scores.sort((a, b) => b.weight - a.weight);
-        scores.slice(0, K_INTRA).forEach(({ id, weight }) => {
-          const key = artistId < id ? `${artistId}|${id}` : `${id}|${artistId}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            intraClusterLinks.push({ source: artistId, target: id, weight });
-          }
-        });
+        scores.slice(0, K_INTRA).forEach(({ id, weight }) => addLink(artistId, id, weight));
       });
     });
 
