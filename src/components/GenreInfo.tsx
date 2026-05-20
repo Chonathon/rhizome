@@ -384,7 +384,7 @@ export function GenreInfo({
             <div className="w-full flex flex-col gap-6">
 
                   <div className={`flex flex-col gap-6 ${isDesktop ? '' : 'flex-row items-center justify-between gap-3 mt-3'}`}>
-                    <div className="flex gap-3 w-full">
+                    <div className="flex gap-2 w-full">
                       {/* Desktop: Split button with play/preview action and track dropdown */}
                       {isDesktop ? (
                         <SplitButton
