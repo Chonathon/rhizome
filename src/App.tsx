@@ -809,12 +809,14 @@ function App() {
     assignments: Map<string, string>;
     colors: Map<string, string>;
     names: Map<string, string>;
+    primaryGenreTags: Map<string, string>;
   } => {
     const assignments = new Map<string, string>();
     const colors = new Map<string, string>();
     const names = new Map<string, string>();
+    const primaryGenreTags = new Map<string, string>();
 
-    if (!currentArtists.length || !genres.length) return { assignments, colors, names };
+    if (!currentArtists.length || !genres.length) return { assignments, colors, names, primaryGenreTags };
 
     const isDark = resolvedTheme === 'dark';
     const genreById = new Map(genres.map(g => [g.id, g]));
@@ -843,6 +845,7 @@ function App() {
           .filter(t => genreByName.has(t.name))
           .sort((a, b) => b.count - a.count);
         if (genreTags.length > 0) {
+          primaryGenreTags.set(artist.id, genreTags[0].name);
           const tagGenre = genreByName.get(genreTags[0].name);
           if (tagGenre?.rootGenres?.[0]) rootGenreId = tagGenre.rootGenres[0];
         }
@@ -872,7 +875,7 @@ function App() {
     colors.set('unknown', isDark ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR);
     names.set('unknown', 'Unknown Genre');
 
-    return { assignments, colors, names };
+    return { assignments, colors, names, primaryGenreTags };
   }, [currentArtists, genres, genreRoots, resolvedTheme]);
 
   // Compute artist clusters using selected clustering method
@@ -926,6 +929,7 @@ function App() {
               genreAssignments: artistGenreAssignments.assignments,
               genreColors: artistGenreAssignments.colors,
               genreNames: artistGenreAssignments.names,
+              artistPrimaryGenreTags: artistGenreAssignments.primaryGenreTags,
             }),
           });
           setArtistClusters(result);
