@@ -17,8 +17,6 @@ dist-ssr
 .env
 .claude
 .pr-notes.md
-.01_docs
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

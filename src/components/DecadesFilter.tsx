@@ -12,6 +12,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { toast } from "sonner";
 
 // Dummy data: decades from 1930s to 2020s
 const DECADES = [
@@ -29,22 +30,13 @@ const DECADES = [
 
 interface DecadesFilterProps {
   onDecadeSelectionChange: (selectedIds: string[]) => void;
-  selectedDecadeIds?: string[];
 }
 
 export default function DecadesFilter({
   onDecadeSelectionChange,
-  selectedDecadeIds,
 }: DecadesFilterProps) {
-  const [selectedDecades, setSelectedDecades] = useState<Set<string>>(
-    new Set(selectedDecadeIds ?? [])
-  );
-
-  useEffect(() => {
-    if (selectedDecadeIds !== undefined) {
-      setSelectedDecades(new Set(selectedDecadeIds));
-    }
-  }, [selectedDecadeIds]);
+  // Track selected decades using a Set
+  const [selectedDecades, setSelectedDecades] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
 
   // Get selected decades as array for display
@@ -53,22 +45,28 @@ export default function DecadesFilter({
     [selectedDecades]
   );
 
+  // Notify parent component when selection changes
+  useEffect(() => {
+    const ids = selectedDecadesArray.map(d => d.id);
+    onDecadeSelectionChange(ids);
+  }, [selectedDecadesArray]);
+
   // Toggle a decade selection
   const toggleDecade = (decadeId: string) => {
-    const next = new Set(selectedDecades);
-    if (next.has(decadeId)) {
-      next.delete(decadeId);
-    } else {
-      next.add(decadeId);
-    }
-    setSelectedDecades(next);
-    onDecadeSelectionChange([...next]);
+    setSelectedDecades((prev) => {
+      const next = new Set(prev);
+      if (next.has(decadeId)) {
+        next.delete(decadeId);
+      } else {
+        next.add(decadeId);
+      }
+      return next;
+    });
   };
 
   // Clear all selections
   const clearAll = () => {
     setSelectedDecades(new Set());
-    onDecadeSelectionChange([]);
   };
 
   // Check if a decade is selected
@@ -167,7 +165,8 @@ export default function DecadesFilter({
                   key={decade.id}
                   value={decade.name}
                   onSelect={() => {
-                    toggleDecade(decade.id);
+                    toggleDecade(decade.id)
+                    toast(`You selected the ${decade.name} decade but's the feature isn't implemented yet 🙃`);
                   }}
                   className="flex items-center gap-2"
                 >
