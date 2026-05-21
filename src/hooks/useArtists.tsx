@@ -6,7 +6,7 @@ import {DEFAULT_NODE_COUNT, MAX_NODES, TOP_ARTISTS_TO_FETCH} from "@/constants";
 
 const url = serverUrl();
 
-const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter: ArtistNodeLimitType, amount: number, initial: boolean, collectionMode = false) => {
+const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter: ArtistNodeLimitType, amount: number, initial: boolean, collectionMode = false, decades: string[] = []) => {
     const [artists, setArtists] = useState<Artist[]>([]);
     const [artistLinks, setArtistLinks] = useState<NodeLink[]>([]);
     const [artistsLoading, setArtistsLoading] = useState(false);
@@ -23,25 +23,36 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         resetArtistsError();
         if (!initial) {
             setArtistsLoading(true);
-            // console.log(`fetching ${amount} artists...`);
             try {
-                const selectedSize = genreIDs.length;
-                if (selectedSize === 0) {
-                    const response = await axios.get(`${url}/artists/${filter}/${amount}`);
+                if (decades.length > 0) {
+                    const response = await axios.post(`${url}/artists/by-decades`, {
+                        decades,
+                        filter,
+                        amount,
+                        ...(genreIDs.length > 0 && { genres: genreIDs }),
+                    });
                     setArtists(response.data.artists);
                     setArtistLinks(response.data.links);
                     setTotalArtistsInDB(response.data.count);
-                }
-                if (selectedSize > 0) {
-                    const response = await axios.post(`${url}/artists/${filter}/${amount}`, {genres: genreIDs});
-                    const artistCount = response.data.artists.length;
-                    setArtists(response.data.artists);
-                    setArtistLinks(response.data.links);
-                    setTotalArtistsInDB(
-                        response.data.count > amount
-                            ? response.data.count
-                            : artistCount
-                    );
+                } else {
+                    const selectedSize = genreIDs.length;
+                    if (selectedSize === 0) {
+                        const response = await axios.get(`${url}/artists/${filter}/${amount}`);
+                        setArtists(response.data.artists);
+                        setArtistLinks(response.data.links);
+                        setTotalArtistsInDB(response.data.count);
+                    }
+                    if (selectedSize > 0) {
+                        const response = await axios.post(`${url}/artists/${filter}/${amount}`, {genres: genreIDs});
+                        const artistCount = response.data.artists.length;
+                        setArtists(response.data.artists);
+                        setArtistLinks(response.data.links);
+                        setTotalArtistsInDB(
+                            response.data.count > amount
+                                ? response.data.count
+                                : artistCount
+                        );
+                    }
                 }
             } catch (err) {
                 if (err instanceof AxiosError) {
@@ -91,7 +102,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         if (!collectionMode) {
             fetchArtists();
         }
-    }, [genreIDs, filter, initial, collectionMode]);
+    }, [genreIDs, filter, initial, collectionMode, decades]);
 
     // Only refetch if change in amount is more than current amount of artists
     useEffect(() => {

@@ -2,6 +2,7 @@ import { forwardRef, memo, useMemo } from "react";
 import Graph, {
   type GraphHandle,
   type SharedGraphNode,
+  type ClusterOverlay,
 } from "./Graph";
 import { calculateNodeRadius, DEFAULT_MIN_RADIUS, DEFAULT_MAX_RADIUS } from "./Graph/graphStyle";
 import { Artist, NodeLink } from "@/types";
@@ -37,6 +38,7 @@ interface ArtistsForceGraphProps {
     nodeToRadius: Map<string, number>;
     strength?: number;
   };
+  clusterOverlays?: ClusterOverlay[];
 }
 
 
@@ -67,6 +69,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       disableDimming,
       priorityLabelIds,
       radialLayout,
+      clusterOverlays,
     },
     ref,
   ) => {
@@ -140,6 +143,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         disableDimming={disableDimming}
         priorityLabelIds={priorityLabelIds}
         radialLayout={radialLayout}
+        clusterOverlays={clusterOverlays}
       />
     );
   },
