@@ -331,7 +331,7 @@ function App() {
     fetchSingleArtist,
     similarArtists,
     fetchSimilarArtists,
-  } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode);
+  } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode, selectedDecades);
 
   // Fetch top artists for the currently displayed genre info or the active filter
   const [topArtistsGenreId, setTopArtistsGenreId] = useState<string | undefined>(undefined);
@@ -755,14 +755,19 @@ function App() {
       );
     }
 
-    // Apply decade filter (if any decades selected)
-    // TODO: Implement when decade data is available on artists
-    // if (collectionFilters.decades.length > 0) {
-    //   filtered = filtered.filter(artist => {
-    //     const decade = getArtistDecade(artist);
-    //     return collectionFilters.decades.includes(decade);
-    //   });
-    // }
+    if (collectionMode && collectionFilters.decades.length > 0) {
+      filtered = filtered.filter(artist => {
+        if (!artist.startDate || artist.startDate.length < 4) return false;
+        const startYear = parseInt(artist.startDate.substring(0, 4));
+        const endYear = artist.endDate && artist.endDate.length >= 4
+          ? parseInt(artist.endDate.substring(0, 4))
+          : null;
+        return collectionFilters.decades.some(decade => {
+          const decadeStart = parseInt(decade.replace('s', ''));
+          return startYear <= decadeStart + 9 && (endYear === null || endYear >= decadeStart);
+        });
+      });
+    }
 
     // Apply node limit - sort by the limit type and take top N
     if (filtered.length > artistNodeCount) {
@@ -2446,7 +2451,6 @@ function App() {
 
   const onDecadeSelectionChange = (selectedIDs: string[]) => {
     setSelectedDecades(selectedIDs);
-    // TODO: Implement decade filtering logic
   }
 
   // Generic collection filter handler - works for any filter type
@@ -2864,12 +2868,10 @@ function App() {
                       selectedGenreIds={collectionFilters.genres}
                       genreColorMap={genreColorMap}
                     />
-                    {/* TODO: Add DecadesFilter when ready
                     <DecadesFilter
                       onDecadeSelectionChange={(ids) => onCollectionFilterChange('decades', ids)}
                       selectedDecadeIds={collectionFilters.decades}
                     />
-                    */}
                   </motion.div>
                 )}
               </AnimatePresence>
