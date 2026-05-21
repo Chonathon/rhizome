@@ -171,6 +171,9 @@ function App() {
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
   const [genreTopArtistsCache, setGenreTopArtistsCache] = useState<Map<string, Artist[]>>(new Map());
+  const artistImageCache = useRef<Map<string, string>>(new Map());
+  const [prefetchedImageCache, setPrefetchedImageCache] = useState<Map<string, string>>(new Map());
+  const artistObjectCache = useRef<Map<string, Artist>>(new Map());
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [collectionArtistClusterMethod, setCollectionArtistClusterMethod] = useState<ArtistClusterMode>(() => {
@@ -333,6 +336,8 @@ function App() {
     fetchSingleArtist,
     similarArtists,
     fetchSimilarArtists,
+    fetchArtistByName,
+    prefetchSimilarImages,
   } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode, selectedDecades);
 
   // Fetch top artists for the currently displayed genre info or the active filter
@@ -1317,6 +1322,8 @@ function App() {
         setCurrentArtistLinks(links);
         setGraph('similarArtists');
         setShowArtistCard(true);
+      } else if (similarArtists.length === 1) {
+        toast.error(`No similar artist data available for ${similarArtists[0].name}`);
       }
       setCanCreateSimilarArtistGraph(false);
     }
@@ -1712,21 +1719,94 @@ function App() {
     }
   };
 
-  const setArtistFromName = (name: string) => {
+  const setArtistFromName = async (name: string) => {
     const artist = currentArtists.find((a) => a.name === name);
     if (artist) {
       onArtistNodeClick(artist);
+    } else {
+      const cachedArtist = artistObjectCache.current.get(name);
+      if (cachedArtist) {
+        onArtistNodeClick(cachedArtist);
+      } else {
+        const fetched = await fetchArtistByName(name);
+        if (fetched) {
+          onArtistNodeClick(fetched);
+        }
+      }
     }
   }
 
+  // Populate image + object caches from all artist data sources
+  useEffect(() => {
+    const imgs = artistImageCache.current;
+    const objs = artistObjectCache.current;
+    for (const a of currentArtists) {
+      if (a.name && a.image) imgs.set(a.name, a.image as string);
+      if (a.name) objs.set(a.name, a);
+    }
+  }, [currentArtists]);
+
+  useEffect(() => {
+    const imgs = artistImageCache.current;
+    const objs = artistObjectCache.current;
+    for (const a of similarArtists) {
+      if (a.name && a.image) imgs.set(a.name, a.image as string);
+      if (a.name) objs.set(a.name, a);
+    }
+  }, [similarArtists]);
+
+  useEffect(() => {
+    const imgs = artistImageCache.current;
+    const objs = artistObjectCache.current;
+    for (const a of (topArtists ?? [])) {
+      if (a.name && a.image) imgs.set(a.name, a.image as string);
+      if (a.name) objs.set(a.name, a);
+    }
+  }, [topArtists]);
+
+  useEffect(() => {
+    if (selectedArtist?.name) {
+      if (selectedArtist.image) artistImageCache.current.set(selectedArtist.name, selectedArtist.image as string);
+      artistObjectCache.current.set(selectedArtist.name, selectedArtist);
+    }
+  }, [selectedArtist]);
+
+  useEffect(() => {
+    if (!selectedArtist?.id || !selectedArtist.similar?.length) return;
+    const uncached = selectedArtist.similar.filter((name) => !artistImageCache.current.has(name));
+    if (!uncached.length) return;
+    prefetchSimilarImages(selectedArtist).then((artists) => {
+      const newEntries: [string, string][] = [];
+      for (const a of artists) {
+        if (a.name && a.image) {
+          artistImageCache.current.set(a.name, a.image as string);
+          newEntries.push([a.name, a.image as string]);
+        }
+      }
+      if (newEntries.length) {
+        setPrefetchedImageCache((prev) => {
+          const next = new Map(prev);
+          for (const [name, img] of newEntries) next.set(name, img);
+          return next;
+        });
+      }
+    });
+  }, [selectedArtist?.id]);
+
   const getArtistImageByName = (name: string) => {
-    const a = currentArtists.find((x) => x.name === name);
-    const raw = a?.image as string | undefined;
+    const raw = artistImageCache.current.get(name)
+        ?? prefetchedImageCache.get(name)
+        ?? currentArtists.find((x) => x.name === name)?.image as string | undefined;
     return raw ? fixWikiImageURL(raw) : undefined;
   }
 
   const getArtistByName = (name: string) => {
     return currentArtists.find((a) => a.name === name);
+  }
+
+  const getArtistColorByName = (name: string): string | undefined => {
+    const artist = artistObjectCache.current.get(name);
+    return artist ? getArtistColor(artist) : undefined;
   }
 
   const getGenreNameById = (id: string) => {
@@ -2008,6 +2088,7 @@ function App() {
 
   const onSearchArtistSelect = (artist: Artist) => {
     setAutoFocusGraph(false); // Disable auto-focus for search selections
+    setSelectedArtist(undefined);
     setSelectedArtistFromSearch(true);
     setArtistPreviewStack((prev) => {
       if (artistInfoToShow && artistInfoToShow.id !== artist.id) {
@@ -2164,16 +2245,13 @@ function App() {
   }
 
   const createSimilarArtistGraph = async (artistResult: Artist) => {
-    if (!artistResult.similar || artistResult.similar.length === 0) {
-      toast.error(`No similar artist data available for ${artistResult.name}`);
-      return;
-    }
     setCanCreateSimilarArtistGraph(true);
     await fetchSimilarArtists(artistResult);
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setSelectedArtist(artistResult);
     setSimilarArtistAnchor(artistResult);
+    setArtistInfoToShow(artistResult);
   }
 
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
@@ -2265,14 +2343,18 @@ function App() {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
 
-      // Restore card visibility based on selections
-      if (selectedArtist) {
-        // Prioritize showing artist card if an artist was selected
-        setArtistInfoToShow(selectedArtist);
+      // Restore card visibility.
+      // Use artistInfoToShow (what the drawer was displaying) rather than selectedArtist —
+      // navigating to an off-graph artist clears selectedArtist but keeps artistInfoToShow set.
+      if (artistInfoToShow) {
         setShowArtistCard(true);
-        // Hide genre card unless there's an active filter
         if (artistFilterGenres.length === 0) {
           setShowGenreCard(false);
+        }
+        // If the last-viewed artist isn't in the restored graph, clear selectedArtist so we
+        // don't accidentally dim every node trying to focus someone who isn't there.
+        if (selectedArtist && !artists.some(a => a.id === selectedArtist.id)) {
+          setSelectedArtist(undefined);
         }
       } else if (artistFilterGenres.length > 0) {
         // If no artist selected but there's an active filter, show genre card
@@ -3267,6 +3349,7 @@ function App() {
                 onGenreClick={onGenreNameClick}
                 getArtistImageByName={getArtistImageByName}
                 getArtistByName={getArtistByName}
+                getArtistColorByName={getArtistColorByName}
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
