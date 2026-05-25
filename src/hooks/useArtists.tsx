@@ -156,7 +156,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
             const response = await axios.post(`${url}/artists/multiple`, { artists: artists.slice(0, limit) });
             setArtists(response.data.artists);
             setArtistLinks(response.data.links);
-            setTotalArtistsInDB(artists.length);
+            setTotalArtistsInDB(response.data.artists.length);
         } catch (err) {
             if (err instanceof AxiosError) {
                 setArtistsError(err);
