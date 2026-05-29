@@ -77,8 +77,6 @@ import {
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
 import AuthOverlay from '@/components/AuthOverlay';
-import AlphaAccessDialog from '@/components/AlphaAccessDialog';
-import { useAlphaAccess } from '@/hooks/useAlphaAccess';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 import { useOnboarding } from '@/hooks/useOnboarding';
@@ -397,28 +395,8 @@ function App() {
     onLFMRefresh,
   } = useAuth();
 
-  const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess(userAccess);
   const { hasCompletedOnboarding, setOnboardingCompleted } = useOnboarding();
-  const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
 
-  // Keep alpha dialog open state in sync with validation
-  useEffect(() => {
-    setAlphaOpen(!isAlphaValidated);
-  }, [isAlphaValidated]);
-
-  // Manual trigger for testing - listen for both alpha:open and alpha:trigger
-  useEffect(() => {
-    const handleOpen = () => setAlphaOpen(true);
-    const handleTrigger = () => window.dispatchEvent(new Event('alpha:open'));
-
-    window.addEventListener('alpha:open', handleOpen as any);
-    window.addEventListener('alpha:trigger', handleTrigger);
-
-    return () => {
-      window.removeEventListener('alpha:open', handleOpen as any);
-      window.removeEventListener('alpha:trigger', handleTrigger);
-    };
-  }, []);
   const navigate = useNavigate();
 
   // URL State: Lookup function to find genres by slug
@@ -466,14 +444,6 @@ function App() {
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
-
-  // Auto-trigger onboarding after alpha validation
-  useEffect(() => {
-    if (isAlphaValidated && !authLoading && !hasCompletedOnboarding) {
-      window.dispatchEvent(new Event("onboarding:open"));
-    }
-  }, [isAlphaValidated, authLoading, hasCompletedOnboarding]);
-
 
   // Setup alpha feedback timer on mount
   useEffect(() => {
@@ -3419,14 +3389,6 @@ function App() {
           onForgotPassword={forgotPassword}
           onLastFMPreview={onLFMPreview}
           onLastFMConnect={onLFMConnect}
-      />
-      <AlphaAccessDialog
-        open={!isAlphaValidated && !authLoading}
-        onValidPassword={() => {
-          setAlphaValidated();
-          setAlphaOpen(false);
-        }}
-        onValidatePassword={validatePassword}
       />
       <OnboardingOverlay
         onComplete={setOnboardingCompleted}
