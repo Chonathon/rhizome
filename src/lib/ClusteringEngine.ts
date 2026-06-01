@@ -389,7 +389,33 @@ export class ClusteringEngine {
     if (result.links && result.links.length > 0) {
       result.links = this.capNodeDegree(result.links, 12);
     }
+
+    // Label each cluster with its top shared tags instead of the generic "By Tags N"
+    result.clusters.forEach(cluster => {
+      const topTags = this.getTopTagsForArtists(cluster.artistIds, 3);
+      if (topTags.length > 0) {
+        cluster.name = topTags.join(' · ');
+      }
+    });
+
     return result;
+  }
+
+  private getTopTagsForArtists(artistIds: string[], count: number): string[] {
+    const artistSet = new Set(artistIds);
+    const tagScore = new Map<string, number>();
+
+    this.artists.forEach(artist => {
+      if (!artistSet.has(artist.id)) return;
+      artist.tags?.forEach(tag => {
+        tagScore.set(tag.name, (tagScore.get(tag.name) ?? 0) + tag.count);
+      });
+    });
+
+    return Array.from(tagScore.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, count)
+      .map(([name]) => name);
   }
 
   // 4. POPULARITY CLUSTERING - Dynamic percentile-based popularity tiers

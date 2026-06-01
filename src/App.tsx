@@ -40,6 +40,7 @@ import {
   isOnPage,
 } from "@/lib/utils";
 import { ClusteringEngine, ClusterResult } from '@/lib/ClusteringEngine';
+import { labelClustersWithAI } from '@/lib/clusterLabeling';
 import { getPriorityLabelIds } from '@/lib/CentralityMetrics';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -922,6 +923,21 @@ function App() {
             }),
           });
           setArtistClusters(result);
+
+          if (artistClusterMethod === 'byTags') {
+            labelClustersWithAI(result.clusters, currentArtists).then(labels => {
+              if (clusteringGenerationRef.current !== generation) return;
+              setArtistClusters(prev => {
+                if (!prev || prev.method !== 'byTags') return prev;
+                const newClusters = new Map(prev.clusters);
+                labels.forEach((label, id) => {
+                  const cluster = newClusters.get(id);
+                  if (cluster) newClusters.set(id, { ...cluster, name: label });
+                });
+                return { ...prev, clusters: newClusters };
+              });
+            }).catch(() => { /* keep tag-based fallback names */ });
+          }
         } catch (error) {
           console.error('Artist clustering failed:', error);
           toast.error('Failed to compute artist clusters');
@@ -1002,7 +1018,7 @@ function App() {
     } else {
       artistClusterMethod = exploreArtistClusterMethod;
     }
-    if (!artistClusters || !['genre', 'popularity'].includes(artistClusterMethod) || !showClusterOverlay) return undefined;
+    if (!artistClusters || !['genre', 'byTags', 'popularity'].includes(artistClusterMethod) || !showClusterOverlay) return undefined;
     const overlays: ClusterOverlay[] = [];
     for (const cluster of artistClusters.clusters.values()) {
       if (cluster.artistIds.length === 0) continue;
