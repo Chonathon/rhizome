@@ -30,6 +30,7 @@ export interface Cluster {
   artistIds: string[];
   color: string;
   centroid?: { x: number; y: number }; // For visualization
+  tags?: string[]; // Top listener tags, used for loading animation
 }
 
 export interface ClusteringOptions {
@@ -390,11 +391,12 @@ export class ClusteringEngine {
       result.links = this.capNodeDegree(result.links, 12);
     }
 
-    // Label each cluster with its top shared tags instead of the generic "By Tags N"
+    // Store top tags and set fallback name (used for loading animation and AI label fallback)
     result.clusters.forEach(cluster => {
-      const topTags = this.getTopTagsForArtists(cluster.artistIds, 3);
+      const topTags = this.getTopTagsForArtists(cluster.artistIds, 5);
+      cluster.tags = topTags;
       if (topTags.length > 0) {
-        cluster.name = topTags.join(' · ');
+        cluster.name = topTags.slice(0, 3).join(' · ');
       }
     });
 

@@ -93,6 +93,8 @@ export interface ClusterOverlay {
   name: string;
   color: string;
   nodeIds: Set<string>;
+  isLoading?: boolean;
+  loadingTags?: string[];
 }
 
 // --- Cluster hull drawing helpers ---
@@ -258,6 +260,7 @@ function drawClusterLabels(
   globalScale: number,
 ): void {
   const fontSize = CLUSTER_LABEL_SCREEN_PX / globalScale;
+  const now = Date.now();
 
   for (const overlay of overlays) {
     const positions: [number, number][] = [];
@@ -273,15 +276,31 @@ function drawClusterLabels(
     const minY = Math.min(...positions.map(p => p[1]));
     const labelY = minY - CLUSTER_HULL_PADDING - fontSize * 0.7;
 
+    let displayName: string;
+    let labelAlpha: number;
+    let fontWeight: string;
+
+    if (overlay.isLoading && overlay.loadingTags?.length) {
+      const tagIndex = Math.floor(now / 1000) % overlay.loadingTags.length;
+      const dotCount = (Math.floor(now / 333) % 3) + 1;
+      displayName = `${overlay.loadingTags[tagIndex]}${'.'.repeat(dotCount)}`;
+      labelAlpha = 0.4;
+      fontWeight = '400';
+    } else {
+      displayName = overlay.name;
+      labelAlpha = 0.85;
+      fontWeight = '600';
+    }
+
     let labelColor: string;
     try {
-      labelColor = hexToRgba(overlay.color, 0.85);
+      labelColor = hexToRgba(overlay.color, labelAlpha);
     } catch {
       labelColor = overlay.color;
     }
 
     ctx.save();
-    ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+    ctx.font = `${fontWeight} ${fontSize}px Inter, system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = labelColor;
@@ -289,7 +308,7 @@ function drawClusterLabels(
     ctx.shadowBlur = 4;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
-    ctx.fillText(overlay.name, cx, labelY);
+    ctx.fillText(displayName, cx, labelY);
     ctx.restore();
   }
 }
@@ -444,6 +463,18 @@ const Graph = forwardRef(function GraphInner<
     // autoPauseRedraw stops the canvas when the sim is idle, so poke it to
     // repaint after the overlay data changes (on/off toggle, data update, etc.)
     fgRef.current?.resumeAnimation?.();
+  }, [clusterOverlays]);
+
+  // While any overlay is in loading state, poke the canvas every 300ms so the
+  // tag-cycling and dot animation actually render (autoPauseRedraw would otherwise
+  // freeze the canvas as soon as the sim settles).
+  useEffect(() => {
+    const hasLoading = clusterOverlays?.some(o => o.isLoading);
+    if (!hasLoading) return;
+    const id = setInterval(() => {
+      fgRef.current?.resumeAnimation?.();
+    }, 300);
+    return () => clearInterval(id);
   }, [clusterOverlays]);
 
   // Convert display control values to usable ranges (all centered at 50 = 1.0x)

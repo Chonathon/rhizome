@@ -862,6 +862,7 @@ function App() {
   // Compute artist clusters using selected clustering method
   // Use async computation for large graphs to avoid blocking UI
   const [artistClusters, setArtistClusters] = useState<ClusterResult | null>(null);
+  const [aiClusterLabels, setAiClusterLabels] = useState<Map<string, string> | null>(null);
   const [clusteringInProgress, setClusteringInProgress] = useState(false);
   const clusteringTimeoutRef = useRef<any | null>(null);
   const clusteringGenerationRef = useRef(0);
@@ -922,21 +923,21 @@ function App() {
               artistPrimaryGenreTags: artistGenreAssignments.primaryGenreTags,
             }),
           });
+          setAiClusterLabels(null); // null = loading; overlay animates until this resolves
           setArtistClusters(result);
 
           if (artistClusterMethod === 'byTags') {
-            labelClustersWithAI(result.clusters, currentArtists).then(labels => {
-              if (clusteringGenerationRef.current !== generation) return;
-              setArtistClusters(prev => {
-                if (!prev || prev.method !== 'byTags') return prev;
-                const newClusters = new Map(prev.clusters);
-                labels.forEach((label, id) => {
-                  const cluster = newClusters.get(id);
-                  if (cluster) newClusters.set(id, { ...cluster, name: label });
-                });
-                return { ...prev, clusters: newClusters };
+            labelClustersWithAI(result.clusters, currentArtists)
+              .then(labels => {
+                if (clusteringGenerationRef.current !== generation) return;
+                setAiClusterLabels(labels);
+              })
+              .catch(() => {
+                if (clusteringGenerationRef.current !== generation) return;
+                setAiClusterLabels(new Map()); // empty map = done, keep tag-based fallback
               });
-            }).catch(() => { /* keep tag-based fallback names */ });
+          } else {
+            setAiClusterLabels(new Map()); // not byTags, no AI labels needed
           }
         } catch (error) {
           console.error('Artist clustering failed:', error);
@@ -1019,18 +1020,21 @@ function App() {
       artistClusterMethod = exploreArtistClusterMethod;
     }
     if (!artistClusters || !['genre', 'byTags', 'popularity'].includes(artistClusterMethod) || !showClusterOverlay) return undefined;
+    const isAiLoading = artistClusterMethod === 'byTags' && aiClusterLabels === null;
     const overlays: ClusterOverlay[] = [];
     for (const cluster of artistClusters.clusters.values()) {
       if (cluster.artistIds.length === 0) continue;
       overlays.push({
         id: cluster.id,
-        name: cluster.name,
+        name: aiClusterLabels?.get(cluster.id) ?? cluster.name,
         color: cluster.color,
         nodeIds: new Set(cluster.artistIds),
+        isLoading: isAiLoading,
+        loadingTags: cluster.tags,
       });
     }
     return overlays.length > 0 ? overlays : undefined;
-  }, [artistClusters, graph, collectionMode, collectionArtistClusterMethod, exploreArtistClusterMethod, similarArtistClusterMethod, showClusterOverlay]);
+  }, [artistClusters, aiClusterLabels, graph, collectionMode, collectionArtistClusterMethod, exploreArtistClusterMethod, similarArtistClusterMethod, showClusterOverlay]);
 
   // Compute radial layout from cluster tier data for popularity stratification
   const artistRadialLayout = useMemo(() => {
