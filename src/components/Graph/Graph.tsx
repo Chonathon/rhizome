@@ -276,39 +276,43 @@ function drawClusterLabels(
     const minY = Math.min(...positions.map(p => p[1]));
     const labelY = minY - CLUSTER_HULL_PADDING - fontSize * 0.7;
 
-    let displayName: string;
-    let labelAlpha: number;
-    let fontWeight: string;
-
-    if (overlay.isLoading && overlay.loadingTags?.length) {
-      const tagIndex = Math.floor(now / 1000) % overlay.loadingTags.length;
-      const dotCount = (Math.floor(now / 333) % 3) + 1;
-      displayName = `${overlay.loadingTags[tagIndex]}${'.'.repeat(dotCount)}`;
-      labelAlpha = 0.4;
-      fontWeight = '400';
-    } else {
-      displayName = overlay.name;
-      labelAlpha = 0.85;
-      fontWeight = '600';
-    }
-
-    let labelColor: string;
-    try {
-      labelColor = hexToRgba(overlay.color, labelAlpha);
-    } catch {
-      labelColor = overlay.color;
-    }
-
     ctx.save();
-    ctx.font = `${fontWeight} ${fontSize}px Inter, system-ui, sans-serif`;
-    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = labelColor;
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     ctx.shadowBlur = 4;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
-    ctx.fillText(displayName, cx, labelY);
+
+    if (overlay.isLoading && overlay.loadingTags?.length) {
+      const tagIndex = Math.floor(now / 1000) % overlay.loadingTags.length;
+      const dotCount = (Math.floor(now / 333) % 3) + 1;
+      const tagText = overlay.loadingTags[tagIndex];
+
+      ctx.font = `400 ${fontSize}px Inter, system-ui, sans-serif`;
+      ctx.textAlign = 'left';
+
+      // Measure max-width string ("tag...") to get a stable center that never
+      // shifts as the dot count animates — same idea as an absolutely-positioned span.
+      const tagWidth = ctx.measureText(tagText).width;
+      const maxDotsWidth = ctx.measureText('...').width;
+      const leftEdge = cx - (tagWidth + maxDotsWidth) / 2;
+
+      ctx.fillStyle = hexToRgba(overlay.color, 0.4);
+      ctx.fillText(tagText, leftEdge, labelY);
+
+      ctx.fillStyle = hexToRgba(overlay.color, 0.25);
+      ctx.fillText('.'.repeat(dotCount), leftEdge + tagWidth, labelY);
+    } else {
+      ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      try {
+        ctx.fillStyle = hexToRgba(overlay.color, 0.85);
+      } catch {
+        ctx.fillStyle = overlay.color;
+      }
+      ctx.fillText(overlay.name, cx, labelY);
+    }
+
     ctx.restore();
   }
 }
