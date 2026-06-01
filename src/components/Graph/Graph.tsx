@@ -258,6 +258,7 @@ function drawClusterLabels(
   overlays: ClusterOverlay[],
   nodeMap: Map<string, NodePosEntry>,
   globalScale: number,
+  aiLabels: Map<string, string> | null,
 ): void {
   const fontSize = CLUSTER_LABEL_SCREEN_PX / globalScale;
   const now = Date.now();
@@ -283,7 +284,9 @@ function drawClusterLabels(
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
 
-    if (overlay.isLoading && overlay.loadingTags?.length) {
+    const isAnimating = overlay.isLoading && aiLabels === null;
+
+    if (isAnimating && overlay.loadingTags?.length) {
       const tagIndex = Math.floor(now / 1000) % overlay.loadingTags.length;
       const dotCount = (Math.floor(now / 333) % 3) + 1;
       const tagText = overlay.loadingTags[tagIndex];
@@ -303,6 +306,7 @@ function drawClusterLabels(
       ctx.fillStyle = hexToRgba(overlay.color, 0.25);
       ctx.fillText('.'.repeat(dotCount), leftEdge + tagWidth, labelY);
     } else {
+      const finalName = (overlay.isLoading ? aiLabels?.get(overlay.id) : undefined) ?? overlay.name;
       ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
       ctx.textAlign = 'center';
       try {
@@ -310,7 +314,7 @@ function drawClusterLabels(
       } catch {
         ctx.fillStyle = overlay.color;
       }
-      ctx.fillText(overlay.name, cx, labelY);
+      ctx.fillText(finalName, cx, labelY);
     }
 
     ctx.restore();
@@ -431,6 +435,8 @@ const Graph = forwardRef(function GraphInner<
   const fgRef = useRef<ForceGraphMethods<PreparedNode<T>, L> | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const zoomRef = useRef<number>(1);
+  const aiClusterLabelsRef = useRef<Map<string, string> | null>(null);
+  const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const showNodesRef = useRef<boolean>(showNodes);
   const showLinksRef = useRef<boolean>(showLinks);
   const clusterOverlaysRef = useRef<ClusterOverlay[] | undefined>(undefined);
@@ -464,21 +470,33 @@ const Graph = forwardRef(function GraphInner<
 
   useEffect(() => {
     clusterOverlaysRef.current = clusterOverlays;
-    // autoPauseRedraw stops the canvas when the sim is idle, so poke it to
-    // repaint after the overlay data changes (on/off toggle, data update, etc.)
     fgRef.current?.resumeAnimation?.();
-  }, [clusterOverlays]);
 
-  // While any overlay is in loading state, poke the canvas every 300ms so the
-  // tag-cycling and dot animation actually render (autoPauseRedraw would otherwise
-  // freeze the canvas as soon as the sim settles).
-  useEffect(() => {
-    const hasLoading = clusterOverlays?.some(o => o.isLoading);
-    if (!hasLoading) return;
-    const id = setInterval(() => {
-      fgRef.current?.resumeAnimation?.();
-    }, 300);
-    return () => clearInterval(id);
+    if (clusterOverlays?.some(o => o.isLoading)) {
+      // New loading overlays arrived — reset AI labels and start repaint interval
+      aiClusterLabelsRef.current = null;
+      if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
+      loadingIntervalRef.current = setInterval(() => {
+        if (aiClusterLabelsRef.current !== null) {
+          clearInterval(loadingIntervalRef.current!);
+          loadingIntervalRef.current = null;
+          return;
+        }
+        fgRef.current?.resumeAnimation?.();
+      }, 300);
+    } else {
+      if (loadingIntervalRef.current) {
+        clearInterval(loadingIntervalRef.current);
+        loadingIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (loadingIntervalRef.current) {
+        clearInterval(loadingIntervalRef.current);
+        loadingIntervalRef.current = null;
+      }
+    };
   }, [clusterOverlays]);
 
   // Convert display control values to usable ranges (all centered at 50 = 1.0x)
@@ -563,6 +581,14 @@ const Graph = forwardRef(function GraphInner<
           return canvas as HTMLCanvasElement | null;
         }
         return null;
+      },
+      setAiClusterLabels: (labels: Map<string, string>) => {
+        aiClusterLabelsRef.current = labels;
+        if (loadingIntervalRef.current) {
+          clearInterval(loadingIntervalRef.current);
+          loadingIntervalRef.current = null;
+        }
+        fgRef.current?.resumeAnimation?.();
       },
     }),
     [],
@@ -1018,7 +1044,7 @@ const Graph = forwardRef(function GraphInner<
     if (!nodes?.length) return;
     const nodeMap = new Map<string, NodePosEntry>();
     for (const n of nodes) nodeMap.set(n.id, n);
-    drawClusterLabels(ctx, overlays, nodeMap, globalScale);
+    drawClusterLabels(ctx, overlays, nodeMap, globalScale, aiClusterLabelsRef.current);
   }, []);
 
   return (
