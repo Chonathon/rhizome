@@ -6,6 +6,7 @@ import useArtists from "@/hooks/useArtists";
 import useGenres from "@/hooks/useGenres";
 import useGenreTopArtists from "@/hooks/useGenreTopArtists";
 import ArtistsForceGraph, { type GraphHandle } from "@/components/ArtistsForceGraph";
+import type { ClusterOverlay } from "@/components/Graph";
 import GenresForceGraph from "@/components/GenresForceGraph";
 import {
   Artist, ArtistClusterMode, ArtistNodeLimitType, BadDataReport, ContextAction, FindOption,
@@ -76,8 +77,6 @@ import {
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
 import AuthOverlay from '@/components/AuthOverlay';
-import AlphaAccessDialog from '@/components/AlphaAccessDialog';
-import { useAlphaAccess } from '@/hooks/useAlphaAccess';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 import { useOnboarding } from '@/hooks/useOnboarding';
@@ -169,17 +168,50 @@ function App() {
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
   const [genreTopArtistsCache, setGenreTopArtistsCache] = useState<Map<string, Artist[]>>(new Map());
+  const artistImageCache = useRef<Map<string, string>>(new Map());
+  const [prefetchedImageCache, setPrefetchedImageCache] = useState<Map<string, string>>(new Map());
+  const artistObjectCache = useRef<Map<string, Artist>>(new Map());
   const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
-  const [artistClusterMethod, setArtistClusterMethod] = useState<ArtistClusterMode>(() => {
-    const stored = localStorage.getItem('artistClusterMethod');
+  const [collectionArtistClusterMethod, setCollectionArtistClusterMethod] = useState<ArtistClusterMode>(() => {
+    // Try new key first, fall back to old key for backward compatibility
+    let stored = localStorage.getItem('collectionArtistClusterMethod');
+    if (!stored) {
+      stored = localStorage.getItem('artistClusterMethod');
+    }
     if (stored === 'louvain') {
       return 'similarArtists';
     }
     if (stored === 'listeners') {
       return 'popularity';
     }
-    if (stored === 'similarArtists' || stored === 'hybrid' || stored === 'popularity') {
+    if (stored === 'similarArtists' || stored === 'byTags' || stored === 'popularity' || stored === 'genre') {
+      return stored;
+    }
+    return DEFAULT_ARTIST_CLUSTER_MODE;
+  });
+  const [exploreArtistClusterMethod, setExploreArtistClusterMethod] = useState<ArtistClusterMode>(() => {
+    const stored = localStorage.getItem('exploreArtistClusterMethod');
+    if (stored === 'louvain') {
+      return 'similarArtists';
+    }
+    if (stored === 'listeners') {
+      return 'popularity';
+    }
+    if (stored === 'similarArtists' || stored === 'byTags' || stored === 'popularity' || stored === 'genre') {
+      return stored;
+    }
+    return DEFAULT_ARTIST_CLUSTER_MODE;
+  });
+  const [similarArtistClusterMethod, setSimilarArtistClusterMethod] = useState<ArtistClusterMode>(() => {
+    const stored = localStorage.getItem('similarArtistClusterMethod');
+    if (stored === 'louvain') {
+      return 'similarArtists';
+    }
+    if (stored === 'listeners') {
+      return 'popularity';
+    }
+    if (stored === 'similarArtists' || stored === 'byTags' || stored === 'popularity' || stored === 'genre') {
       return stored;
     }
     return DEFAULT_ARTIST_CLUSTER_MODE;
@@ -187,6 +219,10 @@ function App() {
   const [artistColorMode, setArtistColorMode] = useState<'genre' | 'cluster'>(() => {
     const stored = localStorage.getItem('artistColorMode');
     return (stored === 'cluster' ? 'cluster' : 'genre') as 'genre' | 'cluster';
+  });
+  const [showClusterOverlay, setShowClusterOverlay] = useState<boolean>(() => {
+    const stored = localStorage.getItem('showClusterOverlay');
+    return stored === null ? true : stored === 'true';
   });
   const [dagMode, setDagMode] = useState<boolean>(() => {
     const storedDagMode = localStorage.getItem('dagMode');
@@ -296,7 +332,9 @@ function App() {
     fetchSingleArtist,
     similarArtists,
     fetchSimilarArtists,
-  } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode);
+    fetchArtistByName,
+    prefetchSimilarImages,
+  } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode, selectedDecades);
 
   // Fetch top artists for the currently displayed genre info or the active filter
   const [topArtistsGenreId, setTopArtistsGenreId] = useState<string | undefined>(undefined);
@@ -357,28 +395,8 @@ function App() {
     onLFMRefresh,
   } = useAuth();
 
-  const { isAlphaValidated, setAlphaValidated, validatePassword } = useAlphaAccess(userAccess);
   const { hasCompletedOnboarding, setOnboardingCompleted } = useOnboarding();
-  const [alphaOpen, setAlphaOpen] = useState<boolean>(() => !isAlphaValidated);
 
-  // Keep alpha dialog open state in sync with validation
-  useEffect(() => {
-    setAlphaOpen(!isAlphaValidated);
-  }, [isAlphaValidated]);
-
-  // Manual trigger for testing - listen for both alpha:open and alpha:trigger
-  useEffect(() => {
-    const handleOpen = () => setAlphaOpen(true);
-    const handleTrigger = () => window.dispatchEvent(new Event('alpha:open'));
-
-    window.addEventListener('alpha:open', handleOpen as any);
-    window.addEventListener('alpha:trigger', handleTrigger);
-
-    return () => {
-      window.removeEventListener('alpha:open', handleOpen as any);
-      window.removeEventListener('alpha:trigger', handleTrigger);
-    };
-  }, []);
   const navigate = useNavigate();
 
   // URL State: Lookup function to find genres by slug
@@ -426,14 +444,6 @@ function App() {
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
-
-  // Auto-trigger onboarding after alpha validation
-  useEffect(() => {
-    if (isAlphaValidated && !authLoading && !hasCompletedOnboarding) {
-      window.dispatchEvent(new Event("onboarding:open"));
-    }
-  }, [isAlphaValidated, authLoading, hasCompletedOnboarding]);
-
 
   // Setup alpha feedback timer on mount
   useEffect(() => {
@@ -720,14 +730,19 @@ function App() {
       );
     }
 
-    // Apply decade filter (if any decades selected)
-    // TODO: Implement when decade data is available on artists
-    // if (collectionFilters.decades.length > 0) {
-    //   filtered = filtered.filter(artist => {
-    //     const decade = getArtistDecade(artist);
-    //     return collectionFilters.decades.includes(decade);
-    //   });
-    // }
+    if (collectionMode && collectionFilters.decades.length > 0) {
+      filtered = filtered.filter(artist => {
+        if (!artist.startDate || artist.startDate.length < 4) return false;
+        const startYear = parseInt(artist.startDate.substring(0, 4));
+        const endYear = artist.endDate && artist.endDate.length >= 4
+          ? parseInt(artist.endDate.substring(0, 4))
+          : null;
+        return collectionFilters.decades.some(decade => {
+          const decadeStart = parseInt(decade.replace('s', ''));
+          return startYear <= decadeStart + 9 && (endYear === null || endYear >= decadeStart);
+        });
+      });
+    }
 
     // Apply node limit - sort by the limit type and take top N
     if (filtered.length > artistNodeCount) {
@@ -769,14 +784,89 @@ function App() {
     });
   }, [graph]);
 
+  // Pre-compute per-artist root genre assignment for "By Genre" clustering (collection mode)
+  const artistGenreAssignments = useMemo((): {
+    assignments: Map<string, string>;
+    colors: Map<string, string>;
+    names: Map<string, string>;
+    primaryGenreTags: Map<string, string>;
+  } => {
+    const assignments = new Map<string, string>();
+    const colors = new Map<string, string>();
+    const names = new Map<string, string>();
+    const primaryGenreTags = new Map<string, string>();
+
+    if (!currentArtists.length || !genres.length) return { assignments, colors, names, primaryGenreTags };
+
+    const isDark = resolvedTheme === 'dark';
+    const genreById = new Map(genres.map(g => [g.id, g]));
+    const genreByName = new Map(genres.map(g => [g.name, g]));
+    const rootIdLookup = new Set(genreRoots);
+    const genreNameById = new Map(genres.map(g => [g.id, g.name]));
+
+    const globalRootArtistCount = new Map<string, number>();
+    genres.forEach(genre => {
+      if (genre.rootGenres?.length) {
+        genre.rootGenres.forEach(rootId => {
+          globalRootArtistCount.set(rootId, (globalRootArtistCount.get(rootId) ?? 0) + genre.artistCount);
+        });
+      }
+      if (rootIdLookup.has(genre.id)) {
+        globalRootArtistCount.set(genre.id, (globalRootArtistCount.get(genre.id) ?? 0) + genre.artistCount);
+      }
+    });
+    const rootColorMap = assignRootGenreColors(genreRoots, isDark, globalRootArtistCount);
+
+    currentArtists.forEach(artist => {
+      let rootGenreId: string | null = null;
+
+      if (artist.tags?.length) {
+        const genreTags = artist.tags
+          .filter(t => genreByName.has(t.name))
+          .sort((a, b) => b.count - a.count);
+        if (genreTags.length > 0) {
+          primaryGenreTags.set(artist.id, genreTags[0].name);
+          const tagGenre = genreByName.get(genreTags[0].name);
+          if (tagGenre?.rootGenres?.[0]) rootGenreId = tagGenre.rootGenres[0];
+        }
+      }
+
+      if (!rootGenreId && artist.genres?.length) {
+        const firstGenre = genreById.get(artist.genres[0]);
+        if (firstGenre?.rootGenres?.[0]) {
+          rootGenreId = firstGenre.rootGenres[0];
+        } else if (firstGenre && rootIdLookup.has(firstGenre.id)) {
+          rootGenreId = firstGenre.id;
+        }
+      }
+
+      const finalRootId = rootGenreId ?? 'unknown';
+      assignments.set(artist.id, finalRootId);
+
+      if (finalRootId !== 'unknown' && !colors.has(finalRootId)) {
+        const color = rootColorMap.get(finalRootId);
+        if (color) {
+          colors.set(finalRootId, color);
+          names.set(finalRootId, genreNameById.get(finalRootId) ?? finalRootId);
+        }
+      }
+    });
+
+    colors.set('unknown', isDark ? DEFAULT_DARK_NODE_COLOR : DEFAULT_LIGHT_NODE_COLOR);
+    names.set('unknown', 'Unknown Genre');
+
+    return { assignments, colors, names, primaryGenreTags };
+  }, [currentArtists, genres, genreRoots, resolvedTheme]);
+
   // Compute artist clusters using selected clustering method
   // Use async computation for large graphs to avoid blocking UI
   const [artistClusters, setArtistClusters] = useState<ClusterResult | null>(null);
   const [clusteringInProgress, setClusteringInProgress] = useState(false);
   const clusteringTimeoutRef = useRef<any | null>(null);
+  const clusteringGenerationRef = useRef(0);
 
   useEffect(() => {
-    if ((graph !== 'artists' && graph !== 'similarArtists') || !currentArtists.length) {
+    if (graph !== 'artists' || !currentArtists.length) {
       setArtistClusters(null);
       return;
     }
@@ -786,7 +876,24 @@ function App() {
       clearTimeout(clusteringTimeoutRef.current);
     }
 
+    // Reset clusters so the graph hides while recomputing — prevents showing nodes without
+    // edges if artists load before links (race condition on first load).
+    setArtistClusters(null);
+
     setClusteringInProgress(true);
+
+    // Select the appropriate clustering method based on the current view
+    let artistClusterMethod: ArtistClusterMode;
+    if (graph === 'similarArtists') {
+      artistClusterMethod = similarArtistClusterMethod;
+    } else if (graph === 'artists' && collectionMode) {
+      artistClusterMethod = collectionArtistClusterMethod;
+    } else {
+      artistClusterMethod = exploreArtistClusterMethod;
+    }
+    // Increment generation so any in-flight requestIdleCallback from a previous run is
+    // treated as stale and discarded (clearTimeout only cancels the debounce, not the idle callback).
+    const generation = ++clusteringGenerationRef.current;
 
     // Debounce clustering computation and run it async
     clusteringTimeoutRef.current = setTimeout(() => {
@@ -800,12 +907,19 @@ function App() {
       };
 
       scheduleClustering(() => {
+        if (clusteringGenerationRef.current !== generation) return;
         try {
           const isDark = resolvedTheme === 'dark';
           const engine = new ClusteringEngine(currentArtists, currentArtistLinks, isDark);
           const result = engine.cluster({
             method: artistClusterMethod,
             resolution: 1.0,
+            ...(artistClusterMethod === 'genre' && {
+              genreAssignments: artistGenreAssignments.assignments,
+              genreColors: artistGenreAssignments.colors,
+              genreNames: artistGenreAssignments.names,
+              artistPrimaryGenreTags: artistGenreAssignments.primaryGenreTags,
+            }),
           });
           setArtistClusters(result);
         } catch (error) {
@@ -823,7 +937,7 @@ function App() {
         clearTimeout(clusteringTimeoutRef.current);
       }
     };
-  }, [currentArtists, currentArtistLinks, graph, artistClusterMethod, resolvedTheme]);
+  }, [currentArtists, currentArtistLinks, graph, collectionMode, collectionArtistClusterMethod, exploreArtistClusterMethod, similarArtistClusterMethod, resolvedTheme, artistGenreAssignments]);
 
   // Use generated links from clustering (artists colored by parent genre)
   useEffect(() => {
@@ -877,6 +991,30 @@ function App() {
       setFilteredArtistLinks(currentArtistLinks);
     }
   }, [artistClusters, graph, currentArtistLinks, filterArtistLinksByClusters, currentArtists]);
+
+  // Cluster hull overlays for genre, byTags, and popularity modes
+  const artistClusterOverlays = useMemo((): ClusterOverlay[] | undefined => {
+    let artistClusterMethod: ArtistClusterMode;
+    if (graph === 'similarArtists') {
+      artistClusterMethod = similarArtistClusterMethod;
+    } else if (graph === 'artists' && collectionMode) {
+      artistClusterMethod = collectionArtistClusterMethod;
+    } else {
+      artistClusterMethod = exploreArtistClusterMethod;
+    }
+    if (!artistClusters || !['genre', 'popularity'].includes(artistClusterMethod) || !showClusterOverlay) return undefined;
+    const overlays: ClusterOverlay[] = [];
+    for (const cluster of artistClusters.clusters.values()) {
+      if (cluster.artistIds.length === 0) continue;
+      overlays.push({
+        id: cluster.id,
+        name: cluster.name,
+        color: cluster.color,
+        nodeIds: new Set(cluster.artistIds),
+      });
+    }
+    return overlays.length > 0 ? overlays : undefined;
+  }, [artistClusters, graph, collectionMode, collectionArtistClusterMethod, exploreArtistClusterMethod, similarArtistClusterMethod, showClusterOverlay]);
 
   // Compute radial layout from cluster tier data for popularity stratification
   const artistRadialLayout = useMemo(() => {
@@ -1151,6 +1289,8 @@ function App() {
         setCurrentArtistLinks(links);
         setGraph('similarArtists');
         setShowArtistCard(true);
+      } else if (similarArtists.length === 1) {
+        toast.error(`No similar artist data available for ${similarArtists[0].name}`);
       }
       setCanCreateSimilarArtistGraph(false);
     }
@@ -1546,21 +1686,94 @@ function App() {
     }
   };
 
-  const setArtistFromName = (name: string) => {
+  const setArtistFromName = async (name: string) => {
     const artist = currentArtists.find((a) => a.name === name);
     if (artist) {
       onArtistNodeClick(artist);
+    } else {
+      const cachedArtist = artistObjectCache.current.get(name);
+      if (cachedArtist) {
+        onArtistNodeClick(cachedArtist);
+      } else {
+        const fetched = await fetchArtistByName(name);
+        if (fetched) {
+          onArtistNodeClick(fetched);
+        }
+      }
     }
   }
 
+  // Populate image + object caches from all artist data sources
+  useEffect(() => {
+    const imgs = artistImageCache.current;
+    const objs = artistObjectCache.current;
+    for (const a of currentArtists) {
+      if (a.name && a.image) imgs.set(a.name, a.image as string);
+      if (a.name) objs.set(a.name, a);
+    }
+  }, [currentArtists]);
+
+  useEffect(() => {
+    const imgs = artistImageCache.current;
+    const objs = artistObjectCache.current;
+    for (const a of similarArtists) {
+      if (a.name && a.image) imgs.set(a.name, a.image as string);
+      if (a.name) objs.set(a.name, a);
+    }
+  }, [similarArtists]);
+
+  useEffect(() => {
+    const imgs = artistImageCache.current;
+    const objs = artistObjectCache.current;
+    for (const a of (topArtists ?? [])) {
+      if (a.name && a.image) imgs.set(a.name, a.image as string);
+      if (a.name) objs.set(a.name, a);
+    }
+  }, [topArtists]);
+
+  useEffect(() => {
+    if (selectedArtist?.name) {
+      if (selectedArtist.image) artistImageCache.current.set(selectedArtist.name, selectedArtist.image as string);
+      artistObjectCache.current.set(selectedArtist.name, selectedArtist);
+    }
+  }, [selectedArtist]);
+
+  useEffect(() => {
+    if (!selectedArtist?.id || !selectedArtist.similar?.length) return;
+    const uncached = selectedArtist.similar.filter((name) => !artistImageCache.current.has(name));
+    if (!uncached.length) return;
+    prefetchSimilarImages(selectedArtist).then((artists) => {
+      const newEntries: [string, string][] = [];
+      for (const a of artists) {
+        if (a.name && a.image) {
+          artistImageCache.current.set(a.name, a.image as string);
+          newEntries.push([a.name, a.image as string]);
+        }
+      }
+      if (newEntries.length) {
+        setPrefetchedImageCache((prev) => {
+          const next = new Map(prev);
+          for (const [name, img] of newEntries) next.set(name, img);
+          return next;
+        });
+      }
+    });
+  }, [selectedArtist?.id]);
+
   const getArtistImageByName = (name: string) => {
-    const a = currentArtists.find((x) => x.name === name);
-    const raw = a?.image as string | undefined;
+    const raw = artistImageCache.current.get(name)
+        ?? prefetchedImageCache.get(name)
+        ?? currentArtists.find((x) => x.name === name)?.image as string | undefined;
     return raw ? fixWikiImageURL(raw) : undefined;
   }
 
   const getArtistByName = (name: string) => {
     return currentArtists.find((a) => a.name === name);
+  }
+
+  const getArtistColorByName = (name: string): string | undefined => {
+    const artist = artistObjectCache.current.get(name);
+    return artist ? getArtistColor(artist) : undefined;
   }
 
   const getGenreNameById = (id: string) => {
@@ -1842,6 +2055,7 @@ function App() {
 
   const onSearchArtistSelect = (artist: Artist) => {
     setAutoFocusGraph(false); // Disable auto-focus for search selections
+    setSelectedArtist(undefined);
     setSelectedArtistFromSearch(true);
     setArtistPreviewStack((prev) => {
       if (artistInfoToShow && artistInfoToShow.id !== artist.id) {
@@ -1997,16 +2211,13 @@ function App() {
   }
 
   const createSimilarArtistGraph = async (artistResult: Artist) => {
-    if (!artistResult.similar || artistResult.similar.length === 0) {
-      toast.error(`No similar artist data available for ${artistResult.name}`);
-      return;
-    }
     setCanCreateSimilarArtistGraph(true);
     await fetchSimilarArtists(artistResult);
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setSelectedArtist(artistResult);
     setSimilarArtistAnchor(artistResult);
+    setArtistInfoToShow(artistResult);
   }
 
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
@@ -2098,14 +2309,18 @@ function App() {
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
 
-      // Restore card visibility based on selections
-      if (selectedArtist) {
-        // Prioritize showing artist card if an artist was selected
-        setArtistInfoToShow(selectedArtist);
+      // Restore card visibility.
+      // Use artistInfoToShow (what the drawer was displaying) rather than selectedArtist —
+      // navigating to an off-graph artist clears selectedArtist but keeps artistInfoToShow set.
+      if (artistInfoToShow) {
         setShowArtistCard(true);
-        // Hide genre card unless there's an active filter
         if (artistFilterGenres.length === 0) {
           setShowGenreCard(false);
+        }
+        // If the last-viewed artist isn't in the restored graph, clear selectedArtist so we
+        // don't accidentally dim every node trying to focus someone who isn't there.
+        if (selectedArtist && !artists.some(a => a.id === selectedArtist.id)) {
+          setSelectedArtist(undefined);
         }
       } else if (artistFilterGenres.length > 0) {
         // If no artist selected but there's an active filter, show genre card
@@ -2288,7 +2503,6 @@ function App() {
 
   const onDecadeSelectionChange = (selectedIDs: string[]) => {
     setSelectedDecades(selectedIDs);
-    // TODO: Implement decade filtering logic
   }
 
   // Generic collection filter handler - works for any filter type
@@ -2706,12 +2920,10 @@ function App() {
                       selectedGenreIds={collectionFilters.genres}
                       genreColorMap={genreColorMap}
                     />
-                    {/* TODO: Add DecadesFilter when ready
                     <DecadesFilter
                       onDecadeSelectionChange={(ids) => onCollectionFilterChange('decades', ids)}
                       selectedDecadeIds={collectionFilters.decades}
                     />
-                    */}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -2806,6 +3018,7 @@ function App() {
                   disableDimming={isUserDraggingArtistCanvas || isArtistDrawerAtMinSnap}
                   radialLayout={artistRadialLayout}
                   priorityLabelIds={centralArtistLabelIds}
+                  clusterOverlays={artistClusterOverlays}
                 />
 
           {/* Genre hover preview */}
@@ -2913,14 +3126,22 @@ function App() {
               {(graph === 'genres' || graph === 'artists' || graph === 'similarArtists') && (
                 <ClusteringPanel
                   graphType={graph === 'genres' ? 'genres' : 'artists'}
-                  clusterMode={graph === 'genres' ? genreClusterMode[0] : artistClusterMethod}
+                  clusterMode={graph === 'genres' ? genreClusterMode[0] : (graph === 'similarArtists' ? similarArtistClusterMethod : (collectionMode ? collectionArtistClusterMethod : exploreArtistClusterMethod))}
                   setClusterMode={(mode) => {
                     if (graph === 'genres') {
                       onGenreClusterModeChange(mode as GenreClusterMode[]);
                     } else {
                       const newMethod = (Array.isArray(mode) ? mode[0] : mode) as ArtistClusterMode;
-                      setArtistClusterMethod(newMethod);
-                      localStorage.setItem('artistClusterMethod', newMethod);
+                      if (graph === 'similarArtists') {
+                        setSimilarArtistClusterMethod(newMethod);
+                        localStorage.setItem('similarArtistClusterMethod', newMethod);
+                      } else if (collectionMode) {
+                        setCollectionArtistClusterMethod(newMethod);
+                        localStorage.setItem('collectionArtistClusterMethod', newMethod);
+                      } else {
+                        setExploreArtistClusterMethod(newMethod);
+                        localStorage.setItem('exploreArtistClusterMethod', newMethod);
+                      }
                     }
                   }}
                   dagMode={dagMode}
@@ -2933,6 +3154,12 @@ function App() {
                   genreColorLegend={genreColorLegend}
                   artistClusters={(graph === 'artists' || graph === 'similarArtists') ? artistClusters : undefined}
                   clusteringInProgress={(graph === 'artists' || graph === 'similarArtists') ? clusteringInProgress : undefined}
+                  collectionMode={collectionMode}
+                  showClusterOverlay={showClusterOverlay}
+                  setShowClusterOverlay={(v) => {
+                    setShowClusterOverlay(v);
+                    localStorage.setItem('showClusterOverlay', String(v));
+                  }}
                 />
               )}
               <DisplayPanel
@@ -3038,6 +3265,7 @@ function App() {
                 onGenreClick={onGenreNameClick}
                 getArtistImageByName={getArtistImageByName}
                 getArtistByName={getArtistByName}
+                getArtistColorByName={getArtistColorByName}
                 genreColorMap={genreColorMap}
                 getArtistColor={getArtistColor}
                 getGenreNameById={getGenreNameById}
@@ -3161,14 +3389,6 @@ function App() {
           onForgotPassword={forgotPassword}
           onLastFMPreview={onLFMPreview}
           onLastFMConnect={onLFMConnect}
-      />
-      <AlphaAccessDialog
-        open={!isAlphaValidated && !authLoading}
-        onValidPassword={() => {
-          setAlphaValidated();
-          setAlphaOpen(false);
-        }}
-        onValidatePassword={validatePassword}
       />
       <OnboardingOverlay
         onComplete={setOnboardingCompleted}
