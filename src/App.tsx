@@ -30,6 +30,7 @@ import { Search } from './components/Search';
 import FindFilter from "@/components/FindFilter";
 import {
   generateSimilarLinks,
+  generateHopLinks,
   isRootGenre,
   isSingletonGenre,
   primitiveArraysEqual,
@@ -303,6 +304,10 @@ function App() {
   const [artistNodeCount, setArtistNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
   const [collectionMode, setCollectionMode] = useState<boolean>(false);
+  const [collectionHops, setCollectionHops] = useState<number>(0);
+  const [similarArtistHops, setSimilarArtistHops] = useState<number>(0);
+  const [hopArtists, setHopArtists] = useState<Artist[]>([]);
+  const [hopArtistLinks, setHopArtistLinks] = useState<NodeLink[]>([]);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
   const { addRecentSelection } = useRecentSelections();
@@ -334,6 +339,7 @@ function App() {
     fetchSimilarArtists,
     fetchArtistByName,
     prefetchSimilarImages,
+    fetchHopArtists,
   } = useArtists(artistQueryGenreIDs, TOP_ARTISTS_TO_FETCH, artistNodeLimitType, artistNodeCount, isBeforeArtistLoad, collectionMode, selectedDecades);
 
   // Fetch top artists for the currently displayed genre info or the active filter
@@ -757,8 +763,46 @@ function App() {
       filteredArtistIds.has(link.source) && filteredArtistIds.has(link.target)
     );
 
+    // Merge hop artists when collectionHops > 0
+    if (collectionMode && collectionHops > 0 && hopArtists.length > 0) {
+      const uniqueHopArtists = hopArtists.filter(ha => !filteredArtistIds.has(ha.id));
+      const allArtists = [...filtered, ...uniqueHopArtists];
+      const allIds = new Set(allArtists.map(a => a.id));
+      const allLinks = [...filteredLinks, ...hopArtistLinks].filter(
+        l => allIds.has(l.source) && allIds.has(l.target)
+      );
+      return { artists: allArtists, links: allLinks };
+    }
+
     return { artists: filtered, links: filteredLinks };
-  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType]);
+  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, collectionHops, hopArtists, hopArtistLinks]);
+
+  // Fetches hop artists when collectionHops changes in collection mode
+  useEffect(() => {
+    if (!collectionMode || !artists.length) return;
+    if (collectionHops === 0) {
+      setHopArtists([]);
+      setHopArtistLinks([]);
+      return;
+    }
+    const seedIds = artists.map(a => a.id);
+    const genreFilter = collectionFilters.genres.length > 0 ? collectionFilters.genres : undefined;
+    fetchHopArtists(seedIds, collectionHops, 300, genreFilter).then(result => {
+      setHopArtists(result.artists);
+      setHopArtistLinks(result.links);
+    });
+  }, [collectionMode, collectionHops, artists, collectionFilters.genres]);
+
+  // IDs of the user's saved artists — used to render the ring on saved nodes when hop artists are present
+  const savedArtistIds = useMemo((): Set<string> | undefined => {
+    if (collectionMode && collectionHops > 0) {
+      return new Set(artists.map(a => a.id));
+    }
+    if (graph === 'similarArtists' && similarArtistHops > 0) {
+      return new Set<string>(likedArtists);
+    }
+    return undefined;
+  }, [collectionMode, collectionHops, graph, similarArtistHops, artists, likedArtists]);
 
   // Sets current artists/links shown in the graph
   useEffect(() => {
@@ -1280,21 +1324,48 @@ function App() {
     if (hoveredArtistData) updateArtistPlayerIDs(hoveredArtistData)
   }, [hoveredArtistData]);
 
-  // Switches to the similar artists view once similar artist data is loaded
+  // Switches to the similar artists view and handles hop changes
   useEffect(() => {
     if (canCreateSimilarArtistGraph) {
       if (similarArtists.length > 1) {
-        const links = generateSimilarLinks(similarArtists);
-        setCurrentArtists(similarArtists);
-        setCurrentArtistLinks(links);
+        const anchor = { ...similarArtists[0], hopDistance: 0 };
+        const hop1 = similarArtists.slice(1).map(a => ({ ...a, hopDistance: 1 }));
+        const base = [anchor, ...hop1];
+        setCurrentArtists(base);
+        setCurrentArtistLinks(generateSimilarLinks(base));
         setGraph('similarArtists');
         setShowArtistCard(true);
       } else if (similarArtists.length === 1) {
         toast.error(`No similar artist data available for ${similarArtists[0].name}`);
       }
       setCanCreateSimilarArtistGraph(false);
+      return;
     }
-  }, [similarArtists]);
+
+    if (graph !== 'similarArtists' || similarArtists.length < 2) return;
+
+    const anchor = { ...similarArtists[0], hopDistance: 0 };
+    const hop1Artists = similarArtists.slice(1).map(a => ({ ...a, hopDistance: 1 }));
+
+    if (similarArtistHops === 0) {
+      const base = [anchor, ...hop1Artists];
+      setCurrentArtists(base);
+      setCurrentArtistLinks(generateSimilarLinks(base));
+      return;
+    }
+
+    const hop1Ids = hop1Artists.map(a => a.id);
+    fetchHopArtists(hop1Ids, 1, 300).then(result => {
+      const anchorId = anchor.id;
+      const hop1IdSet = new Set(hop1Ids);
+      const hop2Artists = result.artists
+        .filter(a => a.id !== anchorId && !hop1IdSet.has(a.id))
+        .map(a => ({ ...a, hopDistance: 2 }));
+      const allArtists = [anchor, ...hop1Artists, ...hop2Artists];
+      setCurrentArtists(allArtists);
+      setCurrentArtistLinks(generateHopLinks(allArtists));
+    });
+  }, [similarArtists, similarArtistHops, canCreateSimilarArtistGraph, graph]);
 
   // Switch to artist graph after genres' artists are loaded
   // TODO: I suspect this causes "no genre selected" top 2000 artists to always be fetched, wasteful if clicking "All Artists"
@@ -2123,6 +2194,10 @@ function App() {
     setSimilarArtistAnchor(undefined);
     setGenreClusterMode(DEFAULT_CLUSTER_MODE);
     setCollectionMode(false);
+    setCollectionHops(0);
+    setSimilarArtistHops(0);
+    setHopArtists([]);
+    setHopArtistLinks([]);
     // Clear collection mode filters when exiting to explore mode
     setCollectionFilters({ genres: [], decades: [] });
   }
@@ -2211,6 +2286,9 @@ function App() {
   }
 
   const createSimilarArtistGraph = async (artistResult: Artist) => {
+    setSimilarArtistHops(0);
+    setHopArtists([]);
+    setHopArtistLinks([]);
     setCanCreateSimilarArtistGraph(true);
     await fetchSimilarArtists(artistResult);
     setSelectedArtistFromSearch(false);
@@ -3019,6 +3097,7 @@ function App() {
                   radialLayout={artistRadialLayout}
                   priorityLabelIds={centralArtistLabelIds}
                   clusterOverlays={artistClusterOverlays}
+                  savedArtistIds={savedArtistIds}
                 />
 
           {/* Genre hover preview */}
@@ -3160,6 +3239,9 @@ function App() {
                     setShowClusterOverlay(v);
                     localStorage.setItem('showClusterOverlay', String(v));
                   }}
+                  hops={collectionMode ? collectionHops : graph === 'similarArtists' ? similarArtistHops : undefined}
+                  setHops={collectionMode ? setCollectionHops : graph === 'similarArtists' ? setSimilarArtistHops : undefined}
+                  similarArtistsMode={graph === 'similarArtists'}
                 />
               )}
               <DisplayPanel

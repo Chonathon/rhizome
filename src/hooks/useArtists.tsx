@@ -206,6 +206,23 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         setArtistsLoading(false);
     }
 
+    const fetchHopArtists = async (
+        artistIds: string[],
+        hopDepth: number,
+        limit = 300,
+        genres?: string[]
+    ): Promise<{ artists: Artist[]; links: NodeLink[] }> => {
+        try {
+            const response = await axios.post(`${url}/artists/hops`, { artistIds, hopDepth, limit, genres });
+            return response.data;
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                setArtistsError(err);
+            }
+            return { artists: [], links: [] };
+        }
+    }
+
     const fetchArtistByName = async (name: string): Promise<Artist | undefined> => {
         resetArtistsError();
         try {
@@ -257,6 +274,7 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         fetchSimilarArtists,
         fetchArtistByName,
         prefetchSimilarImages,
+        fetchHopArtists,
     };
 }
 

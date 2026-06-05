@@ -330,6 +330,8 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   };
   // Cluster hull overlays (genre mode)
   clusterOverlays?: ClusterOverlay[];
+  // IDs of the user's saved artists — renders a ring to distinguish them from hop-introduced nodes
+  savedArtistIds?: Set<string>;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -402,6 +404,7 @@ const Graph = forwardRef(function GraphInner<
     priorityLabelIds: priorityLabelIdsProp,
     radialLayout,
     clusterOverlays,
+    savedArtistIds,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -1127,6 +1130,16 @@ const Graph = forwardRef(function GraphInner<
             // Render selection ring only for click-based selection (not hover-based)
             if (isClickSelected) {
               renderSelection(renderContext);
+            }
+
+            // Render saved-artist ring when hop-introduced nodes are present
+            if (savedArtistIds?.has(node.id)) {
+              const ringColor = resolvedTheme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)';
+              ctx.beginPath();
+              ctx.arc(x, y, radius + 3, 0, 2 * Math.PI);
+              ctx.strokeStyle = ringColor;
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
             }
           }
 

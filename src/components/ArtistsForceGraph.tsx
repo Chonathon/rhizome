@@ -39,6 +39,7 @@ interface ArtistsForceGraphProps {
     strength?: number;
   };
   clusterOverlays?: ClusterOverlay[];
+  savedArtistIds?: Set<string>;
 }
 
 
@@ -70,6 +71,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       priorityLabelIds,
       radialLayout,
       clusterOverlays,
+      savedArtistIds,
     },
     ref,
   ) => {
@@ -144,6 +146,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         priorityLabelIds={priorityLabelIds}
         radialLayout={radialLayout}
         clusterOverlays={clusterOverlays}
+        savedArtistIds={savedArtistIds}
       />
     );
   },

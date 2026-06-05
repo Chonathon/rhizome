@@ -2,6 +2,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { Spline, RotateCcw, Loader2 } from "lucide-react";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
 import { ClusterResult } from "@/lib/ClusteringEngine";
@@ -20,6 +21,10 @@ interface ClusteringPanelProps {
     collectionMode?: boolean;
     showClusterOverlay?: boolean;
     setShowClusterOverlay?: (v: boolean) => void;
+    hops?: number;
+    setHops?: (n: number) => void;
+    maxHops?: number;
+    similarArtistsMode?: boolean;
 }
 
 export default function ClusteringPanel({
@@ -36,6 +41,10 @@ export default function ClusteringPanel({
     collectionMode,
     showClusterOverlay,
     setShowClusterOverlay,
+    hops,
+    setHops,
+    maxHops = 2,
+    similarArtistsMode,
 }: ClusteringPanelProps) {
 
     const genreOptions = [
@@ -202,6 +211,25 @@ export default function ClusteringPanel({
                             </div>
                         )}
                     </>
+                )}
+                {graphType === 'artists' && (collectionMode || similarArtistsMode) && hops !== undefined && setHops && (
+                    <div className={`${feildsetStyles} flex flex-col gap-3 w-full p-3`}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
+                                <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">Discovery Hops</span>
+                                <span className="text-sm text-muted-foreground mt-1">Expand to artists beyond your {similarArtistsMode ? 'selection' : 'collection'}.</span>
+                            </div>
+                            <span className="text-sm font-semibold text-foreground tabular-nums w-4 text-right">{hops}</span>
+                        </div>
+                        <Slider
+                            value={[hops]}
+                            onValueChange={([value]) => setHops(value)}
+                            min={0}
+                            max={maxHops}
+                            step={1}
+                            className="w-full"
+                        />
+                    </div>
                 )}
                 {graphType === 'genres' && (
                     <>
