@@ -29,6 +29,7 @@
     "@tailwindcss/vite": "^4.1.7",
     "@types/react-responsive": "^8.0.8",
     "@uidotdev/usehooks": "^2.4.1",
+    "@vercel/analytics": "^2.0.1",
     "axios": "^1.10.0",
     "better-auth": "^1.4.4",
     "class-variance-authority": "^0.7.1",

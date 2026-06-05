@@ -1,4 +1,5 @@
 import './App.css'
+import { Analytics } from "@vercel/analytics/react"
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import { ChevronDown, ChevronLeft, ChevronRight, Divide, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
@@ -3409,6 +3410,7 @@ function App() {
             )))}
           forgot={true}
       />
+      <Analytics />
     </SidebarProvider>
   );
 }
