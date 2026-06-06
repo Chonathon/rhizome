@@ -328,9 +328,9 @@ export default function GenresFilter({
         {totalSelected === 1
         ? (selectedParents[0]?.name ?? selectedChildrenFlat[0]?.child.name)
         : "Genres" }
-          {operator === 'and' && totalSelected > 0 && (
-            <span className="text-[10px] font-semibold bg-muted px-1 py-0.5 rounded leading-none">and</span>
-          )}
+          {/* {operator === 'and' && totalSelected > 1 && (
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase pr-1 py-0.5 rounded">all</span>
+          )} */}
           {totalSelected > 0 ? (
             <Button
               asChild
@@ -368,27 +368,31 @@ export default function GenresFilter({
       {/* Expanded List */}
       <Command>
         <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
-        <div className="flex items-center gap-1.5 px-3 py-1.5 border-b text-xs" role="group" aria-label="Genre filter operator">
-          <span className="text-muted-foreground">Match</span>
-          <button
+        <div className="flex items-center gap-1 px-3 py-4 border-b text-sm" role="group" aria-label="Genre filter operator">
+          <span className="text-muted-foreground">Match
+          <Button
+            variant="link"
+            size="sm"
             type="button"
             aria-pressed={operator === 'or'}
             onMouseDown={(e) => e.preventDefault()}
-            onClick={(e) => { e.stopPropagation(); setOperator('or'); }}
-            className={cn("font-medium transition-colors", operator === 'or' ? "text-foreground underline" : "text-muted-foreground hover:text-foreground/70")}
+            onClick={(e) => { e.stopPropagation(); setOperator('and'); }}
+            className={cn("-mx-1.5", operator === 'or' ? "text-foreground underline" : "hidden")}
           >
-            or
-          </button>
-          <span className="text-muted-foreground/40">·</span>
-          <button
+            any
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
             type="button"
             aria-pressed={operator === 'and'}
             onMouseDown={(e) => e.preventDefault()}
-            onClick={(e) => { e.stopPropagation(); setOperator('and'); }}
-            className={cn("font-medium transition-colors", operator === 'and' ? "text-foreground underline" : "text-muted-foreground hover:text-foreground/70")}
+            onClick={(e) => { e.stopPropagation(); setOperator('or'); }}
+            className={cn("-mx-1.5", operator === 'and' ? "text-foreground underline" : "hidden")}
           >
-            and
-          </button>
+            all
+          </Button>
+          selected genres</span>
         </div>
         <CommandList ref={listRef} key={query.trim() ? "searching" : "empty"}>
           <CommandEmpty>No genres found.</CommandEmpty>
