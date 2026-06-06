@@ -746,8 +746,8 @@ function App() {
       });
     }
 
-    // Apply AND genre filter in explore mode
-    if (!collectionMode && genreOperator === 'and' && genreAndUnits.length > 0) {
+    // Apply AND genre filter
+    if (genreOperator === 'and' && genreAndUnits.length > 0) {
       filtered = filtered.filter(artist =>
         genreAndUnits.every(unit => unit.some(id => artist.genres.includes(id)))
       );
@@ -2930,6 +2930,7 @@ function App() {
                       genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
                       graphType={graph}
                       onGenreSelectionChange={(ids) => onCollectionFilterChange('genres', ids)}
+                      onOperatorChange={onGenreOperatorChange}
                       initialSelection={{ genre: undefined, isRoot: false, parents: {} }}
                       selectedGenreIds={collectionFilters.genres}
                       genreColorMap={genreColorMap}

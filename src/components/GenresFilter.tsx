@@ -373,7 +373,8 @@ export default function GenresFilter({
           <button
             type="button"
             aria-pressed={operator === 'or'}
-            onClick={() => setOperator('or')}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => { e.stopPropagation(); setOperator('or'); }}
             className={cn("font-medium transition-colors", operator === 'or' ? "text-foreground underline" : "text-muted-foreground hover:text-foreground/70")}
           >
             or
@@ -382,7 +383,8 @@ export default function GenresFilter({
           <button
             type="button"
             aria-pressed={operator === 'and'}
-            onClick={() => setOperator('and')}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => { e.stopPropagation(); setOperator('and'); }}
             className={cn("font-medium transition-colors", operator === 'and' ? "text-foreground underline" : "text-muted-foreground hover:text-foreground/70")}
           >
             and
