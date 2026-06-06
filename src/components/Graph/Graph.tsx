@@ -1100,6 +1100,8 @@ const Graph = forwardRef(function GraphInner<
           let baseAlpha = hopBaseAlpha;
           if (hasSelection) {
             baseAlpha = isSelected ? 1 : isNeighbor ? 0.8 : 0.15;
+          } else if (isHovered && isHopNode) {
+            baseAlpha = 0.3;
           } else if (isHovered) {
             baseAlpha = 0.8;
           } else if (isHopNode) {
