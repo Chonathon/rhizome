@@ -238,7 +238,6 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
     const prefetchSimilarImages = async (artist: Artist): Promise<Artist[]> => {
         try {
             const response = await axios.get(`${url}/artists/fetch/similar/${artist.id}`);
-            setSimilarArtists([artist, ...response.data]);
             return [artist, ...response.data] as Artist[];
         } catch {
             return [];
