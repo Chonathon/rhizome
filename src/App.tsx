@@ -807,10 +807,12 @@ function App() {
   }, [collectionMode, collectionHops, hopArtists.length, graph, similarArtistHops, artists, likedArtists]);
 
   // Sets current artists/links shown in the graph
+  // Skip in similarArtists mode — that graph manages currentArtists directly
   useEffect(() => {
+    if (graph === 'similarArtists') return;
     setCurrentArtists(displayedArtistsData.artists);
     setCurrentArtistLinks(displayedArtistsData.links);
-  }, [displayedArtistsData]);
+  }, [displayedArtistsData, graph]);
 
   // Filter artist links to show only intra-cluster connections
   // This mirrors the genre graph's filterLinksByClusterMode pattern
@@ -3241,8 +3243,8 @@ function App() {
                     setShowClusterOverlay(v);
                     localStorage.setItem('showClusterOverlay', String(v));
                   }}
-                  hops={collectionMode ? collectionHops : graph === 'similarArtists' ? similarArtistHops : undefined}
-                  setHops={collectionMode ? setCollectionHops : graph === 'similarArtists' ? setSimilarArtistHops : undefined}
+                  hops={graph === 'similarArtists' ? similarArtistHops : collectionMode ? collectionHops : undefined}
+                  setHops={graph === 'similarArtists' ? setSimilarArtistHops : collectionMode ? setCollectionHops : undefined}
                   similarArtistsMode={graph === 'similarArtists'}
                 />
               )}
