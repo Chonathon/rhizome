@@ -1095,17 +1095,21 @@ const Graph = forwardRef(function GraphInner<
           const isHovered = hoveredId === node.id;
 
           // Calculate node alpha with smooth transition
-          let baseAlpha = 1;
+          const isHopNode = !!savedArtistIds && !savedArtistIds.has(node.id);
+          const hopBaseAlpha = isHopNode ? 0.2 : 1;
+          let baseAlpha = hopBaseAlpha;
           if (hasSelection) {
             baseAlpha = isSelected ? 1 : isNeighbor ? 0.8 : 0.15;
           } else if (isHovered) {
             baseAlpha = 0.8;
+          } else if (isHopNode) {
+            baseAlpha = hopBaseAlpha;
           }
 
           // Interpolate between normal dimming and fully undimmed
           // dimmingTransition: 0 = normal dimming, 1 = fully undimmed
           const transition = dimmingTransitionRef.current;
-          const alpha = baseAlpha * (1 - transition) + 1.0 * transition;
+          const alpha = baseAlpha * (1 - transition) + hopBaseAlpha * transition;
 
           // Build render context
           const renderContext: NodeRenderContext<T> = {
@@ -1132,14 +1136,17 @@ const Graph = forwardRef(function GraphInner<
               renderSelection(renderContext);
             }
 
-            // Render saved-artist ring when hop-introduced nodes are present
-            if (savedArtistIds?.has(node.id)) {
-              const ringColor = resolvedTheme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)';
+            // Render dashed ring for hop-introduced nodes (not in the user's saved set)
+            if (isHopNode) {
+              ctx.save();
               ctx.beginPath();
-              ctx.arc(x, y, radius + 3, 0, 2 * Math.PI);
-              ctx.strokeStyle = ringColor;
+              ctx.arc(x, y, radius + 4, 0, 2 * Math.PI);
+              ctx.strokeStyle = accent;
               ctx.lineWidth = 1.5;
+              ctx.setLineDash([3, 3]);
               ctx.stroke();
+              ctx.setLineDash([]);
+              ctx.restore();
             }
           }
 
