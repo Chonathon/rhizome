@@ -787,7 +787,9 @@ function App() {
     }
     const seedIds = artists.map(a => a.id);
     const genreFilter = collectionFilters.genres.length > 0 ? collectionFilters.genres : undefined;
+    console.log('[hops] fetching', { seedCount: seedIds.length, collectionHops, genreFilter });
     fetchHopArtists(seedIds, collectionHops, 300, genreFilter).then(result => {
+      console.log('[hops] result', { hopArtistCount: result.artists.length, hopLinkCount: result.links.length });
       setHopArtists(result.artists);
       setHopArtistLinks(result.links);
     });
@@ -795,14 +797,14 @@ function App() {
 
   // IDs of the user's saved artists — used to render the ring on saved nodes when hop artists are present
   const savedArtistIds = useMemo((): Set<string> | undefined => {
-    if (collectionMode && collectionHops > 0) {
+    if (collectionMode && collectionHops > 0 && hopArtists.length > 0) {
       return new Set(artists.map(a => a.id));
     }
     if (graph === 'similarArtists' && similarArtistHops > 0) {
       return new Set<string>(likedArtists);
     }
     return undefined;
-  }, [collectionMode, collectionHops, graph, similarArtistHops, artists, likedArtists]);
+  }, [collectionMode, collectionHops, hopArtists.length, graph, similarArtistHops, artists, likedArtists]);
 
   // Sets current artists/links shown in the graph
   useEffect(() => {
