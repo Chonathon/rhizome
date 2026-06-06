@@ -22,6 +22,7 @@ import {
   CommandSeparator
 } from "@/components/ui/command";
 import {isRootGenre, getParentChildrenMap} from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { PARENT_FIELD_MAP, CHILD_FIELD_MAP } from "@/constants";
 import {g} from "framer-motion/m";
 import { BadgeIndicator } from "@/components/BadgeIndicator";
@@ -35,11 +36,13 @@ export default function GenresFilter({
   initialSelection,
   selectedGenreIds = [],
   genreColorMap,
+  onOperatorChange,
 }: {
   genres?: Genre[];
   genreClusterModes: GenreClusterMode[];
   graphType: GraphType;
   onGenreSelectionChange: (selectedIDs: string[]) => void;
+  onOperatorChange?: (operator: 'or' | 'and', andUnits: string[][]) => void;
   initialSelection: InitialGenreFilter;
   selectedGenreIds?: string[];
   genreColorMap?: Map<string, string>;
@@ -118,6 +121,7 @@ export default function GenresFilter({
       for (const g of topLevelGenres) next[g.id] = new Set<string>();
       return next;
     });
+    setOperator('or');
   };
 
   // Toggle only the parent state without affecting children (for Selected section)
@@ -249,6 +253,25 @@ export default function GenresFilter({
     [topLevelGenres, selectedChildren]
   );
 
+  const [operator, setOperator] = useState<'or' | 'and'>('or');
+
+  // AND units: fully-checked parents expand to [parentId, ...all children]; individual children are their own unit.
+  const andUnits = useMemo((): string[][] => {
+    const units: string[][] = [];
+    for (const parent of selectedParents) {
+      const children = parentChildMap.get(parent.id) || [];
+      units.push([parent.id, ...children.map(c => c.id)]);
+    }
+    for (const { child } of selectedChildrenFlat) {
+      units.push([child.id]);
+    }
+    return units;
+  }, [selectedParents, selectedChildrenFlat, parentChildMap]);
+
+  useEffect(() => {
+    onOperatorChange?.(operator, operator === 'and' ? andUnits : []);
+  }, [operator, andUnits]);
+
   // Triggers loading artists on selection of genres
   useEffect(() => {
     // Don't call back if we're syncing from external props (prevents infinite loop)
@@ -301,10 +324,13 @@ export default function GenresFilter({
     }}
       trigger={
         // Collapsed Genres Button
-        <Button size="lg" variant="outline" className={`${totalSelected > 0 ? "px-4" : ""}`}> 
+        <Button size="lg" variant="outline" className={`${totalSelected > 0 ? "px-4" : ""}`}>
         {totalSelected === 1
         ? (selectedParents[0]?.name ?? selectedChildrenFlat[0]?.child.name)
         : "Genres" }
+          {operator === 'and' && totalSelected > 0 && (
+            <span className="text-[10px] font-semibold bg-muted px-1 py-0.5 rounded leading-none">and</span>
+          )}
           {totalSelected > 0 ? (
             <Button
               asChild
@@ -342,6 +368,26 @@ export default function GenresFilter({
       {/* Expanded List */}
       <Command>
         <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
+        <div className="flex items-center gap-1.5 px-3 py-1.5 border-b text-xs" role="group" aria-label="Genre filter operator">
+          <span className="text-muted-foreground">Match</span>
+          <button
+            type="button"
+            aria-pressed={operator === 'or'}
+            onClick={() => setOperator('or')}
+            className={cn("font-medium transition-colors", operator === 'or' ? "text-foreground underline" : "text-muted-foreground hover:text-foreground/70")}
+          >
+            or
+          </button>
+          <span className="text-muted-foreground/40">·</span>
+          <button
+            type="button"
+            aria-pressed={operator === 'and'}
+            onClick={() => setOperator('and')}
+            className={cn("font-medium transition-colors", operator === 'and' ? "text-foreground underline" : "text-muted-foreground hover:text-foreground/70")}
+          >
+            and
+          </button>
+        </div>
         <CommandList ref={listRef} key={query.trim() ? "searching" : "empty"}>
           <CommandEmpty>No genres found.</CommandEmpty>
           {/* Selected Group */}

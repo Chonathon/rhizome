@@ -140,6 +140,8 @@ function App() {
   const artistQueryGenreIDs = useMemo(() => {
     return artistFilterGenreIDs;
   }, [artistFilterGenreIDs]);
+  const [genreOperator, setGenreOperator] = useState<'or' | 'and'>('or');
+  const [genreAndUnits, setGenreAndUnits] = useState<string[][]>([]);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [selectedArtistFromSearch, setSelectedArtistFromSearch] = useState<boolean>(false);
   const [artistPreviewStack, setArtistPreviewStack] = useState<Artist[]>([]);
@@ -744,6 +746,13 @@ function App() {
       });
     }
 
+    // Apply AND genre filter in explore mode
+    if (!collectionMode && genreOperator === 'and' && genreAndUnits.length > 0) {
+      filtered = filtered.filter(artist =>
+        genreAndUnits.every(unit => unit.some(id => artist.genres.includes(id)))
+      );
+    }
+
     // Apply node limit - sort by the limit type and take top N
     if (filtered.length > artistNodeCount) {
       filtered = [...filtered]
@@ -758,7 +767,7 @@ function App() {
     );
 
     return { artists: filtered, links: filteredLinks };
-  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType]);
+  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, genreOperator, genreAndUnits]);
 
   // Sets current artists/links shown in the graph
   useEffect(() => {
@@ -2501,6 +2510,11 @@ function App() {
     }
   }, [graph, isBeforeArtistLoad, selectedGenres, artistGenreFilter]);
 
+  const onGenreOperatorChange = useCallback((operator: 'or' | 'and', units: string[][]) => {
+    setGenreOperator(operator);
+    setGenreAndUnits(units);
+  }, []);
+
   const onDecadeSelectionChange = (selectedIDs: string[]) => {
     setSelectedDecades(selectedIDs);
   }
@@ -2945,6 +2959,7 @@ function App() {
                       genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
                       graphType={graph}
                       onGenreSelectionChange={onGenreFilterSelectionChange}
+                      onOperatorChange={onGenreOperatorChange}
                       initialSelection={initialGenreFilter}
                       selectedGenreIds={artistGenreFilterIDs}
                       genreColorMap={genreColorMap}
@@ -3020,6 +3035,17 @@ function App() {
                   priorityLabelIds={centralArtistLabelIds}
                   clusterOverlays={artistClusterOverlays}
                 />
+
+          {/* AND filter empty state */}
+          {graph === 'artists' && !artistsLoading && currentArtists.length === 0
+            && genreOperator === 'and' && genreAndUnits.length > 0 && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-center space-y-1">
+                <p className="text-sm text-muted-foreground">No artists match all of these genres.</p>
+                <p className="text-xs text-muted-foreground/60">Try switching to or in the Genres filter.</p>
+              </div>
+            </div>
+          )}
 
           {/* Genre hover preview */}
           {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && (
