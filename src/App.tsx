@@ -801,10 +801,11 @@ function App() {
       return new Set(artists.map(a => a.id));
     }
     if (graph === 'similarArtists' && similarArtistHops > 0) {
-      return new Set<string>(likedArtists);
+      // anchor + hop-1 artists are the base graph — only hop-2+ are introduced nodes
+      return new Set<string>(similarArtists.map(a => a.id));
     }
     return undefined;
-  }, [collectionMode, collectionHops, hopArtists.length, graph, similarArtistHops, artists, likedArtists]);
+  }, [collectionMode, collectionHops, hopArtists.length, graph, similarArtistHops, artists, similarArtists]);
 
   // Sets current artists/links shown in the graph
   // Skip in similarArtists mode — that graph manages currentArtists directly
