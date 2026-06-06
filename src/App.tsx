@@ -1359,13 +1359,13 @@ function App() {
     }
 
     const hop1Ids = hop1Artists.map(a => a.id);
-    fetchHopArtists(hop1Ids, 1, 300).then(result => {
+    fetchHopArtists(hop1Ids, similarArtistHops, 300).then(result => {
       const anchorId = anchor.id;
       const hop1IdSet = new Set(hop1Ids);
-      const hop2Artists = result.artists
+      const hopPlusArtists = result.artists
         .filter(a => a.id !== anchorId && !hop1IdSet.has(a.id))
         .map(a => ({ ...a, hopDistance: 2 }));
-      const allArtists = [anchor, ...hop1Artists, ...hop2Artists];
+      const allArtists = [anchor, ...hop1Artists, ...hopPlusArtists];
       setCurrentArtists(allArtists);
       setCurrentArtistLinks(generateHopLinks(allArtists));
     });
