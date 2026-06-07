@@ -3014,12 +3014,14 @@ function App() {
                   computeArtistColor={getArtistColor}
                   autoFocus={autoFocusGraph}
                   // Hide graph until clustering is ready (for artists graph) to prevent flash of unclustered nodes
+                  // When filtering produces zero artists, skip the cluster-ready check so we show the empty state instead of a spinner
                   show={
                     (graph === "similarArtists" && !artistsError) ||
-                    (graph === "artists" && !artistsError && !!artistClusters)
+                    (graph === "artists" && !artistsError && (!!artistClusters || currentArtists.length === 0))
                   }
                   // Show loading spinner while data or clustering is in progress (only when on artists/similarArtists view)
-                  loading={((graph === 'artists' || graph === 'similarArtists') && artistsLoading) || (graph === 'artists' && !artistClusters)}
+                  // Skip cluster-wait spinner when filtering has produced zero artists (nothing to cluster)
+                  loading={((graph === 'artists' || graph === 'similarArtists') && artistsLoading) || (graph === 'artists' && !artistClusters && currentArtists.length > 0)}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
                   onZoomChange={handleArtistsZoomChange}
@@ -3035,18 +3037,16 @@ function App() {
                   radialLayout={artistRadialLayout}
                   priorityLabelIds={centralArtistLabelIds}
                   clusterOverlays={artistClusterOverlays}
+                  emptyState={
+                    genreOperator === 'and' && genreAndUnits.length > 0 ? (
+                      <div className="text-center space-y-1">
+                        <p className="text-sm text-muted-foreground">No artists match all of these genres.</p>
+                        <p className="text-xs text-muted-foreground/60">Try switching to OR in the Genres filter.</p>
+                      </div>
+                    ) : undefined
+                  }
                 />
 
-          {/* AND filter empty state */}
-          {graph === 'artists' && !artistsLoading && currentArtists.length === 0
-            && genreOperator === 'and' && genreAndUnits.length > 0 && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-center space-y-1">
-                <p className="text-sm text-muted-foreground">No artists match all of these genres.</p>
-                <p className="text-xs text-muted-foreground/60">Try switching to or in the Genres filter.</p>
-              </div>
-            </div>
-          )}
 
           {/* Genre hover preview */}
           {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && (

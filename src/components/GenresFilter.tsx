@@ -255,16 +255,29 @@ export default function GenresFilter({
 
   const [operator, setOperator] = useState<'or' | 'and'>('or');
 
-  // AND units: fully-checked parents expand to [parentId, ...all children]; individual children are their own unit.
+  // AND units: each top-level parent with any selection = one AND unit, satisfied by any of its selected genres.
+  // Fully-checked parent: unit = [parentId, ...allChildren]. Indeterminate parent: unit = [selectedChild1, selectedChild2, ...].
+  // This keeps each parent as a single AND slot regardless of how many children are checked.
   const andUnits = useMemo((): string[][] => {
     const units: string[][] = [];
+    const fullyCheckedParentIds = new Set(selectedParents.map(p => p.id));
+
     for (const parent of selectedParents) {
       const children = parentChildMap.get(parent.id) || [];
       units.push([parent.id, ...children.map(c => c.id)]);
     }
-    for (const { child } of selectedChildrenFlat) {
-      units.push([child.id]);
+
+    const childrenByParent = new Map<string, string[]>();
+    for (const { parent, child } of selectedChildrenFlat) {
+      if (fullyCheckedParentIds.has(parent.id)) continue;
+      const group = childrenByParent.get(parent.id) ?? [];
+      group.push(child.id);
+      childrenByParent.set(parent.id, group);
     }
+    for (const group of childrenByParent.values()) {
+      units.push(group);
+    }
+
     return units;
   }, [selectedParents, selectedChildrenFlat, parentChildMap]);
 
