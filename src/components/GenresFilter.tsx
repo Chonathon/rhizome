@@ -214,7 +214,7 @@ export default function GenresFilter({
       className="p-0 overflow-hidden"
       side="bottom"
     >
-      <Command>
+      <Command filter={(value, search) => value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0}>
         <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
         {/* Operator toggle */}
         <div className="flex items-center gap-1 px-3 py-4 border-b text-sm" role="group" aria-label="Genre filter operator">
@@ -301,7 +301,7 @@ export default function GenresFilter({
                   onSelect={() => toggleId(parent.id)}
                   className="flex items-center gap-2"
                 >
-                  <Check className={parentChecked ? "opacity-100" : "opacity-0"} />
+                  <Check className={parentChecked ? "opacity-100" : "hidden"} />
                   <BadgeIndicator type="genre" name={parent.name} color={genreColorMap?.get(parent.id)} />
                   <span>{parent.name}</span>
                 </CommandItem>
@@ -313,9 +313,9 @@ export default function GenresFilter({
                       key={`${parent.id}-${child.id}`}
                       value={`${child.id} ${child.name} ${parent.name}`}
                       onSelect={() => toggleId(child.id)}
-                      className="flex items-center gap-2 pl-8"
+                      className="flex items-center gap-2"
                     >
-                      <Check className={childChecked ? "opacity-100" : "opacity-0"} />
+                      <Check className={childChecked ? "opacity-100" : "hidden"} />
                       <BadgeIndicator type="genre" name={child.name} color={genreColorMap?.get(child.id)} />
                       <span>{child.name}</span>
                     </CommandItem>
