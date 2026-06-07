@@ -1,5 +1,7 @@
+import { useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import Gravity, { GravityRef, MatterBody } from "@/components/fancy/physics/gravity";
 
 // Phantom network nodes — ring the periphery, leave center open for content
 const BG_NODES = [
@@ -71,67 +73,74 @@ interface GraphEmptyStateProps {
 
 export function GraphEmptyState({ mode, onSearch }: GraphEmptyStateProps) {
   const { headline, body, cta } = COPY[mode];
+  const gravityRef = useRef<GravityRef>(null);
 
   return (
     <div
       className="fixed inset-0 flex items-center justify-center pointer-events-none"
       style={{ zIndex: 5 }}
     >
-      {/* Animated phantom graph */}
-      <motion.svg
+      {/* Animated phantom graph — fades in, then nodes fall */}
+      <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: 0.5 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 4, ease: "easeIn", delay: 0.4 }}
-        className="absolute w-[800px] h-[800px] text-foreground"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="xMidYMid slice"
+        onAnimationComplete={() => gravityRef.current?.start()}
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px]"
         aria-hidden="true"
       >
-        <style>{`
-          @keyframes ghost-dim {
-            0%, 100% { opacity: 0.025; }
-            50% { opacity: 0.065; }
-          }
-          @keyframes ghost-mid {
-            0%, 100% { opacity: 0.045; }
-            50% { opacity: 0.11; }
-          }
-          @keyframes ghost-link {
-            0%, 100% { opacity: 0.02; }
-            50% { opacity: 0.05; }
-          }
-        `}</style>
+        {/* Links only — nodes are DOM elements below */}
+        <svg
+          className="absolute inset-0 w-full h-full text-foreground"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <style>{`
+            @keyframes ghost-link {
+              0%, 100% { opacity: 0.02; }
+              50% { opacity: 0.05; }
+            }
+          `}</style>
+          {BG_LINKS.map(([a, b], i) => {
+            const na = BG_NODES[a], nb = BG_NODES[b];
+            const dur = DURATIONS[i % DURATIONS.length];
+            const delay = (i * 0.19) % 3.5;
+            return (
+              <line
+                key={i}
+                x1={na.cx} y1={na.cy}
+                x2={nb.cx} y2={nb.cy}
+                stroke="currentColor"
+                strokeWidth="0.18"
+                style={{ animation: `ghost-link ${dur}s ease-in-out ${delay}s infinite` }}
+              />
+            );
+          })}
+        </svg>
 
-        {BG_LINKS.map(([a, b], i) => {
-          const na = BG_NODES[a], nb = BG_NODES[b];
-          const dur = DURATIONS[i % DURATIONS.length];
-          const delay = (i * 0.19) % 3.5;
-          return (
-            <line
-              key={i}
-              x1={na.cx} y1={na.cy}
-              x2={nb.cx} y2={nb.cy}
-              stroke="currentColor"
-              strokeWidth="0.18"
-              style={{ animation: `ghost-link ${dur}s ease-in-out ${delay}s infinite` }}
-            />
-          );
-        })}
-
-        {BG_NODES.map((n, i) => {
-          const isOuter = n.cx < 22 || n.cx > 78 || n.cy < 18 || n.cy > 82;
-          const dur = DURATIONS[i % DURATIONS.length];
-          const delay = (i * 0.28) % 4.5;
-          return (
-            <circle
-              key={n.id}
-              cx={n.cx} cy={n.cy} r={n.r}
-              fill="currentColor"
-              style={{ animation: `${isOuter ? 'ghost-dim' : 'ghost-mid'} ${dur}s ease-in-out ${delay}s infinite` }}
-            />
-          );
-        })}
-      </motion.svg>
+        {/* Nodes as physics bodies — positioned to match SVG coords (viewBox 0–100 → 8px/unit) */}
+        <Gravity ref={gravityRef} autoStart={false} grabCursor={false} addTopWall={false} gravity={{ x: 0, y: 3 }}>
+          {BG_NODES.map((n) => {
+            const isOuter = n.cx < 22 || n.cx > 78 || n.cy < 18 || n.cy > 82;
+            const diameter = Math.round(n.r * 16);
+            return (
+              <MatterBody
+                key={n.id}
+                x={`${n.cx}%`}
+                y={`${n.cy}%`}
+                bodyType="circle"
+                isDraggable={false}
+                matterBodyOptions={{ friction: 0.1, restitution: 0.8, density: 0.001, isStatic: false }}
+              >
+                <div
+                  className="rounded-full bg-foreground"
+                  style={{ width: diameter, height: diameter, opacity: isOuter ? 0.065 : 0.11 }}
+                />
+              </MatterBody>
+            );
+          })}
+        </Gravity>
+      </motion.div>
 
       {/* Content */}
       <motion.div
