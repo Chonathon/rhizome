@@ -79,7 +79,7 @@ export function GraphEmptyState({ mode, onSearch }: GraphEmptyStateProps) {
     >
       {/* Animated phantom graph */}
       <svg
-        className="absolute inset-0 w-full h-full text-foreground"
+        className="absolute w-[800px] h-[800px] text-foreground opacity-50"
         viewBox="0 0 100 100"
         preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
