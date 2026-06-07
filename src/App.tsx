@@ -304,8 +304,14 @@ function App() {
   const [artistNodeCount, setArtistNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
   const [collectionMode, setCollectionMode] = useState<boolean>(false);
-  const [collectionHops, setCollectionHops] = useState<number>(0);
-  const [similarArtistHops, setSimilarArtistHops] = useState<number>(0);
+  const [collectionHops, setCollectionHops] = useState<number>(() => {
+    const stored = localStorage.getItem('collectionHops');
+    return stored !== null ? Math.max(0, parseInt(stored, 10) || 0) : 0;
+  });
+  const [similarArtistHops, setSimilarArtistHops] = useState<number>(() => {
+    const stored = localStorage.getItem('similarArtistHops');
+    return stored !== null ? Math.max(0, parseInt(stored, 10) || 0) : 0;
+  });
   const [hopArtists, setHopArtists] = useState<Artist[]>([]);
   const [hopArtistLinks, setHopArtistLinks] = useState<NodeLink[]>([]);
   const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
@@ -2291,9 +2297,10 @@ function App() {
   }
 
   const createSimilarArtistGraph = async (artistResult: Artist) => {
-    setSimilarArtistHops(0);
-    setHopArtists([]);
-    setHopArtistLinks([]);
+    const storedSimilarHops = localStorage.getItem('similarArtistHops');
+    setSimilarArtistHops(storedSimilarHops !== null ? Math.max(0, parseInt(storedSimilarHops, 10) || 0) : 0);
+    // Don't clear hopArtists — similar artists mode doesn't use them,
+    // and preserving them means they're immediately available when returning to collection.
     setCanCreateSimilarArtistGraph(true);
     await fetchSimilarArtists(artistResult);
     setSelectedArtistFromSearch(false);
@@ -2757,6 +2764,9 @@ function App() {
   const onCollectionClick = async () => {
     if (userID) {
       setCollectionMode(true);
+      // Restore persisted hop preference (may have been zeroed by resetAppState mid-session)
+      const storedCollectionHops = localStorage.getItem('collectionHops');
+      if (storedCollectionHops !== null) setCollectionHops(Math.max(0, parseInt(storedCollectionHops, 10) || 0));
       // Clear explore mode filters when entering collection mode
       setArtistGenreFilter([]);
       setArtistFilterGenres([]);
@@ -3245,7 +3255,11 @@ function App() {
                     localStorage.setItem('showClusterOverlay', String(v));
                   }}
                   hops={graph === 'similarArtists' ? similarArtistHops : collectionMode ? collectionHops : undefined}
-                  setHops={graph === 'similarArtists' ? setSimilarArtistHops : collectionMode ? setCollectionHops : undefined}
+                  setHops={graph === 'similarArtists'
+                    ? (v) => { setSimilarArtistHops(v); localStorage.setItem('similarArtistHops', String(v)); }
+                    : collectionMode
+                    ? (v) => { setCollectionHops(v); localStorage.setItem('collectionHops', String(v)); }
+                    : undefined}
                   similarArtistsMode={graph === 'similarArtists'}
                 />
               )}
