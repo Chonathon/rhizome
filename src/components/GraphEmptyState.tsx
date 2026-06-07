@@ -78,8 +78,11 @@ export function GraphEmptyState({ mode, onSearch }: GraphEmptyStateProps) {
       style={{ zIndex: 5 }}
     >
       {/* Animated phantom graph */}
-      <svg
-        className="absolute w-[800px] h-[800px] text-foreground opacity-50"
+      <motion.svg
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        transition={{ duration: 4, ease: "easeIn", delay: 0.4 }}
+        className="absolute w-[800px] h-[800px] text-foreground"
         viewBox="0 0 100 100"
         preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
@@ -128,7 +131,7 @@ export function GraphEmptyState({ mode, onSearch }: GraphEmptyStateProps) {
             />
           );
         })}
-      </svg>
+      </motion.svg>
 
       {/* Content */}
       <motion.div
