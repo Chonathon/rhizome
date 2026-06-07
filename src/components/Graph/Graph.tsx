@@ -331,8 +331,6 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   };
   // Cluster hull overlays (genre mode)
   clusterOverlays?: ClusterOverlay[];
-  // Shown when the graph has no nodes and is not loading
-  emptyState?: ReactNode;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -405,7 +403,6 @@ const Graph = forwardRef(function GraphInner<
     priorityLabelIds: priorityLabelIdsProp,
     radialLayout,
     clusterOverlays,
-    emptyState,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -1007,16 +1004,6 @@ const Graph = forwardRef(function GraphInner<
           style={{ pointerEvents: "none" }}
         >
           <Loading />
-        </div>
-      )}
-      {show && !loading && preparedData.nodes.length === 0 && (
-        <div
-          className="absolute inset-0 flex items-center justify-center z-10"
-          style={{ pointerEvents: "none" }}
-        >
-          {emptyState ?? (
-            <p className="text-sm text-muted-foreground">No results</p>
-          )}
         </div>
       )}
       <div style={{ visibility: show ? "visible" : "hidden" }}>

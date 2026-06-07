@@ -79,6 +79,7 @@ import RhizomeLogo from "@/components/RhizomeLogo";
 import AuthOverlay from '@/components/AuthOverlay';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
+import { GraphEmptyState } from '@/components/GraphEmptyState';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
@@ -3037,16 +3038,26 @@ function App() {
                   radialLayout={artistRadialLayout}
                   priorityLabelIds={centralArtistLabelIds}
                   clusterOverlays={artistClusterOverlays}
-                  emptyState={
-                    genreOperator === 'and' && genreAndUnits.length > 0 ? (
-                      <div className="text-center space-y-1">
-                        <p className="text-sm text-muted-foreground">No artists match all of these genres.</p>
-                        <p className="text-xs text-muted-foreground/60">Try switching to OR in the Genres filter.</p>
-                      </div>
-                    ) : undefined
-                  }
                 />
 
+          {/* Graph empty states */}
+          {!artistsLoading && !artistsError && (
+            <>
+              {collectionMode && graph === 'artists' && currentArtists.length === 0 && (
+                <GraphEmptyState
+                  mode={artists.length === 0 ? 'collection-empty' : 'collection-filtered'}
+                  onSearch={() => setSearchOpen(true)}
+                />
+              )}
+              {!collectionMode && graph === 'artists' && currentArtists.length === 0
+                && genreOperator === 'and' && genreAndUnits.length > 0 && (
+                <GraphEmptyState mode="genre-and-filter" />
+              )}
+              {graph === 'similarArtists' && currentArtists.length === 0 && (
+                <GraphEmptyState mode="similar-artists" />
+              )}
+            </>
+          )}
 
           {/* Genre hover preview */}
           {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && (

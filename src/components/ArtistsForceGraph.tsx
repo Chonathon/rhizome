@@ -1,4 +1,4 @@
-import { forwardRef, memo, useMemo, type ReactNode } from "react";
+import { forwardRef, memo, useMemo } from "react";
 import Graph, {
   type GraphHandle,
   type SharedGraphNode,
@@ -39,7 +39,6 @@ interface ArtistsForceGraphProps {
     strength?: number;
   };
   clusterOverlays?: ClusterOverlay[];
-  emptyState?: ReactNode;
 }
 
 
@@ -71,7 +70,6 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       priorityLabelIds,
       radialLayout,
       clusterOverlays,
-      emptyState,
     },
     ref,
   ) => {
@@ -146,7 +144,6 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         priorityLabelIds={priorityLabelIds}
         radialLayout={radialLayout}
         clusterOverlays={clusterOverlays}
-        emptyState={emptyState}
       />
     );
   },
