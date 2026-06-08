@@ -747,8 +747,8 @@ function App() {
       });
     }
 
-    // Apply AND genre filter
-    if (genreOperator === 'and' && genreAndUnits.length > 0) {
+    // Apply AND genre filter — only active with 2+ units (1 unit = same result as OR)
+    if (genreAndUnits.length > 1) {
       filtered = filtered.filter(artist =>
         genreAndUnits.every(unit => unit.some(id => artist.genres.includes(id)))
       );
@@ -768,7 +768,7 @@ function App() {
     );
 
     return { artists: filtered, links: filteredLinks };
-  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, genreOperator, genreAndUnits]);
+  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, genreAndUnits]);
 
   // Sets current artists/links shown in the graph
   useEffect(() => {
@@ -2513,7 +2513,13 @@ function App() {
 
   const onGenreOperatorChange = useCallback((operator: 'or' | 'and', units: string[][]) => {
     setGenreOperator(operator);
-    setGenreAndUnits(units);
+    // The operator only has a different effect with 2+ units; collapse anything
+    // ≤ 1 to [] so the displayedArtistsData memo stays stable and the graph
+    // doesn't rerender on operator switches with 0 or 1 filter selected.
+    setGenreAndUnits(prev => {
+      const next = units.length > 1 ? units : [];
+      return prev.length === 0 && next.length === 0 ? prev : next;
+    });
   }, []);
 
   const onDecadeSelectionChange = (selectedIDs: string[]) => {

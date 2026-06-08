@@ -177,14 +177,14 @@ export function GraphEmptyState({ mode, onSearch }: GraphEmptyStateProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.12 }}
         className="relative flex flex-col items-center gap-4 text-center pointer-events-auto px-6"
-        style={{ maxWidth: 268, zIndex: 1 }}
+        style={{ maxWidth: 320, zIndex: 1 }}
       >
        
-        <div className="flex flex-col gap-1.5">
-          <p className="text-sm font-medium text-foreground tracking-tight leading-snug">
+        <div className="flex flex-col gap-1">
+          <p className="text-xl font-bold text-foreground tracking-tight leading-snug">
             {headline}
           </p>
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-md text-muted-foreground">
             {body}
           </p>
         </div>
