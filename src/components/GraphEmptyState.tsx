@@ -179,21 +179,7 @@ export function GraphEmptyState({ mode, onSearch }: GraphEmptyStateProps) {
         className="relative flex flex-col items-center gap-4 text-center pointer-events-auto px-6"
         style={{ maxWidth: 268, zIndex: 1 }}
       >
-        <svg
-          width="30"
-          height="30"
-          viewBox="0 0 46 46"
-          fill="none"
-          className="text-foreground opacity-[0.18]"
-        >
-          <circle cx="23" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.5" />
-          <circle cx="8" cy="37" r="5.5" stroke="currentColor" strokeWidth="1.5" />
-          <circle cx="38" cy="37" r="5.5" stroke="currentColor" strokeWidth="1.5" />
-          <line x1="23" y1="14.5" x2="8" y2="31.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          <line x1="23" y1="14.5" x2="38" y2="31.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          <line x1="13.5" y1="37" x2="32.5" y2="37" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-        </svg>
-
+       
         <div className="flex flex-col gap-1.5">
           <p className="text-sm font-medium text-foreground tracking-tight leading-snug">
             {headline}
