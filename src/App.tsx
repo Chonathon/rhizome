@@ -440,7 +440,7 @@ function App() {
     const sessionCount = parseInt(localStorage.getItem('rhizomeSessionCount') || '1');
     if (sessionCount < 2) return false;
     const lastPromptedSession = parseInt(localStorage.getItem('alphaSurveyLastSession') || '0');
-    return lastPromptedSession === 0 || sessionCount >= lastPromptedSession + 2;
+    return lastPromptedSession === 0 || sessionCount >= lastPromptedSession + 3;
   }
 
   function markAlphaSurveyPrompted(): void {
