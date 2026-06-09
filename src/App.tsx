@@ -443,9 +443,15 @@ function App() {
     return lastPromptedSession === 0 || sessionCount >= lastPromptedSession + 3;
   }
 
-  function markAlphaSurveyPrompted(): void {
+  function showAlphaSurveyToast(): void {
     const sessionCount = parseInt(localStorage.getItem('rhizomeSessionCount') || '1');
     localStorage.setItem('alphaSurveyLastSession', sessionCount.toString());
+    const promptCount = parseInt(localStorage.getItem('alphaSurveyPromptCount') || '0') + 1;
+    localStorage.setItem('alphaSurveyPromptCount', promptCount.toString());
+    showNotiToast('alpha-feedback', {
+      onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
+      ...(promptCount >= 3 && { onPermanentDismiss: () => localStorage.setItem('showAlphaSurvey', 'false') }),
+    });
   }
 
   const hoveredArtistData = useMemo(() => {
@@ -471,11 +477,7 @@ function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (shouldShowAlphaSurvey()) {
-        showNotiToast('alpha-feedback', {
-          onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
-          onPermanentDismiss: () => localStorage.setItem('showAlphaSurvey', 'false'),
-        });
-        markAlphaSurveyPrompted();
+        showAlphaSurveyToast();
       }
     }, ALPHA_SURVEY_TIME_MS)
     return () => {
@@ -1455,11 +1457,7 @@ function App() {
     if (!options?.preview) {
       playsRef.current++;
       if (localStorage.getItem('showAlphaSurvey') !== 'false' && playsRef.current >= 2) {
-        showNotiToast('alpha-feedback', {
-          onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
-          onPermanentDismiss: () => localStorage.setItem('showAlphaSurvey', 'false'),
-        });
-        markAlphaSurveyPrompted();
+        showAlphaSurveyToast();
       }
     }
     const req = ++playRequest.current;
@@ -1518,11 +1516,7 @@ function App() {
     if (!options?.preview) {
       playsRef.current++;
       if (localStorage.getItem('showAlphaSurvey') !== 'false' && playsRef.current >= 2) {
-        showNotiToast('alpha-feedback', {
-          onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
-          onPermanentDismiss: () => localStorage.setItem('showAlphaSurvey', 'false'),
-        });
-        markAlphaSurveyPrompted();
+        showAlphaSurveyToast();
       }
     }
     const req = ++playRequest.current;
@@ -2020,10 +2014,7 @@ function App() {
     setRestoreGenreCardOnArtistDismiss(false); // Direct node click, don't restore genre card
     artistNodeClicksRef.current++;
     if (localStorage.getItem('showAlphaSurvey') !== 'false' && artistNodeClicksRef.current >= 5) {
-      showNotiToast('alpha-feedback', {
-        onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
-      });
-      markAlphaSurveyPrompted();
+      showAlphaSurveyToast();
     }
     if (graph === 'artists') {
       setSelectedArtist(artist); // For graph focus/dimming
@@ -2707,10 +2698,7 @@ function App() {
         // Logic for alpha survey triggering
         artistsAddedRef.current++;
         if (localStorage.getItem('showAlphaSurvey') !== 'false' && artistsAddedRef.current >= ALPHA_SURVEY_ADDED_ARTISTS) {
-          showNotiToast('alpha-feedback', {
-            onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
-          });
-          markAlphaSurveyPrompted();
+          showAlphaSurveyToast();
         }
       }
     } else {
