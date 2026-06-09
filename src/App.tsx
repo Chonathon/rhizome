@@ -431,7 +431,21 @@ function App() {
 
   const artistsAddedRef = useRef(0);
 
-  // Get hovered artist data for preview
+  // Returns true if the alpha survey should be shown this session.
+  // Gates on session 2+ and ensures at least 2 sessions between re-prompts.
+  function shouldShowAlphaSurvey(): boolean {
+    if (localStorage.getItem('showAlphaSurvey') === 'false') return false;
+    const sessionCount = parseInt(localStorage.getItem('rhizomeSessionCount') || '1');
+    if (sessionCount < 2) return false;
+    const lastPromptedSession = parseInt(localStorage.getItem('alphaSurveyLastSession') || '0');
+    return lastPromptedSession === 0 || sessionCount >= lastPromptedSession + 2;
+  }
+
+  function markAlphaSurveyPrompted(): void {
+    const sessionCount = parseInt(localStorage.getItem('rhizomeSessionCount') || '1');
+    localStorage.setItem('alphaSurveyLastSession', sessionCount.toString());
+  }
+
   const hoveredArtistData = useMemo(() => {
     if (!previewArtist) return null;
     return currentArtists.find((a) => a.id === previewArtist.id) || null;
@@ -445,12 +459,20 @@ function App() {
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  // Setup alpha feedback timer on mount
+  // Increment session count on each mount so survey triggers can gate on session number
+  useEffect(() => {
+    const count = parseInt(localStorage.getItem('rhizomeSessionCount') || '0') + 1;
+    localStorage.setItem('rhizomeSessionCount', count.toString());
+  }, []);
+
+  // Setup alpha feedback timer on mount — only fires from session 2 onward
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (localStorage.getItem('showAlphaSurvey') !== 'false') {
-        showNotiToast('alpha-feedback');
-        localStorage.setItem('showAlphaSurvey', 'false');
+      if (shouldShowAlphaSurvey()) {
+        showNotiToast('alpha-feedback', {
+          onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
+        });
+        markAlphaSurveyPrompted();
       }
     }, ALPHA_SURVEY_TIME_MS)
     return () => {
@@ -2655,8 +2677,10 @@ function App() {
         // Logic for alpha survey triggering
         artistsAddedRef.current++;
         if (localStorage.getItem('showAlphaSurvey') !== 'false' && artistsAddedRef.current >= ALPHA_SURVEY_ADDED_ARTISTS) {
-          showNotiToast('alpha-feedback');
-          localStorage.setItem('showAlphaSurvey', 'false');
+          showNotiToast('alpha-feedback', {
+            onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
+          });
+          markAlphaSurveyPrompted();
         }
       }
     } else {

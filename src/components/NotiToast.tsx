@@ -53,6 +53,7 @@ interface NotiToastConfig {
   dismissButton: {
     label: string;
   };
+  onPrimaryAction?: () => void;
 }
 
 // add more noti types as needed
@@ -98,7 +99,7 @@ const notificationConfigs: Record<NotificationType, NotiToastConfig> = {
 /** Show a banner-style notification toast */
 export function showNotiToast(
   type: NotificationType,
-  options?: { feedbackFormUrl?: string }
+  options?: { feedbackFormUrl?: string; onPrimaryAction?: () => void }
 ) {
   const config = notificationConfigs[type];
 
@@ -109,6 +110,7 @@ export function showNotiToast(
       ...config.primaryButton,
       ...(options?.feedbackFormUrl && { href: options.feedbackFormUrl }),
     },
+    ...(options?.onPrimaryAction && { onPrimaryAction: options.onPrimaryAction }),
   };
 
   return sonnerToast.custom(
@@ -147,6 +149,8 @@ function NotiToast({
       config.primaryButton.onClick();
       sonnerToast.dismiss(id);
     }
+
+    config.onPrimaryAction?.();
   };
 
   // When the user has acknowledged (tapped "No thanks"), we swap content
