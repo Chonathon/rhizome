@@ -1456,7 +1456,7 @@ function App() {
   const onPlayArtist = async (artist: Artist, options?: { preview?: boolean }) => {
     if (!options?.preview) {
       playsRef.current++;
-      if (localStorage.getItem('showAlphaSurvey') !== 'false' && playsRef.current >= 2) {
+      if (localStorage.getItem('showAlphaSurvey') !== 'false' && playsRef.current >= 3) {
         showAlphaSurveyToast();
       }
     }
@@ -1515,7 +1515,7 @@ function App() {
   const onPlayGenre = async (genre: Genre, options?: { preview?: boolean }) => {
     if (!options?.preview) {
       playsRef.current++;
-      if (localStorage.getItem('showAlphaSurvey') !== 'false' && playsRef.current >= 2) {
+      if (localStorage.getItem('showAlphaSurvey') !== 'false' && playsRef.current >= 3) {
         showAlphaSurveyToast();
       }
     }
