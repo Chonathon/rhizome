@@ -430,6 +430,8 @@ function App() {
   });
 
   const artistsAddedRef = useRef(0);
+  const artistNodeClicksRef = useRef(0);
+  const playsRef = useRef(0);
 
   // Returns true if the alpha survey should be shown this session.
   // Gates on session 2+ and ensures at least 2 sessions between re-prompts.
@@ -1449,6 +1451,15 @@ function App() {
 
   // Play handlers using embedded YouTube player
   const onPlayArtist = async (artist: Artist, options?: { preview?: boolean }) => {
+    if (!options?.preview) {
+      playsRef.current++;
+      if (localStorage.getItem('showAlphaSurvey') !== 'false' && playsRef.current >= 2) {
+        showNotiToast('alpha-feedback', {
+          onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
+        });
+        markAlphaSurveyPrompted();
+      }
+    }
     const req = ++playRequest.current;
     const artistLoadingKey = `artist:${artist.id}`;
     setPlayerPreviewMode(options?.preview ?? false);
@@ -1502,6 +1513,15 @@ function App() {
   };
 
   const onPlayGenre = async (genre: Genre, options?: { preview?: boolean }) => {
+    if (!options?.preview) {
+      playsRef.current++;
+      if (localStorage.getItem('showAlphaSurvey') !== 'false' && playsRef.current >= 2) {
+        showNotiToast('alpha-feedback', {
+          onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
+        });
+        markAlphaSurveyPrompted();
+      }
+    }
     const req = ++playRequest.current;
     const genreLoadingKey = `genre:${genre.id}`;
     setPlayerPreviewMode(options?.preview ?? false);
@@ -1995,6 +2015,13 @@ function App() {
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setRestoreGenreCardOnArtistDismiss(false); // Direct node click, don't restore genre card
+    artistNodeClicksRef.current++;
+    if (localStorage.getItem('showAlphaSurvey') !== 'false' && artistNodeClicksRef.current >= 5) {
+      showNotiToast('alpha-feedback', {
+        onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
+      });
+      markAlphaSurveyPrompted();
+    }
     if (graph === 'artists') {
       setSelectedArtist(artist); // For graph focus/dimming
       setArtistInfoToShow(artist); // For drawer display
