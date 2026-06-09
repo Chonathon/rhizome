@@ -473,6 +473,7 @@ function App() {
       if (shouldShowAlphaSurvey()) {
         showNotiToast('alpha-feedback', {
           onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
+          onPermanentDismiss: () => localStorage.setItem('showAlphaSurvey', 'false'),
         });
         markAlphaSurveyPrompted();
       }
@@ -1456,6 +1457,7 @@ function App() {
       if (localStorage.getItem('showAlphaSurvey') !== 'false' && playsRef.current >= 2) {
         showNotiToast('alpha-feedback', {
           onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
+          onPermanentDismiss: () => localStorage.setItem('showAlphaSurvey', 'false'),
         });
         markAlphaSurveyPrompted();
       }
@@ -1518,6 +1520,7 @@ function App() {
       if (localStorage.getItem('showAlphaSurvey') !== 'false' && playsRef.current >= 2) {
         showNotiToast('alpha-feedback', {
           onPrimaryAction: () => localStorage.setItem('showAlphaSurvey', 'false'),
+          onPermanentDismiss: () => localStorage.setItem('showAlphaSurvey', 'false'),
         });
         markAlphaSurveyPrompted();
       }

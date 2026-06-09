@@ -54,6 +54,7 @@ interface NotiToastConfig {
     label: string;
   };
   onPrimaryAction?: () => void;
+  onPermanentDismiss?: () => void;
 }
 
 // add more noti types as needed
@@ -99,7 +100,7 @@ const notificationConfigs: Record<NotificationType, NotiToastConfig> = {
 /** Show a banner-style notification toast */
 export function showNotiToast(
   type: NotificationType,
-  options?: { feedbackFormUrl?: string; onPrimaryAction?: () => void }
+  options?: { feedbackFormUrl?: string; onPrimaryAction?: () => void; onPermanentDismiss?: () => void }
 ) {
   const config = notificationConfigs[type];
 
@@ -111,6 +112,7 @@ export function showNotiToast(
       ...(options?.feedbackFormUrl && { href: options.feedbackFormUrl }),
     },
     ...(options?.onPrimaryAction && { onPrimaryAction: options.onPrimaryAction }),
+    ...(options?.onPermanentDismiss && { onPermanentDismiss: options.onPermanentDismiss }),
   };
 
   return sonnerToast.custom(
@@ -218,6 +220,17 @@ function NotiToast({
             >
               Got it
             </Button>
+            {config.onPermanentDismiss && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  config.onPermanentDismiss!();
+                  sonnerToast.dismiss(id);
+                }}
+              >
+                Don't show again
+              </Button>
+            )}
           </div>
         </>
       )}
