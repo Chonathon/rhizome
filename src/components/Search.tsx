@@ -17,6 +17,11 @@ import { useMediaQuery } from "react-responsive";
 import useSearch from "@/hooks/useSearch";
 import {SEARCH_DEBOUNCE_MS} from "@/constants";
 import { Kbd } from "./ui/kbd"
+import KofiLogo from "@/assets/kofi_symbol.svg"
+
+const KofiIcon = ({ className }: { className?: string }) => (
+  <img src={KofiLogo} alt="" className={className} />
+);
 
 interface SearchProps {
   onGenreSelect: (genre: Genre) => void;
@@ -260,6 +265,13 @@ export function Search({
       keywords: ['theme', 'dark', 'light', 'mode', 'switch', 'toggle', 'dark mode', 'light mode'],
       icon: theme === "dark" ? Sun : Moon,
       onSelect: () => { setTheme(theme === "light" ? "dark" : "light") }
+    },
+    {
+      id: 'support',
+      label: 'Support Rhizome',
+      keywords: ['support', 'donate', 'ko-fi', 'kofi', 'coffee', 'tip', 'contribute'],
+      icon: KofiIcon,
+      onSelect: () => { window.open('https://ko-fi.com/rhizomefyi', '_blank') }
     }
   ], [theme, setTheme]);
 
