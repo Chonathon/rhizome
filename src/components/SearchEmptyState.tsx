@@ -185,12 +185,12 @@ export function SearchEmptyState({ variant, query, onSeedSelect, getArtistImage 
 
   if (variant === "no-results") {
     return (
-      <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+      <div className="flex flex-col items-center gap-1 px-6 py-12 text-center">
         <SeveredEdge animate={animate} color={colors[2]} />
-        <p className="text-sm font-medium text-foreground">
-          Nothing echoes back for <span className="text-muted-foreground">&ldquo;{query}&rdquo;</span>
+        <p className="text-md font-medium text-foreground">
+          Didn't find anything for <span className="text-muted-foreground">&ldquo;{query}&rdquo;</span>
         </p>
-        <p className="max-w-xs text-xs leading-relaxed text-muted-foreground">
+        <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
           Search forgives a typo or two. Try fewer letters, or wander in from a genre instead.
         </p>
       </div>
@@ -209,7 +209,7 @@ export function SearchEmptyState({ variant, query, onSeedSelect, getArtistImage 
         Start anywhere
       </motion.p>
       <motion.p
-        className="text-sm text-muted-foreground"
+        className="text-md text-muted-foreground"
         initial={animate ? { opacity: 0, y: 6 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.7, ease: "easeOut" }}
