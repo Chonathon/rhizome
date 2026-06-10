@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button"
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
+import { CommandDialog, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
 import { BadgeIndicator } from "@/components/BadgeIndicator"
+import { SearchEmptyState } from "@/components/SearchEmptyState"
 import { useRecentSelections, groupByTime } from "@/hooks/useRecentSelections"
 import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon } from "lucide-react"
 import { motion } from "framer-motion";
@@ -402,7 +403,18 @@ export function Search({
                 ))}
               </CommandGroup>
           )}
-          {!searchPending && <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>}
+          {!searchPending && inputValue.trim() !== "" && filteredSearchableItems.length === 0 && (
+              <SearchEmptyState variant="no-results" query={inputValue.trim()} />
+          )}
+          {!inputValue && recentSelections.length === 0 && (
+              <SearchEmptyState
+                  variant="idle"
+                  onSeedSelect={(seed) => {
+                    setInputValue(seed);
+                    inputRef.current?.focus();
+                  }}
+              />
+          )}
           {inputValue.trim() !== "" && filteredSearchableItems.length > 0 && (
               <CommandGroup heading="Search Results">
                 {filteredSearchableItems.map((item, i) => {
