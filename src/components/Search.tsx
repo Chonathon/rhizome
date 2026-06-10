@@ -394,8 +394,8 @@ export function Search({
                 {["w-40", "w-28", "w-36", "w-24", "w-32"].map((width, i) => (
                   <div key={i} className="flex items-center justify-between gap-2 px-2 py-1.5">
                     <div className="flex min-w-0 items-center gap-2">
-                      <Skeleton className="bg-accent size-5 flex-shrink-0 rounded-full" />
-                      <Skeleton className={`bg-accent h-4 ${width}`} />
+                      <Skeleton className="bg-accent size-6 flex-shrink-0 rounded-full" />
+                      <Skeleton className={`bg-accent h-6 ${width}`} />
                     </div>
                     <Skeleton className="bg-accent h-6 w-12 rounded-sm" />
                   </div>
