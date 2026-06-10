@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge"
 import { BadgeIndicator } from "@/components/BadgeIndicator"
 import { SearchEmptyState } from "@/components/SearchEmptyState"
 import { useRecentSelections, groupByTime } from "@/hooks/useRecentSelections"
-import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon } from "lucide-react"
+import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon, Sparkles } from "lucide-react"
+import axios from "axios"
 import { motion } from "framer-motion";
-import { isGenre } from "@/lib/utils"
+import { isGenre, serverUrl } from "@/lib/utils"
 import { Artist, BasicNode, Genre, GraphType } from "@/types";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
@@ -272,8 +273,22 @@ export function Search({
       keywords: ['support', 'donate', 'ko-fi', 'kofi', 'coffee', 'tip', 'contribute'],
       icon: KofiIcon,
       onSelect: () => { window.open('https://ko-fi.com/rhizomefyi', '_blank') }
+    },
+    {
+      id: 'surprise-me',
+      label: 'Surprise Me',
+      keywords: ['surprise', 'random', 'shuffle', 'discover', 'lucky', 'serendipity'],
+      icon: Sparkles,
+      onSelect: async () => {
+        try {
+          const response = await axios.get(`${serverUrl()}/search/random/node`);
+          if (response.data?.id) onItemSelect(response.data);
+        } catch {
+          // Leave the palette open; nothing to select
+        }
+      }
     }
-  ], [theme, setTheme]);
+  ], [theme, setTheme, onItemSelect]);
 
   // Filter actions based on input
   const filteredActions = useMemo(() => {
