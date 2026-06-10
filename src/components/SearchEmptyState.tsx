@@ -1,5 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useMemo } from "react";
+import { useTheme } from "next-themes";
+import { CLUSTER_COLORS_DARK, CLUSTER_COLORS_LIGHT } from "@/lib/colors";
 
 interface SearchEmptyStateProps {
   variant: "idle" | "no-results";
@@ -7,16 +9,26 @@ interface SearchEmptyStateProps {
   onSeedSelect?: (seed: string) => void;
 }
 
-// A miniature rhizome: node positions and edges for the idle-state constellation
+// Hue spread from the graph's cluster palette: red, yellow, teal, blue, purple
+const PALETTE_PICKS = [0, 3, 7, 10, 13];
+
+const usePaletteColors = () => {
+  const { resolvedTheme } = useTheme();
+  const base = resolvedTheme === "light" ? CLUSTER_COLORS_LIGHT : CLUSTER_COLORS_DARK;
+  return PALETTE_PICKS.map((i) => base[i]);
+};
+
+// A miniature rhizome: node positions and edges for the idle-state constellation.
+// `c` indexes into the palette colors above
 const NODES = [
-  { x: 30, y: 78, r: 4, color: "var(--chart-1)" },
-  { x: 74, y: 38, r: 5.5, color: "var(--chart-2)" },
-  { x: 128, y: 64, r: 7, color: "var(--chart-3)", pulse: true },
-  { x: 170, y: 26, r: 4, color: "var(--chart-4)" },
-  { x: 196, y: 84, r: 4.5, color: "var(--chart-5)" },
-  { x: 96, y: 102, r: 3, color: "var(--chart-1)" },
-  { x: 154, y: 104, r: 3.5, color: "var(--chart-4)" },
-  { x: 18, y: 28, r: 3, color: "var(--chart-2)" },
+  { x: 30, y: 78, r: 4, c: 0 },
+  { x: 74, y: 38, r: 5.5, c: 1 },
+  { x: 128, y: 64, r: 7, c: 2, pulse: true },
+  { x: 170, y: 26, r: 4, c: 3 },
+  { x: 196, y: 84, r: 4.5, c: 4 },
+  { x: 96, y: 102, r: 3, c: 0 },
+  { x: 154, y: 104, r: 3.5, c: 3 },
+  { x: 18, y: 28, r: 3, c: 1 },
 ];
 
 const EDGES: [number, number][] = [
@@ -31,7 +43,7 @@ const SEED_POOL = {
 const pickRandom = (pool: string[], count: number) =>
   [...pool].sort(() => Math.random() - 0.5).slice(0, count);
 
-function Constellation({ animate }: { animate: boolean }) {
+function Constellation({ animate, colors }: { animate: boolean; colors: string[] }) {
   return (
     <motion.svg
       viewBox="0 0 214 120"
@@ -61,7 +73,7 @@ function Constellation({ animate }: { animate: boolean }) {
               cx={node.x}
               cy={node.y}
               fill="none"
-              stroke={node.color}
+              stroke={colors[node.c]}
               strokeWidth="1"
               initial={{ r: node.r, opacity: 0 }}
               animate={{ r: node.r + 11, opacity: [0, 0.5, 0] }}
@@ -71,7 +83,7 @@ function Constellation({ animate }: { animate: boolean }) {
           <motion.circle
             cx={node.x}
             cy={node.y}
-            fill={node.color}
+            fill={colors[node.c]}
             initial={animate ? { r: 0, opacity: 0 } : { r: node.r, opacity: 1 }}
             animate={
               animate
@@ -89,7 +101,7 @@ function Constellation({ animate }: { animate: boolean }) {
   );
 }
 
-function SeveredEdge({ animate }: { animate: boolean }) {
+function SeveredEdge({ animate, color }: { animate: boolean; color: string }) {
   return (
     <motion.svg
       viewBox="0 0 120 40"
@@ -101,7 +113,7 @@ function SeveredEdge({ animate }: { animate: boolean }) {
     >
       <line x1="25" y1="20" x2="52" y2="20" stroke="currentColor" strokeWidth="1" strokeDasharray="3 4" opacity="0.5" />
       <line x1="66" y1="24" x2="94" y2="22" stroke="currentColor" strokeWidth="1" strokeDasharray="3 4" opacity="0.35" />
-      <circle cx="18" cy="20" r="5" fill="var(--chart-3)" />
+      <circle cx="18" cy="20" r="5" fill={color} />
       <circle cx="101" cy="22" r="5" fill="none" stroke="currentColor" strokeWidth="1.25" opacity="0.6" />
     </motion.svg>
   );
@@ -110,6 +122,7 @@ function SeveredEdge({ animate }: { animate: boolean }) {
 export function SearchEmptyState({ variant, query, onSeedSelect }: SearchEmptyStateProps) {
   const reducedMotion = useReducedMotion();
   const animate = !reducedMotion;
+  const colors = usePaletteColors();
 
   const seeds = useMemo(
     () => [
@@ -122,12 +135,12 @@ export function SearchEmptyState({ variant, query, onSeedSelect }: SearchEmptySt
   if (variant === "no-results") {
     return (
       <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-        <SeveredEdge animate={animate} />
+        <SeveredEdge animate={animate} color={colors[2]} />
         <p className="text-sm font-medium text-foreground">
           Nothing echoes back for <span className="text-muted-foreground">&ldquo;{query}&rdquo;</span>
         </p>
         <p className="max-w-xs text-xs leading-relaxed text-muted-foreground">
-          Search forgives a typo or two — try fewer letters, or wander in from a genre instead.
+          Search forgives a typo or two. Try fewer letters, or wander in from a genre instead.
         </p>
       </div>
     );
@@ -135,17 +148,9 @@ export function SearchEmptyState({ variant, query, onSeedSelect }: SearchEmptySt
 
   return (
     <div className="flex flex-col items-center gap-1 px-6 py-10 text-center">
-      <Constellation animate={animate} />
-      <motion.span
-        className="mt-2 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground"
-        initial={animate ? { opacity: 0 } : false}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, delay: 0.5 }}
-      >
-        Rhizome search
-      </motion.span>
+      <Constellation animate={animate} colors={colors} />
       <motion.p
-        className="text-base font-medium tracking-tight text-foreground"
+        className="text-xl font-medium tracking-tight text-foreground"
         initial={animate ? { opacity: 0, y: 6 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.6, ease: "easeOut" }}
@@ -153,12 +158,12 @@ export function SearchEmptyState({ variant, query, onSeedSelect }: SearchEmptySt
         Start anywhere
       </motion.p>
       <motion.p
-        className="text-xs text-muted-foreground"
+        className="text-sm text-muted-foreground"
         initial={animate ? { opacity: 0, y: 6 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.7, ease: "easeOut" }}
       >
-        Type an artist or genre — the map unfolds from there.
+        Type an artist or genre and the map unfolds from there.
       </motion.p>
       {onSeedSelect && (
         <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
@@ -174,7 +179,7 @@ export function SearchEmptyState({ variant, query, onSeedSelect }: SearchEmptySt
             >
               <span
                 className="size-1.5 rounded-full"
-                style={{ backgroundColor: `var(--chart-${(i % 5) + 1})` }}
+                style={{ backgroundColor: colors[i % colors.length] }}
               />
               {seed}
             </motion.button>
