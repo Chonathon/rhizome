@@ -2,6 +2,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { CLUSTER_COLORS_DARK, CLUSTER_COLORS_LIGHT } from "@/lib/colors";
+import ArtistBadge from "@/components/ArtistBadge";
+import GenreBadge from "@/components/GenreBadge";
 
 interface SearchEmptyStateProps {
   variant: "idle" | "no-results";
@@ -126,8 +128,8 @@ export function SearchEmptyState({ variant, query, onSeedSelect }: SearchEmptySt
 
   const seeds = useMemo(
     () => [
-      ...pickRandom(SEED_POOL.genre, 2),
-      ...pickRandom(SEED_POOL.artist, 2),
+      ...pickRandom(SEED_POOL.genre, 2).map((label) => ({ label, type: "genre" as const })),
+      ...pickRandom(SEED_POOL.artist, 2).map((label) => ({ label, type: "artist" as const })),
     ],
     []
   );
@@ -168,21 +170,26 @@ export function SearchEmptyState({ variant, query, onSeedSelect }: SearchEmptySt
       {onSeedSelect && (
         <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
           {seeds.map((seed, i) => (
-            <motion.button
-              key={seed}
-              type="button"
-              onClick={() => onSeedSelect(seed)}
-              className="flex items-center gap-1.5 rounded-full border bg-background/60 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground/25 hover:bg-accent hover:text-foreground"
+            <motion.div
+              key={seed.label}
               initial={animate ? { opacity: 0, y: 6 } : false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: 0.8 + i * 0.07, ease: "easeOut" }}
             >
-              <span
-                className="size-1.5 rounded-full"
-                style={{ backgroundColor: colors[i % colors.length] }}
-              />
-              {seed}
-            </motion.button>
+              {seed.type === "genre" ? (
+                <GenreBadge
+                  name={seed.label}
+                  onClick={() => onSeedSelect(seed.label)}
+                  genreColor={colors[i % colors.length]}
+                />
+              ) : (
+                <ArtistBadge
+                  name={seed.label}
+                  onClick={() => onSeedSelect(seed.label)}
+                  genreColor={colors[i % colors.length]}
+                />
+              )}
+            </motion.div>
           ))}
         </div>
       )}
