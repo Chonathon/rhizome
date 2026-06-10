@@ -147,20 +147,65 @@ function Constellation({ animate, colors }: { animate: boolean; colors: string[]
   );
 }
 
+// Spark ticks radiating from the break point
+const SPARKS: [number, number, number, number][] = [
+  [56, 16, 52, 9],
+  [61, 14, 62, 7],
+  [66, 18, 72, 14],
+];
+
 function SeveredEdge({ animate, color }: { animate: boolean; color: string }) {
   return (
     <motion.svg
-      viewBox="0 0 120 40"
-      className="w-28 text-muted-foreground"
+      viewBox="0 0 120 44"
+      className="w-32 text-muted-foreground"
       aria-hidden="true"
       initial={animate ? { opacity: 0, y: 4 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
     >
-      <line x1="25" y1="20" x2="52" y2="20" stroke="currentColor" strokeWidth="1" strokeDasharray="3 4" opacity="0.5" />
-      <line x1="66" y1="24" x2="94" y2="22" stroke="currentColor" strokeWidth="1" strokeDasharray="3 4" opacity="0.35" />
-      <circle cx="18" cy="20" r="5" fill={color} />
-      <circle cx="101" cy="22" r="5" fill="none" stroke="currentColor" strokeWidth="1.25" opacity="0.6" />
+      {/* Two stubs recoiling from the break: ends curl away from each other */}
+      <motion.path
+        d="M 21 24 C 34 24 44 23 52 17"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        strokeDasharray="3 3"
+        opacity="0.55"
+        initial={animate ? { pathLength: 0 } : false}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+      />
+      <motion.path
+        d="M 99 26 C 87 27 77 30 69 36"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        strokeDasharray="3 3"
+        opacity="0.4"
+        initial={animate ? { pathLength: 0 } : false}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
+      />
+      {/* Snap burst at the break */}
+      <g stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        {SPARKS.map(([x1, y1, x2, y2], i) => (
+          <motion.line
+            key={`s-${i}`}
+            x1={x1}
+            y1={y1}
+            x2={x2}
+            y2={y2}
+            initial={animate ? { opacity: 0, scale: 0.4 } : false}
+            animate={{ opacity: [0, 1, 0.7], scale: 1 }}
+            transition={{ duration: 0.35, delay: 0.5 + i * 0.06, ease: "easeOut" }}
+            style={{ transformOrigin: "60px 17px" }}
+          />
+        ))}
+      </g>
+      <circle cx="14" cy="24" r="5" fill={color} />
+      {/* The far node hangs hollow, knocked slightly off the line */}
+      <circle cx="106" cy="27" r="5" fill="none" stroke="currentColor" strokeWidth="1.25" opacity="0.6" />
     </motion.svg>
   );
 }
