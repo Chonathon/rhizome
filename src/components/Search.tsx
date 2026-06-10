@@ -282,17 +282,6 @@ export function Search({
   // Define searchable actions
   const searchableActions = useMemo<SearchAction[]>(() => [
     {
-      id: 'view-recents',
-      label: 'View Recents',
-      keywords: ['recents', 'recent', 'history', 'view all'],
-      icon: History,
-      keepOpen: true,
-      onSelect: () => {
-        setInputValue("");
-        setView('recents');
-      }
-    },
-    {
       id: 'feedback',
       label: 'Give Feedback',
       keywords: ['feedback', 'give', 'report', 'suggest'],
@@ -332,6 +321,17 @@ export function Search({
         } catch {
           // Leave the palette open; nothing to select
         }
+      }
+    },
+    {
+      id: 'view-recents',
+      label: 'View Recents',
+      keywords: ['recents', 'recent', 'history', 'view all'],
+      icon: History,
+      keepOpen: true,
+      onSelect: () => {
+        setInputValue("");
+        setView('recents');
       }
     },
     {
