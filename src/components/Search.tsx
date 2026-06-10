@@ -9,7 +9,7 @@ import { isGenre } from "@/lib/utils"
 import { Artist, BasicNode, Genre, GraphType } from "@/types";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
-import { Loading } from "@/components/Loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useMediaQuery } from "react-responsive";
@@ -66,6 +66,9 @@ export function Search({
   const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
   const { searchResults, searchLoading, searchError } = useSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
+  // True from first keystroke until results land: covers the debounce window
+  // (inputValue ahead of query) and the in-flight request
+  const searchPending = inputValue.trim() !== "" && (searchLoading || inputValue !== query);
 
   // Debouncing
   useEffect(() => {
@@ -386,8 +389,20 @@ export function Search({
             ref={inputRef}
         />
         <CommandList className="max-h-none flex-1 overflow-y-auto">
-          {searchLoading && <Loading />}
-          {!searchLoading && inputValue === query && <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>}
+          {searchPending && filteredSearchableItems.length === 0 && (
+              <CommandGroup heading="Search Results">
+                {["w-40", "w-28", "w-36", "w-24", "w-32"].map((width, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2 px-2 py-1.5">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Skeleton className="bg-accent size-5 flex-shrink-0 rounded-full" />
+                      <Skeleton className={`bg-accent h-4 ${width}`} />
+                    </div>
+                    <Skeleton className="bg-accent h-6 w-12 rounded-sm" />
+                  </div>
+                ))}
+              </CommandGroup>
+          )}
+          {!searchPending && <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>}
           {inputValue.trim() !== "" && filteredSearchableItems.length > 0 && (
               <CommandGroup heading="Search Results">
                 {filteredSearchableItems.map((item, i) => {
