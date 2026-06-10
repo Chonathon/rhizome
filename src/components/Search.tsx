@@ -405,6 +405,7 @@ export function Search({
           open={open}
           onOpenChange={setOpen}
           shouldFilter={false}
+          loop
           value={selectedValue}
           onValueChange={setSelectedValue}
           className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full"
