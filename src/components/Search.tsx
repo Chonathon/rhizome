@@ -4,10 +4,11 @@ import { Badge } from "@/components/ui/badge"
 import { BadgeIndicator } from "@/components/BadgeIndicator"
 import { SearchEmptyState } from "@/components/SearchEmptyState"
 import { useRecentSelections, groupByTime } from "@/hooks/useRecentSelections"
-import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon, Sparkles } from "lucide-react"
+import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon, Sparkles, Share2 } from "lucide-react"
 import axios from "axios"
 import { motion } from "framer-motion";
 import { isGenre, serverUrl } from "@/lib/utils"
+import { toast } from "sonner"
 import { Artist, BasicNode, Genre, GraphType } from "@/types";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
@@ -273,6 +274,20 @@ export function Search({
       keywords: ['support', 'donate', 'ko-fi', 'kofi', 'coffee', 'tip', 'contribute'],
       icon: KofiIcon,
       onSelect: () => { window.open('https://ko-fi.com/rhizomefyi', '_blank') }
+    },
+    {
+      id: 'share',
+      label: 'Share Rhizome',
+      keywords: ['share', 'copy', 'link', 'url', 'clipboard'],
+      icon: Share2,
+      onSelect: async () => {
+        try {
+          await navigator.clipboard.writeText("https://rhizome.fyi");
+          toast.success("Link copied to clipboard");
+        } catch {
+          toast.error("Failed to copy link");
+        }
+      }
     },
     {
       id: 'surprise-me',

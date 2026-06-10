@@ -230,7 +230,7 @@ export function SearchEmptyState({ variant, query, onSeedSelect, getArtistImage 
 
   if (variant === "no-results") {
     return (
-      <div className="flex flex-col items-center gap-1 px-6 py-12 text-center">
+      <div className="flex flex-col items-center gap-1 px-6 py-8 text-center">
         <SeveredEdge animate={animate} color={colors[2]} />
         <p className="text-md font-medium text-foreground">
           Didn't find anything for <span className="text-muted-foreground">&ldquo;{query}&rdquo;</span>
