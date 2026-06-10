@@ -40,6 +40,15 @@ const EDGES: [number, number][] = [
   [0, 1], [1, 2], [2, 3], [2, 4], [1, 5], [2, 6], [7, 0], [3, 4],
 ];
 
+// Quadratic bezier between two nodes, bowed perpendicular to the line.
+// Alternating direction and varied amounts keep the curves looking hand-drawn
+const edgePath = (a: { x: number; y: number }, b: { x: number; y: number }, i: number) => {
+  const bow = (0.12 + (i % 3) * 0.05) * (i % 2 === 0 ? 1 : -1);
+  const cx = (a.x + b.x) / 2 - (b.y - a.y) * bow;
+  const cy = (a.y + b.y) / 2 + (b.x - a.x) * bow;
+  return `M ${a.x} ${a.y} Q ${cx} ${cy} ${b.x} ${b.y}`;
+};
+
 const SEED_POOL = {
   genre: ["shoegaze", "krautrock", "dub techno", "ambient", "post-punk", "trip hop", "zeuhl", "bossa nova"],
   artist: ["Radiohead", "Aphex Twin", "Alice Coltrane", "Boards of Canada", "Fela Kuti", "Cocteau Twins", "Stereolab", "MF DOOM"],
@@ -92,12 +101,10 @@ function Constellation({ animate, colors }: { animate: boolean; colors: string[]
       transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
     >
       {EDGES.map(([a, b], i) => (
-        <motion.line
+        <motion.path
           key={`e-${i}`}
-          x1={NODES[a].x}
-          y1={NODES[a].y}
-          x2={NODES[b].x}
-          y2={NODES[b].y}
+          d={edgePath(NODES[a], NODES[b], i)}
+          fill="none"
           stroke="currentColor"
           strokeWidth="1"
           initial={animate ? { pathLength: 0, opacity: 0 } : false}
