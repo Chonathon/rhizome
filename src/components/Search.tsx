@@ -413,6 +413,10 @@ export function Search({
                     setInputValue(seed);
                     inputRef.current?.focus();
                   }}
+                  getArtistImage={(name) => {
+                    const artist = currentArtists.find((a) => a.name === name);
+                    return typeof artist?.image === "string" && artist.image.trim() ? artist.image : undefined;
+                  }}
               />
           )}
           {inputValue.trim() !== "" && filteredSearchableItems.length > 0 && (

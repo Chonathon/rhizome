@@ -1,7 +1,9 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
+import axios from "axios";
 import { CLUSTER_COLORS_DARK, CLUSTER_COLORS_LIGHT } from "@/lib/colors";
+import { serverUrl } from "@/lib/utils";
 import ArtistBadge from "@/components/ArtistBadge";
 import GenreBadge from "@/components/GenreBadge";
 
@@ -9,6 +11,7 @@ interface SearchEmptyStateProps {
   variant: "idle" | "no-results";
   query?: string;
   onSeedSelect?: (seed: string) => void;
+  getArtistImage?: (name: string) => string | undefined;
 }
 
 // Hue spread from the graph's cluster palette: red, yellow, teal, blue, purple
@@ -44,6 +47,40 @@ const SEED_POOL = {
 
 const pickRandom = (pool: string[], count: number) =>
   [...pool].sort(() => Math.random() - 0.5).slice(0, count);
+
+// Resolve images for artist seeds via the search endpoint, keyed by seed name.
+// Local graph lookups rarely cover the random seeds, so this fills the gap
+const useSeedImages = (names: string[]) => {
+  const [images, setImages] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!names.length) return;
+    const controller = new AbortController();
+    const url = serverUrl();
+    names.forEach(async (name) => {
+      try {
+        const response = await axios.get(`${url}/search/${encodeURIComponent(name)}`, {
+          signal: controller.signal,
+        });
+        const match = (response.data as { name?: string; image?: string; artistCount?: number }[]).find(
+          (item) =>
+            !("artistCount" in item) &&
+            item.name?.toLowerCase() === name.toLowerCase() &&
+            typeof item.image === "string" &&
+            item.image.trim() !== ""
+        );
+        if (match?.image) {
+          setImages((prev) => ({ ...prev, [name]: match.image as string }));
+        }
+      } catch {
+        // Chips fall back to the color dot; a failed image lookup isn't worth surfacing
+      }
+    });
+    return () => controller.abort();
+  }, [names]);
+
+  return images;
+};
 
 function Constellation({ animate, colors }: { animate: boolean; colors: string[] }) {
   return (
@@ -121,7 +158,7 @@ function SeveredEdge({ animate, color }: { animate: boolean; color: string }) {
   );
 }
 
-export function SearchEmptyState({ variant, query, onSeedSelect }: SearchEmptyStateProps) {
+export function SearchEmptyState({ variant, query, onSeedSelect, getArtistImage }: SearchEmptyStateProps) {
   const reducedMotion = useReducedMotion();
   const animate = !reducedMotion;
   const colors = usePaletteColors();
@@ -133,6 +170,11 @@ export function SearchEmptyState({ variant, query, onSeedSelect }: SearchEmptySt
     ],
     []
   );
+  const artistSeedNames = useMemo(
+    () => (variant === "idle" ? seeds.filter((s) => s.type === "artist").map((s) => s.label) : []),
+    [seeds, variant]
+  );
+  const seedImages = useSeedImages(artistSeedNames);
 
   if (variant === "no-results") {
     return (
@@ -187,6 +229,7 @@ export function SearchEmptyState({ variant, query, onSeedSelect }: SearchEmptySt
                   name={seed.label}
                   onClick={() => onSeedSelect(seed.label)}
                   genreColor={colors[i % colors.length]}
+                  imageUrl={getArtistImage?.(seed.label) ?? seedImages[seed.label]}
                 />
               )}
             </motion.div>
