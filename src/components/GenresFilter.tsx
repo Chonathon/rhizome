@@ -1,11 +1,12 @@
 // GenresFilter: flat list with section headers per parent genre.
 // Each parent genre = labelled section + selectable item + children below.
-// AND logic is flat: every selected ID must match (no unit grouping needed).
+// Fully controlled: selection and operator live in the parent; toggles just
+// report the next value via callbacks.
 import { Button } from "@/components/ui/button";
 import { Check, ChevronDown, X } from "lucide-react";
-import { Genre, GenreClusterMode, GraphType, InitialGenreFilter } from "@/types";
+import { Genre, GenreClusterMode, GraphType } from "@/types";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Command,
   CommandEmpty,
@@ -24,19 +25,19 @@ export default function GenresFilter({
   genreClusterModes,
   graphType,
   onGenreSelectionChange,
-  initialSelection,
   selectedGenreIds = [],
   genreColorMap,
+  operator = 'or',
   onOperatorChange,
 }: {
   genres?: Genre[];
   genreClusterModes: GenreClusterMode[];
   graphType: GraphType;
   onGenreSelectionChange: (selectedIDs: string[]) => void;
-  onOperatorChange?: (operator: 'or' | 'and', andUnits: string[][]) => void;
-  initialSelection: InitialGenreFilter;
   selectedGenreIds?: string[];
   genreColorMap?: Map<string, string>;
+  operator?: 'or' | 'and';
+  onOperatorChange?: (operator: 'or' | 'and') => void;
 }) {
   const topLevelGenres = useMemo(() => {
     const viaUtil = genres.filter((g) => isRootGenre(g, genreClusterModes));
@@ -60,60 +61,44 @@ export default function GenresFilter({
     return m;
   }, [genres]);
 
-  // Flat selection: a Set of genre IDs (parents and children mixed)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
-    const ids = new Set<string>();
-    if (initialSelection.isRoot && initialSelection.genre) {
-      ids.add(initialSelection.genre.id);
-    }
-    for (const childSet of Object.values(initialSelection.parents)) {
-      for (const childId of childSet) ids.add(childId);
-    }
-    return ids;
-  });
+  // Flat selection: a Set view of the controlled selectedGenreIds prop
+  // (parents and children mixed)
+  const selectedIds = useMemo(() => new Set(selectedGenreIds), [selectedGenreIds]);
 
-  const [operator, setOperator] = useState<'or' | 'and'>('or');
   const [query, setQuery] = useState("");
 
   const listRef = useRef<HTMLDivElement | null>(null);
-  const isSyncingFromExternal = useRef(false);
-  const lastAppliedState = useRef<{ ids: string[]; parentSignature: string }>({
-    ids: [],
-    parentSignature: "",
-  });
+
+  const emitSelection = (next: Set<string>) => {
+    onGenreSelectionChange(Array.from(next));
+  };
 
   const toggleId = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    emitSelection(next);
   };
 
   const selectAllSection = (parent: Genre) => {
     const children = parentChildMap.get(parent.id) || [];
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.add(parent.id);
-      for (const child of children) next.add(child.id);
-      return next;
-    });
+    const next = new Set(selectedIds);
+    next.add(parent.id);
+    for (const child of children) next.add(child.id);
+    emitSelection(next);
   };
 
   const clearSection = (parent: Genre) => {
     const children = parentChildMap.get(parent.id) || [];
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(parent.id);
-      for (const child of children) next.delete(child.id);
-      return next;
-    });
+    const next = new Set(selectedIds);
+    next.delete(parent.id);
+    for (const child of children) next.delete(child.id);
+    emitSelection(next);
   };
 
   const clearAll = () => {
-    setSelectedIds(new Set());
-    setOperator('or');
+    onGenreSelectionChange([]);
+    onOperatorChange?.('or');
   };
 
   // 'all' | 'some' | 'none' — for the section header's all/clear button label
@@ -127,39 +112,6 @@ export default function GenresFilter({
   };
 
   const totalSelected = selectedIds.size;
-
-  // Sync from external selectedGenreIds (prevents callback loops)
-  useEffect(() => {
-    const normalized = Array.from(new Set((selectedGenreIds ?? []).filter(Boolean)));
-    const parentSignature = topLevelGenres.map((g) => g.id).join("|");
-    const prev = lastAppliedState.current;
-    const prevSet = new Set(prev.ids);
-    const sameSelection =
-      normalized.length === prev.ids.length &&
-      normalized.every((id) => prevSet.has(id));
-    const sameParents = prev.parentSignature === parentSignature;
-    if (sameSelection && sameParents) return;
-
-    lastAppliedState.current = { ids: normalized, parentSignature };
-    isSyncingFromExternal.current = true;
-    setSelectedIds(new Set(normalized));
-    setTimeout(() => { isSyncingFromExternal.current = false; }, 0);
-  }, [selectedGenreIds, topLevelGenres]);
-
-  // Notify parent of selection changes
-  useEffect(() => {
-    if (isSyncingFromExternal.current) return;
-    onGenreSelectionChange(Array.from(selectedIds));
-  }, [selectedIds]);
-
-  // Notify parent of operator/selection for AND filtering.
-  // Units are [[id], [id], ...] so App.tsx's every(unit => unit.some(...)) reduces to every(id => ...).
-  useEffect(() => {
-    const units = operator === 'and'
-      ? Array.from(selectedIds).map((id) => [id])
-      : [];
-    onOperatorChange?.(operator, units);
-  }, [operator, selectedIds]);
 
   // Selected genres for the summary section at the top of the list
   const selectedList = useMemo(
@@ -225,7 +177,7 @@ export default function GenresFilter({
               size="sm"
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={(e) => { e.stopPropagation(); setOperator('and'); }}
+              onClick={(e) => { e.stopPropagation(); onOperatorChange?.('and'); }}
               className={cn("-mx-1.5", operator === 'or' ? "text-foreground underline" : "hidden")}
             >
               any
@@ -235,7 +187,7 @@ export default function GenresFilter({
               size="sm"
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={(e) => { e.stopPropagation(); setOperator('or'); }}
+              onClick={(e) => { e.stopPropagation(); onOperatorChange?.('or'); }}
               className={cn("-mx-1.5", operator === 'and' ? "text-foreground underline" : "hidden")}
             >
               all

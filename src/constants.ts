@@ -4,7 +4,6 @@ import {
     Genre,
     GenreClusterMode,
     GenreNodeLimitType,
-    InitialGenreFilter,
     ListenerTier,
     PlayerType,
     Preferences,
@@ -70,12 +69,6 @@ export const ALPHA_SURVEY_TIME_MS = 5 * 60 * 1000;
 export const ALPHA_SURVEY_ADDED_ARTISTS = 3;
 
 export const GENRE_FILTER_CLUSTER_MODE: GenreClusterMode[] = ['subgenre'];
-export const EMPTY_GENRE_FILTER_OBJECT: InitialGenreFilter = {
-    genre: undefined,
-    isRoot: true,
-    parents: {},
-};
-
 export const UNREGISTERED_USER_ID = 'unregistered';
 
 export const MAX_YTID_QUEUE_SIZE = 200;
