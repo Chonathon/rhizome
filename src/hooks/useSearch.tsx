@@ -10,23 +10,34 @@ const useSearch = (query?: string) => {
     const [searchError, setSearchError] = useState<AxiosError>();
     const [searchLoading, setSearchLoading] = useState(false);
 
-    const search = async () => {
-        if (query) {
+    useEffect(() => {
+        const trimmed = query?.trim();
+        if (!trimmed) {
+            setSearchResults([]);
+            setSearchError(undefined);
+            setSearchLoading(false);
+            return;
+        }
+        const controller = new AbortController();
+        const search = async () => {
             setSearchLoading(true);
             try {
-                const response = await axios.get(`${url}/search/${query}`);
+                const response = await axios.get(`${url}/search/${encodeURIComponent(trimmed)}`, {
+                    signal: controller.signal,
+                });
                 setSearchResults(response.data);
+                setSearchError(undefined);
+                setSearchLoading(false);
             } catch (err) {
+                if (axios.isCancel(err)) return;
                 if (err instanceof AxiosError) {
                     setSearchError(err);
                 }
+                setSearchLoading(false);
             }
-            setSearchLoading(false);
         }
-    }
-
-    useEffect(() => {
         search();
+        return () => controller.abort();
     }, [query]);
 
     return { searchResults, searchLoading, searchError };

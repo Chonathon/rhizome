@@ -115,25 +115,24 @@ export function Search({
   }, []);
 
 
-  // Filter the searchable items. This is problematic with bands of the same name, for now it just uses the first one in the results
+  // Local items (graph artists + genres) are substring-filtered; server results are already
+  // matched by the backend (prefix/fuzzy), so they pass through as-is. Duplicate names within
+  // a type collapse to the first occurrence — bands sharing a name aren't distinguishable here yet
   const filteredSearchableItems = useMemo(() => {
+    const search = inputValue.trim().toLowerCase();
+    const localMatches = search
+      ? [...currentArtists, ...genres].filter((item) => item.name.toLowerCase().includes(search))
+      : [];
+    const seenIds = new Set<string>();
     const seenNames = new Set<string>();
-    return [...currentArtists, ...searchResults, ...genres].filter((item) => {
-      if (!item.name.toLowerCase().includes(inputValue.toLowerCase())) return false;
-      if (seenNames.has(item.name)) return false;
-      seenNames.add(item.name);
+    return [...localMatches, ...searchResults].filter((item) => {
+      const nameKey = `${isGenre(item) ? 'genre' : 'artist'}:${item.name.toLowerCase()}`;
+      if (seenIds.has(item.id) || seenNames.has(nameKey)) return false;
+      seenIds.add(item.id);
+      seenNames.add(nameKey);
       return true;
-    }
-    )},
-      [genres, searchResults, currentArtists, inputValue]
-  );
-
-  // Check if filtered items include any actual search results
-  const hasSearchResults = useMemo(() => {
-    if (!query || searchResults.length === 0) return false;
-    const searchResultIds = new Set(searchResults.map(r => r.id));
-    return filteredSearchableItems.some(item => searchResultIds.has(item.id));
-  }, [query, searchResults, filteredSearchableItems]);
+    });
+  }, [genres, searchResults, currentArtists, inputValue]);
 
   const isArtistWithDetail = (node: BasicNode): node is Artist => {
     return 'tags' in node && Array.isArray((node as Artist).tags);
@@ -389,7 +388,7 @@ export function Search({
         <CommandList className="max-h-none flex-1 overflow-y-auto">
           {searchLoading && <Loading />}
           {!searchLoading && inputValue === query && <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>}
-          {hasSearchResults && (
+          {inputValue.trim() !== "" && filteredSearchableItems.length > 0 && (
               <CommandGroup heading="Search Results">
                 {filteredSearchableItems.map((item, i) => {
                   const meta = getIndicatorMeta(item);
