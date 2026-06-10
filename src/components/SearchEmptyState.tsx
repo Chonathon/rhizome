@@ -215,16 +215,16 @@ export function SearchEmptyState({ variant, query, onSeedSelect, getArtistImage 
   const animate = !reducedMotion;
   const colors = usePaletteColors();
 
-  const seeds = useMemo(
-    () => [
-      ...pickRandom(SEED_POOL.genre, 2).map((label) => ({ label, type: "genre" as const })),
-      ...pickRandom(SEED_POOL.artist, 2).map((label) => ({ label, type: "artist" as const })),
-    ],
-    []
-  );
+  // Two marquee rows of four, genres and artists interleaved
+  const seedRows = useMemo(() => {
+    const genreSeeds = pickRandom(SEED_POOL.genre, 4).map((label) => ({ label, type: "genre" as const }));
+    const artistSeeds = pickRandom(SEED_POOL.artist, 4).map((label) => ({ label, type: "artist" as const }));
+    const interleaved = genreSeeds.flatMap((seed, i) => [seed, artistSeeds[i]]);
+    return [interleaved.slice(0, 4), interleaved.slice(4)];
+  }, []);
   const artistSeedNames = useMemo(
-    () => (variant === "idle" ? seeds.filter((s) => s.type === "artist").map((s) => s.label) : []),
-    [seeds, variant]
+    () => (variant === "idle" ? seedRows.flat().filter((s) => s.type === "artist").map((s) => s.label) : []),
+    [seedRows, variant]
   );
   const seedImages = useSeedImages(artistSeedNames);
 
@@ -262,31 +262,48 @@ export function SearchEmptyState({ variant, query, onSeedSelect, getArtistImage 
         Type an artist or genre and the map unfolds from there.
       </motion.p>
       {onSeedSelect && (
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
-          {seeds.map((seed, i) => (
-            <motion.div
-              key={seed.label}
-              initial={animate ? { opacity: 0, y: 6 } : false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.8 + i * 0.07, ease: "easeOut" }}
-            >
-              {seed.type === "genre" ? (
-                <GenreBadge
-                  name={seed.label}
-                  onClick={() => onSeedSelect(seed.label)}
-                  genreColor={colors[i % colors.length]}
-                />
-              ) : (
-                <ArtistBadge
-                  name={seed.label}
-                  onClick={() => onSeedSelect(seed.label)}
-                  genreColor={colors[i % colors.length]}
-                  imageUrl={getArtistImage?.(seed.label) ?? seedImages[seed.label]}
-                />
-              )}
-            </motion.div>
+        <motion.div
+          className="mt-4 w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]"
+          initial={animate ? { opacity: 0, y: 6 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.8, ease: "easeOut" }}
+        >
+          {seedRows.map((row, rowIdx) => (
+            <div key={rowIdx} className="group/marquee overflow-hidden py-1">
+              <div
+                className={
+                  animate
+                    ? "flex w-max gap-1.5 animate-[search-marquee_40s_linear_infinite] group-hover/marquee:[animation-play-state:paused]"
+                    : "flex flex-wrap justify-center gap-1.5"
+                }
+                // Slightly different speeds keep the rows from moving in lockstep
+                style={animate ? { animationDuration: rowIdx === 0 ? "45s" : "60s" } : undefined}
+              >
+                {(animate ? [...row, ...row] : row).map((seed, i) => {
+                  const colorIdx = (rowIdx * 4 + (i % row.length)) % colors.length;
+                  return (
+                    <div key={`${seed.label}-${i}`}>
+                      {seed.type === "genre" ? (
+                        <GenreBadge
+                          name={seed.label}
+                          onClick={() => onSeedSelect(seed.label)}
+                          genreColor={colors[colorIdx]}
+                        />
+                      ) : (
+                        <ArtistBadge
+                          name={seed.label}
+                          onClick={() => onSeedSelect(seed.label)}
+                          genreColor={colors[colorIdx]}
+                          imageUrl={getArtistImage?.(seed.label) ?? seedImages[seed.label]}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );
