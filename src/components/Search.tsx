@@ -262,13 +262,6 @@ export function Search({
       onSelect: () => { window.dispatchEvent(new Event('feedback:open')) }
     },
     {
-      id: 'toggle-theme',
-      label: theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
-      keywords: ['theme', 'dark', 'light', 'mode', 'switch', 'toggle', 'dark mode', 'light mode'],
-      icon: theme === "dark" ? Sun : Moon,
-      onSelect: () => { setTheme(theme === "light" ? "dark" : "light") }
-    },
-    {
       id: 'support',
       label: 'Support Rhizome',
       keywords: ['support', 'donate', 'ko-fi', 'kofi', 'coffee', 'tip', 'contribute'],
@@ -302,6 +295,13 @@ export function Search({
           // Leave the palette open; nothing to select
         }
       }
+    },
+    {
+      id: 'toggle-theme',
+      label: theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
+      keywords: ['theme', 'dark', 'light', 'mode', 'switch', 'toggle', 'dark mode', 'light mode'],
+      icon: theme === "dark" ? Sun : Moon,
+      onSelect: () => { setTheme(theme === "light" ? "dark" : "light") }
     }
   ], [theme, setTheme, onItemSelect]);
 
@@ -561,7 +561,7 @@ export function Search({
               return (
                 <CommandItem
                   key={action.id}
-                  onSelect={action.onSelect}
+                  onSelect={() => { setOpen(false); action.onSelect(); }}
                 >
                   <Icon className="mr-2 size-4" />
                   {action.label}
