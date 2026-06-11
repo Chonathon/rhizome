@@ -50,8 +50,8 @@ const edgePath = (a: { x: number; y: number }, b: { x: number; y: number }, i: n
 };
 
 const SEED_POOL = {
-  genre: ["shoegaze", "krautrock", "dub techno", "ambient", "post-punk", "trip hop", "zeuhl", "bossa nova"],
-  artist: ["Radiohead", "Aphex Twin", "Alice Coltrane", "Boards of Canada", "Fela Kuti", "Cocteau Twins", "Stereolab", "MF DOOM"],
+  genre: ["shoegaze", "krautrock", "dub techno", "ambient", "post-punk", "trip hop", "zeuhl", "bossa nova", "drone", "afrobeat"],
+  artist: ["Radiohead", "Aphex Twin", "Alice Coltrane", "Boards of Canada", "Fela Kuti", "Cocteau Twins", "Stereolab", "MF DOOM", "Portishead", "Can"],
 };
 
 const pickRandom = (pool: string[], count: number) =>
@@ -97,8 +97,8 @@ function Constellation({ animate, colors }: { animate: boolean; colors: string[]
       viewBox="0 0 214 120"
       className="w-52 text-muted-foreground"
       aria-hidden="true"
-      animate={animate ? { y: [0, -4, 0] } : undefined}
-      transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+      animate={undefined}
+      transition={undefined}
     >
       {EDGES.map(([a, b], i) => (
         <motion.path
@@ -215,12 +215,15 @@ export function SearchEmptyState({ variant, query, onSeedSelect, getArtistImage 
   const animate = !reducedMotion;
   const colors = usePaletteColors();
 
-  // Two marquee rows of four, genres and artists interleaved
+  // Two marquee rows using the full pools (shuffled), genres and artists
+  // interleaved. Each row needs to be wider than the dialog so the duplicated
+  // loop copy is never visible alongside the original
   const seedRows = useMemo(() => {
-    const genreSeeds = pickRandom(SEED_POOL.genre, 4).map((label) => ({ label, type: "genre" as const }));
-    const artistSeeds = pickRandom(SEED_POOL.artist, 4).map((label) => ({ label, type: "artist" as const }));
+    const genreSeeds = pickRandom(SEED_POOL.genre, SEED_POOL.genre.length).map((label) => ({ label, type: "genre" as const }));
+    const artistSeeds = pickRandom(SEED_POOL.artist, SEED_POOL.artist.length).map((label) => ({ label, type: "artist" as const }));
     const interleaved = genreSeeds.flatMap((seed, i) => [seed, artistSeeds[i]]);
-    return [interleaved.slice(0, 4), interleaved.slice(4)];
+    const half = Math.ceil(interleaved.length / 2);
+    return [interleaved.slice(0, half), interleaved.slice(half)];
   }, []);
   const artistSeedNames = useMemo(
     () => (variant === "idle" ? seedRows.flat().filter((s) => s.type === "artist").map((s) => s.label) : []),
@@ -230,7 +233,7 @@ export function SearchEmptyState({ variant, query, onSeedSelect, getArtistImage 
 
   if (variant === "no-results") {
     return (
-      <div className="flex flex-col items-center gap-1 px-6 py-8 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-1 px-6 py-40 text-center">
         <SeveredEdge animate={animate} color={colors[2]} />
         <p className="text-md font-medium text-foreground">
           Didn't find anything for <span className="text-muted-foreground">&ldquo;{query}&rdquo;</span>
@@ -280,7 +283,7 @@ export function SearchEmptyState({ variant, query, onSeedSelect, getArtistImage 
                 style={animate ? { animationDuration: rowIdx === 0 ? "45s" : "60s" } : undefined}
               >
                 {(animate ? [...row, ...row] : row).map((seed, i) => {
-                  const colorIdx = (rowIdx * 4 + (i % row.length)) % colors.length;
+                  const colorIdx = (rowIdx * row.length + (i % row.length)) % colors.length;
                   return (
                     <div key={`${seed.label}-${i}`}>
                       {seed.type === "genre" ? (
