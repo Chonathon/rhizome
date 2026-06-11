@@ -85,6 +85,7 @@ export function Search({
   const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
   const { searchResults, searchLoading, searchError } = useSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   // True from first keystroke until results land: covers the debounce window
   // (inputValue ahead of query) and the in-flight request
   const searchPending = inputValue.trim() !== "" && (searchLoading || inputValue !== query);
@@ -101,6 +102,11 @@ export function Search({
   useEffect(() => {
     if (!open) setView('root');
   }, [open]);
+
+  // Scroll list to top whenever entering the recents view
+  useEffect(() => {
+    if (view === 'recents') listRef.current?.scrollTo({ top: 0 });
+  }, [view]);
 
   // Lets the sidebar's "View all" open the dialog straight into recents
   useEffect(() => {
@@ -538,7 +544,7 @@ export function Search({
             onValueChange={setInputValue}
             ref={inputRef}
         />
-        <CommandList className="max-h-none flex-1 overflow-y-auto">
+        <CommandList ref={listRef} className="max-h-none flex-1 overflow-y-auto">
           {view === 'recents' && (
             <>
               <CommandGroup>
