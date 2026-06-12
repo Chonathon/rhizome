@@ -538,21 +538,28 @@ export function Search({
           className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full"
       >
         <div onKeyDownCapture={handleKeyDownCapture} className="flex flex-col h-full">
-        <CommandInput
-            placeholder={view === 'recents' ? "Filter recents..." : "Search..."}
-            value={inputValue}
-            onValueChange={setInputValue}
-            ref={inputRef}
-        />
+        <div className="flex items-center border-b [&_[data-slot=command-input-wrapper]]:border-b-0 [&_[data-slot=command-input-wrapper]]:flex-1">
+          {view === 'recents' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setView('root')}
+              className="mb-0.5 ml-2"
+              aria-label="Back"
+            >
+              <ArrowLeft className="size-4" />
+            </Button>
+          )}
+          <CommandInput
+              placeholder={view === 'recents' ? "Filter recents..." : "Search..."}
+              value={inputValue}
+              onValueChange={setInputValue}
+              ref={inputRef}
+          />
+        </div>
         <CommandList ref={listRef} className="max-h-none flex-1 overflow-y-auto">
           {view === 'recents' && (
             <>
-              <CommandGroup>
-                <CommandItem value="__back" onSelect={() => setView('root')}>
-                  <ArrowLeft className="mr-2 size-4" />
-                  Back
-                </CommandItem>
-              </CommandGroup>
               {recentsViewItems.length > 0 ? (
                 renderRecentsGroups(recentsViewItems)
               ) : (
