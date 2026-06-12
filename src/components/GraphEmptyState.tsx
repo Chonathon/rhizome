@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import GenreBadge from "@/components/GenreBadge";
 import Gravity, { GravityRef, MatterBody } from "@/components/fancy/physics/gravity";
 import * as d3 from "d3-force";
 
@@ -11,7 +12,12 @@ type Phase = "simulating" | "settling" | "falling";
 // Maps d3 coordinate space → SVG viewBox 0–100 during live simulation
 const toSVG = (v: number) => 50 + v * 0.25;
 
-export type GraphEmptyMode = "collection-empty" | "collection-filtered" | "similar-artists" | "genre-and-filter";
+export type GraphEmptyMode =
+  | "collection-empty"
+  | "collection-filtered"
+  | "similar-artists"
+  | "genre-and-filter"
+  | "collection-and-filter";
 
 const COPY: Record<GraphEmptyMode, { headline: string; body: string; cta?: string }> = {
   "collection-empty": {
@@ -27,18 +33,36 @@ const COPY: Record<GraphEmptyMode, { headline: string; body: string; cta?: strin
     headline: "No similar artists found",
     body: "Not enough data to map this artist's connections.",
   },
+  // Explore mode filters the top-N artists loaded for the selection, so a
+  // matching artist may exist outside that set — the copy can't claim "none exist"
   "genre-and-filter": {
     headline: "No artists match all genres",
-    body: "No artists are tagged with every selected genre. Try switching to 'any'.",
+    body: "None of the loaded artists are tagged with every selected genre.",
+    cta: "Match any instead",
+  },
+  "collection-and-filter": {
+    headline: "No artists match all genres",
+    body: "No artists in your collection are tagged with every selected genre.",
+    cta: "Match any instead",
   },
 };
 
 interface GraphEmptyStateProps {
   mode: GraphEmptyMode;
-  onSearch?: () => void;
+  onCta?: () => void;
+  // Selected genres shown as removable badges (AND-filter modes)
+  genreChips?: { id: string; name: string; color?: string }[];
+  onRemoveGenre?: (id: string) => void;
 }
 
-export function GraphEmptyState({ mode, onSearch }: GraphEmptyStateProps) {
+// Entrance for badge rows: pops each badge in after the column settles
+const badgeSpring = (delay: number) => ({
+  initial: { opacity: 0, scale: 0.85, y: 4 },
+  animate: { opacity: 1, scale: 1, y: 0 },
+  transition: { delay, type: "spring" as const, stiffness: 400, damping: 24 },
+});
+
+export function GraphEmptyState({ mode, onCta, genreChips, onRemoveGenre }: GraphEmptyStateProps) {
   const { headline, body, cta } = COPY[mode];
   const gravityRef = useRef<GravityRef>(null);
   const [phase, setPhase] = useState<Phase>("simulating");
@@ -177,7 +201,7 @@ export function GraphEmptyState({ mode, onSearch }: GraphEmptyStateProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.12 }}
         className="relative flex flex-col items-center gap-4 text-center pointer-events-auto px-6"
-        style={{ maxWidth: 320, zIndex: 1 }}
+        style={{ maxWidth: 360, zIndex: 1 }}
       >
        
         <div className="flex flex-col gap-1">
@@ -189,10 +213,30 @@ export function GraphEmptyState({ mode, onSearch }: GraphEmptyStateProps) {
           </p>
         </div>
 
-        {cta && onSearch && (
-          <Button size="sm" variant="outline" onClick={onSearch}>
+        {cta && onCta && (
+          <Button size="lg" variant="default" onClick={onCta}>
             {cta}
           </Button>
+        )}
+
+        {genreChips && genreChips.length > 0 && (
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              or try removing a genre
+            </span>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {genreChips.map((chip, i) => (
+                <motion.span key={chip.id} {...badgeSpring(0.3 + i * 0.05)}>
+                  <GenreBadge
+                    name={chip.name}
+                    genreColor={chip.color}
+                    onClick={() => onRemoveGenre?.(chip.id)}
+                    title={`Remove ${chip.name} from the filter`}
+                  />
+                </motion.span>
+              ))}
+            </div>
+          </div>
         )}
       </motion.div>
     </div>

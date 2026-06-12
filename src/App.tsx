@@ -731,8 +731,9 @@ function App() {
     return genreOperator === 'and' && ids.length > 1 ? ids : NO_AND_FILTER;
   }, [genreOperator, collectionMode, collectionFilters.genres, artistFilterGenreIDs]);
 
-  // Computes the artists/links to display - applies node limit and collection filters
-  const displayedArtistsData = useMemo(() => {
+  // Artists after collection genre/decade filters, before the AND filter and
+  // node limit. Also the honest base for match counts and removal suggestions.
+  const baseFilteredArtists = useMemo(() => {
     let filtered = artists;
 
     // Apply collection filters when in collection mode
@@ -756,6 +757,13 @@ function App() {
       });
     }
 
+    return filtered;
+  }, [collectionMode, artists, collectionFilters]);
+
+  // Computes the artists/links to display - applies the AND filter and node limit
+  const displayedArtistsData = useMemo(() => {
+    let filtered = baseFilteredArtists;
+
     // Apply AND genre filter (andGenreIds is empty unless AND mode is active)
     if (andGenreIds.length > 0) {
       filtered = filtered.filter(artist =>
@@ -777,7 +785,23 @@ function App() {
     );
 
     return { artists: filtered, links: filteredLinks };
-  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, andGenreIds]);
+  }, [baseFilteredArtists, artistLinks, artistNodeCount, artistNodeLimitType, andGenreIds]);
+
+  // Live match count for the GenresFilter operator row: how many loaded
+  // artists carry every selected genre. Undefined outside AND mode.
+  const andMatchCount = useMemo(() => {
+    if (genreOperator !== 'and') return undefined;
+    const ids = collectionMode ? collectionFilters.genres : artistFilterGenreIDs;
+    if (ids.length === 0) return undefined;
+    return baseFilteredArtists.filter(a => ids.every(id => a.genres.includes(id))).length;
+  }, [genreOperator, collectionMode, collectionFilters.genres, artistFilterGenreIDs, baseFilteredArtists]);
+
+  // Selected genres as removable chips for the AND empty state
+  const andGenreChips = useMemo(() =>
+    andGenreIds.flatMap(id => {
+      const genre = genres.find(g => g.id === id);
+      return genre ? [{ id, name: genre.name, color: genreColorMap.get(id) }] : [];
+    }), [andGenreIds, genres, genreColorMap]);
 
   // Sets current artists/links shown in the graph
   useEffect(() => {
@@ -2528,6 +2552,16 @@ function App() {
     }));
   }, []);
 
+  // Remove a single genre from the active AND filter (empty-state chips/suggestion)
+  const removeAndGenre = (id: string) => {
+    const next = andGenreIds.filter(other => other !== id);
+    if (collectionMode) {
+      onCollectionFilterChange('genres', next);
+    } else {
+      onGenreFilterSelectionChange(next);
+    }
+  };
+
   // Just filter the current nodes if selection is less than the current node count
   const artistNodeCountSelection = (value: number) => {
     if (value === artistNodeCount) return;
@@ -2866,6 +2900,7 @@ function App() {
                       onGenreSelectionChange={(ids) => onCollectionFilterChange('genres', ids)}
                       operator={genreOperator}
                       onOperatorChange={setGenreOperator}
+                      matchCount={andMatchCount}
                       selectedGenreIds={collectionFilters.genres}
                       genreColorMap={genreColorMap}
                     />
@@ -2896,6 +2931,7 @@ function App() {
                       onGenreSelectionChange={onGenreFilterSelectionChange}
                       operator={genreOperator}
                       onOperatorChange={setGenreOperator}
+                      matchCount={andMatchCount}
                       selectedGenreIds={artistGenreFilterIDs}
                       genreColorMap={genreColorMap}
                     />
@@ -2976,15 +3012,21 @@ function App() {
           {/* Graph empty states */}
           {!artistsLoading && !artistsError && (
             <>
-              {collectionMode && graph === 'artists' && currentArtists.length === 0 && (
-                <GraphEmptyState
-                  mode={artists.length === 0 ? 'collection-empty' : 'collection-filtered'}
-                  onSearch={() => setSearchOpen(true)}
-                />
+              {collectionMode && graph === 'artists' && currentArtists.length === 0 && artists.length === 0 && (
+                <GraphEmptyState mode="collection-empty" onCta={() => setSearchOpen(true)} />
               )}
-              {!collectionMode && graph === 'artists' && currentArtists.length === 0
-                && andGenreIds.length > 0 && (
-                <GraphEmptyState mode="genre-and-filter" />
+              {collectionMode && graph === 'artists' && currentArtists.length === 0 && artists.length > 0
+                && andGenreIds.length === 0 && (
+                <GraphEmptyState mode="collection-filtered" />
+              )}
+              {graph === 'artists' && currentArtists.length === 0 && andGenreIds.length > 0
+                && (!collectionMode || artists.length > 0) && (
+                <GraphEmptyState
+                  mode={collectionMode ? 'collection-and-filter' : 'genre-and-filter'}
+                  onCta={() => setGenreOperator('or')}
+                  genreChips={andGenreChips}
+                  onRemoveGenre={removeAndGenre}
+                />
               )}
               {graph === 'similarArtists' && currentArtists.length === 0 && (
                 <GraphEmptyState mode="similar-artists" />
