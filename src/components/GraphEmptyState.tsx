@@ -229,9 +229,11 @@ export function GraphEmptyState({ mode, onCta, genreChips, onRemoveGenre }: Grap
                 <motion.span key={chip.id} {...badgeSpring(0.3 + i * 0.05)}>
                   <GenreBadge
                     name={chip.name}
+                    variant="secondary"
                     genreColor={chip.color}
                     onClick={() => onRemoveGenre?.(chip.id)}
                     title={`Remove ${chip.name} from the filter`}
+                    removable
                   />
                 </motion.span>
               ))}
