@@ -28,6 +28,7 @@ const COPY: Record<GraphEmptyMode, { headline: string; body: string; cta?: strin
   "collection-filtered": {
     headline: "No artists match",
     body: "Try removing some genre or decade filters.",
+    cta: "Clear filters",
   },
   "similar-artists": {
     headline: "No similar artists found",

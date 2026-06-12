@@ -2562,6 +2562,17 @@ function App() {
     }
   };
 
+  // Clear every artist filter (genres, decades, operator) — empty-state CTA
+  const clearAllArtistFilters = () => {
+    setGenreOperator('or');
+    if (collectionMode) {
+      setCollectionFilters({ genres: [], decades: [] });
+    } else {
+      onGenreFilterSelectionChange([]);
+      setSelectedDecades([]);
+    }
+  };
+
   // Just filter the current nodes if selection is less than the current node count
   const artistNodeCountSelection = (value: number) => {
     if (value === artistNodeCount) return;
@@ -2937,6 +2948,7 @@ function App() {
                     />
                     <DecadesFilter
                       onDecadeSelectionChange={onDecadeSelectionChange}
+                      selectedDecadeIds={selectedDecades}
                     />
                   </motion.div>
                 )}
@@ -3015,9 +3027,14 @@ function App() {
               {collectionMode && graph === 'artists' && currentArtists.length === 0 && artists.length === 0 && (
                 <GraphEmptyState mode="collection-empty" onCta={() => setSearchOpen(true)} />
               )}
-              {collectionMode && graph === 'artists' && currentArtists.length === 0 && artists.length > 0
-                && andGenreIds.length === 0 && (
-                <GraphEmptyState mode="collection-filtered" />
+              {/* Filters (genre OR-mode and/or decades) produced zero artists.
+                  In explore mode this requires active filters + a completed load,
+                  so it can't appear on the pristine artists tab. */}
+              {graph === 'artists' && currentArtists.length === 0 && andGenreIds.length === 0
+                && (collectionMode
+                  ? artists.length > 0
+                  : (!isBeforeArtistLoad && (artistFilterGenreIDs.length > 0 || selectedDecades.length > 0))) && (
+                <GraphEmptyState mode="collection-filtered" onCta={clearAllArtistFilters} />
               )}
               {graph === 'artists' && currentArtists.length === 0 && andGenreIds.length > 0
                 && (!collectionMode || artists.length > 0) && (
