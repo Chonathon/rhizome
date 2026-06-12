@@ -8,6 +8,7 @@ interface GenreBadgeProps {
   onClick: () => void;
   genreColor?: string;
   title?: string;
+  variant?: "outline" | "default" | "secondary" | "destructive";
   // Trailing X signalling that clicking the badge removes it
   removable?: boolean;
 }
@@ -17,10 +18,11 @@ export default function GenreBadge({
   onClick,
   genreColor,
   title,
+  variant = "outline",
   removable,
 }: GenreBadgeProps) {
   return (
-    <Badge asChild variant="outline" title={title ?? `Go to ${name}`}>
+    <Badge asChild variant={variant} title={title ?? `Go to ${name}`}>
       <Button
         variant="ghost"
         size="sm"
