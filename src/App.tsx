@@ -731,9 +731,8 @@ function App() {
     return genreOperator === 'and' && ids.length > 1 ? ids : NO_AND_FILTER;
   }, [genreOperator, collectionMode, collectionFilters.genres, artistFilterGenreIDs]);
 
-  // Artists after collection genre/decade filters, before the AND filter and
-  // node limit. Also the honest base for match counts and removal suggestions.
-  const baseFilteredArtists = useMemo(() => {
+  // Computes the artists/links to display - applies collection filters, the AND filter, and the node limit
+  const displayedArtistsData = useMemo(() => {
     let filtered = artists;
 
     // Apply collection filters when in collection mode
@@ -757,13 +756,6 @@ function App() {
       });
     }
 
-    return filtered;
-  }, [collectionMode, artists, collectionFilters]);
-
-  // Computes the artists/links to display - applies the AND filter and node limit
-  const displayedArtistsData = useMemo(() => {
-    let filtered = baseFilteredArtists;
-
     // Apply AND genre filter (andGenreIds is empty unless AND mode is active)
     if (andGenreIds.length > 0) {
       filtered = filtered.filter(artist =>
@@ -785,16 +777,7 @@ function App() {
     );
 
     return { artists: filtered, links: filteredLinks };
-  }, [baseFilteredArtists, artistLinks, artistNodeCount, artistNodeLimitType, andGenreIds]);
-
-  // Live match count for the GenresFilter operator row: how many loaded
-  // artists carry every selected genre. Undefined outside AND mode.
-  const andMatchCount = useMemo(() => {
-    if (genreOperator !== 'and') return undefined;
-    const ids = collectionMode ? collectionFilters.genres : artistFilterGenreIDs;
-    if (ids.length === 0) return undefined;
-    return baseFilteredArtists.filter(a => ids.every(id => a.genres.includes(id))).length;
-  }, [genreOperator, collectionMode, collectionFilters.genres, artistFilterGenreIDs, baseFilteredArtists]);
+  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, andGenreIds]);
 
   // Selected genres as removable chips for the AND empty state
   const andGenreChips = useMemo(() =>
@@ -2911,7 +2894,6 @@ function App() {
                       onGenreSelectionChange={(ids) => onCollectionFilterChange('genres', ids)}
                       operator={genreOperator}
                       onOperatorChange={setGenreOperator}
-                      matchCount={andMatchCount}
                       selectedGenreIds={collectionFilters.genres}
                       genreColorMap={genreColorMap}
                     />
@@ -2942,7 +2924,6 @@ function App() {
                       onGenreSelectionChange={onGenreFilterSelectionChange}
                       operator={genreOperator}
                       onOperatorChange={setGenreOperator}
-                      matchCount={andMatchCount}
                       selectedGenreIds={artistGenreFilterIDs}
                       genreColorMap={genreColorMap}
                     />

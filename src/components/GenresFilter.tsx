@@ -29,7 +29,6 @@ export default function GenresFilter({
   genreColorMap,
   operator = 'or',
   onOperatorChange,
-  matchCount,
 }: {
   genres?: Genre[];
   genreClusterModes: GenreClusterMode[];
@@ -39,9 +38,6 @@ export default function GenresFilter({
   genreColorMap?: Map<string, string>;
   operator?: 'or' | 'and';
   onOperatorChange?: (operator: 'or' | 'and') => void;
-  // Live count of artists matching the current selection under the active
-  // operator; hidden at 0 (the empty state communicates that case)
-  matchCount?: number;
 }) {
   const topLevelGenres = useMemo(() => {
     const viaUtil = genres.filter((g) => isRootGenre(g, genreClusterModes));
@@ -197,11 +193,6 @@ export default function GenresFilter({
               all
             </Button>
             selected genres
-            {!!matchCount && (
-              <span className="ml-1">
-                — {matchCount} artist{matchCount === 1 ? "" : "s"}
-              </span>
-            )}
           </span>
         </div>
         <CommandList ref={listRef}>
