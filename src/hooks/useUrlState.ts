@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toSlug } from '@/lib/urlUtils';
-import type { Artist, Genre } from '@/types';
+import type { Artist, Genre, UrlView } from '@/types';
 
 interface UseUrlStateOptions {
   findGenreBySlug: (slug: string) => Genre | undefined;
@@ -9,6 +9,7 @@ interface UseUrlStateOptions {
   onArtistFromUrl?: (artist: Artist) => void;
   onGenreClearedFromUrl?: () => void;
   onArtistClearedFromUrl?: () => void;
+  onViewFromUrl?: (view: UrlView, collectionMode: boolean, anchorId: string | null) => void;
   genresLoaded: boolean;
 }
 
@@ -25,6 +26,7 @@ export type UrlEntity =
 
 export interface UrlStateResult {
   updateUrl: (entity: UrlEntity) => void;
+  updateView: (view: UrlView | null, opts?: { collection?: boolean; anchor?: string | null }) => void;
   canGoBack: boolean;
   canGoForward: boolean;
   goBack: () => void;
@@ -40,34 +42,32 @@ const getStoredHistoryIndex = (): number =>
   window.history.state?.historyIndex ?? 0;
 
 /**
- * Syncs artist/genre drawer state to the URL via `window.history.pushState`.
- * Handles initial page load and browser back/forward (popstate).
+ * Syncs artist/genre drawer state and navigation view to the URL via
+ * `window.history.pushState`. Handles initial page load and browser back/forward.
  *
- * Call `updateUrl` in any handler that opens or closes a drawer:
+ * Call `updateUrl` when opening or closing a drawer:
  * ```ts
- * // Opening an artist drawer — always include id and name
  * updateUrl({ type: 'artist', id: artist.id, name: artist.name });
- *
- * // Opening a genre drawer
  * updateUrl({ type: 'genre', name: genre.name });
- *
- * // Closing (dismiss / clear)
- * updateUrl(null);
+ * updateUrl(null); // dismiss
  * ```
  *
- * Rule of thumb: if a handler calls `setShowArtistCard(true)` or
- * `setShowGenreCard(true)`, it needs a matching `updateUrl` call.
- *
- * `goBack` / `goForward` navigate the app's own URL history.
- * `canGoBack` / `canGoForward` reflect whether navigation is possible.
+ * Call `updateView` when the active graph/mode changes:
+ * ```ts
+ * updateView('genres');
+ * updateView('artists');
+ * updateView('artists', { collection: true });
+ * updateView('similar', { anchor: artist.id });
+ * updateView(null); // back to default (genres)
+ * ```
  */
 export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const prevGenreSlug = useRef<string | null>(null);
   const prevArtistSlug = useRef<string | null>(null);
+  const prevView = useRef<string | null>(null);
   const initialLoadProcessed = useRef(false);
 
   // historyIndex is seeded from window.history.state on every mount (survives refresh).
-  // forwardCount cannot be reliably restored after a refresh — reset to 0.
   const historyIndex = useRef(getStoredHistoryIndex());
   const forwardCount = useRef(0);
   const [canGoBack, setCanGoBack] = useState(() => historyIndex.current > 0);
@@ -79,8 +79,14 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const callbacksRef = useRef(options);
   callbacksRef.current = options;
 
-  // Shared logic: resolve URL slugs → open/close drawers
-  const processUrlParams = useCallback((genreSlug: string | null, artistSlug: string | null) => {
+  // Shared logic: resolve URL slugs → open/close drawers and restore view
+  const processUrlParams = useCallback((
+    genreSlug: string | null,
+    artistSlug: string | null,
+    view: string | null,
+    collectionMode: boolean,
+    anchorSlug: string | null,
+  ) => {
     if (genreSlug !== prevGenreSlug.current) {
       prevGenreSlug.current = genreSlug;
       if (genreSlug) {
@@ -101,6 +107,18 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
         callbacksRef.current.onArtistClearedFromUrl?.();
       }
     }
+
+    // Restore navigation view state
+    const viewKey = `${view ?? 'genres'}|${collectionMode}|${anchorSlug ?? ''}`;
+    if (viewKey !== prevView.current) {
+      prevView.current = viewKey;
+      if (view === 'genres' || view === 'artists' || view === 'similar') {
+        callbacksRef.current.onViewFromUrl?.(view, collectionMode, anchorSlug);
+      } else if (!view) {
+        // No view param defaults to genres
+        callbacksRef.current.onViewFromUrl?.('genres', false, null);
+      }
+    }
   }, []);
 
   // Initial load: process URL params once genres are ready
@@ -108,27 +126,40 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     if (!genresLoaded || initialLoadProcessed.current) return;
     initialLoadProcessed.current = true;
     const params = new URLSearchParams(window.location.search);
-    processUrlParams(params.get('genre'), params.get('artist'));
+    const rawView = params.get('view');
+    const view = rawView === 'genres' || rawView === 'artists' || rawView === 'similar' ? rawView : null;
+    processUrlParams(
+      params.get('genre'),
+      params.get('artist'),
+      view,
+      params.get('collection') === 'true',
+      params.get('anchor'),
+    );
   }, [genresLoaded, processUrlParams]);
 
   // Browser back/forward: popstate listener reads directly from window.location.
-  // Also syncs historyIndex from event.state so native nav keeps canGoBack/canGoForward accurate.
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       if (!callbacksRef.current.genresLoaded) return;
 
       const params = new URLSearchParams(window.location.search);
-      processUrlParams(params.get('genre'), params.get('artist'));
+      const rawView = params.get('view');
+      const view = rawView === 'genres' || rawView === 'artists' || rawView === 'similar' ? rawView : null;
+      processUrlParams(
+        params.get('genre'),
+        params.get('artist'),
+        view,
+        params.get('collection') === 'true',
+        params.get('anchor'),
+      );
 
       // Sync history index from the restored history entry's state.
       const newIndex: number = event.state?.historyIndex ?? 0;
       const prevIndex = historyIndex.current;
 
       if (newIndex < prevIndex) {
-        // navigated back — accumulate forward entries
         forwardCount.current += prevIndex - newIndex;
       } else if (newIndex > prevIndex) {
-        // navigated forward — consume forward entries
         forwardCount.current = Math.max(0, forwardCount.current - (newIndex - prevIndex));
       }
 
@@ -141,7 +172,23 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [processUrlParams]);
 
-  // App → URL: pushState with historyIndex embedded in state so it survives refresh.
+  // Shared push logic
+  const pushState = useCallback((params: URLSearchParams) => {
+    const search = params.toString();
+    const newUrl = search
+      ? `${window.location.pathname}?${search}`
+      : window.location.pathname;
+
+    const newIndex = historyIndex.current + 1;
+    window.history.pushState({ historyIndex: newIndex }, '', newUrl);
+
+    historyIndex.current = newIndex;
+    forwardCount.current = 0;
+    setCanGoBack(true);
+    setCanGoForward(false);
+  }, []);
+
+  // App → URL: update entity (artist/genre drawer) while preserving view params.
   const updateUrl = useCallback((entity: UrlEntity) => {
     const params = new URLSearchParams(window.location.search);
 
@@ -159,24 +206,43 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     prevGenreSlug.current = params.get('genre');
     prevArtistSlug.current = params.get('artist');
 
-    const search = params.toString();
-    const newUrl = search
-      ? `${window.location.pathname}?${search}`
-      : window.location.pathname;
+    pushState(params);
+  }, [pushState]);
 
-    const newIndex = historyIndex.current + 1;
-    window.history.pushState({ historyIndex: newIndex }, '', newUrl);
+  // App → URL: update navigation view while preserving entity params.
+  const updateView = useCallback((
+    view: UrlView | null,
+    opts?: { collection?: boolean; anchor?: string | null },
+  ) => {
+    const params = new URLSearchParams(window.location.search);
 
-    historyIndex.current = newIndex;
-    forwardCount.current = 0;
-    setCanGoBack(true);
-    setCanGoForward(false);
-  }, []);
+    if (view) {
+      params.set('view', view);
+    } else {
+      params.delete('view');
+    }
+
+    if (opts?.collection) {
+      params.set('collection', 'true');
+    } else {
+      params.delete('collection');
+    }
+
+    if (opts?.anchor) {
+      params.set('anchor', opts.anchor);
+    } else {
+      params.delete('anchor');
+    }
+
+    const viewKey = `${view ?? 'genres'}|${opts?.collection ?? false}|${opts?.anchor ?? ''}`;
+    prevView.current = viewKey;
+
+    pushState(params);
+  }, [pushState]);
 
   const goBack = useCallback(() => {
     if (historyIndex.current <= 0) return;
     window.history.back();
-    // Optimistically update for immediate UI feedback; popstate will confirm.
     const newIndex = historyIndex.current - 1;
     historyIndex.current = newIndex;
     forwardCount.current++;
@@ -187,12 +253,11 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const goForward = useCallback(() => {
     if (forwardCount.current <= 0) return;
     window.history.forward();
-    // Optimistically update for immediate UI feedback; popstate will confirm.
     historyIndex.current++;
     forwardCount.current--;
     setCanGoBack(true);
     setCanGoForward(forwardCount.current > 0);
   }, []);
 
-  return { updateUrl, canGoBack, canGoForward, goBack, goForward };
+  return { updateUrl, updateView, canGoBack, canGoForward, goBack, goForward };
 }

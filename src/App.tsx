@@ -404,8 +404,8 @@ function App() {
     return genres.find(g => toSlug(g.name) === slug);
   }, [genres]);
 
-  // URL State: Open/close drawers from URL (initial load + browser back/forward)
-  const { updateUrl, canGoBack, canGoForward, goBack, goForward } = useUrlState({
+  // URL State: Open/close drawers and sync navigation view from URL
+  const { updateUrl, updateView, canGoBack, canGoForward, goBack, goForward } = useUrlState({
     findGenreBySlug,
     fetchArtistById: (id) => fetchSingleArtist(id, false),
     onGenreFromUrl: (genre) => {
@@ -425,6 +425,29 @@ function App() {
     onArtistClearedFromUrl: () => {
       setShowArtistCard(false);
       setArtistInfoToShow(undefined);
+    },
+    onViewFromUrl: async (view, isCollectionMode, anchorId) => {
+      if (view === 'similar' && anchorId) {
+        const artist = await fetchSingleArtist(anchorId, false);
+        if (artist) {
+          setCanCreateSimilarArtistGraph(true);
+          await fetchSimilarArtists(artist);
+          setSimilarArtistAnchor(artist);
+          setArtistInfoToShow(artist);
+          setShowArtistCard(true);
+        }
+      } else if (view === 'artists') {
+        if (isCollectionMode && userID) {
+          setCollectionMode(true);
+          setArtistGenreFilter([]);
+          setArtistFilterGenres([]);
+          setSelectedDecades([]);
+        }
+        if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+        setGraph('artists');
+      } else if (view === 'genres') {
+        setGraph('genres');
+      }
     },
     genresLoaded: genres.length > 0 && !genresLoading,
   });
@@ -1916,6 +1939,7 @@ function App() {
 
     // Switch to artists view (or stay there)
     setGraph('artists');
+    updateView('artists');
     setAutoFocusGraph(true); // Enable auto-focus for this navigation
     addRecentSelection(genre, 'genre');
   }
@@ -2125,6 +2149,7 @@ function App() {
     setCollectionMode(false);
     // Clear collection mode filters when exiting to explore mode
     setCollectionFilters({ genres: [], decades: [] });
+    updateView('genres');
   }
 
   const deselectGenre = () => {
@@ -2218,6 +2243,7 @@ function App() {
     setSelectedArtist(artistResult);
     setSimilarArtistAnchor(artistResult);
     setArtistInfoToShow(artistResult);
+    updateView('similar', { anchor: artistResult.id });
   }
 
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
@@ -2290,6 +2316,7 @@ function App() {
         setSimilarArtistAnchor(undefined);
       }
       setGraph('genres');
+      updateView('genres');
       // Don't clear currentArtists/currentArtistLinks - preserve them like genre graph does
       // Just hide the artist graph with the show prop
       setShowArtistCard(false);
@@ -2308,6 +2335,7 @@ function App() {
       }
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
+      updateView('artists', { collection: collectionMode });
 
       // Restore card visibility.
       // Use artistInfoToShow (what the drawer was displaying) rather than selectedArtist —
@@ -2684,7 +2712,7 @@ function App() {
       } else {
         toast.info("You haven't added any artists yet!");
       }
-
+      updateView('artists', { collection: true });
     } else {
       const action: ContextAction = {type: 'viewCollection'};
       localStorage.setItem('unregisteredAction', JSON.stringify(action));
