@@ -3078,7 +3078,7 @@ function App() {
                 resetZoomDirection={activeZoomDirection}
               />
             </div>
-          {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
+          <div className='z-20 fixed bottom-4 right-3 hidden md:block'>
             {/*Genre Node Limiter*/}
             <NodeLimiter
               totalNodes={genres ? genres.length : 0}
@@ -3105,7 +3105,7 @@ function App() {
             {/*    onChange={(value) => setDegrees(value)}*/}
             {/*    show={graph === 'artists' && collectionMode}*/}
             {/*/>*/}
-          </div>}
+          </div>
           {/* Utility buttons - find, clustering, display settings, share/export, zoom */}
           <div className="fixed flex flex-col h-auto right-3 top-3 justify-end gap-3 z-50">
               {/* <ModeToggle /> */}
