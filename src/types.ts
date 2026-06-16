@@ -100,12 +100,6 @@ export interface RootGenreNode {
     type: GenreClusterMode;
 }
 
-export interface InitialGenreFilter {
-    genre: Genre | undefined;
-    isRoot: boolean;
-    parents: Record<string, Set<string>>;
-}
-
 export interface TopTrack extends TopTrackPlayIDs{
     title: string;
     artistName: string;
