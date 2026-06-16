@@ -232,57 +232,60 @@ export default function GenresFilter({
           {/* One section per parent genre */}
           {topLevelGenres.map((parent) => {
             const children = parentChildMap.get(parent.id) || [];
+            const hasChildren = children.length > 0;
             const sectionState = getSectionState(parent);
             const parentChecked = selectedIds.has(parent.id);
-            // Children are collapsed by default; an active search forces them
+            const searching = !!query.trim();
+            // Subgenres are collapsed by default; an active search forces them
             // open so cmdk can match (and hide) within the section.
-            const expanded = !!query.trim() || openSections.has(parent.id);
+            const expanded = searching || openSections.has(parent.id);
             return (
               <CommandGroup key={parent.id}>
-                {/* Section header doubles as the collapse toggle.
-                    Rendered as a plain div so it's hidden by cmdk when the group has no matching items. */}
-                <div className="flex items-center justify-between px-2 pt-2 pb-0.5">
-                  <button
-                    type="button"
-                    className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={(e) => { e.stopPropagation(); toggleSection(parent.id); }}
-                    aria-expanded={expanded}
-                  >
-                    <ChevronRight className={cn("size-3 transition-transform", expanded && "rotate-90")} />
-                    {parent.name}
-                  </button>
-                  {sectionState === 'none' ? (
-                    <button
-                      type="button"
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={(e) => { e.stopPropagation(); selectAllSection(parent); }}
-                    >
-                      all
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={(e) => { e.stopPropagation(); clearSection(parent); }}
-                    >
-                      clear
-                    </button>
-                  )}
-                </div>
-                {/* Parent + child genres — all hidden while the section is collapsed */}
-                {expanded && (
-                  <CommandItem
-                    value={`${parent.id} ${parent.name}`}
-                    onSelect={() => toggleId(parent.id)}
-                    className="flex items-center gap-2"
-                  >
+                {/* Split button: the main area selects the parent genre,
+                    the trailing chevron expands its subgenres. */}
+                <CommandItem
+                  value={`${parent.id} ${parent.name}`}
+                  onSelect={() => toggleId(parent.id)}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <div className="flex items-center gap-2">
                     <Check className={parentChecked ? "opacity-100" : "hidden"} />
                     <BadgeIndicator type="genre" name={parent.name} color={genreColorMap?.get(parent.id)} />
                     <span>{parent.name}</span>
-                  </CommandItem>
+                  </div>
+                  {hasChildren && !searching && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      className="-mr-2 -my-1 h-6 px-1 text-muted-foreground"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => { e.stopPropagation(); toggleSection(parent.id); }}
+                      aria-expanded={expanded}
+                      aria-label={`${expanded ? "Hide" : "Show"} ${parent.name} subgenres`}
+                    >
+                      <ChevronRight className={cn("size-4 transition-transform", expanded && "rotate-90")} />
+                    </Button>
+                  )}
+                </CommandItem>
+                {/* Subgenres, indented — hidden while the section is collapsed.
+                    "Select all" (parent + whole family) is offered only in OR mode:
+                    under AND it would require an artist to carry every subgenre at
+                    once, which is essentially always zero. "Clear" is safe in any mode. */}
+                {expanded && hasChildren && !searching && (sectionState !== 'none' || operator === 'or') && (
+                  <div className="flex justify-end px-2 pb-1 pl-8">
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        sectionState === 'none' ? selectAllSection(parent) : clearSection(parent);
+                      }}
+                    >
+                      {sectionState === 'none' ? 'Select all' : 'Clear'}
+                    </button>
+                  </div>
                 )}
                 {expanded && children.map((child) => {
                   const childChecked = selectedIds.has(child.id);
@@ -291,7 +294,7 @@ export default function GenresFilter({
                       key={`${parent.id}-${child.id}`}
                       value={`${child.id} ${child.name} ${parent.name}`}
                       onSelect={() => toggleId(child.id)}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 pl-8"
                     >
                       <Check className={childChecked ? "opacity-100" : "hidden"} />
                       <BadgeIndicator type="genre" name={child.name} color={genreColorMap?.get(child.id)} />
