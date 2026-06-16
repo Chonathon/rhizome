@@ -1922,17 +1922,19 @@ function App() {
 
   // Switch to artists graph and select the clicked artist
   const onTopArtistClick = (artist: Artist) => {
-    // Don't refetch genre if artist is already in node selection
-    if (!currentArtists.map(a => a.id).includes(artist.id)) {
-      // Apply genre filter from current context
-      const currentGenre = genreInfoToShow || selectedGenres[0];
-      if (currentGenre) {
-        setArtistGenreFilter([currentGenre]);
-        setArtistFilterGenres([currentGenre]); // Set the new filter state
-        setSelectedGenres([currentGenre]);
-        setInitialGenreFilter(createInitialGenreFilterObject(currentGenre));
-        setGraph('artists');
-      }
+    // Apply genre filter from current context, unless it's already applied.
+    // Comparing against currentArtists (instead of the active filter) let a top
+    // artist that's already loaded as part of a multi-genre "related genres"
+    // cluster skip this entirely, leaving the genre filter pinned to the
+    // previously explored genres instead of the one the user just clicked into.
+    const currentGenre = genreInfoToShow || selectedGenres[0];
+    const filterAlreadyApplied = artistFilterGenres.length === 1 && artistFilterGenres[0]?.id === currentGenre?.id;
+    if (currentGenre && !filterAlreadyApplied) {
+      setArtistGenreFilter([currentGenre]);
+      setArtistFilterGenres([currentGenre]); // Set the new filter state
+      setSelectedGenres([currentGenre]);
+      setInitialGenreFilter(createInitialGenreFilterObject(currentGenre));
+      setGraph('artists');
     }
 
     setGraph('artists');
