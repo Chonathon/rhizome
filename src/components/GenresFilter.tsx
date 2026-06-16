@@ -3,7 +3,7 @@
 // Fully controlled: selection and operator live in the parent; toggles just
 // report the next value via callbacks.
 import { Button } from "@/components/ui/button";
-import { Check, ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, X } from "lucide-react";
 import { Genre, GenreClusterMode, GraphType } from "@/types";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
 import { useMemo, useRef, useState } from "react";
@@ -66,6 +66,19 @@ export default function GenresFilter({
   const selectedIds = useMemo(() => new Set(selectedGenreIds), [selectedGenreIds]);
 
   const [query, setQuery] = useState("");
+
+  // Sections (parent genres) collapse their children, closed by default.
+  // Selected children still surface in the Selected summary group above, so
+  // collapsing never hides an active selection.
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
+  const toggleSection = (id: string) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -196,7 +209,9 @@ export default function GenresFilter({
           </span>
         </div>
         <CommandList ref={listRef}>
-          <CommandEmpty>No genres found.</CommandEmpty>
+          {/* Only meaningful during search — collapsed sections render no
+              CommandItems, which cmdk would otherwise treat as "empty". */}
+          {query.trim() && <CommandEmpty>No genres found.</CommandEmpty>}
           {/* Selected summary section */}
           {selectedList.length > 0 && (
             <CommandGroup className="bg-accent/40 border-b">
@@ -219,14 +234,24 @@ export default function GenresFilter({
             const children = parentChildMap.get(parent.id) || [];
             const sectionState = getSectionState(parent);
             const parentChecked = selectedIds.has(parent.id);
+            // Children are collapsed by default; an active search forces them
+            // open so cmdk can match (and hide) within the section.
+            const expanded = !!query.trim() || openSections.has(parent.id);
             return (
               <CommandGroup key={parent.id}>
-                {/* Section label + select-all / clear.
+                {/* Section header doubles as the collapse toggle.
                     Rendered as a plain div so it's hidden by cmdk when the group has no matching items. */}
                 <div className="flex items-center justify-between px-2 pt-2 pb-0.5">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => { e.stopPropagation(); toggleSection(parent.id); }}
+                    aria-expanded={expanded}
+                  >
+                    <ChevronRight className={cn("size-3 transition-transform", expanded && "rotate-90")} />
                     {parent.name}
-                  </span>
+                  </button>
                   {sectionState === 'none' ? (
                     <button
                       type="button"
@@ -247,18 +272,19 @@ export default function GenresFilter({
                     </button>
                   )}
                 </div>
-                {/* Parent genre as a selectable item within its own section */}
-                <CommandItem
-                  value={`${parent.id} ${parent.name}`}
-                  onSelect={() => toggleId(parent.id)}
-                  className="flex items-center gap-2"
-                >
-                  <Check className={parentChecked ? "opacity-100" : "hidden"} />
-                  <BadgeIndicator type="genre" name={parent.name} color={genreColorMap?.get(parent.id)} />
-                  <span>{parent.name}</span>
-                </CommandItem>
-                {/* Child genres, indented */}
-                {children.map((child) => {
+                {/* Parent + child genres — all hidden while the section is collapsed */}
+                {expanded && (
+                  <CommandItem
+                    value={`${parent.id} ${parent.name}`}
+                    onSelect={() => toggleId(parent.id)}
+                    className="flex items-center gap-2"
+                  >
+                    <Check className={parentChecked ? "opacity-100" : "hidden"} />
+                    <BadgeIndicator type="genre" name={parent.name} color={genreColorMap?.get(parent.id)} />
+                    <span>{parent.name}</span>
+                  </CommandItem>
+                )}
+                {expanded && children.map((child) => {
                   const childChecked = selectedIds.has(child.id);
                   return (
                     <CommandItem
