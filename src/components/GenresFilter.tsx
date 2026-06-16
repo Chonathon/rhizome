@@ -234,6 +234,10 @@ export default function GenresFilter({
             const children = parentChildMap.get(parent.id) || [];
             const sectionState = getSectionState(parent);
             const parentChecked = selectedIds.has(parent.id);
+            // How many genres in this family (parent + subgenres) are selected —
+            // surfaced in the header so a collapsed section still shows its count.
+            const selectedCount = [parent.id, ...children.map((c) => c.id)]
+              .filter((id) => selectedIds.has(id)).length;
             // Children are collapsed by default; an active search forces them
             // open so cmdk can match (and hide) within the section.
             const expanded = !!query.trim() || openSections.has(parent.id);
@@ -251,6 +255,11 @@ export default function GenresFilter({
                   >
                     <ChevronRight className={cn("size-3 transition-transform", expanded && "rotate-90")} />
                     {parent.name}
+                    {selectedCount > 0 && (
+                      <span className="normal-case tracking-normal rounded-full bg-foreground/10 px-1.5 text-[10px] font-medium text-foreground tabular-nums">
+                        {selectedCount}
+                      </span>
+                    )}
                   </button>
                   {sectionState === 'none' ? (
                     <button
