@@ -408,7 +408,7 @@ function App() {
   }, [genres]);
 
   // URL State: Open/close drawers from URL (initial load + browser back/forward)
-  const { updateUrl, canGoBack, canGoForward, goBack, goForward } = useUrlState({
+  const { updateUrl, updateView, canGoBack, canGoForward, goBack, goForward } = useUrlState({
     findGenreBySlug,
     fetchArtistById: (id) => fetchSingleArtist(id, false),
     onGenreFromUrl: (genre) => {
@@ -428,6 +428,25 @@ function App() {
     onArtistClearedFromUrl: () => {
       setShowArtistCard(false);
       setArtistInfoToShow(undefined);
+    },
+    onViewFromUrl: (view, anchorId) => {
+      if (view === 'artists') {
+        setIsBeforeArtistLoad(false);
+        setGraph('artists');
+        setCollectionMode(false);
+      } else if (view === 'collection') {
+        // onCollectionClick handles auth check and data loading
+        onCollectionClick();
+      } else if (view === 'similar' && anchorId) {
+        fetchSingleArtist(anchorId, false).then((artist) => {
+          if (artist) createSimilarArtistGraph(artist);
+        });
+      } else {
+        // 'genres' or unknown — restore explore/genres view
+        setGraph('genres');
+        setCollectionMode(false);
+        setSimilarArtistAnchor(undefined);
+      }
     },
     genresLoaded: genres.length > 0 && !genresLoading,
   });
@@ -1315,6 +1334,7 @@ function App() {
         setCurrentArtistLinks(links);
         setGraph('similarArtists');
         setShowArtistCard(true);
+        if (similarArtistAnchor) updateView('similar', similarArtistAnchor.id);
       } else if (similarArtists.length === 1) {
         toast.error(`No similar artist data available for ${similarArtists[0].name}`);
       }
@@ -2138,6 +2158,7 @@ function App() {
 
   const resetAppState = () => {
     setGraph('genres');
+    updateView('genres');
     setCurrentGenres({nodes: genres, links: genreLinks.filter(link => {
         return DEFAULT_CLUSTER_MODE.includes(link.linkType as "subgenre" | "influence" | "fusion")
       })});
@@ -2312,6 +2333,7 @@ function App() {
         setSimilarArtistAnchor(undefined);
       }
       setGraph('genres');
+      updateView('genres');
       // Don't clear currentArtists/currentArtistLinks - preserve them like genre graph does
       // Just hide the artist graph with the show prop
       setShowArtistCard(false);
@@ -2330,6 +2352,7 @@ function App() {
       }
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
+      updateView('artists');
 
       // Restore card visibility.
       // Use artistInfoToShow (what the drawer was displaying) rather than selectedArtist —
@@ -2657,6 +2680,7 @@ function App() {
       if (likedArtists.length) {
         await fetchLikedArtists(likedArtists);
         setGraph('artists');
+        updateView('collection');
       } else {
         toast.info("You haven't added any artists yet!");
       }

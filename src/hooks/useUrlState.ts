@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toSlug } from '@/lib/urlUtils';
+import { toSlug, isValidViewMode } from '@/lib/urlUtils';
+import type { ViewMode } from '@/lib/urlUtils';
 import type { Artist, Genre } from '@/types';
 
 interface UseUrlStateOptions {
@@ -9,6 +10,7 @@ interface UseUrlStateOptions {
   onArtistFromUrl?: (artist: Artist) => void;
   onGenreClearedFromUrl?: () => void;
   onArtistClearedFromUrl?: () => void;
+  onViewFromUrl?: (view: ViewMode, anchorId: string | null) => void;
   genresLoaded: boolean;
 }
 
@@ -25,6 +27,7 @@ export type UrlEntity =
 
 export interface UrlStateResult {
   updateUrl: (entity: UrlEntity) => void;
+  updateView: (view: ViewMode, anchorId?: string) => void;
   canGoBack: boolean;
   canGoForward: boolean;
   goBack: () => void;
@@ -64,6 +67,7 @@ const getStoredHistoryIndex = (): number =>
 export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const prevGenreSlug = useRef<string | null>(null);
   const prevArtistSlug = useRef<string | null>(null);
+  const prevViewMode = useRef<string | null>(null);
   const initialLoadProcessed = useRef(false);
 
   // historyIndex is seeded from window.history.state on every mount (survives refresh).
@@ -79,8 +83,23 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const callbacksRef = useRef(options);
   callbacksRef.current = options;
 
-  // Shared logic: resolve URL slugs → open/close drawers
-  const processUrlParams = useCallback((genreSlug: string | null, artistSlug: string | null) => {
+  // Shared logic: resolve URL slugs → open/close drawers and restore view mode
+  const processUrlParams = useCallback((
+    genreSlug: string | null,
+    artistSlug: string | null,
+    viewMode: string | null,
+    anchorId: string | null,
+  ) => {
+    if (viewMode !== prevViewMode.current) {
+      prevViewMode.current = viewMode;
+      if (isValidViewMode(viewMode)) {
+        callbacksRef.current.onViewFromUrl?.(viewMode, anchorId);
+      } else if (viewMode === null) {
+        // URL has no ?view — default is genres, treat as navigating to genres
+        callbacksRef.current.onViewFromUrl?.('genres', null);
+      }
+    }
+
     if (genreSlug !== prevGenreSlug.current) {
       prevGenreSlug.current = genreSlug;
       if (genreSlug) {
@@ -108,7 +127,7 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     if (!genresLoaded || initialLoadProcessed.current) return;
     initialLoadProcessed.current = true;
     const params = new URLSearchParams(window.location.search);
-    processUrlParams(params.get('genre'), params.get('artist'));
+    processUrlParams(params.get('genre'), params.get('artist'), params.get('view'), params.get('anchor'));
   }, [genresLoaded, processUrlParams]);
 
   // Browser back/forward: popstate listener reads directly from window.location.
@@ -118,7 +137,7 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
       if (!callbacksRef.current.genresLoaded) return;
 
       const params = new URLSearchParams(window.location.search);
-      processUrlParams(params.get('genre'), params.get('artist'));
+      processUrlParams(params.get('genre'), params.get('artist'), params.get('view'), params.get('anchor'));
 
       // Sync history index from the restored history entry's state.
       const newIndex: number = event.state?.historyIndex ?? 0;
@@ -142,6 +161,7 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   }, [processUrlParams]);
 
   // App → URL: pushState with historyIndex embedded in state so it survives refresh.
+  // Preserves existing ?view and ?anchor params — use updateView to change those.
   const updateUrl = useCallback((entity: UrlEntity) => {
     const params = new URLSearchParams(window.location.search);
 
@@ -158,6 +178,39 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
 
     prevGenreSlug.current = params.get('genre');
     prevArtistSlug.current = params.get('artist');
+
+    const search = params.toString();
+    const newUrl = search
+      ? `${window.location.pathname}?${search}`
+      : window.location.pathname;
+
+    const newIndex = historyIndex.current + 1;
+    window.history.pushState({ historyIndex: newIndex }, '', newUrl);
+
+    historyIndex.current = newIndex;
+    forwardCount.current = 0;
+    setCanGoBack(true);
+    setCanGoForward(false);
+  }, []);
+
+  // Updates the active view mode in the URL. 'genres' is the default and removes the ?view param.
+  // Preserves existing ?genre and ?artist params.
+  const updateView = useCallback((view: ViewMode, anchorId?: string) => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (view === 'genres') {
+      params.delete('view');
+      params.delete('anchor');
+    } else {
+      params.set('view', view);
+      if (anchorId) {
+        params.set('anchor', anchorId);
+      } else {
+        params.delete('anchor');
+      }
+    }
+
+    prevViewMode.current = params.get('view');
 
     const search = params.toString();
     const newUrl = search
@@ -194,5 +247,5 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     setCanGoForward(forwardCount.current > 0);
   }, []);
 
-  return { updateUrl, canGoBack, canGoForward, goBack, goForward };
+  return { updateUrl, updateView, canGoBack, canGoForward, goBack, goForward };
 }
