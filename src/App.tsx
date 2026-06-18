@@ -490,6 +490,9 @@ function App() {
   }, [genres]);
 
   const isMobile = useMediaQuery({ maxWidth: 640 });
+  // MobileAppBar is visible below the md breakpoint (768px), so any element that
+  // must not overlap it needs to check this wider threshold, not isMobile.
+  const isBelowMd = useMediaQuery({ maxWidth: 767 });
   // const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
   const defaultGraphZoom = useMemo(() => getDefaultGraphZoom(dagMode, isMobile), [dagMode, isMobile]);
   const [genresZoom, setGenresZoom] = useState<number | null>(null);
@@ -3089,7 +3092,7 @@ function App() {
                 resetZoomDirection={activeZoomDirection}
               />
             </div>
-          {!isMobile && <div className='z-20 fixed bottom-4 right-3'>
+          {!isBelowMd && <div className='z-20 fixed bottom-4 right-3'>
             {/*Genre Node Limiter*/}
             <NodeLimiter
               totalNodes={genres ? genres.length : 0}
