@@ -46,7 +46,7 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import { useUrlState } from './hooks/useUrlState';
-import { toSlug } from '@/lib/urlUtils';
+import { toSlug, viewModeToGraphState } from '@/lib/urlUtils';
 import DisplayPanel from './components/DisplayPanel';
 import SharePanel from './components/SharePanel';
 import NodeLimiter from './components/NodeLimiter'
@@ -167,7 +167,10 @@ function App() {
   const [isUserDraggingArtistCanvas, setIsUserDraggingArtistCanvas] = useState(false);
   const [genreDrawerExpandTrigger, setGenreDrawerExpandTrigger] = useState(0);
   const [artistDrawerExpandTrigger, setArtistDrawerExpandTrigger] = useState(0);
-  const [graph, setGraph] = useState<GraphType>('genres');
+  const [graph, setGraph] = useState<GraphType>(() => {
+    const viewState = viewModeToGraphState(new URLSearchParams(window.location.search).get('view'));
+    return viewState?.graph ?? 'genres';
+  });
   const [currentArtists, setCurrentArtists] = useState<Artist[]>([]);
   const [currentArtistLinks, setCurrentArtistLinks] = useState<NodeLink[]>([]);
   const [pendingArtistGenreGraph, setPendingArtistGenreGraph] = useState<Artist | undefined>(undefined);
@@ -306,7 +309,10 @@ function App() {
   const [genreNodeCount, setGenreNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [artistNodeCount, setArtistNodeCount] = useState<number>(DEFAULT_NODE_COUNT);
   const [isBeforeArtistLoad, setIsBeforeArtistLoad] = useState<boolean>(true);
-  const [collectionMode, setCollectionMode] = useState<boolean>(false);
+  const [collectionMode, setCollectionMode] = useState<boolean>(() => {
+    const viewState = viewModeToGraphState(new URLSearchParams(window.location.search).get('view'));
+    return viewState?.collectionMode ?? false;
+  });
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
   const { addRecentSelection } = useRecentSelections();
   const {
@@ -407,8 +413,12 @@ function App() {
     return genres.find(g => toSlug(g.name) === slug);
   }, [genres]);
 
+  // When restoring ?view=similar-artists from URL, this flag tells onArtistFromUrl
+  // to trigger a similar artists fetch once the anchor artist resolves.
+  const pendingSimilarArtistsFromUrl = useRef(false);
+
   // URL State: Open/close drawers from URL (initial load + browser back/forward)
-  const { updateUrl, canGoBack, canGoForward, goBack, goForward } = useUrlState({
+  const { updateUrl, updateView, canGoBack, canGoForward, goBack, goForward } = useUrlState({
     findGenreBySlug,
     fetchArtistById: (id) => fetchSingleArtist(id, false),
     onGenreFromUrl: (genre) => {
@@ -420,6 +430,11 @@ function App() {
       setArtistInfoToShow(artist);
       setShowArtistCard(true);
       addRecentSelection(artist, 'artist');
+      if (pendingSimilarArtistsFromUrl.current) {
+        pendingSimilarArtistsFromUrl.current = false;
+        fetchSimilarArtists(artist);
+        setSimilarArtistAnchor(artist);
+      }
     },
     onGenreClearedFromUrl: () => {
       setShowGenreCard(false);
@@ -429,8 +444,24 @@ function App() {
       setShowArtistCard(false);
       setArtistInfoToShow(undefined);
     },
+    onViewFromUrl: (graph, collectionMode) => {
+      // For similar-artists, defer to onArtistFromUrl once the anchor artist resolves.
+      // Set graph to 'artists' in the meantime so the app isn't in a broken state.
+      if (graph === 'similarArtists') {
+        pendingSimilarArtistsFromUrl.current = true;
+        setGraph('artists');
+      } else {
+        setGraph(graph);
+      }
+      setCollectionMode(collectionMode);
+    },
     genresLoaded: genres.length > 0 && !genresLoading,
   });
+
+  // Keep ?view= param in sync whenever the active graph tab or collection mode changes.
+  useEffect(() => {
+    updateView(graph, collectionMode);
+  }, [graph, collectionMode, updateView]);
 
   const artistsAddedRef = useRef(0);
 

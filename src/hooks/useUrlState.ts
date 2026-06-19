@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toSlug } from '@/lib/urlUtils';
+import { toSlug, graphStateToViewMode, viewModeToGraphState } from '@/lib/urlUtils';
 import type { Artist, Genre } from '@/types';
 
 interface UseUrlStateOptions {
@@ -9,6 +9,7 @@ interface UseUrlStateOptions {
   onArtistFromUrl?: (artist: Artist) => void;
   onGenreClearedFromUrl?: () => void;
   onArtistClearedFromUrl?: () => void;
+  onViewFromUrl?: (graph: 'genres' | 'artists' | 'similarArtists', collectionMode: boolean) => void;
   genresLoaded: boolean;
 }
 
@@ -25,6 +26,7 @@ export type UrlEntity =
 
 export interface UrlStateResult {
   updateUrl: (entity: UrlEntity) => void;
+  updateView: (graph: string, collectionMode: boolean) => void;
   canGoBack: boolean;
   canGoForward: boolean;
   goBack: () => void;
@@ -79,8 +81,10 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
   const callbacksRef = useRef(options);
   callbacksRef.current = options;
 
-  // Shared logic: resolve URL slugs → open/close drawers
-  const processUrlParams = useCallback((genreSlug: string | null, artistSlug: string | null) => {
+  const prevViewParam = useRef<string | null>(null);
+
+  // Shared logic: resolve URL slugs → open/close drawers and restore view
+  const processUrlParams = useCallback((genreSlug: string | null, artistSlug: string | null, viewParam: string | null) => {
     if (genreSlug !== prevGenreSlug.current) {
       prevGenreSlug.current = genreSlug;
       if (genreSlug) {
@@ -101,6 +105,14 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
         callbacksRef.current.onArtistClearedFromUrl?.();
       }
     }
+
+    if (viewParam !== prevViewParam.current) {
+      prevViewParam.current = viewParam;
+      const viewState = viewModeToGraphState(viewParam);
+      if (viewState) {
+        callbacksRef.current.onViewFromUrl?.(viewState.graph, viewState.collectionMode);
+      }
+    }
   }, []);
 
   // Initial load: process URL params once genres are ready
@@ -108,7 +120,7 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     if (!genresLoaded || initialLoadProcessed.current) return;
     initialLoadProcessed.current = true;
     const params = new URLSearchParams(window.location.search);
-    processUrlParams(params.get('genre'), params.get('artist'));
+    processUrlParams(params.get('genre'), params.get('artist'), params.get('view'));
   }, [genresLoaded, processUrlParams]);
 
   // Browser back/forward: popstate listener reads directly from window.location.
@@ -118,7 +130,7 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
       if (!callbacksRef.current.genresLoaded) return;
 
       const params = new URLSearchParams(window.location.search);
-      processUrlParams(params.get('genre'), params.get('artist'));
+      processUrlParams(params.get('genre'), params.get('artist'), params.get('view'));
 
       // Sync history index from the restored history entry's state.
       const newIndex: number = event.state?.historyIndex ?? 0;
@@ -194,5 +206,18 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     setCanGoForward(forwardCount.current > 0);
   }, []);
 
-  return { updateUrl, canGoBack, canGoForward, goBack, goForward };
+  // Update just the `view` param in place using replaceState (no history entry).
+  // updateUrl (pushState) naturally preserves this param since it reads the current URL first.
+  const updateView = useCallback((graph: string, collectionMode: boolean) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('view', graphStateToViewMode(graph, collectionMode));
+    const search = params.toString();
+    const newUrl = search
+      ? `${window.location.pathname}?${search}`
+      : window.location.pathname;
+    window.history.replaceState(window.history.state, '', newUrl);
+    prevViewParam.current = params.get('view');
+  }, []);
+
+  return { updateUrl, updateView, canGoBack, canGoForward, goBack, goForward };
 }

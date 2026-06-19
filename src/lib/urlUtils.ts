@@ -29,3 +29,35 @@ export function parseUrlState(searchParams: URLSearchParams): ParsedUrlState {
     artistSlug: searchParams.get('artist'),
   };
 }
+
+/**
+ * View mode values that appear in the `?view=` URL param.
+ */
+export type ViewMode = 'genres' | 'artists' | 'collection' | 'similar-artists';
+
+/**
+ * Derive the URL view param value from the current graph tab and collection flag.
+ * 'parentGenre' is an internal transient tab — it maps to 'genres' for sharing.
+ */
+export function graphStateToViewMode(graph: string, collectionMode: boolean): ViewMode {
+  if (graph === 'similarArtists') return 'similar-artists';
+  if (graph === 'artists' && collectionMode) return 'collection';
+  if (graph === 'artists') return 'artists';
+  return 'genres';
+}
+
+/**
+ * Parse a `?view=` param value into graph tab + collection flag.
+ * Returns null for unrecognised values (caller should keep current state).
+ */
+export function viewModeToGraphState(
+  viewMode: string | null
+): { graph: 'genres' | 'artists' | 'similarArtists'; collectionMode: boolean } | null {
+  switch (viewMode) {
+    case 'genres': return { graph: 'genres', collectionMode: false };
+    case 'artists': return { graph: 'artists', collectionMode: false };
+    case 'collection': return { graph: 'artists', collectionMode: true };
+    case 'similar-artists': return { graph: 'similarArtists', collectionMode: false };
+    default: return null;
+  }
+}
