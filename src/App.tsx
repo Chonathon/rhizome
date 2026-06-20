@@ -408,7 +408,7 @@ function App() {
   }, [genres]);
 
   // URL State: Open/close drawers from URL (initial load + browser back/forward)
-  const { updateUrl, canGoBack, canGoForward, goBack, goForward } = useUrlState({
+  const { updateUrl, updateView, canGoBack, canGoForward, goBack, goForward } = useUrlState({
     findGenreBySlug,
     fetchArtistById: (id) => fetchSingleArtist(id, false),
     onGenreFromUrl: (genre) => {
@@ -416,10 +416,25 @@ function App() {
       setShowGenreCard(true);
       addRecentSelection(genre, 'genre');
     },
-    onArtistFromUrl: (artist) => {
+    onArtistFromUrl: (artist, view) => {
       setArtistInfoToShow(artist);
       setShowArtistCard(true);
       addRecentSelection(artist, 'artist');
+      if (view === 'similar') {
+        createSimilarArtistGraph(artist);
+      }
+    },
+    onViewFromUrl: (view) => {
+      if (view === 'artists') {
+        setGraph('artists');
+        setCollectionMode(false);
+      } else if (view === 'collection') {
+        onCollectionClick();
+      } else if (view === 'genres') {
+        setGraph('genres');
+        setCollectionMode(false);
+      }
+      // 'similar' is handled inside onArtistFromUrl once the anchor artist loads
     },
     onGenreClearedFromUrl: () => {
       setShowGenreCard(false);
@@ -433,6 +448,20 @@ function App() {
   });
 
   const artistsAddedRef = useRef(0);
+
+  // Keep the `view` URL param in sync with the active graph/mode so that
+  // refreshing or sharing the URL restores the correct view.
+  useEffect(() => {
+    if (graph === 'genres') {
+      updateView('genres');
+    } else if (graph === 'similarArtists') {
+      updateView('similar');
+    } else if (graph === 'artists' && collectionMode) {
+      updateView('collection');
+    } else if (graph === 'artists') {
+      updateView('artists');
+    }
+  }, [graph, collectionMode, updateView]);
 
   // Get hovered artist data for preview
   const hoveredArtistData = useMemo(() => {

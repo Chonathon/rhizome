@@ -13,11 +13,25 @@ export function toSlug(name: string | undefined | null): string {
 }
 
 /**
+ * The active view/mode in the app, encoded as the `view` URL param.
+ * Omitting the param (or any unrecognized value) defaults to 'genres'.
+ */
+export type AppView = 'genres' | 'artists' | 'collection' | 'similar';
+
+const VALID_VIEWS: ReadonlySet<string> = new Set(['genres', 'artists', 'collection', 'similar']);
+
+export function parseAppView(raw: string | null): AppView | null {
+  if (raw && VALID_VIEWS.has(raw)) return raw as AppView;
+  return null;
+}
+
+/**
  * Parsed URL state from search params
  */
 export interface ParsedUrlState {
   genreSlug: string | null;
   artistSlug: string | null;
+  view: AppView | null;
 }
 
 /**
@@ -27,5 +41,6 @@ export function parseUrlState(searchParams: URLSearchParams): ParsedUrlState {
   return {
     genreSlug: searchParams.get('genre'),
     artistSlug: searchParams.get('artist'),
+    view: parseAppView(searchParams.get('view')),
   };
 }
