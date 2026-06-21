@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type FormEvent } from "react";
+import { useEffect, useState, useRef, useMemo, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Dialog,
@@ -18,6 +18,7 @@ import * as React from "react";
 import { Check, Loader2 } from "lucide-react";
 import LastFMLogo from "@/assets/Last.fm Logo.svg";
 import type { LastFMAccountPreview } from "@/types";
+import { Slider } from "@/components/ui/slider";
 
 type AuthMode = "signup" | "login" | "connect-lfm";
 
@@ -27,10 +28,12 @@ interface AuthOverlayProps {
   onSignIn: (email: string, password: string) => Promise<boolean>;
   onForgotPassword: (email: string) => Promise<boolean>;
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
-  onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
+  onLastFMConnect: (lfmUsername: string, minPlayCount?: number) => Promise<boolean>;
 }
 
 // --- Last.fm Connect Step ---
+
+type ConnectStep = 'username' | 'pruning' | 'success'
 
 function ConnectMusicStep({
   onDone,
@@ -39,13 +42,30 @@ function ConnectMusicStep({
 }: {
   onDone: () => void
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>
-  onLastFMConnect: (lfmUsername: string) => Promise<boolean>
+  onLastFMConnect: (lfmUsername: string, minPlayCount?: number) => Promise<boolean>
 }) {
   const [lfmUsername, setLfmUsername] = useState("")
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState<LastFMAccountPreview | undefined>()
-  const [connectSuccess, setConnectSuccess] = useState(false)
+  const [step, setStep] = useState<ConnectStep>('username')
   const [skipped, setSkipped] = useState(false)
+  const [threshold, setThreshold] = useState(0)
+
+  const hasPlayCounts = useMemo(
+    () => (preview?.artists ?? []).some(a => a.playCount !== undefined),
+    [preview]
+  )
+
+  const maxPlayCount = useMemo(() => {
+    if (!hasPlayCounts || !preview?.artists) return 0
+    return Math.max(...preview.artists.map(a => a.playCount ?? 0))
+  }, [hasPlayCounts, preview])
+
+  const estimatedCount = useMemo(() => {
+    if (!preview) return 0
+    if (!hasPlayCounts || !preview.artists) return preview.totalArtists
+    return preview.artists.filter(a => (a.playCount ?? 0) >= threshold).length
+  }, [threshold, preview, hasPlayCounts])
 
   const handlePreview = async () => {
     if (!lfmUsername) {
@@ -57,6 +77,8 @@ function ConnectMusicStep({
     setLoading(false)
     if (result) {
       setPreview(result)
+      setThreshold(0)
+      setStep('pruning')
     } else {
       toast.error("Unable to find Last.fm account")
     }
@@ -65,19 +87,13 @@ function ConnectMusicStep({
   const handleConnect = async () => {
     if (!preview?.lfmUsername) return
     setLoading(true)
-    const success = await onLastFMConnect(preview.lfmUsername)
+    const success = await onLastFMConnect(preview.lfmUsername, threshold > 0 ? threshold : undefined)
     setLoading(false)
     if (success) {
       toast.success("Successfully connected to Last.fm!")
-      setConnectSuccess(true)
+      setStep('success')
     } else {
       toast.error("Unable to connect to Last.fm")
-    }
-  }
-
-  const handleBack = () => {
-    if (preview && !connectSuccess) {
-      setPreview(undefined)
     }
   }
 
@@ -114,7 +130,7 @@ function ConnectMusicStep({
         <div className="py-8 flex justify-center">
           <Loader2 className="animate-spin size-6 text-muted-foreground" />
         </div>
-      ) : connectSuccess ? (
+      ) : step === 'success' ? (
         <div className="text-center py-4">
           <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10">
             <Check className="size-6 text-primary" />
@@ -124,22 +140,15 @@ function ConnectMusicStep({
             Your scrobbled artists are being imported.
           </p>
         </div>
-      ) : preview ? (
-        <div className="grid gap-3">
-          <div className="p-4 rounded-xl bg-accent dark:bg-accent/50 border border-muted dark:border-accent">
-            <p className="text-sm">
-              Account <strong>{preview.lfmUsername}</strong> found with{" "}
-              <strong>{preview.totalArtists}</strong> artists.
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Top artists: {preview.topArtists.join(", ")}
-            </p>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Connecting will import your scrobbled artists into your collection.
-            This could take some time if you have thousands of artists!
-          </p>
-        </div>
+      ) : step === 'pruning' && preview ? (
+        <LastFMPruningControls
+          preview={preview}
+          threshold={threshold}
+          onThresholdChange={setThreshold}
+          hasPlayCounts={hasPlayCounts}
+          maxPlayCount={maxPlayCount}
+          estimatedCount={estimatedCount}
+        />
       ) : (
         <div className="grid gap-4">
           <div className="grid gap-3 p-3 rounded-xl bg-accent dark:bg-accent/50 border border-muted dark:border-accent">
@@ -170,7 +179,7 @@ function ConnectMusicStep({
       )}
 
       <div className="flex gap-2 w-full">
-        {connectSuccess ? (
+        {step === 'success' ? (
           <>
             <Button variant="outline" size="lg" className="flex-1" onClick={onDone}>
               Close
@@ -182,12 +191,12 @@ function ConnectMusicStep({
               View Collection
             </Button>
           </>
-        ) : preview ? (
+        ) : step === 'pruning' ? (
           <>
-            <Button variant="outline" size="lg" className="flex-1" onClick={handleBack}>
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setStep('username')}>
               Back
             </Button>
-            <Button size="lg" className="flex-1" onClick={handleConnect}>
+            <Button size="lg" className="flex-1" onClick={handleConnect} disabled={loading}>
               Connect
             </Button>
           </>
@@ -214,6 +223,79 @@ function ConnectMusicStep({
           Let us know!
         </a>
       </p>
+    </div>
+  )
+}
+
+// Shared pruning controls used in both the onboarding and settings flows
+function LastFMPruningControls({
+  preview,
+  threshold,
+  onThresholdChange,
+  hasPlayCounts,
+  maxPlayCount,
+  estimatedCount,
+}: {
+  preview: LastFMAccountPreview
+  threshold: number
+  onThresholdChange: (value: number) => void
+  hasPlayCounts: boolean
+  maxPlayCount: number
+  estimatedCount: number
+}) {
+  return (
+    <div className="grid gap-4">
+      <div className="p-4 rounded-xl bg-accent dark:bg-accent/50 border border-muted dark:border-accent">
+        <p className="text-sm font-medium">{preview.lfmUsername}</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {preview.totalArtists} artists found in your library
+        </p>
+        {preview.topArtists.length > 0 && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Top artists: {preview.topArtists.slice(0, 5).join(", ")}
+          </p>
+        )}
+      </div>
+
+      <div className="grid gap-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium">Minimum play count</Label>
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {estimatedCount} of {preview.totalArtists} artists
+          </span>
+        </div>
+
+        {hasPlayCounts ? (
+          <div className="grid gap-2">
+            <Slider
+              min={0}
+              max={maxPlayCount}
+              step={Math.max(1, Math.floor(maxPlayCount / 100))}
+              value={[threshold]}
+              onValueChange={([v]) => onThresholdChange(v)}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>0 (all artists)</span>
+              <span>{threshold > 0 ? `≥ ${threshold} plays` : "No filter"}</span>
+              <span>{maxPlayCount.toLocaleString()}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-2">
+            <Input
+              type="number"
+              min={0}
+              placeholder="0 — import all artists"
+              value={threshold || ""}
+              onChange={(e) => onThresholdChange(Math.max(0, parseInt(e.target.value) || 0))}
+            />
+            <p className="text-xs text-muted-foreground">
+              Artists with fewer plays than this threshold will be excluded.
+              Leave empty to import all {preview.totalArtists} artists.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

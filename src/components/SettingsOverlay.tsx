@@ -54,6 +54,7 @@ import {Loading} from "@/components/Loading";
 import {Switch} from "@/components/ui/switch";
 import {Label} from "@/components/ui/label";
 import {formatDate} from "@/lib/utils";
+import {Slider} from "@/components/ui/slider";
 
 const data = {
   nav: [
@@ -839,6 +840,81 @@ const ConnectionsSection = (
   );
 }
 
+// Shared pruning controls for the Last.fm import step (settings context)
+function LastFMPruningControlsSettings({
+  preview,
+  threshold,
+  onThresholdChange,
+  hasPlayCounts,
+  maxPlayCount,
+  estimatedCount,
+}: {
+  preview: LastFMAccountPreview;
+  threshold: number;
+  onThresholdChange: (value: number) => void;
+  hasPlayCounts: boolean;
+  maxPlayCount: number;
+  estimatedCount: number;
+}) {
+  return (
+    <div className="grid gap-4">
+      <div className="p-3 rounded-lg bg-muted/50 border border-muted text-sm">
+        <p className="font-medium">{preview.lfmUsername}</p>
+        <p className="text-muted-foreground mt-0.5">
+          {preview.totalArtists} artists found
+        </p>
+        {preview.topArtists.length > 0 && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Top artists: {preview.topArtists.slice(0, 5).join(", ")}
+          </p>
+        )}
+      </div>
+
+      <FieldGroup>
+        <Field>
+          <div className="flex items-center justify-between">
+            <FieldLabel>Minimum play count</FieldLabel>
+            <span className="text-sm text-muted-foreground tabular-nums">
+              {estimatedCount} / {preview.totalArtists} artists
+            </span>
+          </div>
+
+          {hasPlayCounts ? (
+            <div className="grid gap-2 mt-2">
+              <Slider
+                min={0}
+                max={maxPlayCount}
+                step={Math.max(1, Math.floor(maxPlayCount / 100))}
+                value={[threshold]}
+                onValueChange={([v]) => onThresholdChange(v)}
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0 (all)</span>
+                <span>{threshold > 0 ? `≥ ${threshold} plays` : "No filter"}</span>
+                <span>{maxPlayCount.toLocaleString()}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-1.5 mt-2">
+              <Input
+                type="number"
+                min={0}
+                placeholder="0 — import all artists"
+                value={threshold || ""}
+                onChange={(e) => onThresholdChange(Math.max(0, parseInt(e.target.value) || 0))}
+              />
+              <FieldDescription>
+                Artists below this play count will be excluded.
+                Leave empty to import all {preview.totalArtists} artists.
+              </FieldDescription>
+            </div>
+          )}
+        </Field>
+      </FieldGroup>
+    </div>
+  );
+}
+
 // Last.fm Preview Dialog Component
 const LastFMDialog = (
     {
@@ -849,13 +925,30 @@ const LastFMDialog = (
     }: {
   open: boolean;
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
-  onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
+  onLastFMConnect: (lfmUsername: string, minPlayCount?: number) => Promise<boolean>;
   onOpenChange: (open: boolean) => void;
 }) => {
   const [preview, setPreview] = useState<LastFMAccountPreview | undefined>(undefined);
-  const [connectSuccess, setConnectSuccess] = useState(false);
+  const [step, setStep] = useState<'username' | 'pruning' | 'success'>('username');
   const [lfmUsername, setLfmUsername] = useState("");
   const [lfmLoading, setLfmLoading] = useState(false);
+  const [threshold, setThreshold] = useState(0);
+
+  const hasPlayCounts = React.useMemo(
+    () => (preview?.artists ?? []).some(a => a.playCount !== undefined),
+    [preview]
+  );
+
+  const maxPlayCount = React.useMemo(() => {
+    if (!hasPlayCounts || !preview?.artists) return 0;
+    return Math.max(...preview.artists.map(a => a.playCount ?? 0));
+  }, [hasPlayCounts, preview]);
+
+  const estimatedCount = React.useMemo(() => {
+    if (!preview) return 0;
+    if (!hasPlayCounts || !preview.artists) return preview.totalArtists;
+    return preview.artists.filter(a => (a.playCount ?? 0) >= threshold).length;
+  }, [threshold, preview, hasPlayCounts]);
 
   const handleSubmitPreview = async () => {
     if (!lfmUsername) {
@@ -867,43 +960,42 @@ const LastFMDialog = (
     setLfmLoading(false);
     if (previewResult) {
       setPreview(previewResult);
+      setThreshold(0);
+      setStep('pruning');
     } else {
       toast.error("Unable to find last.fm account");
     }
   }
 
   const handleSubmitConnect = async () => {
-    if (!lfmUsername) {
-      toast.error("Please enter a last.fm username");
-      return;
-    }
-    if (!preview || !preview.lfmUsername) {
+    if (!preview?.lfmUsername) {
       toast.error("No user data found.");
       return;
     }
     setLfmLoading(true);
-    const success = await onLastFMConnect(preview.lfmUsername);
+    const success = await onLastFMConnect(preview.lfmUsername, threshold > 0 ? threshold : undefined);
     setLfmLoading(false);
     if (success) {
       toast.success("Successfully connected to Last.fm!");
-      setConnectSuccess(true);
+      setStep('success');
     } else {
       toast.error("Unable to connect to Last.fm!");
-      setConnectSuccess(false);
     }
   }
 
-  const handleCancel = () => {
-    if (preview && !connectSuccess) {
+  const handleClose = () => {
+    onOpenChange(false);
+    // Reset state when dialog closes
+    setTimeout(() => {
+      setStep('username');
       setPreview(undefined);
-    } else {
-      onOpenChange(false);
-      setConnectSuccess(false);
-    }
+      setLfmUsername("");
+      setThreshold(0);
+    }, 200);
   }
 
   return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={(next) => { if (!next) handleClose(); }}>
         <DialogContent className="bg-card sm:max-w-md">
           <DialogTitle>Connect Last.fm Account</DialogTitle>
           {lfmLoading ? (
@@ -912,75 +1004,69 @@ const LastFMDialog = (
               </div>
           ) : (
              <>
-               {connectSuccess ? (
+               {step === 'success' ? (
                    <DialogDescription>
                      Your Last.fm account has been successfully linked.
                    </DialogDescription>
+               ) : step === 'pruning' && preview ? (
+                 <div className="grid gap-4 py-1">
+                   <DialogDescription>
+                     Choose which artists to import from your Last.fm library.
+                   </DialogDescription>
+                   <LastFMPruningControlsSettings
+                     preview={preview}
+                     threshold={threshold}
+                     onThresholdChange={setThreshold}
+                     hasPlayCounts={hasPlayCounts}
+                     maxPlayCount={maxPlayCount}
+                     estimatedCount={estimatedCount}
+                   />
+                 </div>
                ) : (
                    <>
-                     {preview ? (
-                         <>
-                           <DialogDescription>
-                             Last.fm account <strong>{preview.lfmUsername}</strong> found with <strong>{preview.totalArtists}</strong> artists.
-                           </DialogDescription>
-                           <DialogDescription>
-                             Favorite artists: <strong>{preview.topArtists.map(a => `${a}`).join(', ')}</strong>
-                           </DialogDescription>
-                           <DialogDescription>
-                             Connecting your account will attempt to add all of your scrobbled artists to your collection.
-                             This could take some time if you have thousands of artists scrobbled!
-                           </DialogDescription>
-                         </>
-                     ) : (
-                         <>
-                           <DialogDescription>
-                             Link your Last.fm account to add your scrobbled artists to your Rhizome collection.
-                           </DialogDescription>
-                           <FieldGroup>
-                             <Field>
-                               <FieldLabel htmlFor="last-fm-username">
-                                 Enter your Last.fm username
-                               </FieldLabel>
-                               <Input
-                                   id="last-fm-username"
-                                   type="text"
-                                   value={lfmUsername}
-                                   onChange={(e) => setLfmUsername(e.target.value)}
-                                   required
-                               />
-                             </Field>
-                           </FieldGroup>
-                         </>
-                     )}
+                     <DialogDescription>
+                       Link your Last.fm account to add your scrobbled artists to your Rhizome collection.
+                     </DialogDescription>
+                     <FieldGroup>
+                       <Field>
+                         <FieldLabel htmlFor="last-fm-username">
+                           Enter your Last.fm username
+                         </FieldLabel>
+                         <Input
+                             id="last-fm-username"
+                             type="text"
+                             value={lfmUsername}
+                             onChange={(e) => setLfmUsername(e.target.value)}
+                             onKeyDown={(e) => { if (e.key === 'Enter') handleSubmitPreview(); }}
+                             required
+                         />
+                       </Field>
+                     </FieldGroup>
                    </>
                )}
                <div className="flex gap-2 mt-6">
-                 <Button
-                     type="button"
-                     variant="outline"
-                     onClick={() => handleCancel()}
-                     className="flex-1"
-                 >
-                   {connectSuccess ? "Close" : "Cancel"}
-                 </Button>
-                 {preview ? (
-                     <Button
-                         type="button"
-                         className="flex-1"
-                         hidden={connectSuccess}
-                         onClick={() => handleSubmitConnect()}
-                     >
+                 {step === 'success' ? (
+                   <Button type="button" className="flex-1" onClick={handleClose}>
+                     Close
+                   </Button>
+                 ) : step === 'pruning' ? (
+                   <>
+                     <Button type="button" variant="outline" className="flex-1" onClick={() => setStep('username')}>
+                       Back
+                     </Button>
+                     <Button type="button" className="flex-1" onClick={handleSubmitConnect}>
                        Connect
                      </Button>
+                   </>
                  ) : (
-                     <Button
-                         type="button"
-                         className="flex-1"
-                         hidden={connectSuccess}
-                         onClick={() => handleSubmitPreview()}
-                     >
+                   <>
+                     <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>
+                       Cancel
+                     </Button>
+                     <Button type="button" className="flex-1" onClick={handleSubmitPreview}>
                        Find Last.fm account
                      </Button>
+                   </>
                  )}
                </div>
              </>
@@ -1136,7 +1222,7 @@ interface SettingsOverlayProps {
   onChangePreferences: (newPreferences: Preferences) => Promise<boolean>;
   onChangeName: (newName: string) => Promise<boolean>;
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
-  onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
+  onLastFMConnect: (lfmUsername: string, minPlayCount?: number) => Promise<boolean>;
   onLastFMRemove: (removeArtists: boolean) => Promise<boolean>;
   onLastFMRefresh: () => Promise<boolean>;
 }

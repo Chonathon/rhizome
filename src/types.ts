@@ -53,6 +53,18 @@ export interface NodeLink {
     linkType: LinkType;
 }
 
+export interface LastFMArtistPreview {
+    name: string;
+    playCount?: number;
+}
+
+export interface LastFMAccountPreview {
+    lfmUsername: string;
+    totalArtists: number;
+    topArtists: string[];
+    artists?: LastFMArtistPreview[];
+}
+
 export interface LastFMBio {
     link: string;
     summary: string;

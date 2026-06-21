@@ -36,8 +36,9 @@ export const lastFMPreview = async (lfmUsername: string) => {
     return response.data.preview;
 }
 
-export const lastFMConnect = async (lfmUsername: string, userID: string) => {
-    const response = await axios.put(`${url}/users/lastfm/${userID}/${lfmUsername}`);
+export const lastFMConnect = async (lfmUsername: string, userID: string, minPlayCount?: number) => {
+    const params = minPlayCount !== undefined && minPlayCount > 0 ? { minPlayCount } : undefined;
+    const response = await axios.put(`${url}/users/lastfm/${userID}/${lfmUsername}`, undefined, { params });
     return response.status === 200;
 }
 
