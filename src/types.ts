@@ -100,6 +100,12 @@ export interface RootGenreNode {
     type: GenreClusterMode;
 }
 
+export interface LastFMAccountPreview {
+    lfmUsername: string;
+    totalArtists: number;
+    topArtists: string[];
+}
+
 export interface TopTrack extends TopTrackPlayIDs{
     title: string;
     artistName: string;

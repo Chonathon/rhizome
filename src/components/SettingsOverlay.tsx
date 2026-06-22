@@ -53,6 +53,7 @@ import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuConten
 import {Loading} from "@/components/Loading";
 import {Switch} from "@/components/ui/switch";
 import {Label} from "@/components/ui/label";
+import {Slider} from "@/components/ui/slider";
 import {formatDate} from "@/lib/utils";
 
 const data = {
@@ -849,13 +850,14 @@ const LastFMDialog = (
     }: {
   open: boolean;
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
-  onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
+  onLastFMConnect: (lfmUsername: string, minPlayCount?: number) => Promise<boolean>;
   onOpenChange: (open: boolean) => void;
 }) => {
   const [preview, setPreview] = useState<LastFMAccountPreview | undefined>(undefined);
   const [connectSuccess, setConnectSuccess] = useState(false);
   const [lfmUsername, setLfmUsername] = useState("");
   const [lfmLoading, setLfmLoading] = useState(false);
+  const [minPlayCount, setMinPlayCount] = useState(0);
 
   const handleSubmitPreview = async () => {
     if (!lfmUsername) {
@@ -882,7 +884,7 @@ const LastFMDialog = (
       return;
     }
     setLfmLoading(true);
-    const success = await onLastFMConnect(preview.lfmUsername);
+    const success = await onLastFMConnect(preview.lfmUsername, minPlayCount || undefined);
     setLfmLoading(false);
     if (success) {
       toast.success("Successfully connected to Last.fm!");
@@ -902,8 +904,18 @@ const LastFMDialog = (
     }
   }
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setPreview(undefined);
+      setConnectSuccess(false);
+      setLfmUsername("");
+      setMinPlayCount(0);
+    }
+    onOpenChange(newOpen);
+  }
+
   return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="bg-card sm:max-w-md">
           <DialogTitle>Connect Last.fm Account</DialogTitle>
           {lfmLoading ? (
@@ -926,10 +938,26 @@ const LastFMDialog = (
                            <DialogDescription>
                              Favorite artists: <strong>{preview.topArtists.map(a => `${a}`).join(', ')}</strong>
                            </DialogDescription>
-                           <DialogDescription>
-                             Connecting your account will attempt to add all of your scrobbled artists to your collection.
-                             This could take some time if you have thousands of artists scrobbled!
-                           </DialogDescription>
+                           <div className="space-y-3 pt-1">
+                             <div className="flex justify-between text-sm">
+                               <span className="text-muted-foreground">Minimum play count</span>
+                               <span className="font-medium tabular-nums">
+                                 {minPlayCount === 0 ? "All artists" : `≥ ${minPlayCount} plays`}
+                               </span>
+                             </div>
+                             <Slider
+                               value={[minPlayCount]}
+                               onValueChange={(val) => setMinPlayCount(val[0])}
+                               min={0}
+                               max={1000}
+                               step={10}
+                             />
+                             <p className="text-xs text-muted-foreground">
+                               {minPlayCount === 0
+                                 ? "All scrobbled artists will be imported."
+                                 : `Only artists with at least ${minPlayCount} plays will be imported.`}
+                             </p>
+                           </div>
                          </>
                      ) : (
                          <>
@@ -961,7 +989,7 @@ const LastFMDialog = (
                      onClick={() => handleCancel()}
                      className="flex-1"
                  >
-                   {connectSuccess ? "Close" : "Cancel"}
+                   {connectSuccess ? "Close" : preview ? "Back" : "Cancel"}
                  </Button>
                  {preview ? (
                      <Button
@@ -1136,7 +1164,7 @@ interface SettingsOverlayProps {
   onChangePreferences: (newPreferences: Preferences) => Promise<boolean>;
   onChangeName: (newName: string) => Promise<boolean>;
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
-  onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
+  onLastFMConnect: (lfmUsername: string, minPlayCount?: number) => Promise<boolean>;
   onLastFMRemove: (removeArtists: boolean) => Promise<boolean>;
   onLastFMRefresh: () => Promise<boolean>;
 }

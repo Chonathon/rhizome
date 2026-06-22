@@ -18,6 +18,7 @@ import * as React from "react";
 import { Check, Loader2 } from "lucide-react";
 import LastFMLogo from "@/assets/Last.fm Logo.svg";
 import type { LastFMAccountPreview } from "@/types";
+import { Slider } from "@/components/ui/slider";
 
 type AuthMode = "signup" | "login" | "connect-lfm";
 
@@ -27,7 +28,7 @@ interface AuthOverlayProps {
   onSignIn: (email: string, password: string) => Promise<boolean>;
   onForgotPassword: (email: string) => Promise<boolean>;
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
-  onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
+  onLastFMConnect: (lfmUsername: string, minPlayCount?: number) => Promise<boolean>;
 }
 
 // --- Last.fm Connect Step ---
@@ -39,13 +40,14 @@ function ConnectMusicStep({
 }: {
   onDone: () => void
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>
-  onLastFMConnect: (lfmUsername: string) => Promise<boolean>
+  onLastFMConnect: (lfmUsername: string, minPlayCount?: number) => Promise<boolean>
 }) {
   const [lfmUsername, setLfmUsername] = useState("")
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState<LastFMAccountPreview | undefined>()
   const [connectSuccess, setConnectSuccess] = useState(false)
   const [skipped, setSkipped] = useState(false)
+  const [minPlayCount, setMinPlayCount] = useState(0)
 
   const handlePreview = async () => {
     if (!lfmUsername) {
@@ -65,7 +67,7 @@ function ConnectMusicStep({
   const handleConnect = async () => {
     if (!preview?.lfmUsername) return
     setLoading(true)
-    const success = await onLastFMConnect(preview.lfmUsername)
+    const success = await onLastFMConnect(preview.lfmUsername, minPlayCount || undefined)
     setLoading(false)
     if (success) {
       toast.success("Successfully connected to Last.fm!")
@@ -78,6 +80,7 @@ function ConnectMusicStep({
   const handleBack = () => {
     if (preview && !connectSuccess) {
       setPreview(undefined)
+      setMinPlayCount(0)
     }
   }
 
@@ -135,10 +138,26 @@ function ConnectMusicStep({
               Top artists: {preview.topArtists.join(", ")}
             </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Connecting will import your scrobbled artists into your collection.
-            This could take some time if you have thousands of artists!
-          </p>
+          <div className="space-y-3 px-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Minimum play count</span>
+              <span className="font-medium tabular-nums">
+                {minPlayCount === 0 ? "All artists" : `≥ ${minPlayCount} plays`}
+              </span>
+            </div>
+            <Slider
+              value={[minPlayCount]}
+              onValueChange={(val) => setMinPlayCount(val[0])}
+              min={0}
+              max={1000}
+              step={10}
+            />
+            <p className="text-xs text-muted-foreground">
+              {minPlayCount === 0
+                ? "All scrobbled artists will be imported."
+                : `Only artists with at least ${minPlayCount} plays will be imported.`}
+            </p>
+          </div>
         </div>
       ) : (
         <div className="grid gap-4">
