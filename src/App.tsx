@@ -144,6 +144,8 @@ function App() {
     return artistFilterGenreIDs;
   }, [artistFilterGenreIDs]);
   const [genreOperator, setGenreOperator] = useState<'or' | 'and'>('or');
+  // Set when "Explore Related Genres" sets the filter from an artist — cleared on any manual filter change
+  const [genreFilterContextArtistName, setGenreFilterContextArtistName] = useState<string | undefined>(undefined);
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [selectedArtistFromSearch, setSelectedArtistFromSearch] = useState<boolean>(false);
   const [artistPreviewStack, setArtistPreviewStack] = useState<Artist[]>([]);
@@ -2498,6 +2500,7 @@ function App() {
           setArtistGenreFilter([]);
           setArtistFilterGenres([]);
         }
+        setGenreFilterContextArtistName(undefined);
         // Only clear genre card if it was showing filtered content
         if (artistGenreFilter.length > 0) {
           setGenreInfoToShow(undefined);
@@ -2512,6 +2515,8 @@ function App() {
           setArtistFilterGenres(selectedIDs.map(s => {
             return { id: s } as Genre
           }));
+          // User is manually adjusting — drop the "for artist" context
+          setGenreFilterContextArtistName(undefined);
         }
         // Also sync genre selection so switching to genre tab shows the filtered genre highlighted
         if (!primitiveArraysEqual(selectedIDs, selectedGenres.map(genre => genre.id))) {
@@ -2617,6 +2622,7 @@ function App() {
     // Apply artist filter - this triggers the artist fetch
     setArtistGenreFilter(matched);
     setArtistFilterGenres(matched); // Set the new filter state
+    setGenreFilterContextArtistName(artist.name);
     setPendingArtistGenreGraph(artist); // Will trigger graph switch when artists load
     setCollectionMode(false);
   };
@@ -2926,6 +2932,7 @@ function App() {
                       onOperatorChange={setGenreOperator}
                       selectedGenreIds={artistGenreFilterIDs}
                       genreColorMap={genreColorMap}
+                      contextArtistName={genreFilterContextArtistName}
                     />
                     <DecadesFilter
                       onDecadeSelectionChange={onDecadeSelectionChange}

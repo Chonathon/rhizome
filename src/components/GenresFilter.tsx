@@ -29,6 +29,7 @@ export default function GenresFilter({
   genreColorMap,
   operator = 'or',
   onOperatorChange,
+  contextArtistName,
 }: {
   genres?: Genre[];
   genreClusterModes: GenreClusterMode[];
@@ -38,6 +39,7 @@ export default function GenresFilter({
   genreColorMap?: Map<string, string>;
   operator?: 'or' | 'and';
   onOperatorChange?: (operator: 'or' | 'and') => void;
+  contextArtistName?: string;
 }) {
   const topLevelGenres = useMemo(() => {
     const viaUtil = genres.filter((g) => isRootGenre(g, genreClusterModes));
@@ -138,9 +140,11 @@ export default function GenresFilter({
   if (graphType !== "artists") return null;
 
   const triggerLabel =
-    totalSelected === 1
-      ? (genreById.get(Array.from(selectedIds)[0])?.name ?? "Genres")
-      : "Genres";
+    contextArtistName && totalSelected > 1
+      ? `${contextArtistName}'s genres`
+      : totalSelected === 1
+        ? (genreById.get(Array.from(selectedIds)[0])?.name ?? "Genres")
+        : "Genres";
 
   return (
     <ResponsivePanel
