@@ -104,10 +104,10 @@ const useAuth = () => {
         }
     }
 
-    const onLFMConnect = async (lfmUser: string) => {
+    const onLFMConnect = async (lfmUser: string, minPlayCount = 0) => {
         if (userID) {
             try {
-                const success = await lastFMConnect(lfmUser, userID);
+                const success = await lastFMConnect(lfmUser, userID, minPlayCount);
                 if (success) {
                     setLfmUsername(lfmUser);
                     await refetchSession();

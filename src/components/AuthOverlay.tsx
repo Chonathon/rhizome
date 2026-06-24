@@ -18,6 +18,7 @@ import * as React from "react";
 import { Check, Loader2 } from "lucide-react";
 import LastFMLogo from "@/assets/Last.fm Logo.svg";
 import type { LastFMAccountPreview } from "@/types";
+import { Slider } from "@/components/ui/slider";
 
 type AuthMode = "signup" | "login" | "connect-lfm";
 
@@ -27,8 +28,10 @@ interface AuthOverlayProps {
   onSignIn: (email: string, password: string) => Promise<boolean>;
   onForgotPassword: (email: string) => Promise<boolean>;
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
-  onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
+  onLastFMConnect: (lfmUsername: string, minPlayCount?: number) => Promise<boolean>;
 }
+
+type ConnectStep = "input" | "preview" | "prune" | "success" | "skipped"
 
 // --- Last.fm Connect Step ---
 
@@ -39,13 +42,13 @@ function ConnectMusicStep({
 }: {
   onDone: () => void
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>
-  onLastFMConnect: (lfmUsername: string) => Promise<boolean>
+  onLastFMConnect: (lfmUsername: string, minPlayCount?: number) => Promise<boolean>
 }) {
   const [lfmUsername, setLfmUsername] = useState("")
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState<LastFMAccountPreview | undefined>()
-  const [connectSuccess, setConnectSuccess] = useState(false)
-  const [skipped, setSkipped] = useState(false)
+  const [step, setStep] = useState<ConnectStep>("input")
+  const [minPlayCount, setMinPlayCount] = useState(0)
 
   const handlePreview = async () => {
     if (!lfmUsername) {
@@ -57,6 +60,7 @@ function ConnectMusicStep({
     setLoading(false)
     if (result) {
       setPreview(result)
+      setStep("preview")
     } else {
       toast.error("Unable to find Last.fm account")
     }
@@ -65,23 +69,17 @@ function ConnectMusicStep({
   const handleConnect = async () => {
     if (!preview?.lfmUsername) return
     setLoading(true)
-    const success = await onLastFMConnect(preview.lfmUsername)
+    const success = await onLastFMConnect(preview.lfmUsername, minPlayCount)
     setLoading(false)
     if (success) {
       toast.success("Successfully connected to Last.fm!")
-      setConnectSuccess(true)
+      setStep("success")
     } else {
       toast.error("Unable to connect to Last.fm")
     }
   }
 
-  const handleBack = () => {
-    if (preview && !connectSuccess) {
-      setPreview(undefined)
-    }
-  }
-
-  if (skipped) {
+  if (step === "skipped") {
     return (
       <div className="grid gap-6">
         <DialogHeader>
@@ -106,7 +104,9 @@ function ConnectMusicStep({
           Import Your Music
         </DialogTitle>
         <DialogDescription className="text-md text-center">
-          Sync your scrobbled artists from Last.fm directly into your collection.
+          {step === "prune"
+            ? "Filter out artists you've barely listened to."
+            : "Sync your scrobbled artists from Last.fm directly into your collection."}
         </DialogDescription>
       </DialogHeader>
 
@@ -114,7 +114,7 @@ function ConnectMusicStep({
         <div className="py-8 flex justify-center">
           <Loader2 className="animate-spin size-6 text-muted-foreground" />
         </div>
-      ) : connectSuccess ? (
+      ) : step === "success" ? (
         <div className="text-center py-4">
           <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10">
             <Check className="size-6 text-primary" />
@@ -124,7 +124,33 @@ function ConnectMusicStep({
             Your scrobbled artists are being imported.
           </p>
         </div>
-      ) : preview ? (
+      ) : step === "prune" && preview ? (
+        <div className="grid gap-4">
+          <div className="p-4 rounded-xl bg-accent dark:bg-accent/50 border border-muted dark:border-accent">
+            <p className="text-sm font-medium mb-1">Minimum plays</p>
+            <div className="flex items-center gap-3 mt-3">
+              <span className="text-xs text-muted-foreground w-4">0</span>
+              <Slider
+                min={0}
+                max={100}
+                step={5}
+                value={[minPlayCount]}
+                onValueChange={([val]) => setMinPlayCount(val)}
+                className="flex-1"
+              />
+              <span className="text-xs text-muted-foreground w-8">100+</span>
+            </div>
+            <p className="text-sm mt-3">
+              {minPlayCount === 0
+                ? <>All <strong>{preview.totalArtists}</strong> artists will be imported.</>
+                : <>Only artists with at least <strong>{minPlayCount}</strong> plays will be imported.</>}
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Last.fm scrobbles signal how often you've listened to an artist. A higher threshold keeps only your most-played artists.
+          </p>
+        </div>
+      ) : step === "preview" && preview ? (
         <div className="grid gap-3">
           <div className="p-4 rounded-xl bg-accent dark:bg-accent/50 border border-muted dark:border-accent">
             <p className="text-sm">
@@ -136,8 +162,7 @@ function ConnectMusicStep({
             </p>
           </div>
           <p className="text-sm text-muted-foreground">
-            Connecting will import your scrobbled artists into your collection.
-            This could take some time if you have thousands of artists!
+            Next, you can filter out artists you've barely listened to before importing.
           </p>
         </div>
       ) : (
@@ -170,7 +195,7 @@ function ConnectMusicStep({
       )}
 
       <div className="flex gap-2 w-full">
-        {connectSuccess ? (
+        {step === "success" ? (
           <>
             <Button variant="outline" size="lg" className="flex-1" onClick={onDone}>
               Close
@@ -182,18 +207,27 @@ function ConnectMusicStep({
               View Collection
             </Button>
           </>
-        ) : preview ? (
+        ) : step === "prune" ? (
           <>
-            <Button variant="outline" size="lg" className="flex-1" onClick={handleBack}>
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setStep("preview")}>
               Back
             </Button>
             <Button size="lg" className="flex-1" onClick={handleConnect}>
               Connect
             </Button>
           </>
+        ) : step === "preview" ? (
+          <>
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setStep("input")}>
+              Back
+            </Button>
+            <Button size="lg" className="flex-1" onClick={() => setStep("prune")}>
+              Next
+            </Button>
+          </>
         ) : (
           <>
-            <Button variant="outline" size="lg" className="flex-1" onClick={() => setSkipped(true)}>
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setStep("skipped")}>
               Skip
             </Button>
             <Button size="lg" className="flex-1" onClick={handlePreview}>

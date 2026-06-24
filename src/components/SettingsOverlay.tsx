@@ -53,6 +53,7 @@ import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuConten
 import {Loading} from "@/components/Loading";
 import {Switch} from "@/components/ui/switch";
 import {Label} from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {formatDate} from "@/lib/utils";
 
 const data = {
@@ -839,6 +840,8 @@ const ConnectionsSection = (
   );
 }
 
+type LFMDialogStep = "input" | "preview" | "prune" | "success"
+
 // Last.fm Preview Dialog Component
 const LastFMDialog = (
     {
@@ -849,13 +852,22 @@ const LastFMDialog = (
     }: {
   open: boolean;
   onLastFMPreview: (lfmUsername: string) => Promise<LastFMAccountPreview>;
-  onLastFMConnect: (lfmUsername: string) => Promise<boolean>;
+  onLastFMConnect: (lfmUsername: string, minPlayCount?: number) => Promise<boolean>;
   onOpenChange: (open: boolean) => void;
 }) => {
   const [preview, setPreview] = useState<LastFMAccountPreview | undefined>(undefined);
-  const [connectSuccess, setConnectSuccess] = useState(false);
+  const [step, setStep] = useState<LFMDialogStep>("input");
   const [lfmUsername, setLfmUsername] = useState("");
   const [lfmLoading, setLfmLoading] = useState(false);
+  const [minPlayCount, setMinPlayCount] = useState(0);
+
+  const handleClose = () => {
+    onOpenChange(false);
+    setStep("input");
+    setPreview(undefined);
+    setLfmUsername("");
+    setMinPlayCount(0);
+  }
 
   const handleSubmitPreview = async () => {
     if (!lfmUsername) {
@@ -867,38 +879,25 @@ const LastFMDialog = (
     setLfmLoading(false);
     if (previewResult) {
       setPreview(previewResult);
+      setStep("preview");
     } else {
       toast.error("Unable to find last.fm account");
     }
   }
 
   const handleSubmitConnect = async () => {
-    if (!lfmUsername) {
-      toast.error("Please enter a last.fm username");
-      return;
-    }
-    if (!preview || !preview.lfmUsername) {
+    if (!preview?.lfmUsername) {
       toast.error("No user data found.");
       return;
     }
     setLfmLoading(true);
-    const success = await onLastFMConnect(preview.lfmUsername);
+    const success = await onLastFMConnect(preview.lfmUsername, minPlayCount);
     setLfmLoading(false);
     if (success) {
       toast.success("Successfully connected to Last.fm!");
-      setConnectSuccess(true);
+      setStep("success");
     } else {
       toast.error("Unable to connect to Last.fm!");
-      setConnectSuccess(false);
-    }
-  }
-
-  const handleCancel = () => {
-    if (preview && !connectSuccess) {
-      setPreview(undefined);
-    } else {
-      onOpenChange(false);
-      setConnectSuccess(false);
     }
   }
 
@@ -910,80 +909,100 @@ const LastFMDialog = (
               <div className="pt-3">
                 <Loading />
               </div>
+          ) : step === "success" ? (
+              <>
+                <DialogDescription>
+                  Your Last.fm account has been successfully linked. Your scrobbled artists are being imported.
+                </DialogDescription>
+                <div className="flex gap-2 mt-6">
+                  <Button type="button" className="flex-1" onClick={handleClose}>
+                    Close
+                  </Button>
+                </div>
+              </>
+          ) : step === "prune" && preview ? (
+              <>
+                <DialogDescription>
+                  Set a minimum play count to filter out artists you've barely listened to. Leave at 0 to import all.
+                </DialogDescription>
+                <div className="mt-2 p-4 rounded-xl bg-accent dark:bg-accent/50 border border-muted dark:border-accent grid gap-3">
+                  <p className="text-sm font-medium">Minimum plays</p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground w-4">0</span>
+                    <Slider
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={[minPlayCount]}
+                      onValueChange={([val]) => setMinPlayCount(val)}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground w-8">100+</span>
+                  </div>
+                  <p className="text-sm">
+                    {minPlayCount === 0
+                      ? <>All <strong>{preview.totalArtists}</strong> artists will be imported.</>
+                      : <>Only artists with at least <strong>{minPlayCount}</strong> plays will be imported.</>}
+                  </p>
+                </div>
+                <div className="flex gap-2 mt-6">
+                  <Button type="button" variant="outline" onClick={() => setStep("preview")} className="flex-1">
+                    Back
+                  </Button>
+                  <Button type="button" className="flex-1" onClick={handleSubmitConnect}>
+                    Connect
+                  </Button>
+                </div>
+              </>
+          ) : step === "preview" && preview ? (
+              <>
+                <DialogDescription>
+                  Last.fm account <strong>{preview.lfmUsername}</strong> found with <strong>{preview.totalArtists}</strong> artists.
+                </DialogDescription>
+                <DialogDescription>
+                  Favorite artists: <strong>{preview.topArtists.join(', ')}</strong>
+                </DialogDescription>
+                <DialogDescription>
+                  Next, you can filter by play count before importing to your collection.
+                </DialogDescription>
+                <div className="flex gap-2 mt-6">
+                  <Button type="button" variant="outline" onClick={() => setStep("input")} className="flex-1">
+                    Back
+                  </Button>
+                  <Button type="button" className="flex-1" onClick={() => setStep("prune")}>
+                    Next
+                  </Button>
+                </div>
+              </>
           ) : (
-             <>
-               {connectSuccess ? (
-                   <DialogDescription>
-                     Your Last.fm account has been successfully linked.
-                   </DialogDescription>
-               ) : (
-                   <>
-                     {preview ? (
-                         <>
-                           <DialogDescription>
-                             Last.fm account <strong>{preview.lfmUsername}</strong> found with <strong>{preview.totalArtists}</strong> artists.
-                           </DialogDescription>
-                           <DialogDescription>
-                             Favorite artists: <strong>{preview.topArtists.map(a => `${a}`).join(', ')}</strong>
-                           </DialogDescription>
-                           <DialogDescription>
-                             Connecting your account will attempt to add all of your scrobbled artists to your collection.
-                             This could take some time if you have thousands of artists scrobbled!
-                           </DialogDescription>
-                         </>
-                     ) : (
-                         <>
-                           <DialogDescription>
-                             Link your Last.fm account to add your scrobbled artists to your Rhizome collection.
-                           </DialogDescription>
-                           <FieldGroup>
-                             <Field>
-                               <FieldLabel htmlFor="last-fm-username">
-                                 Enter your Last.fm username
-                               </FieldLabel>
-                               <Input
-                                   id="last-fm-username"
-                                   type="text"
-                                   value={lfmUsername}
-                                   onChange={(e) => setLfmUsername(e.target.value)}
-                                   required
-                               />
-                             </Field>
-                           </FieldGroup>
-                         </>
-                     )}
-                   </>
-               )}
-               <div className="flex gap-2 mt-6">
-                 <Button
-                     type="button"
-                     variant="outline"
-                     onClick={() => handleCancel()}
-                     className="flex-1"
-                 >
-                   {connectSuccess ? "Close" : "Cancel"}
-                 </Button>
-                 {preview ? (
-                     <Button
-                         type="button"
-                         className="flex-1"
-                         hidden={connectSuccess}
-                         onClick={() => handleSubmitConnect()}
-                     >
-                       Connect
-                     </Button>
-                 ) : (
-                     <Button
-                         type="button"
-                         className="flex-1"
-                         hidden={connectSuccess}
-                         onClick={() => handleSubmitPreview()}
-                     >
-                       Find Last.fm account
-                     </Button>
-                 )}
-               </div>
-             </>
+              <>
+                <DialogDescription>
+                  Link your Last.fm account to add your scrobbled artists to your Rhizome collection.
+                </DialogDescription>
+                <FieldGroup>
+                  <Field>
+                    <FieldLabel htmlFor="last-fm-username">
+                      Enter your Last.fm username
+                    </FieldLabel>
+                    <Input
+                        id="last-fm-username"
+                        type="text"
+                        value={lfmUsername}
+                        onChange={(e) => setLfmUsername(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSubmitPreview(); } }}
+                        required
+                    />
+                  </Field>
+                </FieldGroup>
+                <div className="flex gap-2 mt-6">
+                  <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
+                    Cancel
+                  </Button>
+                  <Button type="button" className="flex-1" onClick={handleSubmitPreview}>
+                    Find Last.fm account
+                  </Button>
+                </div>
+              </>
           )}
         </DialogContent>
       </Dialog>

@@ -183,6 +183,12 @@ export interface UrlState {
     collectionMode: boolean;
 }
 
+export interface LastFMAccountPreview {
+    lfmUsername: string;
+    totalArtists: number;
+    topArtists: string[];
+}
+
 // Listener-based popularity tiers for radial stratification
 export interface ListenerTier {
     id: number;
