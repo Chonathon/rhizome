@@ -1,17 +1,12 @@
-// GenresFilter renders a searchable, collapsible list of top-level genres
-// with tri-state selection (unchecked / indeterminate / checked). Parents can
-// be toggled as a whole, or individual child subgenres can be toggled.
+// GenresFilter: flat list with section headers per parent genre.
+// Each parent genre = labelled section + selectable item + children below.
+// Fully controlled: selection and operator live in the parent; toggles just
+// report the next value via callbacks.
 import { Button } from "@/components/ui/button";
-import { ChevronsUpDown, Check, ChevronDown, Minus, X } from "lucide-react";
-import {Genre, GenreClusterMode, GraphType, InitialGenreFilter} from "@/types";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@radix-ui/react-collapsible";
+import { Check, ChevronDown, ChevronRight, X } from "lucide-react";
+import { Genre, GenreClusterMode, GraphType } from "@/types";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
-import { useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
-import { useTriStateSelection } from "@/hooks/useTriStateSelection";
+import { useMemo, useRef, useState } from "react";
 import {
   Command,
   CommandEmpty,
@@ -19,36 +14,34 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator
 } from "@/components/ui/command";
-import {isRootGenre, getParentChildrenMap} from "@/lib/utils";
+import { isRootGenre, getParentChildrenMap } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { PARENT_FIELD_MAP, CHILD_FIELD_MAP } from "@/constants";
-import {g} from "framer-motion/m";
 import { BadgeIndicator } from "@/components/BadgeIndicator";
 
-// Props control available genres, clustering mode, and external selection callbacks.
 export default function GenresFilter({
   genres = [],
   genreClusterModes,
   graphType,
   onGenreSelectionChange,
-  initialSelection,
   selectedGenreIds = [],
   genreColorMap,
+  operator = 'or',
+  onOperatorChange,
 }: {
   genres?: Genre[];
   genreClusterModes: GenreClusterMode[];
   graphType: GraphType;
   onGenreSelectionChange: (selectedIDs: string[]) => void;
-  initialSelection: InitialGenreFilter;
   selectedGenreIds?: string[];
   genreColorMap?: Map<string, string>;
+  operator?: 'or' | 'and';
+  onOperatorChange?: (operator: 'or' | 'and') => void;
 }) {
-  // Compute the set of top-level genres based on the current cluster modes.
   const topLevelGenres = useMemo(() => {
     const viaUtil = genres.filter((g) => isRootGenre(g, genreClusterModes));
     if (viaUtil.length > 0) return viaUtil;
-    // Fallback if util returns none
     return genres.filter((g) =>
       genreClusterModes.some((mode) =>
         (g[PARENT_FIELD_MAP[mode]]?.length ?? 0) > 0 &&
@@ -57,274 +50,121 @@ export default function GenresFilter({
     );
   }, [genres, genreClusterModes]);
 
-  const parentChildMap = useMemo(() => {
-    return getParentChildrenMap(topLevelGenres, genres, genreClusterModes);
-  }, [topLevelGenres]);
+  const parentChildMap = useMemo(
+    () => getParentChildrenMap(topLevelGenres, genres, genreClusterModes),
+    [topLevelGenres, genres, genreClusterModes]
+  );
 
-  // Default all collapsibles closed. Map is keyed by parent genre id.
-  const defaultOpenMap = useMemo(() => {
-    const m: Record<string, boolean> = {};
-    for (const g of topLevelGenres) m[g.id] = false; // all closed by default
+  const genreById = useMemo(() => {
+    const m = new Map<string, Genre>();
+    for (const g of genres) m.set(g.id, g);
     return m;
-  }, [topLevelGenres]);
+  }, [genres]);
 
-  // Search query (declared early so selection logic can reference it)
+  // Flat selection: a Set view of the controlled selectedGenreIds prop
+  // (parents and children mixed)
+  const selectedIds = useMemo(() => new Set(selectedGenreIds), [selectedGenreIds]);
+
   const [query, setQuery] = useState("");
 
-  const childrenSearchResults = useRef<string[]>([]);
+  // Sections (parent genres) collapse their children, closed by default.
+  // Selected children still surface in the Selected summary group above, so
+  // collapsing never hides an active selection.
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
+  const toggleSection = (id: string) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
-  // Tri-state selection logic is handled by a reusable hook.
-  const {
-    parentSelected,
-    selectedChildren,
-    setParentSelected,
-    setSelectedChildren,
-    getParentState,
-    toggleParent,
-    toggleChild,
-  } = useTriStateSelection(topLevelGenres, (p) => parentChildMap.get(p.id) || [], {
-    // While searching, do not bulk-toggle children when a parent is toggled.
-    bulkToggleChildren: !query.trim(),
-    initialParentSelected: initialSelection.isRoot && initialSelection.genre ? { [initialSelection.genre.id]: true } : undefined,
-    initialSelectedChildren: initialSelection.parents,
-  });
-
-  // Collapsible open/closed state.
-  const [openMap, setOpenMap] = useState<Record<string, boolean>>(defaultOpenMap);
-
-  // When searching, auto-open parents that match or have matching children.
-  // Clearing the query resets to default closed state.
   const listRef = useRef<HTMLDivElement | null>(null);
-  const selectedGroupRef = useRef<HTMLDivElement | null>(null);
-  const prevSelectedHeightRef = useRef<number>(0);
-  const lastAppliedState = useRef<{ ids: string[]; parentSignature: string }>({
-    ids: [],
-    parentSignature: "",
-  });
-  const isSyncingFromExternal = useRef(false);
 
-  // Computed: Any selection active? This doesn't count children genres
-  const hasAnySelection = topLevelGenres.some((g) => parentSelected[g.id] ?? false);
+  const emitSelection = (next: Set<string>) => {
+    onGenreSelectionChange(Array.from(next));
+  };
 
-  // Clear all selections for all parents/children
+  const toggleId = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    emitSelection(next);
+  };
+
+  const selectAllSection = (parent: Genre) => {
+    const children = parentChildMap.get(parent.id) || [];
+    const next = new Set(selectedIds);
+    next.add(parent.id);
+    for (const child of children) next.add(child.id);
+    emitSelection(next);
+  };
+
+  const clearSection = (parent: Genre) => {
+    const children = parentChildMap.get(parent.id) || [];
+    const next = new Set(selectedIds);
+    next.delete(parent.id);
+    for (const child of children) next.delete(child.id);
+    emitSelection(next);
+  };
+
   const clearAll = () => {
-    setParentSelected((prev) => {
-      const next: Record<string, boolean> = {};
-      for (const g of topLevelGenres) next[g.id] = false;
-      return next;
-    });
-    setSelectedChildren((prev) => {
-      const next: Record<string, Set<string>> = {};
-      for (const g of topLevelGenres) next[g.id] = new Set<string>();
-      return next;
-    });
+    onGenreSelectionChange([]);
+    onOperatorChange?.('or');
   };
 
-  // Toggle only the parent state without affecting children (for Selected section)
-  const toggleParentOnly = (parent: Genre) => {
-    setParentSelected((prev) => ({
-      ...prev,
-      [parent.id]: !prev[parent.id]
-    }));
+  // 'all' | 'some' | 'none' — for the section header's all/clear button label
+  const getSectionState = (parent: Genre): 'all' | 'some' | 'none' => {
+    const children = parentChildMap.get(parent.id) || [];
+    const allIds = [parent.id, ...children.map((c) => c.id)];
+    const count = allIds.filter((id) => selectedIds.has(id)).length;
+    if (count === 0) return 'none';
+    if (count === allIds.length) return 'all';
+    return 'some';
   };
 
-  // When the search query changes, update open states accordingly.
-  useEffect(() => {
-    const q = query.trim().toLowerCase();
-    childrenSearchResults.current = [];
-    if (q === "") {
-      // Reset to default open state when the search is cleared
-      setOpenMap(defaultOpenMap);
-      // Also reset scroll to top so users see the first items again
-      // after clearing their input.
-      listRef.current?.scrollTo({ top: 0 });
-      return;
-    }
-    // Open only parents that have a matching parent name or at least one matching child
-    setOpenMap((prev) => {
-      const next: Record<string, boolean> = {};
-      for (const g of topLevelGenres) {
-        const parentMatch = g.name.toLowerCase().includes(q);
-        const children = parentChildMap.get(g.id);
-        const childMatch = children ? children
-          .some((c) => c.name.toLowerCase().includes(q)) : false;
-        next[g.id] = parentMatch || childMatch;
-      }
-      return next;
-    });
-  }, [query]);
+  const totalSelected = selectedIds.size;
 
-  useEffect(() => {
-    const normalized = Array.from(new Set((selectedGenreIds ?? []).filter(Boolean)));
-    const parentSignature = topLevelGenres.map((g) => g.id).join("|");
-    const prev = lastAppliedState.current;
-    const prevSet = new Set(prev.ids);
-    const sameSelection =
-      normalized.length === prev.ids.length &&
-      normalized.every((id) => prevSet.has(id));
-    const sameParents = prev.parentSignature === parentSignature;
-
-    if (sameSelection && sameParents) return;
-
-    lastAppliedState.current = {
-      ids: normalized,
-      parentSignature,
-    };
-
-    // Mark that we're syncing from external props to prevent callback loop
-    isSyncingFromExternal.current = true;
-
-    const selectionSet = new Set(normalized);
-    const nextParentSelected: Record<string, boolean> = {};
-    const nextSelectedChildren: Record<string, Set<string>> = {};
-
-    topLevelGenres.forEach((parent) => {
-      const parentId = parent.id;
-      nextParentSelected[parentId] = selectionSet.has(parentId);
-      const children = parentChildMap.get(parentId) || [];
-      const childSet = new Set<string>();
-      children.forEach((child) => {
-        if (selectionSet.has(child.id)) {
-          childSet.add(child.id);
-        }
-      });
-      nextSelectedChildren[parentId] = childSet;
-    });
-
-    setParentSelected(nextParentSelected);
-    setSelectedChildren(nextSelectedChildren);
-
-    setOpenMap(() => {
-      if (!selectionSet.size) {
-        return { ...defaultOpenMap };
-      }
-      const next: Record<string, boolean> = {};
-      topLevelGenres.forEach((parent) => {
-        const parentId = parent.id;
-        const childSet = nextSelectedChildren[parentId];
-        next[parentId] =
-          selectionSet.has(parentId) || (childSet && childSet.size > 0);
-      });
-      return next;
-    });
-
-    // Reset the flag after state updates
-    setTimeout(() => {
-      isSyncingFromExternal.current = false;
-    }, 0);
-  }, [selectedGenreIds, topLevelGenres, parentChildMap, defaultOpenMap]);
-
-  // Determine the parent's tri-state based on its own selection and child selections.
-  // Read-only helper to check if a given child is selected under a parent.
-  const isChildSelected = (parent: Genre, childId: string) => {
-    return selectedChildren[parent.id]?.has(childId) ?? false;
-  };
-
-  // Show count of selected parents + selected children next to the clear button.
-  const totalSelected = useMemo(() => {
-    return topLevelGenres.reduce((acc, g) => {
-      const parentCount = parentSelected[g.id] ? 1 : 0;
-      const childCount = selectedChildren[g.id]?.size ?? 0;
-      return acc + parentCount + childCount;
-    }, 0);
-  }, [topLevelGenres, parentSelected, selectedChildren]);
-
-  // Flat selected lists for the Selected group
-  const selectedParents = useMemo(
-    () => topLevelGenres.filter((g) => parentSelected[g.id]),
-    [topLevelGenres, parentSelected]
-  );
-
-  const selectedChildrenFlat = useMemo(
+  // Selected genres for the summary section at the top of the list
+  const selectedList = useMemo(
     () =>
-      topLevelGenres.flatMap((parent) => {
-        const set = selectedChildren[parent.id];
-        if (!set || set.size === 0) return [] as { parent: Genre; child: Genre }[];
-        const children = parentChildMap.get(parent.id);
-        //isMountingRef.current = false;
-        return children ? children
-          .filter((c) => set.has(c.id))
-          .map((child) => ({ parent, child })) : [];
-      }),
-    [topLevelGenres, selectedChildren]
+      Array.from(selectedIds)
+        .map((id) => genreById.get(id))
+        .filter((g): g is Genre => g !== undefined),
+    [selectedIds, genreById]
   );
-
-  // Triggers loading artists on selection of genres
-  useEffect(() => {
-    // Don't call back if we're syncing from external props (prevents infinite loop)
-    if (isSyncingFromExternal.current) return;
-
-    const ids = [...selectedParents.map(p => p.id), ...selectedChildrenFlat.map(c => c.child.id)];
-    onGenreSelectionChange(ids);
-  }, [selectedParents, selectedChildrenFlat]);
-
-  // Preserve scroll position when the Selected group grows/shrinks above the list.
-  useLayoutEffect(() => {
-    const list = listRef.current;
-    if (!list) return;
-    const prevHeight = prevSelectedHeightRef.current || 0;
-    const nextHeight = selectedGroupRef.current?.offsetHeight || 0;
-    const delta = nextHeight - prevHeight;
-
-    if (delta !== 0 && list.scrollTop > 0) {
-      // Adjust scrollTop by the height delta added/removed above current view
-      list.scrollTop = list.scrollTop + delta;
-    }
-    prevSelectedHeightRef.current = nextHeight;
-  }, [selectedParents.length, selectedChildrenFlat.length, query]);
-
-  // These were used to try to make fusion/influence work
-  const getChildSearchResults = (parent: Genre) => {
-    const children = parentChildMap.get(parent.id);
-    if (!children || !children.length) return [];
-    const childMap = new Map();
-    children.forEach(c => {
-      childMap.set(c.id, c);
-    });
-  }
-  const childDupeCheck = (id: string) => {
-    if (childrenSearchResults.current.includes(id)) return false;
-    if (query.trim().length) {
-      childrenSearchResults.current = [...childrenSearchResults.current, id];
-    }
-    return true;
-  }
 
   if (graphType !== "artists") return null;
 
+  const triggerLabel =
+    totalSelected === 1
+      ? (genreById.get(Array.from(selectedIds)[0])?.name ?? "Genres")
+      : "Genres";
+
   return (
-    // ResponsivePanel + Command = ComboBox
     <ResponsivePanel
-    onOpenChange={(open) => {
-      // Default collapsibles to closed when the panel opens.
-      if (open) setOpenMap(defaultOpenMap);
-    }}
+      onOpenChange={(open) => {
+        if (open) listRef.current?.scrollTo({ top: 0 });
+      }}
       trigger={
-        // Collapsed Genres Button
-        <Button size="lg" variant="outline" className={`${totalSelected > 0 ? "px-4" : ""}`}> 
-        {totalSelected === 1
-        ? (selectedParents[0]?.name ?? selectedChildrenFlat[0]?.child.name)
-        : "Genres" }
+        <Button size="lg" variant="outline" className={totalSelected > 0 ? "px-4" : ""}>
+          {triggerLabel}
           {totalSelected > 0 ? (
-            <Button
-              asChild
-              size="icon"
-              variant="secondary"
-              className="-m-1 w-6 h-6 group"
-            >
+            <Button asChild size="icon" variant="secondary" className="-m-1 w-6 h-6 group">
               <span
                 role="button"
                 tabIndex={-1}
-                aria-label="Clear all filters"
-                className="group"
+                aria-label="Clear all genre filters"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => { e.stopPropagation(); clearAll(); }}
-                title="Clear all genre selections"
               >
                 {totalSelected > 1 ? (
                   <>
-                  <span className="group-hover:opacity-0 group-hover:scale-0 transition-all text-xs leading-none">{totalSelected}</span>
-                  <X className="transition-all group-hover:opacity-100 absolute scale-0 group-hover:scale-100 opacity-0 h-4 w-4 group-hover:-rotate-90" />
+                    <span className="group-hover:opacity-0 group-hover:scale-0 transition-all text-xs leading-none">
+                      {totalSelected}
+                    </span>
+                    <X className="transition-all group-hover:opacity-100 absolute scale-0 group-hover:scale-100 opacity-0 h-4 w-4 group-hover:-rotate-90" />
                   </>
                 ) : (
                   <X className="h-4 w-4" />
@@ -338,21 +178,48 @@ export default function GenresFilter({
       }
       className="p-0 overflow-hidden"
       side="bottom"
-      >
-      {/* Expanded List */}
-      <Command>
+    >
+      <Command filter={(value, search) => value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0}>
         <CommandInput placeholder="Filter genres..." value={query} onValueChange={setQuery} />
-        <CommandList ref={listRef} key={query.trim() ? "searching" : "empty"}>
-          <CommandEmpty>No genres found.</CommandEmpty>
-          {/* Selected Group */}
-          {(selectedParents.length > 0 || selectedChildrenFlat.length > 0) && (
-            <div ref={selectedGroupRef}>
-            <CommandGroup className='bg-accent/40 border-b' aria-labelledby="Selected Genres">
-              {selectedParents.map((genre) => (
+        {/* Operator toggle */}
+        <div className="flex items-center gap-1 px-3 py-4 border-b text-sm" role="group" aria-label="Genre filter operator">
+          <span className="text-muted-foreground">
+            Match
+            <Button
+              variant="link"
+              size="sm"
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => { e.stopPropagation(); onOperatorChange?.('and'); }}
+              className={cn("-mx-1.5", operator === 'or' ? "text-foreground underline decoration-dashed decoration-1 decoration-muted-foreground" : "hidden")}
+            >
+              any
+            </Button>
+            <Button
+              variant="link"
+              size="sm"
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => { e.stopPropagation(); onOperatorChange?.('or'); }}
+              className={cn("-mx-1.5", operator === 'and' ? "text-foreground underline decoration-dashed decoration-1 decoration-muted-foreground" : "hidden")}
+            >
+              all
+            </Button>
+            selected genres
+          </span>
+        </div>
+        <CommandList ref={listRef}>
+          {/* Only meaningful during search — collapsed sections render no
+              CommandItems, which cmdk would otherwise treat as "empty". */}
+          {query.trim() && <CommandEmpty>No genres found.</CommandEmpty>}
+          {/* Selected summary section */}
+          {selectedList.length > 0 && (
+            <CommandGroup className="bg-accent/40 border-b">
+              {selectedList.map((genre) => (
                 <CommandItem
-                  key={`sel-parent-${genre.id}`}
-                  value={`selected-parent:${genre.id} ${genre.name}`}
-                  onSelect={() => toggleParentOnly(genre)}
+                  key={`sel-${genre.id}`}
+                  value={`selected:${genre.id} ${genre.name}`}
+                  onSelect={() => toggleId(genre.id)}
                   className="flex items-center gap-2"
                 >
                   <Check className="opacity-100" />
@@ -360,85 +227,90 @@ export default function GenresFilter({
                   <span>{genre.name}</span>
                 </CommandItem>
               ))}
-              {selectedChildrenFlat.map(({ parent, child }) => (
-                <CommandItem
-                  key={`sel-child-${parent.id}-${child.id}`}
-                  value={`selected-child:${parent.id}:${child.id} ${child.name} ${parent.name}`}
-                  onSelect={() => toggleChild(parent, child)}
-                  className="flex items-center gap-2"
-                >
-                  <Check className="opacity-100" />
-                  <BadgeIndicator type="genre" name={child.name} color={genreColorMap?.get(child.id)} />
-                  <span>{child.name}</span>
-                </CommandItem>
-              ))}
-              {/* <Button className="mt-1 mb-2" size={'sm'} variant={'ghost'} onClick={() => clearAll()}>Clear</Button> */}
-            {/* <CommandSeparator /> */}
             </CommandGroup>
-            </div>
-          )
-        }
-          <CommandGroup>
-            {topLevelGenres.map((genre) => {
-              // In search mode, treat the list as flat: if the parent is selected, show a full check.
-              const state = query.trim()
-                ? ((parentSelected[genre.id] ? "checked" : "unchecked") as "checked" | "unchecked")
-                : getParentState(genre);
-              const isOpen = openMap[genre.id] ?? false;
-              return (
-                // Each top-level genre is a collapsible row with a trigger to open child items
-                <Collapsible key={genre.id} open={isOpen} onOpenChange={(open) => setOpenMap((prev) => ({ ...prev, [genre.id]: open }))}>
-                  <CommandItem
-                    // `value` is what cmdk uses for built-in filtering
-                    value={genre.name}
-                    className="flex w-full items-center justify-between gap-2"
-                    onSelect={() => toggleParent(genre)}
+          )}
+          {/* One section per parent genre */}
+          {topLevelGenres.map((parent) => {
+            const children = parentChildMap.get(parent.id) || [];
+            const sectionState = getSectionState(parent);
+            const parentChecked = selectedIds.has(parent.id);
+            // How many genres in this family (parent + subgenres) are selected —
+            // surfaced in the header so a collapsed section still shows its count.
+            const selectedCount = [parent.id, ...children.map((c) => c.id)]
+              .filter((id) => selectedIds.has(id)).length;
+            // Children are collapsed by default; an active search forces them
+            // open so cmdk can match (and hide) within the section.
+            const expanded = !!query.trim() || openSections.has(parent.id);
+            return (
+              <CommandGroup key={parent.id}>
+                {/* Section header doubles as the collapse toggle.
+                    Rendered as a plain div so it's hidden by cmdk when the group has no matching items. */}
+                <div className="flex items-center justify-between px-2 pt-2 pb-0.5">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => { e.stopPropagation(); toggleSection(parent.id); }}
+                    aria-expanded={expanded}
                   >
-                    <div className="flex items-center gap-2">
-                      {state === "checked" && <Check className="opacity-100" />}
-                      {state === "indeterminate" && <Minus className="opacity-100" />}
-                      {state === "unchecked" && <Check className="hidden" />}
-                      <BadgeIndicator type="genre" name={genre.name} color={genreColorMap?.get(genre.id)} />
-                      <span>{genre.name}</span>
-                    </div>
-                    {query ? "" : <CollapsibleTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        type="button"
-                        className="-mr-2 -my-2"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label="Toggle subgenres"
-                      >
-                        <ChevronsUpDown />
-                      </Button>
-                    </CollapsibleTrigger>}
+                    <ChevronRight className={cn("size-3 transition-transform", expanded && "rotate-90")} />
+                    {parent.name}
+                    {selectedCount > 0 && (
+                      <span className="normal-case tracking-normal rounded-full bg-foreground/10 px-1.5 text-[10px] font-medium text-foreground tabular-nums">
+                        {selectedCount}
+                      </span>
+                    )}
+                  </button>
+                  {sectionState === 'none' ? (
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => { e.stopPropagation(); selectAllSection(parent); }}
+                    >
+                      all
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => { e.stopPropagation(); clearSection(parent); }}
+                    >
+                      clear
+                    </button>
+                  )}
+                </div>
+                {/* Parent + child genres — all hidden while the section is collapsed */}
+                {expanded && (
+                  <CommandItem
+                    value={`${parent.id} ${parent.name}`}
+                    onSelect={() => toggleId(parent.id)}
+                    className="flex items-center gap-2"
+                  >
+                    <Check className={parentChecked ? "opacity-100" : "hidden"} />
+                    <BadgeIndicator type="genre" name={parent.name} color={genreColorMap?.get(parent.id)} />
+                    <span>{parent.name}</span>
                   </CommandItem>
-                  <CollapsibleContent>
-                    <div className={query ? "" : "pl-8"}>
-                      {(parentChildMap.get(genre.id) || []).map((child) => {
-                        if (!child) return null;
-                        const childChecked = isChildSelected(genre, child.id);
-                        return (
-                          <CommandItem
-                            key={`${genre.id}-${child.id}`}
-                            value={child.name}
-                            onSelect={() => toggleChild(genre, child)}
-                            className={`flex items-center gap-2 `}
-                          >
-                            <Check className={childChecked ? "" : "hidden"} />
-                            <BadgeIndicator type="genre" name={child.name} color={genreColorMap?.get(child.id)} />
-                            <span>{child.name}</span>
-                          </CommandItem>
-                        );
-                      })}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              );
-            })}
-          </CommandGroup>
+                )}
+                {expanded && children.map((child) => {
+                  const childChecked = selectedIds.has(child.id);
+                  return (
+                    <CommandItem
+                      key={`${parent.id}-${child.id}`}
+                      value={`${child.id} ${child.name} ${parent.name}`}
+                      onSelect={() => toggleId(child.id)}
+                      className="flex items-center gap-2"
+                    >
+                      <Check className={childChecked ? "opacity-100" : "hidden"} />
+                      <BadgeIndicator type="genre" name={child.name} color={genreColorMap?.get(child.id)} />
+                      <span>{child.name}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            );
+          })}
         </CommandList>
       </Command>
     </ResponsivePanel>
