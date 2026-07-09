@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type Ref,
+  type ReactNode,
 } from "react";
 import ForceGraph, {
   ForceGraphMethods,

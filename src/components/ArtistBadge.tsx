@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BadgeIndicator } from '@/components/BadgeIndicator';
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, X } from 'lucide-react';
 
 interface ArtistBadgeProps {
   name: string;
@@ -12,6 +12,8 @@ interface ArtistBadgeProps {
   icon?: LucideIcon;
   variant?: "outline" | "default" | "secondary" | "destructive";
   className?: string;
+  // Trailing X signalling that clicking the badge removes it
+  removable?: boolean;
 }
 
 export default function ArtistBadge({
@@ -22,7 +24,8 @@ export default function ArtistBadge({
   title,
   icon,
   variant = "outline",
-  className, 
+  className,
+  removable,
 }: ArtistBadgeProps) {
   return (
     <Badge asChild variant={variant} className={className} title={title ?? `Go to ${name}`}>
@@ -40,6 +43,7 @@ export default function ArtistBadge({
           icon={icon}
         />
         {name}
+        {removable && <X className="size-3 text-muted-foreground" />}
       </Button>
     </Badge>
   );

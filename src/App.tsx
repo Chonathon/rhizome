@@ -13,7 +13,7 @@ import {
   Genre,
   GenreClusterMode,
   GenreGraphData, GenreNodeLimitType,
-  GraphType, InitialGenreFilter,
+  GraphType,
   NodeLink, Tag, TopTrack,
 } from "@/types";
 import { Header } from "@/components/Header"
@@ -64,7 +64,6 @@ import {
   DEFAULT_GENRE_LIMIT_TYPE,
   DEFAULT_NODE_COUNT,
   TOP_ARTISTS_TO_FETCH,
-  EMPTY_GENRE_FILTER_OBJECT,
   SINGLETON_PARENT_GENRE,
   GENRE_FILTER_CLUSTER_MODE,
   MAX_YTID_QUEUE_SIZE,
@@ -80,6 +79,7 @@ import RhizomeLogo from "@/components/RhizomeLogo";
 import AuthOverlay from '@/components/AuthOverlay';
 import FeedbackOverlay from '@/components/FeedbackOverlay';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
+import { GraphEmptyState } from '@/components/GraphEmptyState';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import ZoomButtons from '@/components/ZoomButtons';
 import useHotkeys from '@/hooks/useHotkeys';
@@ -112,6 +112,9 @@ function SidebarLogoTrigger() {
 }
 
 
+// Stable empty array so the AND-filter memo doesn't see a new identity when inactive
+const NO_AND_FILTER: string[] = [];
+
 function App() {
   type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; resetView: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
   const genresGraphRef = useRef<GraphHandle | null>(null);
@@ -141,6 +144,7 @@ function App() {
   const artistQueryGenreIDs = useMemo(() => {
     return artistFilterGenreIDs;
   }, [artistFilterGenreIDs]);
+  const [genreOperator, setGenreOperator] = useState<'or' | 'and'>('or');
   const [selectedArtist, setSelectedArtist] = useState<Artist | undefined>(undefined);
   const [selectedArtistFromSearch, setSelectedArtistFromSearch] = useState<boolean>(false);
   const [artistPreviewStack, setArtistPreviewStack] = useState<Artist[]>([]);
@@ -314,7 +318,6 @@ function App() {
   });
   const [hopArtists, setHopArtists] = useState<Artist[]>([]);
   const [hopArtistLinks, setHopArtistLinks] = useState<NodeLink[]>([]);
-  const [initialGenreFilter, setInitialGenreFilter] = useState<InitialGenreFilter>(EMPTY_GENRE_FILTER_OBJECT);
   const [genreColorMap, setGenreColorMap] = useState<Map<string, string>>(new Map());
   const { addRecentSelection } = useRecentSelections();
   const {
@@ -731,7 +734,16 @@ function App() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // Computes the artists/links to display - applies node limit and collection filters
+  // Genre IDs the AND filter applies to. Collapses to a stable empty array
+  // whenever AND filtering would be a no-op (OR mode, or fewer than 2 genres
+  // selected) so displayedArtistsData — and therefore the graph — doesn't
+  // recompute on operator flips that can't change the result.
+  const andGenreIds = useMemo(() => {
+    const ids = collectionMode ? collectionFilters.genres : artistFilterGenreIDs;
+    return genreOperator === 'and' && ids.length > 1 ? ids : NO_AND_FILTER;
+  }, [genreOperator, collectionMode, collectionFilters.genres, artistFilterGenreIDs]);
+
+  // Computes the artists/links to display - applies collection filters, the AND filter, and the node limit
   const displayedArtistsData = useMemo(() => {
     let filtered = artists;
 
@@ -754,6 +766,13 @@ function App() {
           return startYear <= decadeStart + 9 && (endYear === null || endYear >= decadeStart);
         });
       });
+    }
+
+    // Apply AND genre filter (andGenreIds is empty unless AND mode is active)
+    if (andGenreIds.length > 0) {
+      filtered = filtered.filter(artist =>
+        andGenreIds.every(id => artist.genres.includes(id))
+      );
     }
 
     // Apply node limit - sort by the limit type and take top N
@@ -781,7 +800,7 @@ function App() {
     }
 
     return { artists: filtered, links: filteredLinks };
-  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, collectionHops, hopArtists, hopArtistLinks]);
+  }, [collectionMode, artists, artistLinks, collectionFilters, artistNodeCount, artistNodeLimitType, collectionHops, hopArtists, hopArtistLinks, andGenreIds]);
 
   // Fetches hop artists when collectionHops changes in collection mode
   useEffect(() => {
@@ -812,6 +831,13 @@ function App() {
     }
     return undefined;
   }, [collectionMode, collectionHops, hopArtists.length, graph, similarArtistHops, artists, similarArtists]);
+
+    // Selected genres as removable chips for the AND empty state
+    const andGenreChips = useMemo(() =>
+        andGenreIds.flatMap(id => {
+            const genre = genres.find(g => g.id === id);
+            return genre ? [{ id, name: genre.name, color: genreColorMap.get(id) }] : [];
+        }), [andGenreIds, genres, genreColorMap]);
 
   // Sets current artists/links shown in the graph
   // Skip in similarArtists mode — that graph manages currentArtists directly
@@ -1988,8 +2014,6 @@ function App() {
     setShowGenreCard(true);
 
     // Set the genre filter and selection
-    const filterObj = createInitialGenreFilterObject(genre);
-    setInitialGenreFilter(filterObj);
     setSelectedGenres([genre]);
 
     // Apply artist filter - this is what triggers the artist fetch
@@ -2012,7 +2036,6 @@ function App() {
         setArtistGenreFilter([currentGenre]);
         setArtistFilterGenres([currentGenre]); // Set the new filter state
         setSelectedGenres([currentGenre]);
-        setInitialGenreFilter(createInitialGenreFilterObject(currentGenre));
         setGraph('artists');
       }
     }
@@ -2222,7 +2245,6 @@ function App() {
     setGraph('genres');
     setCurrentArtists([]);
     setCurrentArtistLinks([]);
-    setInitialGenreFilter(EMPTY_GENRE_FILTER_OBJECT);
     updateUrl(null);
   }
 
@@ -2603,6 +2625,27 @@ function App() {
     }));
   }, []);
 
+  // Remove a single genre from the active AND filter (empty-state chips/suggestion)
+  const removeAndGenre = (id: string) => {
+    const next = andGenreIds.filter(other => other !== id);
+    if (collectionMode) {
+      onCollectionFilterChange('genres', next);
+    } else {
+      onGenreFilterSelectionChange(next);
+    }
+  };
+
+  // Clear every artist filter (genres, decades, operator) — empty-state CTA
+  const clearAllArtistFilters = () => {
+    setGenreOperator('or');
+    if (collectionMode) {
+      setCollectionFilters({ genres: [], decades: [] });
+    } else {
+      onGenreFilterSelectionChange([]);
+      setSelectedDecades([]);
+    }
+  };
+
   // Just filter the current nodes if selection is less than the current node count
   const artistNodeCountSelection = (value: number) => {
     if (value === artistNodeCount) return;
@@ -2621,72 +2664,6 @@ function App() {
       }
     }
   }
-
-  // Builds the initial genres for the GenresFilter
-  const createInitialGenreFilterObject = (genre: Genre) => {
-    const isSingleton = isSingletonGenre(genre, GENRE_FILTER_CLUSTER_MODE);
-    const isRoot = isRootGenre(genre, GENRE_FILTER_CLUSTER_MODE);
-    let parents: Record<string, Set<string>> = {};
-    if (isSingleton) {
-      parents = { [SINGLETON_PARENT_GENRE.id]: new Set([genre.id]) };
-    } else if (isRoot) {
-      parents = { [genre.id]: new Set()};
-    } else {
-      const initialSelectedParents = genre.specificRootGenres
-          .filter(g => g.type === GENRE_FILTER_CLUSTER_MODE[0]) // change if multiple modes needed
-          .map(f => f.id);
-      initialSelectedParents.forEach(p => {
-        parents[p] = new Set([genre.id]);
-      });
-    }
-    return { genre, isRoot, parents };
-  }
-
-  const buildInitialGenreFilterFromGenres = (genreList: Genre[]): InitialGenreFilter => {
-    if (!genreList.length) {
-      return EMPTY_GENRE_FILTER_OBJECT;
-    }
-
-    const parents: Record<string, Set<string>> = {};
-    const ensureParentSet = (parentId: string) => {
-      if (!parents[parentId]) {
-        parents[parentId] = new Set<string>();
-      }
-      return parents[parentId];
-    };
-
-    genreList.forEach((genre) => {
-      if (isSingletonGenre(genre, GENRE_FILTER_CLUSTER_MODE)) {
-        ensureParentSet(SINGLETON_PARENT_GENRE.id).add(genre.id);
-        return;
-      }
-
-      if (isRootGenre(genre, GENRE_FILTER_CLUSTER_MODE)) {
-        ensureParentSet(genre.id);
-        return;
-      }
-
-      const rootParents = genre.specificRootGenres
-        .filter((root) => root.type === GENRE_FILTER_CLUSTER_MODE[0])
-        .map((root) => root.id);
-
-      if (!rootParents.length) {
-        ensureParentSet(genre.id);
-        return;
-      }
-
-      rootParents.forEach((rootId) => {
-        ensureParentSet(rootId).add(genre.id);
-      });
-    });
-
-    const firstGenre = genreList[0];
-    return {
-      genre: firstGenre,
-      isRoot: isRootGenre(firstGenre, GENRE_FILTER_CLUSTER_MODE),
-      parents,
-    };
-  };
 
   // TODO: create backend endpoint specifically for this; smaller artists don't show up if they're in big genres
   const focusArtistRelatedGenres = (artist: Artist) => {
@@ -2730,7 +2707,6 @@ function App() {
     // Apply artist filter - this triggers the artist fetch
     setArtistGenreFilter(matched);
     setArtistFilterGenres(matched); // Set the new filter state
-    setInitialGenreFilter(buildInitialGenreFilterFromGenres(matched));
     setPendingArtistGenreGraph(artist); // Will trigger graph switch when artists load
     setCollectionMode(false);
   };
@@ -3009,7 +2985,8 @@ function App() {
                       genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
                       graphType={graph}
                       onGenreSelectionChange={(ids) => onCollectionFilterChange('genres', ids)}
-                      initialSelection={{ genre: undefined, isRoot: false, parents: {} }}
+                      operator={genreOperator}
+                      onOperatorChange={setGenreOperator}
                       selectedGenreIds={collectionFilters.genres}
                       genreColorMap={genreColorMap}
                     />
@@ -3038,12 +3015,14 @@ function App() {
                       genreClusterModes={GENRE_FILTER_CLUSTER_MODE}
                       graphType={graph}
                       onGenreSelectionChange={onGenreFilterSelectionChange}
-                      initialSelection={initialGenreFilter}
+                      operator={genreOperator}
+                      onOperatorChange={setGenreOperator}
                       selectedGenreIds={artistGenreFilterIDs}
                       genreColorMap={genreColorMap}
                     />
                     <DecadesFilter
                       onDecadeSelectionChange={onDecadeSelectionChange}
+                      selectedDecadeIds={selectedDecades}
                     />
                   </motion.div>
                 )}
@@ -3091,12 +3070,14 @@ function App() {
                   computeArtistColor={getArtistColor}
                   autoFocus={autoFocusGraph}
                   // Hide graph until clustering is ready (for artists graph) to prevent flash of unclustered nodes
+                  // When filtering produces zero artists, skip the cluster-ready check so we show the empty state instead of a spinner
                   show={
                     (graph === "similarArtists" && !artistsError) ||
-                    (graph === "artists" && !artistsError && !!artistClusters)
+                    (graph === "artists" && !artistsError && (!!artistClusters || currentArtists.length === 0))
                   }
                   // Show loading spinner while data or clustering is in progress (only when on artists/similarArtists view)
-                  loading={((graph === 'artists' || graph === 'similarArtists') && artistsLoading) || (graph === 'artists' && !artistClusters)}
+                  // Skip cluster-wait spinner when filtering has produced zero artists (nothing to cluster)
+                  loading={((graph === 'artists' || graph === 'similarArtists') && artistsLoading) || (graph === 'artists' && !artistClusters && currentArtists.length > 0)}
                   width={viewport.width || undefined}
                   height={viewport.height || undefined}
                   onZoomChange={handleArtistsZoomChange}
@@ -3114,6 +3095,36 @@ function App() {
                   clusterOverlays={artistClusterOverlays}
                   savedArtistIds={savedArtistIds}
                 />
+
+          {/* Graph empty states */}
+          {!artistsLoading && !artistsError && (
+            <>
+              {collectionMode && graph === 'artists' && currentArtists.length === 0 && artists.length === 0 && (
+                <GraphEmptyState mode="collection-empty" onCta={() => setSearchOpen(true)} />
+              )}
+              {/* Filters (genre OR-mode and/or decades) produced zero artists.
+                  In explore mode this requires active filters + a completed load,
+                  so it can't appear on the pristine artists tab. */}
+              {graph === 'artists' && currentArtists.length === 0 && andGenreIds.length === 0
+                && (collectionMode
+                  ? artists.length > 0
+                  : (!isBeforeArtistLoad && (artistFilterGenreIDs.length > 0 || selectedDecades.length > 0))) && (
+                <GraphEmptyState mode="collection-filtered" onCta={clearAllArtistFilters} />
+              )}
+              {graph === 'artists' && currentArtists.length === 0 && andGenreIds.length > 0
+                && (!collectionMode || artists.length > 0) && (
+                <GraphEmptyState
+                  mode={collectionMode ? 'collection-and-filter' : 'genre-and-filter'}
+                  onCta={() => setGenreOperator('or')}
+                  genreChips={andGenreChips}
+                  onRemoveGenre={removeAndGenre}
+                />
+              )}
+              {graph === 'similarArtists' && currentArtists.length === 0 && (
+                <GraphEmptyState mode="similar-artists" />
+              )}
+            </>
+          )}
 
           {/* Genre hover preview */}
           {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && (
