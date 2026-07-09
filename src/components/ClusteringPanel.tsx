@@ -2,6 +2,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+
 import { Spline, RotateCcw, Loader2 } from "lucide-react";
 import { ResponsivePanel } from "@/components/ResponsivePanel";
 import { ClusterResult } from "@/lib/ClusteringEngine";
@@ -20,6 +21,10 @@ interface ClusteringPanelProps {
     collectionMode?: boolean;
     showClusterOverlay?: boolean;
     setShowClusterOverlay?: (v: boolean) => void;
+    hops?: number;
+    setHops?: (n: number) => void;
+    maxHops?: number;
+    similarArtistsMode?: boolean;
 }
 
 export default function ClusteringPanel({
@@ -36,14 +41,21 @@ export default function ClusteringPanel({
     collectionMode,
     showClusterOverlay,
     setShowClusterOverlay,
+    hops,
+    setHops,
+    maxHops = 2,
+    similarArtistsMode,
 }: ClusteringPanelProps) {
 
+    // --- Cluster mode options ---
+    // Genre graph options: how genre nodes are linked/grouped
     const genreOptions = [
         { id: "subgenre", label: "Hierarchy", description: "Clusters genres based on their parent-child relationships, such as 'rock' and its subgenre 'alternative rock'." },
         { id: "influence", label: "Influence", description: "Visualizes how genres have influenced each other over time, revealing historical connections and the evolution of musical styles." },
         { id: "fusion", label: "Fusion", description: "Highlights genres that have merged to create new, hybrid genres, like 'jazz fusion' or 'folk punk'." },
     ];
 
+    // Artist graph options: base options + collection-only options (genre/byTags)
     const artistOptions = [
         { id: "similarArtists", label: "Similar Artists", description: "Uses the existing artist network structure to find communities. Artists connected by similar artist links form clusters." },
         { id: "popularity", label: "Popularity", description: "Arranges artists in concentric rings by listener count. Popular artists at center, underground at outer ring." },
@@ -76,16 +88,18 @@ export default function ClusteringPanel({
             className="w-full w-sm"
             side="left"
         >
-         {/* header */}
-                <div className="flex items-center pl-2 mb-1 h-10">
-                    <h2 className="text-lg w-full font-semibold leading-tight text-foreground">Clustering</h2>
-                    <Button
+            {/* Panel header */}
+            <div className="flex items-center pl-2 mb-1 h-10">
+                <h2 className="text-lg w-full font-semibold leading-tight text-foreground">Clustering</h2>
+                <Button
                     // onClick={handleResetClick}
                     variant="ghost" size="icon" className=" size-10">
+                </Button>
+            </div>
 
-                    </Button>
-                </div>   
             <div className="flex flex-col items-start w-full gap-2 rounded-2xl ">
+
+                {/* Cluster mode radio group — switches between layout/grouping strategies */}
                 <RadioGroup
                     value={clusterMode}
                     onValueChange={(value) => setClusterMode([value])}
@@ -108,6 +122,7 @@ export default function ClusteringPanel({
                                     <span className={`${clusterMode === option.id ? "text-foreground" : "text-muted-foreground"} text-md font-semibold leading-none `}>
                                         {option.label}
                                     </span>
+                                    {/* Animated description — expands when the option is selected */}
                                     <AnimatePresence initial={false}>
                                         {clusterMode === option.id && (
                                             <motion.div
@@ -132,6 +147,8 @@ export default function ClusteringPanel({
                         </motion.div>
                     ))}
                 </RadioGroup>
+
+                {/* Cluster overlay toggle — draws hull shapes around cluster groups on the canvas */}
                 {graphType === 'artists' && ['genre', 'byTags', 'popularity'].includes(clusterMode) && setShowClusterOverlay && (
                     <div className={`${feildsetStyles} flex items-center justify-between w-full p-3`}>
                         <div className="flex flex-col">
@@ -141,15 +158,45 @@ export default function ClusteringPanel({
                         <Switch checked={showClusterOverlay ?? false} onCheckedChange={setShowClusterOverlay} />
                     </div>
                 )}
+
+                {/* Discovery Hops — collection mode and similar artists mode only */}
+                {graphType === 'artists' && (collectionMode || similarArtistsMode) && hops !== undefined && setHops && (
+                    <div className={`${feildsetStyles} flex items-center justify-between w-full p-3`}>
+                        <div className="flex flex-col">
+                            <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">Discovery Hops</span>
+                            <span className="text-sm text-muted-foreground mt-1">Expand to artists beyond your {similarArtistsMode ? 'selection' : 'collection'}.</span>
+                        </div>
+                        {/* Button group: 0 = no hops, 1–maxHops = hop depth */}
+                        <div role="radiogroup" aria-label="Discovery hops" className="flex gap-2">
+                            {Array.from({ length: maxHops + 1 }, (_, i) => (
+                                <Button
+                                    key={i}
+                                    role="radio"
+                                    aria-checked={hops === i}
+                                    variant={hops === i ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setHops(i)}
+                                >
+                                    {i}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Color mode + legend + cluster stats — artist graph only */}
                 {graphType === 'artists' && artistColorMode !== undefined && setArtistColorMode && (
                     <>
+                        {/* Color mode toggle: color nodes by genre family or by computed cluster */}
                         <div className={`${feildsetStyles} flex items-center justify-between w-full p-3 pt-3`}>
                             <div className="flex flex-col">
                                 <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">Color Mode</span>
                                 <span className="text-sm text-muted-foreground mt-1">Choose how artists are colored in the graph.</span>
                             </div>
-                            <div className="flex gap-2">
+                            <div role="radiogroup" aria-label="Color mode" className="flex gap-2">
                                 <Button
+                                    role="radio"
+                                    aria-checked={artistColorMode === 'genre'}
                                     variant={artistColorMode === 'genre' ? 'default' : 'outline'}
                                     size="sm"
                                     onClick={() => setArtistColorMode('genre')}
@@ -157,6 +204,8 @@ export default function ClusteringPanel({
                                     Genre
                                 </Button>
                                 <Button
+                                    role="radio"
+                                    aria-checked={artistColorMode === 'cluster'}
                                     variant={artistColorMode === 'cluster' ? 'default' : 'outline'}
                                     size="sm"
                                     onClick={() => setArtistColorMode('cluster')}
@@ -165,6 +214,8 @@ export default function ClusteringPanel({
                                 </Button>
                             </div>
                         </div>
+
+                        {/* Genre color legend — visible when coloring by genre */}
                         {artistColorMode === 'genre' && genreColorLegend && genreColorLegend.length > 0 && (
                             <div className={`flex flex-col gap-2 w-full p-3 border-border`}>
                                 <span className="text-md font-semibold text-foreground">Genre Color Legend</span>
@@ -183,14 +234,18 @@ export default function ClusteringPanel({
                                         ))}
                                     </div>
                                 </div>
-                                                            </div>
+                            </div>
                         )}
+
+                        {/* Clustering progress spinner */}
                         {clusteringInProgress && (
                             <div className={`flex items-center gap-2 w-full p-3`}>
                                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                                 <span className="text-sm text-muted-foreground">Computing clusters...</span>
                             </div>
                         )}
+
+                        {/* Cluster stats summary — shown after clustering completes */}
                         {!clusteringInProgress && artistClusters && artistClusters.stats && (
                             <div className={`flex flex-col gap-2 w-full p-3`}>
                                 <span className="text-md font-semibold text-foreground">Cluster Stats</span>
@@ -203,8 +258,13 @@ export default function ClusteringPanel({
                         )}
                     </>
                 )}
+
+                
+
+                {/* Genre graph controls — DAG mode toggle + genre color legend */}
                 {graphType === 'genres' && (
                     <>
+                        {/* DAG mode: renders the genre graph as a directed hierarchy */}
                         <div className={`${feildsetStyles} flex items-center justify-between w-full p-3`}>
                             <div className="flex flex-col">
                                 <span className="text-md font-semibold leading-none text-gray-900 dark:text-gray-100">DAG Mode</span>
@@ -212,6 +272,8 @@ export default function ClusteringPanel({
                             </div>
                             <Switch checked={dagMode} onCheckedChange={setDagMode} />
                         </div>
+
+                        {/* Genre color legend for the genre graph */}
                         {genreColorLegend && genreColorLegend.length > 0 && (
                             <div className={`flex flex-col gap-2 w-full p-3 border-border`}>
                                 <span className="text-md font-semibold text-foreground">Genre Color Legend</span>
@@ -230,10 +292,11 @@ export default function ClusteringPanel({
                                         ))}
                                     </div>
                                 </div>
-                                                            </div>
+                            </div>
                         )}
                     </>
                 )}
+
             </div>
         </ResponsivePanel>
     )

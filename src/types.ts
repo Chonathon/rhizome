@@ -40,6 +40,7 @@ export interface Artist extends BasicNode {
     topTracks?: TopTrack[];
     noTopTracks?: boolean;
     degree?: number;
+    hopDistance?: number;
 }
 
 export interface BasicNode {
