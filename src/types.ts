@@ -163,6 +163,7 @@ export interface GraphHandle {
   resetView: (k: number, ms?: number) => void;
   getZoom: () => number;
   getCanvas: () => HTMLCanvasElement | null;
+  setAiClusterLabels: (labels: Map<string, string>) => void;
 }
 
 export interface FindOption {

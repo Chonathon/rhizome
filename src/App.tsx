@@ -41,6 +41,7 @@ import {
   isOnPage,
 } from "@/lib/utils";
 import { ClusteringEngine, ClusterResult } from '@/lib/ClusteringEngine';
+import { labelClustersWithAI } from '@/lib/clusterLabeling';
 import { getPriorityLabelIds } from '@/lib/CentralityMetrics';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import ClusteringPanel from "@/components/ClusteringPanel";
@@ -116,7 +117,7 @@ function SidebarLogoTrigger() {
 const NO_AND_FILTER: string[] = [];
 
 function App() {
-  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; resetView: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null }
+  type GraphHandle = { zoomIn: () => void; zoomOut: () => void; zoomTo: (k: number, ms?: number) => void; resetView: (k: number, ms?: number) => void; getZoom: () => number; getCanvas: () => HTMLCanvasElement | null; setAiClusterLabels: (labels: Map<string, string>) => void }
   const genresGraphRef = useRef<GraphHandle | null>(null);
   const artistsGraphRef = useRef<GraphHandle | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -1003,6 +1004,18 @@ function App() {
             }),
           });
           setArtistClusters(result);
+
+          if (artistClusterMethod === 'byTags') {
+            labelClustersWithAI(result.clusters, currentArtists)
+              .then(labels => {
+                if (clusteringGenerationRef.current !== generation) return;
+                artistsGraphRef.current?.setAiClusterLabels(labels);
+              })
+              .catch(() => {
+                if (clusteringGenerationRef.current !== generation) return;
+                artistsGraphRef.current?.setAiClusterLabels(new Map());
+              });
+          }
         } catch (error) {
           console.error('Artist clustering failed:', error);
           toast.error('Failed to compute artist clusters');
@@ -1083,7 +1096,7 @@ function App() {
     } else {
       artistClusterMethod = exploreArtistClusterMethod;
     }
-    if (!artistClusters || !['genre', 'popularity'].includes(artistClusterMethod) || !showClusterOverlay) return undefined;
+    if (!artistClusters || !['genre', 'byTags', 'popularity'].includes(artistClusterMethod) || !showClusterOverlay) return undefined;
     const overlays: ClusterOverlay[] = [];
     for (const cluster of artistClusters.clusters.values()) {
       if (cluster.artistIds.length === 0) continue;
@@ -1092,6 +1105,8 @@ function App() {
         name: cluster.name,
         color: cluster.color,
         nodeIds: new Set(cluster.artistIds),
+        isLoading: artistClusterMethod === 'byTags',
+        loadingTags: cluster.tags,
       });
     }
     return overlays.length > 0 ? overlays : undefined;
