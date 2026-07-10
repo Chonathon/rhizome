@@ -630,7 +630,7 @@ export function ArtistInfo({
                                 </Button>
                             )}
                           </div>
-                          <div className="grid grid-cols-4 gap-4 w-full pb-1 -mx-1 px-1">
+                          <div className={`grid gap-4 w-full ${discographyExpanded && isDesktop ? "grid-cols-4" : "grid-cols-3"}`}>
                             {similarFilter(selectedArtist.similar).map((name) => {
                               const artistObj = getArtistByName?.(name);
                               const isInView = !!artistObj;
@@ -640,24 +640,32 @@ export function ArtistInfo({
                                   : getArtistColorByName?.(name);
 
                               return (
-                                  <button
-                                      key={name}
-                                      onClick={() => setArtistFromName(name)}
-                                      title={`View ${name}`}
-                                      className="flex flex-col items-center gap-2 flex-none w-auto group"
-                                  >
-                                    <ArtistAvatar
-                                        name={name}
-                                        imageUrl={img}
-                                        color={genreColor}
-                                        isInView={isInView || undefined}
-                                        className="size-[64px] border-2 transition-all duration-200"
-                                        labelClassName="text-base"
-                                    />
-                                    <span className="text-[11px] leading-tight text-center line-clamp-2 w-full font-semibold group-hover:text-foreground transition-colors">
+                                  <div className="flex flex-col items-center gap-1.5">
+                                    <button
+                                        key={name}
+                                        onClick={() => setArtistFromName(name)}
+                                        title={`View ${name}`}
+                                        className="w-full group"
+                                    >
+                                      <ArtistAvatar
+                                          name={name}
+                                          imageUrl={img}
+                                          color={genreColor}
+                                          isInView={isInView || undefined}
+                                          className="w-full aspect-square border-2 border-sidebar-border"
+                                          labelClassName="text-xl"
+                                      />
+                                    </button>
+                                    <button
+                                        onClick={() => setArtistFromName(name)}
+                                        title={`View ${name}`}
+                                        className="w-full group"
+                                    >
+                                      <span className="text-[11px] leading-tight text-center line-clamp-2 w-full font-semibold group-hover:text-foreground transition-colors">
                               {name}
                             </span>
-                                  </button>
+                                    </button>
+                                  </div>
                               );
                             })}
                           </div>
