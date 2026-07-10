@@ -256,7 +256,7 @@ export function ArtistInfo({
                 {/* Scrolling Container: allow scrolling at all snaps (mobile + desktop) */}
                 <div
                     data-drawer-scroll
-                    className={`w-full flex-1 min-h-0 flex flex-col gap-4 no-scrollbar pb-32 md:pb-16 
+                    className={`w-full flex-1 min-h-0 flex flex-col gap-4 no-scrollbar pb-32 md:pb-16 overflow-x-hidden
                 ${isDesktop ? 'overflow-y-auto' : (isAtMaxSnap ? 'overflow-y-auto' : 'overflow-hidden')}
               `}
                 >
@@ -630,7 +630,7 @@ export function ArtistInfo({
                                 </Button>
                             )}
                           </div>
-                          <div className={`grid gap-4 w-full ${discographyExpanded && isDesktop ? "grid-cols-4" : "grid-cols-3"}`}>
+                          <div className={`grid gap-4 w-full -mx-1 px-1 ${discographyExpanded && isDesktop ? "grid-cols-4" : "grid-cols-3"}`}>
                             {similarFilter(selectedArtist.similar).map((name) => {
                               const artistObj = getArtistByName?.(name);
                               const isInView = !!artistObj;
@@ -652,7 +652,7 @@ export function ArtistInfo({
                                           imageUrl={img}
                                           color={genreColor}
                                           isInView={isInView || undefined}
-                                          className="w-full aspect-square border-2 border-sidebar-border"
+                                          className="size-auto w-full aspect-square border-2 border-sidebar-border"
                                           labelClassName="text-xl"
                                       />
                                     </button>

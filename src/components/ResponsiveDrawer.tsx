@@ -475,8 +475,9 @@ export function ResponsiveDrawer({
                 // Leave space below the header and a bottom gap to keep the drawer floating
                 "--drawer-top": "calc(var(--app-header-height, 52px))",
                 "--drawer-bottom": "4px",
-                // Keep vaul's transform transition (slide in/out) while animating width changes.
-                // Inline because vaul injects its own `transition: transform` rule at runtime.
+                // Animate width changes while preserving vaul's transform transition (slide in/out).
+                // Inline because vaul's runtime-injected `transition: transform` rule beats a
+                // Tailwind class in the cascade, which would make max-width changes instant.
                 transition:
                   "transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), max-width 0.3s ease-in-out",
               } as React.CSSProperties)
