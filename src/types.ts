@@ -112,6 +112,21 @@ export interface TopTrackPlayIDs {
     apple?: string;
 }
 
+export type AlbumReleaseType = 'album' | 'ep' | 'single';
+
+export interface AlbumTrack extends TopTrack {
+    durationSec?: number;
+}
+
+export interface Album {
+    id: string;
+    title: string;
+    year: number;
+    releaseType: AlbumReleaseType;
+    image?: string;
+    tracks: AlbumTrack[];
+}
+
 export type PlayerType = 'youtube' | 'spotify' | 'apple';
 
 export type Theme = 'light' | 'dark' | 'system';

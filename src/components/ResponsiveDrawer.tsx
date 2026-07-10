@@ -78,6 +78,17 @@ export interface ResponsiveDrawerProps {
    * Receives the index of the current snap point (0 = min, 1 = middle, 2 = max for default snaps).
    */
   onSnapChange?: (snapIndex: number) => void;
+  /**
+   * Desktop only: widens the side drawer for expanded content (e.g., a discography view).
+   * The width animates between the default and `desktopExpandedWidthPx`.
+   * @default false
+   */
+  desktopExpanded?: boolean;
+  /**
+   * Max width in pixels of the desktop drawer while `desktopExpanded` is true.
+   * @default 720
+   */
+  desktopExpandedWidthPx?: number;
 }
 
 /**
@@ -109,6 +120,8 @@ export function ResponsiveDrawer({
   contentKey,
   expandToMiddleTrigger,
   onSnapChange,
+  desktopExpanded = false,
+  desktopExpandedWidthPx = 720,
 }: ResponsiveDrawerProps) {
   const isDesktop = useMediaQuery(desktopQuery);
   // Detect pointer type so we can keep snap targets lower on tall desktop browsers.
@@ -462,7 +475,15 @@ export function ResponsiveDrawer({
                 // Leave space below the header and a bottom gap to keep the drawer floating
                 "--drawer-top": "calc(var(--app-header-height, 52px))",
                 "--drawer-bottom": "4px",
+                // Keep vaul's transform transition (slide in/out) while animating width changes.
+                // Inline because vaul injects its own `transition: transform` rule at runtime.
+                transition:
+                  "transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), max-width 0.3s ease-in-out",
               } as React.CSSProperties)
+            : {}),
+          // Inline maxWidth so it beats the sm:max-w-sm cap in the base DrawerContent
+          ...(isDesktop && desktopExpanded
+            ? { maxWidth: `min(${desktopExpandedWidthPx}px, calc(100vw - var(--sidebar-gap, 0px) - 48px))` }
             : {}),
         }}
       >

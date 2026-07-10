@@ -1,3 +1,5 @@
+import { Album, AlbumReleaseType, AlbumTrack, TopTrack } from "@/types";
+
 export const dummyLastFMArtistData = [
   {
     name: "Arcade Fire",
@@ -159,3 +161,100 @@ export const dummyGenres = [
   { id: '49', name: 'New Jack Swing', origin: 'USA', year: 1987, emoji: '🕺', artistCount: 71 },
   { id: '50', name: 'Neo-Classical', origin: 'Europe', year: 2000, emoji: '🎻', artistCount: 58 },
 ];
+
+// --- Mock discography (frontend-only placeholder until the server provides real release data) ---
+
+const ALBUM_TITLE_FIRST = [
+  'Hollow', 'Golden', 'Midnight', 'Silent', 'Electric', 'Violet', 'Broken', 'Endless',
+  'Paper', 'Neon', 'Wandering', 'Crystal', 'Burning', 'Distant', 'Velvet', 'Iron',
+];
+const ALBUM_TITLE_SECOND = [
+  'Horizon', 'Machines', 'Gardens', 'Letters', 'Rivers', 'Signals', 'Echoes', 'Youth',
+  'Weather', 'Mirrors', 'Season', 'Ceremony', 'Static', 'Bloom', 'Cartography', 'Arcade',
+];
+const TRACK_TITLE_FIRST = [
+  'Fading', 'Glass', 'Northern', 'Quiet', 'Restless', 'Second', 'Lucid', 'Hollow',
+  'Slow', 'Wired', 'Pale', 'Last', 'Sunken', 'First', 'Wild', 'Frozen',
+];
+const TRACK_TITLE_SECOND = [
+  'Light', 'Hands', 'Summer', 'Parade', 'Currents', 'Skin', 'Motorway', 'Antenna',
+  'Tide', 'Dust', 'Windows', 'Fires', 'Language', 'Orbit', 'Shore', 'Teeth',
+];
+
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return hash >>> 0;
+}
+
+// Deterministic PRNG so the same artist always gets the same mock discography
+function mulberry32(seed: number) {
+  let a = seed;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function getMockDiscography(artist: {
+  id: string;
+  name: string;
+  topTracks?: TopTrack[];
+  startDate?: string;
+}): Album[] {
+  const rand = mulberry32(hashString(artist.id || artist.name));
+  const pick = <T,>(pool: T[]) => pool[Math.floor(rand() * pool.length)];
+
+  // Reuse the artist's real top-track play IDs so mock tracks are actually playable
+  const playableIds = (artist.topTracks ?? [])
+    .map((t) => t.youtube)
+    .filter((id): id is string => !!id);
+
+  const albumCount = 4 + Math.floor(rand() * 4); // 4-7 releases
+  const parsedStart = artist.startDate ? new Date(artist.startDate).getFullYear() : NaN;
+  let year = Number.isFinite(parsedStart) && parsedStart > 1900
+    ? parsedStart + 1
+    : 1988 + Math.floor(rand() * 25);
+
+  const albums: Album[] = [];
+  const usedTitles = new Set<string>();
+  for (let i = 0; i < albumCount; i++) {
+    const roll = rand();
+    const releaseType: AlbumReleaseType = roll < 0.65 ? 'album' : roll < 0.9 ? 'ep' : 'single';
+    const trackCount =
+      releaseType === 'album' ? 8 + Math.floor(rand() * 5)
+      : releaseType === 'ep' ? 4 + Math.floor(rand() * 3)
+      : 1 + Math.floor(rand() * 2);
+
+    let title = `${pick(ALBUM_TITLE_FIRST)} ${pick(ALBUM_TITLE_SECOND)}`;
+    while (usedTitles.has(title)) title = `${pick(ALBUM_TITLE_FIRST)} ${pick(ALBUM_TITLE_SECOND)}`;
+    usedTitles.add(title);
+
+    const tracks: AlbumTrack[] = Array.from({ length: trackCount }, (_, t) => ({
+      title: `${pick(TRACK_TITLE_FIRST)} ${pick(TRACK_TITLE_SECOND)}`,
+      artistName: artist.name,
+      youtube: playableIds.length ? playableIds[(i + t) % playableIds.length] : undefined,
+      durationSec: 120 + Math.floor(rand() * 260),
+    }));
+
+    albums.push({
+      id: `${artist.id}-mock-album-${i}`,
+      title,
+      year,
+      releaseType,
+      tracks,
+    });
+    year += 1 + Math.floor(rand() * 3);
+  }
+
+  const currentYear = new Date().getFullYear();
+  // Newest first, clamped so mock releases never sit in the future
+  return albums
+    .map((a) => ({ ...a, year: Math.min(a.year, currentYear) }))
+    .reverse();
+}

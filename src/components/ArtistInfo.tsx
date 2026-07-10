@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Artist, TopTrack } from "@/types";
+import { getMockDiscography } from "@/DummyDataForDummies";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber, clientUrl } from "@/lib/utils";
-import { CirclePlay, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, Disc3, Link, Check} from "lucide-react";
+import { CirclePlay, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, Disc3, Link, Check, Maximize2, Minimize2} from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -93,6 +94,8 @@ export function ArtistInfo({
                              expandToMiddleTrigger,
                            }: ArtistInfoProps) {
   const [desktopExpanded, setDesktopExpanded] = useState(false);
+  const [discographyExpanded, setDiscographyExpanded] = useState(false);
+  const [openAlbumId, setOpenAlbumId] = useState<string | null>(null);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -144,6 +147,29 @@ export function ArtistInfo({
       ]
   );
 
+  // Mock discography until the server provides real release data
+  const albums = useMemo(
+      () => (selectedArtist ? getMockDiscography(selectedArtist) : []),
+      [selectedArtist?.id, selectedArtist?.topTracks]
+  );
+
+  // Close any open tracklist when switching artists
+  useEffect(() => {
+    setOpenAlbumId(null);
+  }, [selectedArtist?.id]);
+
+  const formatTrackDuration = (sec?: number) =>
+      sec == null ? "" : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+
+  // Stable hue per album for the placeholder cover art
+  const albumHue = (id: string) => {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+    return ((h % 360) + 360) % 360;
+  };
+
+  const releaseTypeLabel = { album: "Album", ep: "EP", single: "Single" } as const;
+
   const onDismiss = () => {
     deselectArtist();
   };
@@ -190,6 +216,7 @@ export function ArtistInfo({
           dismissOnCanvasClick={true}
           contentKey={selectedArtist?.id}
           expandToMiddleTrigger={expandToMiddleTrigger}
+          desktopExpanded={discographyExpanded}
           headerTitle={
             selectedArtist && onFocusInArtistsView && shouldShowChevron ? (
                 <button
@@ -485,7 +512,107 @@ export function ArtistInfo({
                         </div>
                     )}
 
-                    {/* Description */}
+                    {/* Discography (mock data for now) */}
+                    {selectedArtist && albums.length > 0 && (
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-md font-semibold">Discography</span>
+                            </div>
+                            {isDesktop && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setDiscographyExpanded((prev) => !prev)}
+                                    title={discographyExpanded ? "Collapse panel" : "Expand panel"}
+                                >
+                                  {discographyExpanded ? (
+                                      <>Collapse <Minimize2 className="size-4" /></>
+                                  ) : (
+                                      <>Expand <Maximize2 className="size-4" /></>
+                                  )}
+                                </Button>
+                            )}
+                          </div>
+                          <div className={`grid gap-4 ${discographyExpanded && isDesktop ? "grid-cols-4" : "grid-cols-3"}`}>
+                            {albums.map((album) => {
+                              const isOpen = openAlbumId === album.id;
+                              const hue = albumHue(album.id);
+                              const hasPlayableTracks = album.tracks.some((t) => t.youtube);
+                              return (
+                                  <Fragment key={album.id}>
+                                    <button
+                                        onClick={() => setOpenAlbumId((prev) => (prev === album.id ? null : album.id))}
+                                        className="flex flex-col gap-1.5 text-left group"
+                                        title={isOpen ? `Hide ${album.title}` : `View ${album.title}`}
+                                    >
+                                      <div
+                                          className={`relative aspect-square w-full rounded-lg overflow-hidden border ${
+                                              isOpen ? "border-foreground/40 ring-1 ring-foreground/30" : "border-sidebar-border"
+                                          }`}
+                                          style={{
+                                            background: `linear-gradient(135deg, hsl(${hue} 35% 32%), hsl(${(hue + 50) % 360} 45% 14%))`,
+                                          }}
+                                      >
+                                        <Disc3 className="absolute inset-0 m-auto size-8 text-white/50 transition-transform duration-300 group-hover:rotate-45" />
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-xs font-medium leading-tight line-clamp-1">{album.title}</span>
+                                        <span className="text-[11px] text-muted-foreground">
+                                          {album.year}
+                                          {album.releaseType !== "album" ? ` · ${releaseTypeLabel[album.releaseType]}` : ""}
+                                        </span>
+                                      </div>
+                                    </button>
+                                    {isOpen && (
+                                        <div className="col-span-full flex flex-col gap-2 rounded-xl border border-sidebar-border bg-accent/30 p-3">
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div className="min-w-0">
+                                              <div className="text-sm font-semibold truncate">{album.title}</div>
+                                              <div className="text-xs text-muted-foreground">
+                                                {album.year} · {releaseTypeLabel[album.releaseType]} · {album.tracks.length}{" "}
+                                                {album.tracks.length === 1 ? "track" : "tracks"}
+                                              </div>
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                disabled={!hasPlayableTracks}
+                                                onClick={() => onPlayTrack?.(album.tracks, 0, { preview: previewModeEnabled })}
+                                                title={hasPlayableTracks ? `Play ${album.title}` : "No playable tracks"}
+                                            >
+                                              <CirclePlay /> Play
+                                            </Button>
+                                          </div>
+                                          <div className="flex flex-col">
+                                            {album.tracks.map((track, index) => (
+                                                <button
+                                                    key={`${album.id}-track-${index}`}
+                                                    onClick={() => onPlayTrack?.(album.tracks, index, { preview: previewModeEnabled })}
+                                                    className="group flex items-center gap-2 py-1.5 px-1 rounded-md hover:bg-accent transition-colors text-left"
+                                                    title={`Play ${track.title}`}
+                                                >
+                                                  <span className="relative grid place-items-center size-5 shrink-0">
+                                                    <CirclePlay className="absolute opacity-0 group-hover:opacity-100 size-4" aria-hidden />
+                                                    <span className="text-sm text-muted-foreground leading-none group-hover:opacity-0">
+                                                      {index + 1}
+                                                    </span>
+                                                  </span>
+                                                  <span className="flex-1 min-w-0 text-sm font-medium truncate">{track.title}</span>
+                                                  <span className="text-xs text-muted-foreground tabular-nums">
+                                                    {formatTrackDuration(track.durationSec)}
+                                                  </span>
+                                                </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                    )}
+                                  </Fragment>
+                              );
+                            })}
+                          </div>
+                        </div>
+                    )}
 
                     {/* Similar Artists */}
                     {selectedArtist?.similar && similarFilter(selectedArtist.similar).length > 0 && (
