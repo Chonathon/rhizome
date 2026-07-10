@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Artist, TopTrack } from "@/types";
 import { getMockDiscography } from "@/DummyDataForDummies";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber, clientUrl } from "@/lib/utils";
-import { CirclePlay, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, Disc3, Link, Check, Maximize2, Minimize2} from "lucide-react";
+import { CirclePlay, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, ChevronLeft, Disc3, Link, Check, Maximize2, Minimize2, X} from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -157,6 +157,11 @@ export function ArtistInfo({
   useEffect(() => {
     setOpenAlbumId(null);
   }, [selectedArtist?.id]);
+
+  const openAlbum = useMemo(
+      () => albums.find((album) => album.id === openAlbumId) ?? null,
+      [albums, openAlbumId]
+  );
 
   const formatTrackDuration = (sec?: number) =>
       sec == null ? "" : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
@@ -534,83 +539,97 @@ export function ArtistInfo({
                                 </Button>
                             )}
                           </div>
-                          <div className={`grid gap-4 ${discographyExpanded && isDesktop ? "grid-cols-4" : "grid-cols-3"}`}>
-                            {albums.map((album) => {
-                              const isOpen = openAlbumId === album.id;
-                              const hue = albumHue(album.id);
-                              const hasPlayableTracks = album.tracks.some((t) => t.youtube);
-                              return (
-                                  <Fragment key={album.id}>
-                                    <button
-                                        onClick={() => setOpenAlbumId((prev) => (prev === album.id ? null : album.id))}
-                                        className="flex flex-col gap-1.5 text-left group"
-                                        title={isOpen ? `Hide ${album.title}` : `View ${album.title}`}
-                                    >
-                                      <div
-                                          className={`relative aspect-square w-full rounded-lg overflow-hidden border ${
-                                              isOpen ? "border-foreground/40 ring-1 ring-foreground/30" : "border-sidebar-border"
-                                          }`}
-                                          style={{
-                                            background: `linear-gradient(135deg, hsl(${hue} 35% 32%), hsl(${(hue + 50) % 360} 45% 14%))`,
-                                          }}
+                          {openAlbum ? (
+                              <div className="flex flex-col gap-3 rounded-xl border border-sidebar-border bg-accent/30 p-3">
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                  <button
+                                      onClick={() => setOpenAlbumId(null)}
+                                      className="flex items-center gap-0.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                      title="Back to all releases"
+                                  >
+                                    <ChevronLeft className="size-4" />
+                                    All releases
+                                  </button>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div
+                                      className="relative size-16 shrink-0 rounded-lg overflow-hidden border border-sidebar-border"
+                                      style={{
+                                        background: `linear-gradient(135deg, hsl(${albumHue(openAlbum.id)} 35% 32%), hsl(${(albumHue(openAlbum.id) + 50) % 360} 45% 14%))`,
+                                      }}
+                                  >
+                                    <Disc3 className="absolute inset-0 m-auto size-6 text-white/50" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold truncate">{openAlbum.title}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {openAlbum.year} · {releaseTypeLabel[openAlbum.releaseType]} · {openAlbum.tracks.length}{" "}
+                                      {openAlbum.tracks.length === 1 ? "track" : "tracks"}
+                                    </div>
+                                  </div>
+                                  <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      disabled={!openAlbum.tracks.some((t) => t.youtube)}
+                                      onClick={() => onPlayTrack?.(openAlbum.tracks, 0, { preview: previewModeEnabled })}
+                                      title={openAlbum.tracks.some((t) => t.youtube) ? `Play ${openAlbum.title}` : "No playable tracks"}
+                                  >
+                                    <CirclePlay /> Play
+                                  </Button>
+                                </div>
+                                <div className="flex flex-col">
+                                  {openAlbum.tracks.map((track, index) => (
+                                      <button
+                                          key={`${openAlbum.id}-track-${index}`}
+                                          onClick={() => onPlayTrack?.(openAlbum.tracks, index, { preview: previewModeEnabled })}
+                                          className="group flex items-center gap-2 py-1.5 px-1 rounded-md hover:bg-accent transition-colors text-left"
+                                          title={`Play ${track.title}`}
                                       >
-                                        <Disc3 className="absolute inset-0 m-auto size-8 text-white/50 transition-transform duration-300 group-hover:rotate-45" />
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-xs font-medium leading-tight line-clamp-1">{album.title}</span>
-                                        <span className="text-[11px] text-muted-foreground">
-                                          {album.year}
-                                          {album.releaseType !== "album" ? ` · ${releaseTypeLabel[album.releaseType]}` : ""}
+                                        <span className="relative grid place-items-center size-5 shrink-0">
+                                          <CirclePlay className="absolute opacity-0 group-hover:opacity-100 size-4" aria-hidden />
+                                          <span className="text-sm text-muted-foreground leading-none group-hover:opacity-0">
+                                            {index + 1}
+                                          </span>
                                         </span>
-                                      </div>
-                                    </button>
-                                    {isOpen && (
-                                        <div className="col-span-full flex flex-col gap-2 rounded-xl border border-sidebar-border bg-accent/30 p-3">
-                                          <div className="flex items-center justify-between gap-2">
-                                            <div className="min-w-0">
-                                              <div className="text-sm font-semibold truncate">{album.title}</div>
-                                              <div className="text-xs text-muted-foreground">
-                                                {album.year} · {releaseTypeLabel[album.releaseType]} · {album.tracks.length}{" "}
-                                                {album.tracks.length === 1 ? "track" : "tracks"}
-                                              </div>
-                                            </div>
-                                            <Button
-                                                size="sm"
-                                                variant="secondary"
-                                                disabled={!hasPlayableTracks}
-                                                onClick={() => onPlayTrack?.(album.tracks, 0, { preview: previewModeEnabled })}
-                                                title={hasPlayableTracks ? `Play ${album.title}` : "No playable tracks"}
-                                            >
-                                              <CirclePlay /> Play
-                                            </Button>
-                                          </div>
-                                          <div className="flex flex-col">
-                                            {album.tracks.map((track, index) => (
-                                                <button
-                                                    key={`${album.id}-track-${index}`}
-                                                    onClick={() => onPlayTrack?.(album.tracks, index, { preview: previewModeEnabled })}
-                                                    className="group flex items-center gap-2 py-1.5 px-1 rounded-md hover:bg-accent transition-colors text-left"
-                                                    title={`Play ${track.title}`}
-                                                >
-                                                  <span className="relative grid place-items-center size-5 shrink-0">
-                                                    <CirclePlay className="absolute opacity-0 group-hover:opacity-100 size-4" aria-hidden />
-                                                    <span className="text-sm text-muted-foreground leading-none group-hover:opacity-0">
-                                                      {index + 1}
-                                                    </span>
-                                                  </span>
-                                                  <span className="flex-1 min-w-0 text-sm font-medium truncate">{track.title}</span>
-                                                  <span className="text-xs text-muted-foreground tabular-nums">
-                                                    {formatTrackDuration(track.durationSec)}
-                                                  </span>
-                                                </button>
-                                            ))}
-                                          </div>
+                                        <span className="flex-1 min-w-0 text-sm font-medium truncate">{track.title}</span>
+                                        <span className="text-xs text-muted-foreground tabular-nums">
+                                          {formatTrackDuration(track.durationSec)}
+                                        </span>
+                                      </button>
+                                  ))}
+                                </div>
+                              </div>
+                          ) : (
+                              <div className={`grid gap-4 ${discographyExpanded && isDesktop ? "grid-cols-4" : "grid-cols-3"}`}>
+                                {albums.map((album) => {
+                                  const hue = albumHue(album.id);
+                                  return (
+                                      <button
+                                          key={album.id}
+                                          onClick={() => setOpenAlbumId(album.id)}
+                                          className="flex flex-col gap-1.5 text-left group"
+                                          title={`View ${album.title}`}
+                                      >
+                                        <div
+                                            className="relative aspect-square w-full rounded-lg overflow-hidden border border-sidebar-border"
+                                            style={{
+                                              background: `linear-gradient(135deg, hsl(${hue} 35% 32%), hsl(${(hue + 50) % 360} 45% 14%))`,
+                                            }}
+                                        >
+                                          <Disc3 className="absolute inset-0 m-auto size-8 text-white/50 transition-transform duration-300 group-hover:rotate-45" />
                                         </div>
-                                    )}
-                                  </Fragment>
-                              );
-                            })}
-                          </div>
+                                        <div className="flex flex-col">
+                                          <span className="text-xs font-medium leading-tight line-clamp-1">{album.title}</span>
+                                          <span className="text-[11px] text-muted-foreground">
+                                            {album.year}
+                                            {album.releaseType !== "album" ? ` · ${releaseTypeLabel[album.releaseType]}` : ""}
+                                          </span>
+                                        </div>
+                                      </button>
+                                  );
+                                })}
+                              </div>
+                          )}
                         </div>
                     )}
 
