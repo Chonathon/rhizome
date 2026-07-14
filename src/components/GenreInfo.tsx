@@ -391,7 +391,7 @@ export function GenreInfo({
                             <SplitButton
                                 variant="default"
                                 size="lg"
-                                disabled={genreArtistsLoading || !!playLoading}
+                                disabled={genreArtistsLoading || !!playLoading || !genreTracks || genreTracks.length === 0}
                             >
                               <SplitButtonAction
                                   aria-busy={genreArtistsLoading || !!playLoading}
@@ -478,7 +478,7 @@ export function GenreInfo({
                         ) : (
                             // Mobile: Simple play button
                             <Button
-                                disabled={genreArtistsLoading || !!playLoading}
+                                disabled={genreArtistsLoading || !!playLoading || !genreTracks || genreTracks.length === 0}
                                 aria-busy={genreArtistsLoading || !!playLoading}
                                 size="xl"
                                 variant="default"

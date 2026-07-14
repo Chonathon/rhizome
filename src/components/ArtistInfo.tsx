@@ -103,6 +103,7 @@ export function ArtistInfo({
     return false;
   });
   const isDesktop = useMediaQuery("(min-width: 1200px)");
+  const noTracksAvailable = !!selectedArtist?.noTopTracks || selectedArtist?.topTracks?.length === 0;
 
   // Persist preview mode preference
   useEffect(() => {
@@ -271,7 +272,7 @@ export function ArtistInfo({
                             <SplitButton
                                 variant="default"
                                 size="lg"
-                                disabled={!!playLoading}
+                                disabled={!!playLoading || noTracksAvailable}
                             >
                               <SplitButtonAction
                                   aria-busy={!!playLoading}
@@ -300,7 +301,7 @@ export function ArtistInfo({
                                 <DropdownMenuTrigger asChild>
                                   <SplitButtonTrigger
                                       className="disabled:opacity-100"
-                                      disabled={!!playLoading}
+                                      disabled={!!playLoading || noTracksAvailable}
                                       aria-label="Select track or toggle preview mode"
                                   >
                                     <ChevronDown className="size-4" />
@@ -370,7 +371,7 @@ export function ArtistInfo({
                                 variant="default"
                                 className="flex-1 disabled:opacity-100"
                                 onClick={() => selectedArtist && onPlay?.(selectedArtist)}
-                                disabled={!!playLoading}
+                                disabled={!!playLoading || noTracksAvailable}
                                 aria-busy={!!playLoading}
                             >
                               {playLoading ? <Loader2 className="animate-spin size-4" aria-hidden /> : <CirclePlay />}
