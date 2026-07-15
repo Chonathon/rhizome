@@ -30,3 +30,4 @@ dist-ssr
 *.sln
 *.sw?
 .mcp.json
+.01_docs

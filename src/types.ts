@@ -40,6 +40,7 @@ export interface Artist extends BasicNode {
     topTracks?: TopTrack[];
     noTopTracks?: boolean;
     degree?: number;
+    hopDistance?: number;
 }
 
 export interface BasicNode {
@@ -98,12 +99,6 @@ export interface ReportReason {
 export interface RootGenreNode {
     id: string;
     type: GenreClusterMode;
-}
-
-export interface InitialGenreFilter {
-    genre: Genre | undefined;
-    isRoot: boolean;
-    parents: Record<string, Set<string>>;
 }
 
 export interface TopTrack extends TopTrackPlayIDs{
@@ -168,6 +163,7 @@ export interface GraphHandle {
   resetView: (k: number, ms?: number) => void;
   getZoom: () => number;
   getCanvas: () => HTMLCanvasElement | null;
+  setAiClusterLabels: (labels: Map<string, string>) => void;
 }
 
 export interface FindOption {

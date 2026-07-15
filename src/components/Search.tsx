@@ -1,21 +1,39 @@
 import { Button } from "@/components/ui/button"
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
+import { CommandDialog, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
 import { BadgeIndicator } from "@/components/BadgeIndicator"
+import { SearchEmptyState } from "@/components/SearchEmptyState"
 import { useRecentSelections, groupByTime } from "@/hooks/useRecentSelections"
-import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon } from "lucide-react"
+import { X, Search as SearchIcon, CirclePlay, HandHeart, SunMoon, Sun, Moon, Sparkles, Share2, History, ArrowLeft } from "lucide-react"
+import axios from "axios"
 import { motion } from "framer-motion";
-import { isGenre } from "@/lib/utils"
+import { isGenre, serverUrl } from "@/lib/utils"
+import { toast } from "sonner"
 import { Artist, BasicNode, Genre, GraphType } from "@/types";
 import { useEffect, useRef, useState } from "react";
 import { useMemo } from "react";
-import { Loading } from "@/components/Loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useMediaQuery } from "react-responsive";
 import useSearch from "@/hooks/useSearch";
 import {SEARCH_DEBOUNCE_MS} from "@/constants";
 import { Kbd } from "./ui/kbd"
+import KofiLogo from "@/assets/kofi_symbol.svg"
+
+const KofiIcon = ({ className }: { className?: string }) => (
+  <img src={KofiLogo} alt="" className={className} />
+);
+
+interface SearchAction {
+  id: string;
+  label: string;
+  keywords: string[];
+  icon: React.ComponentType<{ className?: string }>;
+  onSelect: () => void;
+  // Actions like "View Recents" navigate within the dialog instead of leaving it
+  keepOpen?: boolean;
+}
 
 interface SearchProps {
   onGenreSelect: (genre: Genre) => void;
@@ -63,17 +81,43 @@ export function Search({
   const [cmdCtrlHeld, setCmdCtrlHeld] = useState(false);
   const [altHeld, setAltHeld] = useState(false);
   const [selectedValue, setSelectedValue] = useState<string>("");
+  const [view, setView] = useState<'root' | 'recents'>('root');
   const { recentSelections, addRecentSelection, removeRecentSelection } = useRecentSelections();
   const { searchResults, searchLoading, searchError } = useSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  // True from first keystroke until results land: covers the debounce window
+  // (inputValue ahead of query) and the in-flight request
+  const searchPending = inputValue.trim() !== "" && (searchLoading || inputValue !== query);
 
-  // Debouncing
+  // Debouncing. The recents view filters locally, so no server query there
   useEffect(() => {
     const timeout = setTimeout(() => {
-      setQuery(inputValue);
+      setQuery(view === 'root' ? inputValue : "");
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timeout);
-  }, [inputValue]);
+  }, [inputValue, view]);
+
+  // Reset to the root view whenever the dialog closes
+  useEffect(() => {
+    if (!open) setView('root');
+  }, [open]);
+
+  // Scroll list to top whenever entering the recents view
+  useEffect(() => {
+    if (view === 'recents') listRef.current?.scrollTo({ top: 0 });
+  }, [view]);
+
+  // Lets the sidebar's "View all" open the dialog straight into recents
+  useEffect(() => {
+    const openRecents = () => {
+      setInputValue("");
+      setView('recents');
+      setOpen(true);
+    };
+    window.addEventListener('search:open-recents', openRecents);
+    return () => window.removeEventListener('search:open-recents', openRecents);
+  }, [setOpen]);
 
   // Reset selected value when input changes to keep cmdk selection in sync
   useEffect(() => {
@@ -115,25 +159,24 @@ export function Search({
   }, []);
 
 
-  // Filter the searchable items. This is problematic with bands of the same name, for now it just uses the first one in the results
+  // Local items (graph artists + genres) are substring-filtered; server results are already
+  // matched by the backend (prefix/fuzzy), so they pass through as-is. Duplicate names within
+  // a type collapse to the first occurrence — bands sharing a name aren't distinguishable here yet
   const filteredSearchableItems = useMemo(() => {
+    const search = inputValue.trim().toLowerCase();
+    const localMatches = search
+      ? [...currentArtists, ...genres].filter((item) => item.name.toLowerCase().includes(search))
+      : [];
+    const seenIds = new Set<string>();
     const seenNames = new Set<string>();
-    return [...currentArtists, ...searchResults, ...genres].filter((item) => {
-      if (!item.name.toLowerCase().includes(inputValue.toLowerCase())) return false;
-      if (seenNames.has(item.name)) return false;
-      seenNames.add(item.name);
+    return [...localMatches, ...searchResults].filter((item) => {
+      const nameKey = `${isGenre(item) ? 'genre' : 'artist'}:${item.name.toLowerCase()}`;
+      if (seenIds.has(item.id) || seenNames.has(nameKey)) return false;
+      seenIds.add(item.id);
+      seenNames.add(nameKey);
       return true;
-    }
-    )},
-      [genres, searchResults, currentArtists, inputValue]
-  );
-
-  // Check if filtered items include any actual search results
-  const hasSearchResults = useMemo(() => {
-    if (!query || searchResults.length === 0) return false;
-    const searchResultIds = new Set(searchResults.map(r => r.id));
-    return filteredSearchableItems.some(item => searchResultIds.has(item.id));
-  }, [query, searchResults, filteredSearchableItems]);
+    });
+  }, [genres, searchResults, currentArtists, inputValue]);
 
   const isArtistWithDetail = (node: BasicNode): node is Artist => {
     return 'tags' in node && Array.isArray((node as Artist).tags);
@@ -243,7 +286,7 @@ export function Search({
   const { theme, setTheme } = useTheme()
 
   // Define searchable actions
-  const searchableActions = useMemo(() => [
+  const searchableActions = useMemo<SearchAction[]>(() => [
     {
       id: 'feedback',
       label: 'Give Feedback',
@@ -252,13 +295,59 @@ export function Search({
       onSelect: () => { window.dispatchEvent(new Event('feedback:open')) }
     },
     {
+      id: 'support',
+      label: 'Support Rhizome',
+      keywords: ['support', 'donate', 'ko-fi', 'kofi', 'coffee', 'tip', 'contribute'],
+      icon: KofiIcon,
+      onSelect: () => { window.open('https://ko-fi.com/rhizomefyi', '_blank') }
+    },
+    {
+      id: 'share',
+      label: 'Share Rhizome',
+      keywords: ['share', 'copy', 'link', 'url', 'clipboard'],
+      icon: Share2,
+      onSelect: async () => {
+        try {
+          await navigator.clipboard.writeText("https://rhizome.fyi");
+          toast.success("Link copied to clipboard");
+        } catch {
+          toast.error("Failed to copy link");
+        }
+      }
+    },
+    {
+      id: 'surprise-me',
+      label: 'Surprise Me',
+      keywords: ['surprise', 'random', 'shuffle', 'discover', 'lucky', 'serendipity'],
+      icon: Sparkles,
+      onSelect: async () => {
+        try {
+          const response = await axios.get(`${serverUrl()}/search/random/node`);
+          if (response.data?.id) onItemSelect(response.data);
+        } catch {
+          // Leave the palette open; nothing to select
+        }
+      }
+    },
+    {
+      id: 'view-recents',
+      label: 'View Recents',
+      keywords: ['recents', 'recent', 'history', 'view all'],
+      icon: History,
+      keepOpen: true,
+      onSelect: () => {
+        setInputValue("");
+        setView('recents');
+      }
+    },
+    {
       id: 'toggle-theme',
       label: theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
       keywords: ['theme', 'dark', 'light', 'mode', 'switch', 'toggle', 'dark mode', 'light mode'],
       icon: theme === "dark" ? Sun : Moon,
       onSelect: () => { setTheme(theme === "light" ? "dark" : "light") }
     }
-  ], [theme, setTheme]);
+  ], [theme, setTheme, onItemSelect]);
 
   // Filter actions based on input
   const filteredActions = useMemo(() => {
@@ -278,8 +367,76 @@ export function Search({
     return map;
   }, [recentSelections, filteredSearchableItems]);
 
+  // Recents filtered by the input while in the recents view
+  const recentsViewItems = useMemo(() => {
+    const q = inputValue.trim().toLowerCase();
+    return q ? recentSelections.filter((r) => r.name.toLowerCase().includes(q)) : recentSelections;
+  }, [recentSelections, inputValue]);
+
+  // Time-bucketed recents groups, shared by the root and recents views
+  const renderRecentsGroups = (items: typeof recentSelections) =>
+    groupByTime(items).map((bucket) => (
+      <CommandGroup key={bucket.label} heading={bucket.label}>
+        {bucket.items.map((selection) => {
+          const meta = getIndicatorMeta(selection);
+          const isGenreSelection = meta.type === 'genre';
+          return (
+            <CommandItem
+              key={selection.id}
+              value={selection.id}
+              onSelect={() => handleItemAction(selection)}
+              className="flex items-center justify-between gap-2"
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                {shiftHeld && selectedValue === selection.id ? (
+                  <CirclePlay className="size-4 flex-shrink-0" />
+                ) : (
+                  <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
+                    <BadgeIndicator
+                      type={meta.type}
+                      name={selection.name}
+                      color={meta.color}
+                      imageUrl={meta.imageUrl}
+                      className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
+                    />
+                  </div>
+                )}
+                <span className="truncate">{selection.name}</span>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {getActionHint(selection, selectedValue === selection.id) && (
+                  <span className="text-xs text-muted-foreground">
+                    {getActionHint(selection, selectedValue === selection.id)}
+                  </span>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeRecentSelection(selection.id);
+                  }}
+                  className="-m-2"
+                >
+                  <X />
+                </Button>
+              </div>
+            </CommandItem>
+          );
+        })}
+      </CommandGroup>
+    ));
+
   // Intercept keyboard events in capture phase before cmdk processes them
   const handleKeyDownCapture = (e: React.KeyboardEvent) => {
+    // Backspace on an empty input backs out of the recents view
+    if (e.key === 'Backspace' && view === 'recents' && inputValue === '') {
+      e.preventDefault();
+      e.stopPropagation();
+      setView('root');
+      return;
+    }
+
     if (e.key !== 'Enter') return;
 
     const isCmdOrCtrl = e.metaKey || e.ctrlKey;
@@ -375,21 +532,77 @@ export function Search({
           open={open}
           onOpenChange={setOpen}
           shouldFilter={false}
+          loop
           value={selectedValue}
           onValueChange={setSelectedValue}
           className="h-[400px] sm:h-[500px] md:h-[600px] lg:h-[600px] sm:max-w-xl md:max-w-xl lg:max-w-3xl w-full"
       >
         <div onKeyDownCapture={handleKeyDownCapture} className="flex flex-col h-full">
-        <CommandInput
-            placeholder="Search..."
-            value={inputValue}
-            onValueChange={setInputValue}
-            ref={inputRef}
-        />
-        <CommandList className="max-h-none flex-1 overflow-y-auto">
-          {searchLoading && <Loading />}
-          {!searchLoading && inputValue === query && <CommandEmpty>{inputValue ? "No results found." : "Start typing to search..."}</CommandEmpty>}
-          {hasSearchResults && (
+        <div className="flex items-center border-b [&_[data-slot=command-input-wrapper]]:border-b-0 [&_[data-slot=command-input-wrapper]]:flex-1">
+          {view === 'recents' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setView('root')}
+              className="mb-0.5 ml-2"
+              aria-label="Back"
+            >
+              <ArrowLeft className="size-4" />
+            </Button>
+          )}
+          <CommandInput
+              placeholder={view === 'recents' ? "Filter recents..." : "Search..."}
+              value={inputValue}
+              onValueChange={setInputValue}
+              ref={inputRef}
+          />
+        </div>
+        <CommandList ref={listRef} className="max-h-none flex-1 overflow-y-auto">
+          {view === 'recents' && (
+            <>
+              {recentsViewItems.length > 0 ? (
+                renderRecentsGroups(recentsViewItems)
+              ) : (
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  {recentSelections.length > 0
+                    ? "No recents match your filter."
+                    : "Nothing here yet. Artists and genres you select will show up here."}
+                </div>
+              )}
+            </>
+          )}
+          {view === 'root' && (
+          <>
+          {searchPending && filteredSearchableItems.length === 0 && (
+              <CommandGroup heading="Search Results">
+                {["w-40", "w-28", "w-36", "w-24", "w-32"].map((width, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2 px-2 py-1.5">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Skeleton className="bg-accent size-6 flex-shrink-0 rounded-full" />
+                      <Skeleton className={`bg-accent h-6 ${width}`} />
+                    </div>
+                    <Skeleton className="bg-accent h-6 w-12 rounded-sm" />
+                  </div>
+                ))}
+              </CommandGroup>
+          )}
+          {!searchPending && inputValue.trim() !== "" && filteredSearchableItems.length === 0 && (
+              <SearchEmptyState variant="no-results" query={inputValue.trim()} />
+          )}
+          {!inputValue && (
+              <SearchEmptyState
+                  variant="idle"
+                  onSeedSelect={(seed) => {
+                    setInputValue(seed);
+                    inputRef.current?.focus();
+                  }}
+                  getArtistImage={(name) => {
+                    const artist = currentArtists.find((a) => a.name === name);
+                    return typeof artist?.image === "string" && artist.image.trim() ? artist.image : undefined;
+                  }}
+              />
+          )}
+          {inputValue.trim() !== "" && filteredSearchableItems.length > 0 && (
               <CommandGroup heading="Search Results">
                 {filteredSearchableItems.map((item, i) => {
                   const meta = getIndicatorMeta(item);
@@ -430,57 +643,6 @@ export function Search({
               </CommandGroup>
           )}
 
-          {!inputValue && recentSelections.length > 0 && groupByTime(recentSelections).map((bucket) => (
-              <CommandGroup key={bucket.label} heading={bucket.label}>
-                {bucket.items.map((selection) => {
-                  const meta = getIndicatorMeta(selection);
-                  const isGenreSelection = meta.type === 'genre';
-                  return (
-                    <CommandItem
-                      key={selection.id}
-                      value={selection.id}
-                      onSelect={() => handleItemAction(selection)}
-                      className="flex items-center justify-between gap-2"
-                    >
-                      <div className="flex min-w-0 items-center gap-2">
-                        {shiftHeld && selectedValue === selection.id ? (
-                          <CirclePlay className="size-4 flex-shrink-0" />
-                        ) : (
-                          <div className={`flex items-center ${isGenreSelection ? 'p-1.5' : ''}`}>
-                            <BadgeIndicator
-                              type={meta.type}
-                              name={selection.name}
-                              color={meta.color}
-                              imageUrl={meta.imageUrl}
-                              className={cn('flex-shrink-0', isGenreSelection ? 'size-2' : undefined)}
-                            />
-                          </div>
-                        )}
-                        <span className="truncate">{selection.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {getActionHint(selection, selectedValue === selection.id) && (
-                          <span className="text-xs text-muted-foreground">
-                            {getActionHint(selection, selectedValue === selection.id)}
-                          </span>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeRecentSelection(selection.id);
-                          }}
-                          className="-m-2"
-                        >
-                          <X />
-                        </Button>
-                      </div>
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
-            ))}
           {filteredActions.length > 0 && (
           <CommandGroup heading="Actions">
             {filteredActions.map((action) => {
@@ -488,7 +650,7 @@ export function Search({
               return (
                 <CommandItem
                   key={action.id}
-                  onSelect={action.onSelect}
+                  onSelect={() => { if (!action.keepOpen) setOpen(false); action.onSelect(); }}
                 >
                   <Icon className="mr-2 size-4" />
                   {action.label}
@@ -497,7 +659,8 @@ export function Search({
             })}
           </CommandGroup>
           )}
-       
+          </>
+          )}
         </CommandList>
         {/* Shortcut Legend */}
         {!isMobile && <div className="w-full justify-end p-3 flex gap-3 bg-background border-t">

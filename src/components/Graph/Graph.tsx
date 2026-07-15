@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type Ref,
+  type ReactNode,
 } from "react";
 import ForceGraph, {
   ForceGraphMethods,
@@ -93,6 +94,8 @@ export interface ClusterOverlay {
   name: string;
   color: string;
   nodeIds: Set<string>;
+  isLoading?: boolean;
+  loadingTags?: string[];
 }
 
 // --- Cluster hull drawing helpers ---
@@ -256,8 +259,10 @@ function drawClusterLabels(
   overlays: ClusterOverlay[],
   nodeMap: Map<string, NodePosEntry>,
   globalScale: number,
+  aiLabels: Map<string, string> | null,
 ): void {
   const fontSize = CLUSTER_LABEL_SCREEN_PX / globalScale;
+  const now = Date.now();
 
   for (const overlay of overlays) {
     const positions: [number, number][] = [];
@@ -273,23 +278,46 @@ function drawClusterLabels(
     const minY = Math.min(...positions.map(p => p[1]));
     const labelY = minY - CLUSTER_HULL_PADDING - fontSize * 0.7;
 
-    let labelColor: string;
-    try {
-      labelColor = hexToRgba(overlay.color, 0.85);
-    } catch {
-      labelColor = overlay.color;
-    }
-
     ctx.save();
-    ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
-    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = labelColor;
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     ctx.shadowBlur = 4;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
-    ctx.fillText(overlay.name, cx, labelY);
+
+    const isAnimating = overlay.isLoading && aiLabels === null;
+
+    if (isAnimating && overlay.loadingTags?.length) {
+      const tagIndex = Math.floor(now / 1000) % overlay.loadingTags.length;
+      const dotCount = (Math.floor(now / 333) % 3) + 1;
+      const tagText = overlay.loadingTags[tagIndex];
+
+      ctx.font = `400 ${fontSize}px Inter, system-ui, sans-serif`;
+      ctx.textAlign = 'left';
+
+      // Measure max-width string ("tag...") to get a stable center that never
+      // shifts as the dot count animates — same idea as an absolutely-positioned span.
+      const tagWidth = ctx.measureText(tagText).width;
+      const maxDotsWidth = ctx.measureText('...').width;
+      const leftEdge = cx - (tagWidth + maxDotsWidth) / 2;
+
+      ctx.fillStyle = hexToRgba(overlay.color, 0.4);
+      ctx.fillText(tagText, leftEdge, labelY);
+
+      ctx.fillStyle = hexToRgba(overlay.color, 0.25);
+      ctx.fillText('.'.repeat(dotCount), leftEdge + tagWidth, labelY);
+    } else {
+      const finalName = (overlay.isLoading ? aiLabels?.get(overlay.id) : undefined) ?? overlay.name;
+      ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      try {
+        ctx.fillStyle = hexToRgba(overlay.color, 0.85);
+      } catch {
+        ctx.fillStyle = overlay.color;
+      }
+      ctx.fillText(finalName, cx, labelY);
+    }
+
     ctx.restore();
   }
 }
@@ -330,6 +358,8 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   };
   // Cluster hull overlays (genre mode)
   clusterOverlays?: ClusterOverlay[];
+  // IDs of the user's saved artists — renders a ring to distinguish them from hop-introduced nodes
+  savedArtistIds?: Set<string>;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -402,12 +432,15 @@ const Graph = forwardRef(function GraphInner<
     priorityLabelIds: priorityLabelIdsProp,
     radialLayout,
     clusterOverlays,
+    savedArtistIds,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
   const fgRef = useRef<ForceGraphMethods<PreparedNode<T>, L> | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const zoomRef = useRef<number>(1);
+  const aiClusterLabelsRef = useRef<Map<string, string> | null>(null);
+  const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const showNodesRef = useRef<boolean>(showNodes);
   const showLinksRef = useRef<boolean>(showLinks);
   const clusterOverlaysRef = useRef<ClusterOverlay[] | undefined>(undefined);
@@ -441,9 +474,33 @@ const Graph = forwardRef(function GraphInner<
 
   useEffect(() => {
     clusterOverlaysRef.current = clusterOverlays;
-    // autoPauseRedraw stops the canvas when the sim is idle, so poke it to
-    // repaint after the overlay data changes (on/off toggle, data update, etc.)
     fgRef.current?.resumeAnimation?.();
+
+    if (clusterOverlays?.some(o => o.isLoading)) {
+      // New loading overlays arrived — reset AI labels and start repaint interval
+      aiClusterLabelsRef.current = null;
+      if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
+      loadingIntervalRef.current = setInterval(() => {
+        if (aiClusterLabelsRef.current !== null) {
+          clearInterval(loadingIntervalRef.current!);
+          loadingIntervalRef.current = null;
+          return;
+        }
+        fgRef.current?.resumeAnimation?.();
+      }, 300);
+    } else {
+      if (loadingIntervalRef.current) {
+        clearInterval(loadingIntervalRef.current);
+        loadingIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (loadingIntervalRef.current) {
+        clearInterval(loadingIntervalRef.current);
+        loadingIntervalRef.current = null;
+      }
+    };
   }, [clusterOverlays]);
 
   // Convert display control values to usable ranges (all centered at 50 = 1.0x)
@@ -528,6 +585,14 @@ const Graph = forwardRef(function GraphInner<
           return canvas as HTMLCanvasElement | null;
         }
         return null;
+      },
+      setAiClusterLabels: (labels: Map<string, string>) => {
+        aiClusterLabelsRef.current = labels;
+        if (loadingIntervalRef.current) {
+          clearInterval(loadingIntervalRef.current);
+          loadingIntervalRef.current = null;
+        }
+        fgRef.current?.resumeAnimation?.();
       },
     }),
     [],
@@ -983,7 +1048,7 @@ const Graph = forwardRef(function GraphInner<
     if (!nodes?.length) return;
     const nodeMap = new Map<string, NodePosEntry>();
     for (const n of nodes) nodeMap.set(n.id, n);
-    drawClusterLabels(ctx, overlays, nodeMap, globalScale);
+    drawClusterLabels(ctx, overlays, nodeMap, globalScale, aiClusterLabelsRef.current);
   }, []);
 
   return (
@@ -1092,17 +1157,23 @@ const Graph = forwardRef(function GraphInner<
           const isHovered = hoveredId === node.id;
 
           // Calculate node alpha with smooth transition
-          let baseAlpha = 1;
+          const isHopNode = !!savedArtistIds && !savedArtistIds.has(node.id);
+          const hopBaseAlpha = isHopNode ? 0.2 : 1;
+          let baseAlpha = hopBaseAlpha;
           if (hasSelection) {
             baseAlpha = isSelected ? 1 : isNeighbor ? 0.8 : 0.15;
+          } else if (isHovered && isHopNode) {
+            baseAlpha = 0.3;
           } else if (isHovered) {
             baseAlpha = 0.8;
+          } else if (isHopNode) {
+            baseAlpha = hopBaseAlpha;
           }
 
           // Interpolate between normal dimming and fully undimmed
           // dimmingTransition: 0 = normal dimming, 1 = fully undimmed
           const transition = dimmingTransitionRef.current;
-          const alpha = baseAlpha * (1 - transition) + 1.0 * transition;
+          const alpha = baseAlpha * (1 - transition) + hopBaseAlpha * transition;
 
           // Build render context
           const renderContext: NodeRenderContext<T> = {
@@ -1127,6 +1198,19 @@ const Graph = forwardRef(function GraphInner<
             // Render selection ring only for click-based selection (not hover-based)
             if (isClickSelected) {
               renderSelection(renderContext);
+            }
+
+            // Render dashed ring for hop-introduced nodes (not in the user's saved set)
+            if (isHopNode) {
+              ctx.save();
+              ctx.beginPath();
+              ctx.arc(x, y, radius + 4, 0, 2 * Math.PI);
+              ctx.strokeStyle = accent;
+              ctx.lineWidth = 1.5;
+              ctx.setLineDash([3, 3]);
+              ctx.stroke();
+              ctx.setLineDash([]);
+              ctx.restore();
             }
           }
 
