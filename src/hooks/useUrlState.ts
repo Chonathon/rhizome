@@ -9,6 +9,8 @@ interface UseUrlStateOptions {
   onArtistFromUrl?: (artist: Artist) => void;
   onGenreClearedFromUrl?: () => void;
   onArtistClearedFromUrl?: () => void;
+  onGenreNotFoundFromUrl?: (slug: string) => void;
+  onArtistNotFoundFromUrl?: (id: string) => void;
   genresLoaded: boolean;
 }
 
@@ -85,7 +87,11 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
       prevGenreSlug.current = genreSlug;
       if (genreSlug) {
         const genre = callbacksRef.current.findGenreBySlug(genreSlug);
-        if (genre) callbacksRef.current.onGenreFromUrl?.(genre);
+        if (genre) {
+          callbacksRef.current.onGenreFromUrl?.(genre);
+        } else {
+          callbacksRef.current.onGenreNotFoundFromUrl?.(genreSlug);
+        }
       } else {
         callbacksRef.current.onGenreClearedFromUrl?.();
       }
@@ -95,7 +101,11 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
       prevArtistSlug.current = artistSlug;
       if (artistSlug) {
         callbacksRef.current.fetchArtistById(artistSlug).then((artist) => {
-          if (artist) callbacksRef.current.onArtistFromUrl?.(artist);
+          if (artist) {
+            callbacksRef.current.onArtistFromUrl?.(artist);
+          } else {
+            callbacksRef.current.onArtistNotFoundFromUrl?.(artistSlug);
+          }
         });
       } else {
         callbacksRef.current.onArtistClearedFromUrl?.();

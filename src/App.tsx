@@ -442,6 +442,12 @@ function App() {
       setShowArtistCard(false);
       setArtistInfoToShow(undefined);
     },
+    onGenreNotFoundFromUrl: () => {
+      toast.error('Genre not found');
+    },
+    onArtistNotFoundFromUrl: () => {
+      toast.error('Artist not found');
+    },
     genresLoaded: genres.length > 0 && !genresLoading,
   });
 
