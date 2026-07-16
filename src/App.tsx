@@ -177,7 +177,6 @@ function App() {
   const artistImageCache = useRef<Map<string, string>>(new Map());
   const [prefetchedImageCache, setPrefetchedImageCache] = useState<Map<string, string>>(new Map());
   const artistObjectCache = useRef<Map<string, Artist>>(new Map());
-  const [canCreateSimilarArtistGraph, setCanCreateSimilarArtistGraph] = useState<boolean>(false);
   const [genreClusterMode, setGenreClusterMode] = useState<GenreClusterMode[]>(DEFAULT_CLUSTER_MODE);
   const [collectionArtistClusterMethod, setCollectionArtistClusterMethod] = useState<ArtistClusterMode>(() => {
     // Try new key first, fall back to old key for backward compatibility
@@ -1403,24 +1402,8 @@ function App() {
     if (hoveredArtistData) updateArtistPlayerIDs(hoveredArtistData)
   }, [hoveredArtistData]);
 
-  // Switches to the similar artists view and handles hop changes
+  // Builds the similar artists graph and handles hop changes
   useEffect(() => {
-    if (canCreateSimilarArtistGraph) {
-      if (similarArtists.length > 1) {
-        const anchor = { ...similarArtists[0], hopDistance: 0 };
-        const hop1 = similarArtists.slice(1).map(a => ({ ...a, hopDistance: 1 }));
-        const base = [anchor, ...hop1];
-        setCurrentArtists(base);
-        setCurrentArtistLinks(generateSimilarLinks(base));
-        setGraph('similarArtists');
-        setShowArtistCard(true);
-      } else if (similarArtists.length === 1) {
-        toast.error(`No similar artist data available for ${similarArtists[0].name}`);
-      }
-      setCanCreateSimilarArtistGraph(false);
-      return;
-    }
-
     if (graph !== 'similarArtists' || similarArtists.length < 2) return;
 
     const anchor = { ...similarArtists[0], hopDistance: 0 };
@@ -1444,7 +1427,7 @@ function App() {
       setCurrentArtists(allArtists);
       setCurrentArtistLinks(generateHopLinks(allArtists));
     });
-  }, [similarArtists, similarArtistHops, canCreateSimilarArtistGraph, graph]);
+  }, [similarArtists, similarArtistHops, graph]);
 
   // Switch to artist graph after genres' artists are loaded
   // TODO: I suspect this causes "no genre selected" top 2000 artists to always be fetched, wasteful if clicking "All Artists"
@@ -2381,8 +2364,14 @@ function App() {
     setSimilarArtistHops(storedSimilarHops !== null ? Math.max(0, parseInt(storedSimilarHops, 10) || 0) : 0);
     // Don't clear hopArtists — similar artists mode doesn't use them,
     // and preserving them means they're immediately available when returning to collection.
-    setCanCreateSimilarArtistGraph(true);
-    await fetchSimilarArtists(artistResult);
+    const fetched = await fetchSimilarArtists(artistResult);
+    if (fetched.length > 1) {
+      // The similar artists effect builds the graph once state settles
+      setGraph('similarArtists');
+      setShowArtistCard(true);
+    } else if (fetched.length === 1) {
+      toast.error(`No similar artist data available for ${artistResult.name}`);
+    }
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
     setSelectedArtist(artistResult);
