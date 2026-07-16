@@ -1398,6 +1398,14 @@ function App() {
     if (selectedArtist) updateArtistPlayerIDs(selectedArtist)
   }, [selectedArtist]);
 
+  // Fetches top tracks of the artist shown in the info drawer in the background.
+  // Needed separately from selectedArtist: search results (onSearchArtistSelect) show an
+  // artist in the drawer via artistInfoToShow while explicitly clearing selectedArtist,
+  // so without this the drawer's play button never learns whether tracks exist.
+  useEffect(() => {
+    if (artistInfoToShow) updateArtistPlayerIDs(artistInfoToShow)
+  }, [artistInfoToShow]);
+
   // Fetches top tracks of hovered artist player ids in the background
   useEffect(() => {
     if (hoveredArtistData) updateArtistPlayerIDs(hoveredArtistData)
