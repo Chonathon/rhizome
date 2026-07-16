@@ -165,9 +165,9 @@ export function RecentsPopover({
                           />
                         </div>
                         <span className="truncate">{item.name}</span>
-                        <span className="text-xs text-muted-foreground">
+                        {/* <span className="text-xs text-muted-foreground">
                           {new Date(item.timestamp).toLocaleDateString()}
-                        </span>
+                        </span> */}
                       </div>
                       <div className="flex items-center flex-shrink-0">
                         <Button
