@@ -277,3 +277,14 @@ body {
   min-height: 100vh;
   font-family: Geist, sans-serif;
 }
+
+/* Seed chip marquee in the search empty state: row is duplicated once,
+   so sliding from -50% to 0 loops seamlessly while drifting left to right */
+@keyframes search-marquee {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

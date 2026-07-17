@@ -40,6 +40,7 @@ export interface Artist extends BasicNode {
     topTracks?: TopTrack[];
     noTopTracks?: boolean;
     degree?: number;
+    hopDistance?: number;
 }
 
 export interface BasicNode {
@@ -162,6 +163,7 @@ export interface GraphHandle {
   resetView: (k: number, ms?: number) => void;
   getZoom: () => number;
   getCanvas: () => HTMLCanvasElement | null;
+  setAiClusterLabels: (labels: Map<string, string>) => void;
 }
 
 export interface FindOption {

@@ -30,6 +30,7 @@ export interface Cluster {
   artistIds: string[];
   color: string;
   centroid?: { x: number; y: number }; // For visualization
+  tags?: string[]; // Top listener tags, used for loading animation
 }
 
 export interface ClusteringOptions {
@@ -389,7 +390,34 @@ export class ClusteringEngine {
     if (result.links && result.links.length > 0) {
       result.links = this.capNodeDegree(result.links, 12);
     }
+
+    // Store top tags and set fallback name (used for loading animation and AI label fallback)
+    result.clusters.forEach(cluster => {
+      const topTags = this.getTopTagsForArtists(cluster.artistIds, 5);
+      cluster.tags = topTags;
+      if (topTags.length > 0) {
+        cluster.name = topTags.slice(0, 3).join(' · ');
+      }
+    });
+
     return result;
+  }
+
+  private getTopTagsForArtists(artistIds: string[], count: number): string[] {
+    const artistSet = new Set(artistIds);
+    const tagScore = new Map<string, number>();
+
+    this.artists.forEach(artist => {
+      if (!artistSet.has(artist.id)) return;
+      artist.tags?.forEach(tag => {
+        tagScore.set(tag.name, (tagScore.get(tag.name) ?? 0) + tag.count);
+      });
+    });
+
+    return Array.from(tagScore.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, count)
+      .map(([name]) => name);
   }
 
   // 4. POPULARITY CLUSTERING - Dynamic percentile-based popularity tiers

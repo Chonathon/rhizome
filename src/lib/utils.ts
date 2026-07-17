@@ -109,6 +109,44 @@ export const generateSimilarLinks = (artists: Artist[]) => {
   return links;
 }
 
+// Builds snowflake topology for multi-hop similar artists graphs.
+// Artists must have hopDistance set: anchor = 0, hop-1 = 1, hop-2 = 2, etc.
+// Each artist connects to the first artist at the previous hop level that lists it as similar.
+// Falls back to connecting directly to the anchor if no parent is found.
+export const generateHopLinks = (artists: Artist[]): NodeLink[] => {
+  const links: NodeLink[] = [];
+  const byHop = new Map<number, Artist[]>();
+  for (const a of artists) {
+    const hop = a.hopDistance ?? 0;
+    if (!byHop.has(hop)) byHop.set(hop, []);
+    byHop.get(hop)!.push(a);
+  }
+
+  const anchor = byHop.get(0)?.[0];
+  if (!anchor) return links;
+
+  const hop1 = byHop.get(1) ?? [];
+  for (const a of hop1) {
+    links.push({ source: anchor.id, target: a.id, linkType: 'similar' });
+  }
+
+  const hop2 = byHop.get(2) ?? [];
+  for (const a of hop2) {
+    const parent = hop1.find(p => p.similar?.includes(a.name)) ?? anchor;
+    links.push({ source: parent.id, target: a.id, linkType: 'similar' });
+  }
+
+  // For any hops beyond 2, connect to anchor as fallback
+  const higherHops = [...byHop.entries()].filter(([h]) => h > 2);
+  for (const [, hopArtists] of higherHops) {
+    for (const a of hopArtists) {
+      links.push({ source: anchor.id, target: a.id, linkType: 'similar' });
+    }
+  }
+
+  return links;
+}
+
 export const isGenre = (item: BasicNode) => {
   return "artistCount" in item;
 }
