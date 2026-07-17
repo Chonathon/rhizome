@@ -3,6 +3,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import { ChevronDown, ChevronLeft, ChevronRight, Divide, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import useArtists from "@/hooks/useArtists";
+import useExpedition from "@/hooks/useExpedition";
 import useGenres from "@/hooks/useGenres";
 import useGenreTopArtists from "@/hooks/useGenreTopArtists";
 import ArtistsForceGraph, { type GraphHandle } from "@/components/ArtistsForceGraph";
@@ -74,7 +75,10 @@ import {
   ALPHA_SURVEY_ADDED_ARTISTS,
   NODE_AMOUNT_PRESETS,
   PHASE_VERSION,
+  EXPEDITION_FRONTIER_COLOR_DARK,
+  EXPEDITION_FRONTIER_COLOR_LIGHT,
 } from "@/constants";
+import ExpeditionHUD from "@/components/ExpeditionHUD";
 import {FixedOrderedMap} from "@/lib/fixedOrderedMap";
 import RhizomeLogo from "@/components/RhizomeLogo";
 import AuthOverlay from '@/components/AuthOverlay';
@@ -413,6 +417,34 @@ function App() {
 
   const { hasCompletedOnboarding, setOnboardingCompleted } = useOnboarding();
 
+  // Nodes expedition pruning must never evict: current selection, open drawer,
+  // liked artists, and whatever is playing (resolved via the persistent object cache)
+  const getExpeditionProtectedIds = () => {
+    const ids = new Set<string>();
+    if (selectedArtist) ids.add(selectedArtist.id);
+    if (artistInfoToShow) ids.add(artistInfoToShow.id);
+    for (const id of likedArtists) ids.add(id);
+    if (playerSource === 'artist' && playerEntityName) {
+      const playing = artistObjectCache.current.get(playerEntityName);
+      if (playing) ids.add(playing.id);
+    }
+    return ids;
+  };
+  const {
+    seed: expeditionSeed,
+    expeditionArtists,
+    expeditionLinks,
+    frontierIds: expeditionFrontierIds,
+    trailLinkKeys: expeditionTrailLinkKeys,
+    expandingId: expeditionExpandingId,
+    expansionCount: expeditionExpansionCount,
+    canUndo: expeditionCanUndo,
+    startExpedition,
+    expandNode: expandExpeditionNode,
+    undoLastExpansion,
+    resetExpedition,
+  } = useExpedition(fetchHopArtists, getExpeditionProtectedIds);
+
   const navigate = useNavigate();
 
   // URL State: Lookup function to find genres by slug
@@ -441,6 +473,10 @@ function App() {
     onArtistClearedFromUrl: () => {
       setShowArtistCard(false);
       setArtistInfoToShow(undefined);
+    },
+    onExpeditionFromUrl: async (seedId) => {
+      const artist = await fetchSingleArtist(seedId, false);
+      if (artist) startExpeditionFrom(artist);
     },
     genresLoaded: genres.length > 0 && !genresLoading,
   });
@@ -690,7 +726,7 @@ function App() {
       });
     }
 
-    if ((graph === 'artists' || graph === 'similarArtists') && currentArtists.length) {
+    if ((graph === 'artists' || graph === 'similarArtists' || graph === 'expedition') && currentArtists.length) {
       return currentArtists.map((artist) => {
         const subtitleParts: string[] = [];
 
@@ -716,7 +752,7 @@ function App() {
 
   const hasFindSelection =
     (graph === 'genres' && selectedGenres.length > 0) ||
-    ((graph === 'artists' || graph === 'similarArtists') && !!selectedArtist);
+    ((graph === 'artists' || graph === 'similarArtists' || graph === 'expedition') && !!selectedArtist);
 
   const findPanelDisabled = !hasFindSelection && findOptions.length === 0;
 
@@ -868,12 +904,19 @@ function App() {
         }), [andGenreIds, genres, genreColorMap]);
 
   // Sets current artists/links shown in the graph
-  // Skip in similarArtists mode — that graph manages currentArtists directly
+  // Skip in similarArtists/expedition modes — those graphs manage currentArtists directly
   useEffect(() => {
-    if (graph === 'similarArtists') return;
+    if (graph === 'similarArtists' || graph === 'expedition') return;
     setCurrentArtists(displayedArtistsData.artists);
     setCurrentArtistLinks(displayedArtistsData.links);
   }, [displayedArtistsData, graph]);
+
+  // Expedition mode drives the graph from the accumulated expedition state
+  useEffect(() => {
+    if (graph !== 'expedition') return;
+    setCurrentArtists(expeditionArtists);
+    setCurrentArtistLinks(expeditionLinks);
+  }, [graph, expeditionArtists, expeditionLinks]);
 
   // Filter artist links to show only intra-cluster connections
   // This mirrors the genre graph's filterLinksByClusterMode pattern
@@ -1166,7 +1209,7 @@ function App() {
     if (graph === 'genres' && selectedGenres.length) {
       return selectedGenres[0].name;
     }
-    if ((graph === 'artists' || graph === 'similarArtists') && selectedArtist) {
+    if ((graph === 'artists' || graph === 'similarArtists' || graph === 'expedition') && selectedArtist) {
       return selectedArtist.name;
     }
     return null;
@@ -2157,6 +2200,22 @@ function App() {
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist, 'artist');
     }
+    if (graph === 'expedition') {
+      setSelectedArtist(artist);
+      setAutoFocusGraph(true);
+      addRecentSelection(artist, 'artist');
+      if (expeditionFrontierIds.has(artist.id)) {
+        // Frontier click expands immediately — artist info stays on hover.
+        // Skip updateUrl so expansions don't spam history; the seed param stays shareable.
+        expandExpeditionNode(artist);
+        return;
+      }
+      // Visited node: standard select + drawer
+      setArtistInfoToShow(artist);
+      setShowArtistCard(true);
+      setShowGenreCard(false);
+      return;
+    }
     updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   };
 
@@ -2167,7 +2226,7 @@ function App() {
     //   artist.genres.some((genreId) => artistGenreFilterIDs.includes(genreId));
     setSelectedArtist(artist);
     let shouldTriggerRefocus = opts?.forceRefocus === true;
-    if (graph !== 'artists' && graph !== 'similarArtists') {
+    if (graph !== 'artists' && graph !== 'similarArtists' && graph !== 'expedition') {
       setGraph('artists');
       shouldTriggerRefocus = true;
     }
@@ -2271,12 +2330,13 @@ function App() {
       deselectGenre();
       return;
     }
-    if ((graph === 'artists' || graph === 'similarArtists') && selectedArtist) {
+    if ((graph === 'artists' || graph === 'similarArtists' || graph === 'expedition') && selectedArtist) {
       deselectArtist();
     }
   };
 
   const resetAppState = () => {
+    resetExpedition();
     setGraph('genres');
     setCurrentGenres({nodes: genres, links: genreLinks.filter(link => {
         return DEFAULT_CLUSTER_MODE.includes(link.linkType as "subgenre" | "influence" | "fusion")
@@ -2329,7 +2389,7 @@ function App() {
     if (selectedGenres.length > 0 && genreInfoToShow?.id !== selectedGenres[0]?.id) {
       // We're showing a search result but have a focused genre - restore focused genre's info
       setGenreInfoToShow(selectedGenres[0]);
-    } else if (graph === 'artists' || graph === 'similarArtists') {
+    } else if (graph === 'artists' || graph === 'similarArtists' || graph === 'expedition') {
       // In artist view: just hide the genre card, preserve selection and filter for tab switching
       // Clear the restore flag - user explicitly dismissed it, so don't restore later
       setShowGenreCard(false);
@@ -2375,6 +2435,26 @@ function App() {
     // Show all similar artists, not filtered by current view
     return similarArtists;
   }
+
+  // Seed a new expedition from an artist and switch to the expedition view.
+  // Works from any context (explore, similar, collection, search, URL restore).
+  const startExpeditionFrom = async (artist: Artist) => {
+    const ok = await startExpedition(artist);
+    if (!ok) {
+      toast.error(`No similar artist data available for ${artist.name}`);
+      return;
+    }
+    setGraph('expedition');
+    setSelectedArtistFromSearch(false);
+    setArtistPreviewStack([]);
+    setSelectedArtist(artist);
+    setArtistInfoToShow(artist);
+    setShowArtistCard(true);
+    setShowGenreCard(false);
+    setAutoFocusGraph(true);
+    addRecentSelection(artist, 'artist');
+    updateUrl({ type: 'expedition', id: artist.id });
+  };
 
   const createSimilarArtistGraph = async (artistResult: Artist) => {
     const storedSimilarHops = localStorage.getItem('similarArtistHops');
@@ -2453,8 +2533,8 @@ function App() {
 
   const onTabChange = async (graphType: GraphType) => {
     if (graphType === 'genres') {
-      // If leaving similarArtists mode, restore the full artist list
-      if (graph === 'similarArtists') {
+      // If leaving similarArtists/expedition mode, restore the full artist list
+      if (graph === 'similarArtists' || graph === 'expedition') {
         setCurrentArtists(artists);
         setCurrentArtistLinks(artistLinks);
         setSimilarArtistAnchor(undefined);
@@ -2470,8 +2550,8 @@ function App() {
       }
       // Don't clear selected genres or artist filter - they're preserved for potential return
     } else {
-      // Switching to artists view - restore full artist list if coming from similarArtists
-      if (graph === 'similarArtists') {
+      // Switching to artists view - restore full artist list if coming from similarArtists/expedition
+      if (graph === 'similarArtists' || graph === 'expedition') {
         setCurrentArtists(artists);
         setCurrentArtistLinks(artistLinks);
         setSimilarArtistAnchor(undefined);
@@ -2628,6 +2708,14 @@ function App() {
     if (!color) color = colorFallback();
     return color;
   }, [artistColorMode, artistClusters, getRootGenreFromTags, getGenreColorFromRoots, getGenreColorFromID, colorFallback]);
+
+  // Expedition: frontier nodes stay neutral gray until visited — color is earned by exploring
+  const getExpeditionArtistColor = useCallback((artist: Artist) => {
+    if (expeditionFrontierIds.has(artist.id)) {
+      return resolvedTheme === 'dark' ? EXPEDITION_FRONTIER_COLOR_DARK : EXPEDITION_FRONTIER_COLOR_LIGHT;
+    }
+    return getArtistColor(artist);
+  }, [expeditionFrontierIds, resolvedTheme, getArtistColor]);
 
   const onGenreFilterSelectionChange = useCallback(async (selectedIDs: string[]) => {
     if (graph === 'genres') {
@@ -2991,7 +3079,7 @@ function App() {
                   transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   >
                   <Tabs
-                    value={graph === 'similarArtists' ? 'artists' : graph}
+                    value={graph === 'similarArtists' || graph === 'expedition' ? 'artists' : graph}
                     onValueChange={(val) => onTabChange(val as GraphType)}>
                     <TabsList>
                       <TabsTrigger value="genres">Genres</TabsTrigger>
@@ -3023,6 +3111,21 @@ function App() {
                       <X className="h-4 w-4" />
                     </Button>
                   </motion.div>
+                )}
+              </AnimatePresence>
+              <AnimatePresence initial={false} mode="popLayout">
+                {graph === 'expedition' && expeditionSeed && (
+                  <ExpeditionHUD
+                    seedName={expeditionSeed.name}
+                    artistCount={expeditionArtists.length}
+                    expansionCount={expeditionExpansionCount}
+                    expanding={!!expeditionExpandingId}
+                    canUndo={expeditionCanUndo}
+                    onUndo={undoLastExpansion}
+                    onReset={() => startExpeditionFrom(expeditionSeed)}
+                    onExit={() => onTabChange('artists')}
+                    isMobile={isMobile}
+                  />
                 )}
               </AnimatePresence>
               <AnimatePresence initial={false} mode="popLayout">
@@ -3124,11 +3227,12 @@ function App() {
                   }}
                   selectedArtistId={selectedArtist?.id}
                   hoverSelectedId={optionHoverSelectedId}
-                  computeArtistColor={getArtistColor}
+                  computeArtistColor={graph === 'expedition' ? getExpeditionArtistColor : getArtistColor}
                   autoFocus={autoFocusGraph}
                   // Hide graph until clustering is ready (for artists graph) to prevent flash of unclustered nodes
                   // When filtering produces zero artists, skip the cluster-ready check so we show the empty state instead of a spinner
                   show={
+                    graph === "expedition" ||
                     (graph === "similarArtists" && !artistsError) ||
                     (graph === "artists" && !artistsError && (!!artistClusters || currentArtists.length === 0))
                   }
@@ -3151,6 +3255,10 @@ function App() {
                   priorityLabelIds={centralArtistLabelIds}
                   clusterOverlays={artistClusterOverlays}
                   savedArtistIds={savedArtistIds}
+                  frontierIds={graph === 'expedition' ? expeditionFrontierIds : undefined}
+                  preservePositions={graph === 'expedition'}
+                  preserveViewOnDataChange={graph === 'expedition'}
+                  highlightLinkKeys={graph === 'expedition' ? expeditionTrailLinkKeys : undefined}
                 />
 
           {/* Graph empty states */}
@@ -3180,6 +3288,9 @@ function App() {
               {graph === 'similarArtists' && currentArtists.length === 0 && (
                 <GraphEmptyState mode="similar-artists" />
               )}
+              {graph === 'expedition' && !expeditionSeed && (
+                <GraphEmptyState mode="expedition-empty" onCta={() => setSearchOpen(true)} />
+              )}
             </>
           )}
 
@@ -3202,7 +3313,7 @@ function App() {
 
           {/* Artist hover preview */}
           {preferences?.enableGraphCards && hoveredArtistData && previewArtist
-              && (graph === 'artists' || graph === 'similarArtists') && (
+              && (graph === 'artists' || graph === 'similarArtists' || graph === 'expedition') && (
                   <ArtistPreview
                       artist={hoveredArtistData}
                       genreColorMap={genreColorMap}
@@ -3443,6 +3554,7 @@ function App() {
                 onFocusInArtistsView={focusArtistInCurrentView}
                 onViewArtistGraph={focusArtistRelatedGenres}
                 onViewSimilarArtistGraph={createSimilarArtistGraph}
+                onStartExpedition={startExpeditionFrom}
                 playLoading={isPlayerLoadingArtist()}
                 viewRelatedArtistsLoading={!!pendingArtistGenreGraph}
                 onArtistToggle={onAddArtistButtonToggle}
@@ -3505,6 +3617,7 @@ function App() {
                       setShowArtistCard(true);
                       updateUrl({ type: 'artist', id: artist.id, name: artist.name });
                     }}
+                    onArtistStartExpedition={startExpeditionFrom}
                     onGenreViewSimilar={(genre) => {
                       // For genres: View Similar also navigates to genres view
                       focusGenreInCurrentView(genre, { forceRefocus: true });

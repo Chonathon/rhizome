@@ -40,6 +40,11 @@ interface ArtistsForceGraphProps {
   };
   clusterOverlays?: ClusterOverlay[];
   savedArtistIds?: Set<string>;
+  // Expedition mode props (see Graph.tsx)
+  frontierIds?: Set<string>;
+  preservePositions?: boolean;
+  preserveViewOnDataChange?: boolean;
+  highlightLinkKeys?: Set<string>;
 }
 
 
@@ -72,6 +77,10 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       radialLayout,
       clusterOverlays,
       savedArtistIds,
+      frontierIds,
+      preservePositions,
+      preserveViewOnDataChange,
+      highlightLinkKeys,
     },
     ref,
   ) => {
@@ -147,6 +156,10 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         radialLayout={radialLayout}
         clusterOverlays={clusterOverlays}
         savedArtistIds={savedArtistIds}
+        frontierIds={frontierIds}
+        preservePositions={preservePositions}
+        preserveViewOnDataChange={preserveViewOnDataChange}
+        highlightLinkKeys={highlightLinkKeys}
       />
     );
   },

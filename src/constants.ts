@@ -21,6 +21,15 @@ export const DEFAULT_PLAYER: PlayerType = 'youtube';
 export const MAX_NODES = 2000;
 export const NODE_AMOUNT_PRESETS = [5000, 3000, 2000, 1000, 500, 200, 100, 50];
 
+// Expedition mode: seed-and-grow exploration graph
+export const EXPEDITION_SEED_LIMIT = 30;      // initial neighborhood size
+export const EXPEDITION_EXPAND_LIMIT = 12;    // neighbors added per expansion
+export const EXPEDITION_NODE_CAP = 300;       // prune threshold
+export const EXPEDITION_PRUNE_TARGET = 250;   // prune down to this size
+// Frontier (unvisited) nodes render neutral gray until explored
+export const EXPEDITION_FRONTIER_COLOR_LIGHT = '#9ca3af';
+export const EXPEDITION_FRONTIER_COLOR_DARK = '#6b7280';
+
 export const SERVER_PRODUCTION_URL = 'https://rhizome-server-production.up.railway.app';
 export const SERVER_DEVELOPMENT_URL = 'https://rhizome-server-development.up.railway.app';
 export const CLIENT_DEPLOYMENT_URL = 'https://www.rhizome.fyi';

@@ -53,6 +53,7 @@ interface SearchProps {
   onGenreGoTo?: (genre: Genre) => void;
   onArtistViewSimilar?: (artist: Artist) => void;
   onGenreViewSimilar?: (genre: Genre) => void;
+  onArtistStartExpedition?: (artist: Artist) => void;
 }
 
 export function Search({
@@ -72,6 +73,7 @@ export function Search({
   onGenreGoTo,
   onArtistViewSimilar,
   onGenreViewSimilar,
+  onArtistStartExpedition,
 }: SearchProps) {
   const isMobile = useMediaQuery({ maxWidth: 640 });
   // const [open, setOpen] = useState<boolean>(false);
@@ -230,8 +232,16 @@ export function Search({
   const handleItemAction = (item: BasicNode) => {
     const isGenreItem = isGenre(item);
 
+    // Cmd/Ctrl + Alt + Click: Start Expedition (artists only)
+    if (cmdCtrlHeld && altHeld && !shiftHeld) {
+      if (!isGenreItem && onArtistStartExpedition) {
+        onArtistStartExpedition(item as Artist);
+        addRecentSelection(item, 'artist');
+        setOpen(false);
+      }
+    }
     // Cmd/Ctrl + Click: Go To
-    if (cmdCtrlHeld && !altHeld && !shiftHeld) {
+    else if (cmdCtrlHeld && !altHeld && !shiftHeld) {
       if (isGenreItem && onGenreGoTo) {
         onGenreGoTo(item as Genre);
       } else if (!isGenreItem && onArtistGoTo) {
@@ -271,8 +281,10 @@ export function Search({
 
     const isGenreItem = isGenre(item);
 
-    // Only show one hint at a time, prioritize in order: Cmd/Ctrl, Alt, Shift
-    if (cmdCtrlHeld && !altHeld && !shiftHeld) {
+    // Only show one hint at a time, prioritize in order: Cmd/Ctrl+Alt, Cmd/Ctrl, Alt, Shift
+    if (cmdCtrlHeld && altHeld && !shiftHeld) {
+      return isGenreItem ? null : 'Start Expedition';
+    } else if (cmdCtrlHeld && !altHeld && !shiftHeld) {
       return isGenreItem ? `Go to ${item.name}` : 'Explore Related Genres';
     } else if (altHeld && !cmdCtrlHeld && !shiftHeld) {
       return 'View Similar';
@@ -464,8 +476,16 @@ export function Search({
 
     const isGenreItem = isGenre(selectedItem);
 
+    // Cmd/Ctrl + Alt + Enter: Start Expedition (artists only)
+    if (isCmdOrCtrl && isAlt && !isShift) {
+      if (!isGenreItem && onArtistStartExpedition) {
+        onArtistStartExpedition(selectedItem as Artist);
+        addRecentSelection(selectedItem, 'artist');
+        setOpen(false);
+      }
+    }
     // Cmd/Ctrl + Enter: Go To
-    if (isCmdOrCtrl && !isAlt && !isShift) {
+    else if (isCmdOrCtrl && !isAlt && !isShift) {
       if (isGenreItem && onGenreGoTo) {
         onGenreGoTo(selectedItem as Genre);
       } else if (!isGenreItem && onArtistGoTo) {
@@ -669,6 +689,8 @@ export function Search({
             <span className="text-xs font-medium text-muted-foreground">Go To / Explore Related Genres <Kbd>⌘⏎</Kbd>
             </span>
             <span className="text-xs font-medium text-muted-foreground">View Similar <Kbd>⌥⏎</Kbd>
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">Expedition <Kbd>⌘⌥⏎</Kbd>
             </span>
             <span className="text-xs font-medium text-muted-foreground">Play <Kbd>⇧⏎</Kbd>
             </span>

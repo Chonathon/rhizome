@@ -364,6 +364,14 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   clusterOverlays?: ClusterOverlay[];
   // IDs of the user's saved artists — renders a ring to distinguish them from hop-introduced nodes
   savedArtistIds?: Set<string>;
+  // Expedition mode: unvisited frontier nodes — dimmed, labels hidden until hover
+  frontierIds?: Set<string>;
+  // Carry node positions across data changes so the graph grows in place instead of re-laying out
+  preservePositions?: boolean;
+  // Skip the zoom/center reset when data changes (kept for the very first data load)
+  preserveViewOnDataChange?: boolean;
+  // Links to render highlighted regardless of selection, as order-independent "a|b" keys
+  highlightLinkKeys?: Set<string>;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -437,6 +445,10 @@ const Graph = forwardRef(function GraphInner<
     radialLayout,
     clusterOverlays,
     savedArtistIds,
+    frontierIds,
+    preservePositions = false,
+    preserveViewOnDataChange = false,
+    highlightLinkKeys,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -639,10 +651,53 @@ const Graph = forwardRef(function GraphInner<
   );
 
   const preparedData: GraphData<PreparedNode<T>, L> = useMemo(() => {
-    const clonedNodes = nodes.map((node) => ({ ...node }));
+    // With preservePositions, carry live positions/velocities from the previous prepared
+    // data (mutated by the force sim) so the graph grows in place instead of re-laying out
+    const prevById = preservePositions && preparedDataRef.current
+      ? new Map(preparedDataRef.current.nodes.map((n) => [n.id, n]))
+      : undefined;
+    const clonedNodes = nodes.map((node) => {
+      const clone: PreparedNode<T> = { ...node };
+      const prev = prevById?.get(node.id);
+      if (prev && prev.x !== undefined && prev.y !== undefined) {
+        clone.x = prev.x;
+        clone.y = prev.y;
+        (clone as any).vx = (prev as any).vx;
+        (clone as any).vy = (prev as any).vy;
+      }
+      return clone;
+    });
     const clonedLinks = links.map((link) => ({ ...link }));
+    if (prevById) {
+      // Spawn brand-new nodes near a linked neighbor's prior position so
+      // expansions bloom out of the clicked node before forces settle them
+      const positioned = new Map(
+        clonedNodes.filter((n) => n.x !== undefined).map((n) => [n.id, n]),
+      );
+      const hasUnpositioned = clonedNodes.some((n) => n.x === undefined);
+      if (hasUnpositioned && positioned.size > 0) {
+        const spawnPos = new Map<string, { x: number; y: number }>();
+        for (const link of clonedLinks) {
+          // clonedLinks are fresh clones — endpoints are still plain id strings here
+          const s = String(link.source);
+          const t = String(link.target);
+          const sp = positioned.get(s);
+          const tp = positioned.get(t);
+          if (sp && !spawnPos.has(t)) spawnPos.set(t, { x: sp.x!, y: sp.y! });
+          if (tp && !spawnPos.has(s)) spawnPos.set(s, { x: tp.x!, y: tp.y! });
+        }
+        for (const node of clonedNodes) {
+          if (node.x !== undefined) continue;
+          const p = spawnPos.get(node.id);
+          if (p) {
+            node.x = p.x + (Math.random() - 0.5) * 60;
+            node.y = p.y + (Math.random() - 0.5) * 60;
+          }
+        }
+      }
+    }
     return { nodes: clonedNodes, links: clonedLinks };
-  }, [nodes, links]);
+  }, [nodes, links, preservePositions]);
 
   const priorityLabelIds = useMemo(() => {
     if (priorityLabelIdsProp !== undefined) {
@@ -708,12 +763,17 @@ const Graph = forwardRef(function GraphInner<
 
   useEffect(() => {
     if (preparedDataRef.current !== preparedData) {
+      const isFirstData = preparedDataRef.current === null;
       // Snapshot new data so rerenders caused by props toggling do not retrigger reheats.
       preparedDataRef.current = preparedData;
       lastInitializedSignatureRef.current = undefined;
-      shouldResetZoomRef.current = true;
+      // preserveViewOnDataChange keeps zoom/center across incremental data changes
+      // (expedition growth); the very first load still gets the default framing.
+      if (!preserveViewOnDataChange || isFirstData) {
+        shouldResetZoomRef.current = true;
+      }
     }
-  }, [preparedData]);
+  }, [preparedData, preserveViewOnDataChange]);
 
   // Smooth transition for dimming state changes
   useEffect(() => {
@@ -1143,14 +1203,20 @@ const Graph = forwardRef(function GraphInner<
           const base = source ? colorById.get(String(source)) : undefined;
           const fallback = resolvedTheme === "dark" ? "#ffffff" : "#000000";
           const selected = !!effectiveSelectedId && (source === effectiveSelectedId || target === effectiveSelectedId);
+          const sourceStr = String(source ?? "");
+          const targetStr = String(target ?? "");
+          const highlighted = !!highlightLinkKeys && highlightLinkKeys.has(
+            sourceStr < targetStr ? `${sourceStr}|${targetStr}` : `${targetStr}|${sourceStr}`
+          );
 
           // Zoom-based fade: links become more transparent when zoomed out
           const zoom = zoomRef.current || 1;
           const zoomFade = Math.min(1, Math.max(0.15, zoom / 0.5)); // Fade below zoom 0.5, min 15% opacity
 
           // Calculate base opacity (reduced for less visual noise)
-          const baseOpacity = effectiveSelectedId ? (selected ? 0xcc : 0x20) : 0x50;
-          const undimmedOpacity = 0x50;
+          // Highlighted (trail) links stay prominent regardless of selection
+          const baseOpacity = highlighted ? 0xcc : effectiveSelectedId ? (selected ? 0xcc : 0x20) : 0x50;
+          const undimmedOpacity = highlighted ? 0xcc : 0x50;
 
           // Interpolate between base and undimmed opacity, then apply zoom fade
           const transition = dimmingTransitionRef.current;
@@ -1161,13 +1227,16 @@ const Graph = forwardRef(function GraphInner<
         }}
         linkWidth={(link) => {
           if (!showLinksRef.current) return 0;
-          const baseWidth = effectiveSelectedId ? (
-            (() => {
-              const source = typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
-              const target = typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
-              return source === effectiveSelectedId || target === effectiveSelectedId ? 2 : 0.3;
-            })()
-          ) : 0.8; // Reduced for less visual noise
+          const source = typeof link.source === "string" ? link.source : (link.source as NodeObject)?.id;
+          const target = typeof link.target === "string" ? link.target : (link.target as NodeObject)?.id;
+          const sourceStr = String(source ?? "");
+          const targetStr = String(target ?? "");
+          if (highlightLinkKeys?.has(sourceStr < targetStr ? `${sourceStr}|${targetStr}` : `${targetStr}|${sourceStr}`)) {
+            return 2 * linkThicknessScale;
+          }
+          const baseWidth = effectiveSelectedId
+            ? (source === effectiveSelectedId || target === effectiveSelectedId ? 2 : 0.3)
+            : 0.8; // Reduced for less visual noise
           return baseWidth * linkThicknessScale;
         }}
         linkCurvature={dagMode ? 0 : linkCurvatureValue}
@@ -1202,22 +1271,23 @@ const Graph = forwardRef(function GraphInner<
 
           // Calculate node alpha with smooth transition
           const isHopNode = !!savedArtistIds && !savedArtistIds.has(node.id);
-          const hopBaseAlpha = isHopNode ? 0.2 : 1;
-          let baseAlpha = hopBaseAlpha;
+          const isFrontier = !!frontierIds?.has(node.id);
+          const restingAlpha = isHopNode ? 0.2 : isFrontier ? 0.55 : 1;
+          let baseAlpha = restingAlpha;
           if (hasSelection) {
             baseAlpha = isSelected ? 1 : isNeighbor ? 0.8 : 0.15;
           } else if (isHovered && isHopNode) {
             baseAlpha = 0.3;
+          } else if (isHovered && isFrontier) {
+            baseAlpha = 0.85;
           } else if (isHovered) {
             baseAlpha = 0.8;
-          } else if (isHopNode) {
-            baseAlpha = hopBaseAlpha;
           }
 
           // Interpolate between normal dimming and fully undimmed
           // dimmingTransition: 0 = normal dimming, 1 = fully undimmed
           const transition = dimmingTransitionRef.current;
-          const alpha = baseAlpha * (1 - transition) + hopBaseAlpha * transition;
+          const alpha = baseAlpha * (1 - transition) + restingAlpha * transition;
 
           // Build render context
           const renderContext: NodeRenderContext<T> = {
@@ -1244,8 +1314,8 @@ const Graph = forwardRef(function GraphInner<
               renderSelection(renderContext);
             }
 
-            // Render dashed ring for hop-introduced nodes (not in the user's saved set)
-            if (isHopNode) {
+            // Render dashed ring for hop-introduced and frontier nodes
+            if (isHopNode || isFrontier) {
               ctx.save();
               ctx.beginPath();
               ctx.arc(x, y, radius + 4, 0, 2 * Math.PI);
@@ -1259,7 +1329,8 @@ const Graph = forwardRef(function GraphInner<
           }
 
           // Calculate and render label with smooth transition
-          if (showLabels) {
+          // Frontier nodes stay anonymous — their label only appears on hover/selection
+          if (showLabels && !(isFrontier && !isHovered && !isSelected)) {
             const k = zoomRef.current || 1;
             const zoomAlpha = labelAlphaForZoom(k, labelFadeStart, labelFadeEnd);
             const priorityZoomAlpha = labelAlphaForZoom(

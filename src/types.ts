@@ -60,7 +60,25 @@ export interface LastFMBio {
     content: string;
 }
 
-export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'parentGenre';
+export type GraphType = 'genres' | 'artists' | 'similarArtists' | 'parentGenre' | 'expedition';
+
+export type ExpeditionNodeStatus = 'frontier' | 'visited';
+
+export interface ExpeditionNode {
+    artist: Artist;              // hopDistance is repurposed as distance-from-seed
+    status: ExpeditionNodeStatus;
+    expandedFrom?: string;       // parent artist id (trail edge)
+    addedAtExpansion: number;    // expansion sequence number when introduced
+    lastTouched: number;         // logical clock value — recency for eviction
+}
+
+// Undo record for a single expansion
+export interface ExpeditionExpansion {
+    parentId: string;
+    addedNodeIds: string[];
+    addedLinks: NodeLink[];
+    parentPrevStatus: ExpeditionNodeStatus;
+}
 
 export type GenreClusterMode = 'subgenre' | 'influence' | 'fusion';
 

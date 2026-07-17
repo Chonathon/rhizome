@@ -46,6 +46,7 @@ interface ArtistInfoProps {
   onFocusInArtistsView?: (artist: Artist, options?: { forceRefocus?: boolean }) => void;
   onViewArtistGraph?: (artist: Artist) => void;
   onViewSimilarArtistGraph?: (artist: Artist) => void;
+  onStartExpedition?: (artist: Artist) => void;
   playLoading?: boolean;
   onArtistToggle: (id: string | undefined) => void;
   isInCollection: boolean;
@@ -80,6 +81,7 @@ export function ArtistInfo({
                              onFocusInArtistsView,
                              onViewArtistGraph,
                              onViewSimilarArtistGraph,
+                             onStartExpedition,
                              playLoading,
                              onArtistToggle,
                              isInCollection,
@@ -492,16 +494,28 @@ export function ArtistInfo({
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center justify-between">
                             <span className="text-md font-semibold">Similar Artists</span>
-                            {onViewSimilarArtistGraph && selectedArtist && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onViewSimilarArtistGraph(selectedArtist)}
-                                    title={`Explore artists similar to ${selectedArtist.name}`}
-                                >
-                                  Graph <ChevronRight className="size-4" />
-                                </Button>
-                            )}
+                            <div className="flex items-center">
+                              {onStartExpedition && selectedArtist && (
+                                  <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => onStartExpedition(selectedArtist)}
+                                      title={`Start an expedition from ${selectedArtist.name}`}
+                                  >
+                                    Expedition <ChevronRight className="size-4" />
+                                  </Button>
+                              )}
+                              {onViewSimilarArtistGraph && selectedArtist && (
+                                  <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => onViewSimilarArtistGraph(selectedArtist)}
+                                      title={`Explore artists similar to ${selectedArtist.name}`}
+                                  >
+                                    Graph <ChevronRight className="size-4" />
+                                  </Button>
+                              )}
+                            </div>
                           </div>
                           <div className="grid grid-cols-4 gap-4 w-full pb-1 -mx-1 px-1">
                             {similarFilter(selectedArtist.similar).map((name) => {

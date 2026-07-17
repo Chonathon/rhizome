@@ -9,6 +9,9 @@ interface UseUrlStateOptions {
   onArtistFromUrl?: (artist: Artist) => void;
   onGenreClearedFromUrl?: () => void;
   onArtistClearedFromUrl?: () => void;
+  // Initial-load only: restore an expedition from ?expedition=<seedId>.
+  // Back/forward does not replay expeditions.
+  onExpeditionFromUrl?: (seedId: string) => void;
   genresLoaded: boolean;
 }
 
@@ -21,6 +24,7 @@ interface UseUrlStateOptions {
 export type UrlEntity =
   | { type: 'genre'; name: string }
   | { type: 'artist'; id: string; name: string }
+  | { type: 'expedition'; id: string }
   | null;
 
 export interface UrlStateResult {
@@ -108,6 +112,11 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     if (!genresLoaded || initialLoadProcessed.current) return;
     initialLoadProcessed.current = true;
     const params = new URLSearchParams(window.location.search);
+    const expeditionSeed = params.get('expedition');
+    if (expeditionSeed) {
+      callbacksRef.current.onExpeditionFromUrl?.(expeditionSeed);
+      return;
+    }
     processUrlParams(params.get('genre'), params.get('artist'));
   }, [genresLoaded, processUrlParams]);
 
@@ -148,12 +157,19 @@ export function useUrlState(options: UseUrlStateOptions): UrlStateResult {
     if (entity === null) {
       params.delete('genre');
       params.delete('artist');
+      params.delete('expedition');
     } else if (entity.type === 'genre') {
       params.set('genre', toSlug(entity.name));
+      params.delete('artist');
+      params.delete('expedition');
+    } else if (entity.type === 'expedition') {
+      params.set('expedition', entity.id);
+      params.delete('genre');
       params.delete('artist');
     } else {
       params.set('artist', entity.id);
       params.delete('genre');
+      params.delete('expedition');
     }
 
     prevGenreSlug.current = params.get('genre');

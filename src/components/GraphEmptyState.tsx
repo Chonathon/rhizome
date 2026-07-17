@@ -17,7 +17,8 @@ export type GraphEmptyMode =
   | "collection-filtered"
   | "similar-artists"
   | "genre-and-filter"
-  | "collection-and-filter";
+  | "collection-and-filter"
+  | "expedition-empty";
 
 const COPY: Record<GraphEmptyMode, { headline: string; body: string; cta?: string }> = {
   "collection-empty": {
@@ -45,6 +46,11 @@ const COPY: Record<GraphEmptyMode, { headline: string; body: string; cta?: strin
     headline: "No artists match all genres",
     body: "No artists in your collection are tagged with every selected genre.",
     cta: "Match any instead",
+  },
+  "expedition-empty": {
+    headline: "Start an expedition",
+    body: "Pick an artist and grow the map outward from them — one hop at a time.",
+    cta: "Search artists",
   },
 };
 
