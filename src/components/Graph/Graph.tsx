@@ -202,6 +202,10 @@ const CLUSTER_HULL_PADDING = 48;
 const CLUSTER_LABEL_SCREEN_PX = 13;
 const CLUSTER_LABEL_STROKE_SCREEN_PX = 1.2;
 
+// A node "click" fired within this window after a multi-touch gesture (pinch-zoom)
+// is treated as an accidental tap and ignored.
+const MULTI_TOUCH_CLICK_SUPPRESS_MS = 300;
+
 function drawClusterHulls(
   ctx: CanvasRenderingContext2D,
   overlays: ClusterOverlay[],
@@ -453,6 +457,42 @@ const Graph = forwardRef(function GraphInner<
   const shouldResetZoomRef = useRef(true);
   const preparedDataRef = useRef<GraphData<PreparedNode<T>, L> | null>(null);
   const onZoomChangeRef = useRef<((zoom: number) => void) | undefined>(onZoomChange);
+  const activePointersRef = useRef<Set<number>>(new Set());
+  const lastMultiTouchAtRef = useRef(0);
+
+  // Touch devices: node dragging fights with pinch-zoom (a finger landing on a
+  // node drags it instead of zooming), so only enable it for fine pointers.
+  const hasCoarsePointer = useMemo(
+    () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches,
+    [],
+  );
+
+  // Track concurrent pointers so taps that are part of (or immediately follow)
+  // a pinch gesture can be distinguished from deliberate single taps.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const handlePointerDown = (ev: PointerEvent) => {
+      activePointersRef.current.add(ev.pointerId);
+      if (activePointersRef.current.size >= 2) {
+        lastMultiTouchAtRef.current = Date.now();
+      }
+    };
+    const handlePointerEnd = (ev: PointerEvent) => {
+      if (activePointersRef.current.size >= 2) {
+        lastMultiTouchAtRef.current = Date.now();
+      }
+      activePointersRef.current.delete(ev.pointerId);
+    };
+    container.addEventListener("pointerdown", handlePointerDown, { passive: true });
+    container.addEventListener("pointerup", handlePointerEnd, { passive: true });
+    container.addEventListener("pointercancel", handlePointerEnd, { passive: true });
+    return () => {
+      container.removeEventListener("pointerdown", handlePointerDown);
+      container.removeEventListener("pointerup", handlePointerEnd);
+      container.removeEventListener("pointercancel", handlePointerEnd);
+    };
+  }, []);
 
   useEffect(() => {
     onZoomChangeRef.current = onZoomChange;
@@ -1143,8 +1183,12 @@ const Graph = forwardRef(function GraphInner<
           }
         }}
         onNodeClick={(node) => {
+          // Fingers lifting out of a pinch-zoom register as node taps; swallow them
+          if (activePointersRef.current.size > 0) return;
+          if (Date.now() - lastMultiTouchAtRef.current < MULTI_TOUCH_CLICK_SUPPRESS_MS) return;
           onNodeClick?.((node as PreparedNode<T>).data);
         }}
+        enableNodeDrag={!hasCoarsePointer}
         nodeCanvasObject={(node, ctx) => {
           const x = node.x ?? 0;
           const y = node.y ?? 0;
