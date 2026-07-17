@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from 'react'
 import GenreBadge from '@/components/GenreBadge'
 import GraphCard from './GraphCard'
 import ArtistBadge from './ArtistBadge'
+import { ImageWithFallback } from '@/components/ImageWithFallback'
 
 interface ArtistPreviewProps {
   artist: Artist
@@ -124,20 +125,19 @@ export function ArtistPreview({
         onShow={onShow}
 
         thumbnail={
-          imageUrl ? (
-            <div className="w-24 h-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border aspect-square">
-              <img
-                className="w-full h-full object-cover"
-                src={imageUrl}
-                alt={artist?.name ?? 'Artist image'}
-                loading="lazy"
-              />
-            </div>
-          ) : (
-            <div className="w-24 h-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border flex items-center justify-center bg-linear-to-br from-neutral-300/30 to-neutral-300/30 dark:from-neutral-400/20 dark:to-neutral-400/20">
-              <span className="text-4xl font-semibold">{initial}</span>
-            </div>
-          )
+          <div className="w-24 h-24 self-stretch shrink-0 overflow-hidden rounded-xl border border-border aspect-square">
+            <ImageWithFallback
+              containerClassName="w-full h-full"
+              className="w-full h-full object-cover"
+              src={imageUrl}
+              alt={artist?.name ?? 'Artist image'}
+              fallback={
+                <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-neutral-300/30 to-neutral-300/30 dark:from-neutral-400/20 dark:to-neutral-400/20">
+                  <span className="text-4xl font-semibold">{initial}</span>
+                </div>
+              }
+            />
+          </div>
         }
 
         title={

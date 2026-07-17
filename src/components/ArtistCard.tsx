@@ -3,6 +3,7 @@ import {fixWikiImageURL, formatDate, formatNumber, formatNumberCompact} from '@/
 import { useState } from "react"
 import GraphCard from "./GraphCard";
 import { Button } from './ui/button';
+import { ImageWithFallback } from '@/components/ImageWithFallback';
 // committment issues
 
 interface ArtistCardProps {
@@ -59,8 +60,9 @@ export function ArtistCard({
                 isExpanded ? "w-full h-[200px]" : ""
               }`}
             >
-              <img
-                className={`w-24 h-24 object-cover ${isExpanded ? "w-full h-full" : ""}`}
+              <ImageWithFallback
+                containerClassName="w-full h-full"
+                className="w-full h-full object-cover"
                 src={fixWikiImageURL(selectedArtist.image)}
                 alt={selectedArtist.name}
               />

@@ -23,6 +23,7 @@ import ArtistAvatar from "@/components/ArtistAvatar";
 import { AddButton } from "./AddButton";
 import { Separator } from "@radix-ui/react-separator";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { ImageWithFallback } from "@/components/ImageWithFallback";
 
 
 interface ArtistInfoProps {
@@ -245,11 +246,11 @@ export function ArtistInfo({
                             className="w-full h-full cursor-zoom-in focus:outline-none group"
                             title="Click to enlarge"
                         >
-                          <img
+                          <ImageWithFallback
+                              containerClassName="w-full h-full"
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                               src={imageUrl}
                               alt={selectedArtist?.name ?? "Artist image"}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                              loading="lazy"
                           />
                         </button>
                     ) : (
@@ -470,11 +471,11 @@ export function ArtistInfo({
                                   className="w-full h-full cursor-zoom-in focus:outline-none"
                                   title="Tap to enlarge"
                               >
-                                <img
+                                <ImageWithFallback
+                                    containerClassName="w-full h-full"
+                                    className="w-full h-full object-cover"
                                     src={imageUrl}
                                     alt={selectedArtist?.name ?? "Artist image"}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
                                 />
                               </button>
                           ) : (

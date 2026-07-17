@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import RhizomeLogo from "@/components/RhizomeLogo";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ImageWithFallback } from "@/components/ImageWithFallback";
 
 declare global {
   interface Window {
@@ -485,11 +486,12 @@ export default function Player({ open, onOpenChange, videoIds, title, autoplay =
             >
               {displayArtwork ? (
                 <>
-                  <img
+                  <ImageWithFallback
+                    containerClassName="w-full h-full block"
+                    className={`w-full h-full object-cover ${!ready || loading ? 'animate-pulse' : ''}`}
+                    showSkeleton={false}
                     src={displayArtwork}
                     alt={(title || 'Track') + ' artwork'}
-                    className={`w-full h-full object-cover ${!ready || loading ? 'animate-pulse' : ''}`}
-                    loading="lazy"
                   />
                   <button
                     type="button"

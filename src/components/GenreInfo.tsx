@@ -23,6 +23,7 @@ import {
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { ImageWithFallback } from "@/components/ImageWithFallback";
 
 
 
@@ -327,11 +328,11 @@ export function GenreInfo({
                                               title="Click to enlarge"
                                               className="block w-full h-full focus:outline-none cursor-zoom-in"
                                           >
-                                            <img
+                                            <ImageWithFallback
+                                                containerClassName="w-full h-full"
+                                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                                                 src={fixWikiImageURL(artist.image as string)}
                                                 alt={artist.name}
-                                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                                                loading="lazy"
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
                                           </button>
@@ -573,11 +574,11 @@ export function GenreInfo({
                                                 title="Tap to enlarge"
                                                 className="block w-full h-full focus:outline-none cursor-zoom-in"
                                             >
-                                              <img
+                                              <ImageWithFallback
+                                                  containerClassName="w-full h-full"
+                                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                                                   src={(artist.image as string)}
                                                   alt={artist.name}
-                                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                                                  loading="lazy"
                                               />
                                               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-70" />
                                               <span

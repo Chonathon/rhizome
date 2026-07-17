@@ -2,6 +2,7 @@ import { Genre, Artist } from '@/types'
 import { fixWikiImageURL, formatNumber, formatNumberCompact } from '@/lib/utils'
 import { useEffect, useMemo, useState } from 'react'
 import GraphCard from './GraphCard'
+import { ImageWithFallback } from '@/components/ImageWithFallback'
 
 interface GenrePreviewProps {
   genre: Genre
@@ -97,11 +98,12 @@ export function GenrePreview({
                       key={artist.id}
                       className={`${spanClasses} relative overflow-hidden`}
                     >
-                      <img
+                      <ImageWithFallback
+                        containerClassName="w-full h-full"
+                        className="w-full h-full object-cover"
                         src={fixWikiImageURL(artist.image as string)}
                         alt={artist.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
+                        fallback={<div className="w-full h-full bg-muted" />}
                       />
                     </div>
                   )

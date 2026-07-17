@@ -1,5 +1,7 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { ImageWithFallback } from "@/components/ImageWithFallback";
+import { ImageOff } from "lucide-react";
 
 type ImageLightboxProps = {
   open: boolean;
@@ -44,11 +46,18 @@ export function ImageLightbox({
           <div className={cn("w-full", bodyClassName)}>{children}</div>
         ) : (
           <div className={cn("flex items-center justify-center w-full h-full p-2 md:p-4", bodyClassName)}>
-            <img
+            <ImageWithFallback
               src={src}
               alt={alt}
               className="rounded-xl max-w-full max-h-[90vh] object-contain"
               onClick={(e) => e.stopPropagation()}
+              showSkeleton={false}
+              fallback={
+                <div className="flex flex-col items-center justify-center gap-2 text-white/70 p-12">
+                  <ImageOff className="size-8" />
+                  <span className="text-sm">Image unavailable</span>
+                </div>
+              }
             />
           </div>
         )}

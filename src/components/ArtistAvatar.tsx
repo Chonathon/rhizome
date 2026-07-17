@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { ArrowUp, GitFork, ChevronRight } from 'lucide-react';
+import { ImageWithFallback } from '@/components/ImageWithFallback';
 
 interface ArtistAvatarProps {
     name: string;
@@ -39,23 +40,22 @@ export function ArtistAvatar({
                 className,
             )}
         >
-      {imageUrl ? (
-          <img
-              src={imageUrl}
-              alt={`${name} avatar`}
-              className="h-full w-full rounded-full object-cover "
-              loading="lazy"
-          />
-      ) : (
-          <span
-              className={cn(
-                  'h-full w-full rounded-full bg-muted flex items-center justify-center text-[10px]',
-                  labelClassName,
-              )}
-          >
-          {initial}
-        </span>
-      )}
+      <ImageWithFallback
+          src={imageUrl}
+          alt={`${name} avatar`}
+          containerClassName="h-full w-full rounded-full overflow-hidden"
+          className="h-full w-full rounded-full object-cover"
+          fallback={
+              <span
+                  className={cn(
+                      'h-full w-full rounded-full bg-muted flex items-center justify-center text-[10px]',
+                      labelClassName,
+                  )}
+              >
+              {initial}
+            </span>
+          }
+      />
 
             {/* Out-of-view: ArrowUp icon colored with genre color */}
             {isInView === false && (

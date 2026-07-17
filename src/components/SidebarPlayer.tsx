@@ -9,6 +9,7 @@ import RhizomeLogo from "@/components/RhizomeLogo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { ImageWithFallback } from "@/components/ImageWithFallback";
 
 function PreviewBadge({ size = "sm" }: { size?: "sm" | "md" }) {
   const sizeClasses = size === "sm"
@@ -884,11 +885,12 @@ export default function SidebarPlayer({
               >
                 {displayArtwork ? (
                   <>
-                    <img
+                    <ImageWithFallback
+                      containerClassName="w-full h-full block"
+                      className={`w-full h-full object-cover ${!ready || loading ? 'animate-pulse' : ''}`}
+                      showSkeleton={false}
                       src={displayArtwork}
                       alt={(title || 'Track') + ' artwork'}
-                      className={`w-full h-full object-cover ${!ready || loading ? 'animate-pulse' : ''}`}
-                      loading="lazy"
                     />
                     <button
                       type="button"
@@ -1004,11 +1006,12 @@ export default function SidebarPlayer({
               >
                 {displayArtwork ? (
                   <>
-                    <img
+                    <ImageWithFallback
+                      containerClassName="w-full h-full block"
+                      className={`w-full h-full object-cover ${!ready || loading ? 'animate-pulse' : ''}`}
+                      showSkeleton={false}
                       src={displayArtwork}
                       alt={(title || 'Track') + ' artwork'}
-                      className={`w-full h-full object-cover ${!ready || loading ? 'animate-pulse' : ''}`}
-                      loading="lazy"
                     />
                     <button
                       type="button"
