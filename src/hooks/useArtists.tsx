@@ -192,18 +192,21 @@ const useArtists = (genreIDs: string[], topAmount = TOP_ARTISTS_TO_FETCH, filter
         }
     }
 
-    const fetchSimilarArtists = async (artist: Artist) => {
+    const fetchSimilarArtists = async (artist: Artist): Promise<Artist[]> => {
         resetArtistsError();
         setArtistsLoading(true);
+        let fetched: Artist[] = [];
         try {
             const response = await axios.get(`${url}/artists/fetch/similar/${artist.id}`);
-            setSimilarArtists([artist, ...response.data]);
+            fetched = [artist, ...response.data];
+            setSimilarArtists(fetched);
         } catch (err) {
             if (err instanceof AxiosError) {
                 setArtistsError(err);
             }
         }
         setArtistsLoading(false);
+        return fetched;
     }
 
     const fetchHopArtists = async (
