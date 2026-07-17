@@ -3,7 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { SidebarMenuButton } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
-import { History, Search, X, Ellipsis } from 'lucide-react'
+import { History, X, Ellipsis } from 'lucide-react'
 import { BadgeIndicator } from '@/components/BadgeIndicator'
 import { useRecentSelections, RecentSelectionItem, groupByTime } from '@/hooks/useRecentSelections'
 import { Artist } from '@/types'
@@ -31,6 +31,7 @@ export function RecentsPopover({
   const { recentSelections, removeRecentSelection } = useRecentSelections()
 
   const hasRecents = recentSelections.length > 0
+  const hasOverflow = recentSelections.length > 15
 
   const handleSelect = (item: RecentSelectionItem) => {
     onItemSelect(item)
@@ -49,12 +50,7 @@ export function RecentsPopover({
     return { isArtist, imageUrl, color }
   }
 
-  const recentsList = !hasRecents ? (
-    <div className="flex flex-col items-center gap-2 py-10 px-4 overflow-y-auto">
-      <Search className="h-5 w-5 text-muted-foreground/20" />
-      <p className="text-xs text-muted-foreground/40 text-center">Nothing yet — start exploring</p>
-    </div>
-  ) : (
+  const recentsList = (
     <>
       {groupByTime(recentSelections.slice(0, 15)).map((group) => (
         <div key={group.label} className='overflow-hidden p-1'>
@@ -97,7 +93,7 @@ export function RecentsPopover({
           })}
         </div>
       ))}
-      {onSearchOpen && (
+      {onSearchOpen && hasOverflow && (
         <button
           className="flex items-center w-full gap-2 rounded-md px-2 py-2 text-sm font-medium cursor-default select-none hover:bg-accent hover:text-accent-foreground transition-colors text-muted-foreground"
           onClick={onSearchOpen}
@@ -111,6 +107,8 @@ export function RecentsPopover({
 
   // Expanded sidebar: render inline
   if (!isCollapsed) {
+    if (!hasRecents) return null
+
     return (
       <div className="flex flex-col w-full h-full">
         <div className="flex items-center gap-1 px-2 py-1.5">
