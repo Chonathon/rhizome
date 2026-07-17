@@ -2875,7 +2875,7 @@ function App() {
                       onClick={() => onTabChange('artists')}
                       className="gap-2"
                     >
-                      Similar artists: {similarArtistAnchor.name}
+                      Similar to {similarArtistAnchor.name}
                       <X className="h-4 w-4" />
                     </Button>
                   </motion.div>
