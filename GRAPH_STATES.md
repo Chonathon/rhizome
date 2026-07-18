@@ -68,24 +68,27 @@
   - Click Artists tab → Return to Artists Graph (Explore)
 
 ### Radio Graph (Guided Journeys)
-- **State**: `graph = 'radio'`
-- **Label**: Artists tab (with Radio journey panel overlay)
+- **State**: `graph = 'radio'` (journey itself is independent of graph state and survives view changes)
+- **Label**: Artists tab (with the Radio journey bar overlay)
 - **Purpose**: On-rails "radio with a map" — pick a starting artist and travel stop to stop
 - **Shows**:
   - Visited stops chained in visit order, drawn with a glowing trail
-  - Current stop fanning out to 3–4 proposed next stops
-  - Next stops are weighted toward lesser-known similar artists (low listeners relative to the current stop)
-- **Controls** (JourneyPanel overlay):
-  - Choose a next stop (advances the journey, auto-plays the stop's top tracks, opens bio card)
-  - Skip (auto-advances to the top suggestion)
-  - Like (adds current stop to collection)
-  - Copy journey link / End journey
+  - A single proposed next stop branching off the current stop
+  - The next stop is drawn from a ranked candidate pool weighted toward lesser-known similar artists (low listeners relative to the current stop); shuffle cycles the pool
+- **Playback**: each stop plays one top track; when it ends the journey auto-advances to the proposed next stop (radio loop)
+- **Controls** (compact journey bar, visible on every graph while a journey is active):
+  - Next-stop card / skip button → advance (plays one track, opens bio card)
+  - Shuffle → propose a different next stop
+  - Like (heart) → add current stop to collection
+  - Map (only while exploring another view) → return to the journey graph
+  - Copy journey link / End journey (×)
 - **Data Source**: `useJourney` — `/artists/fetch/similar/:id` per stop
 - **Sharing**: path is mirrored to the `journey` URL param (comma-separated artist IDs) and restored on load
 - **Navigation**:
-  - Click a proposed next-stop node → advance journey to it
+  - Click the proposed next-stop node → advance journey to it
   - Click a visited node → reopen its bio card (path unchanged)
-  - Artists/Genres tab or End (×) → journey ends, regular graph restored
+  - Artists/Genres tabs → explore freely; the journey and playback continue (bar stays up)
+  - End (×) on the bar → journey ends
 
 ## Data Flow
 

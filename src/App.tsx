@@ -420,10 +420,11 @@ function App() {
   const {
     journeyActive,
     journeyPath,
-    journeyOptions,
+    journeyNextStop,
     journeyOptionsLoading,
     startJourney,
     chooseNextStop,
+    shuffleNextStop,
     restoreJourney,
     endJourney,
   } = useJourney();
@@ -891,24 +892,23 @@ function App() {
   }, [displayedArtistsData, graph]);
 
   // Builds the radio journey graph: the visited path chained in order, with the
-  // current stop fanning out to the proposed next stops
+  // single proposed next stop branching off the current stop
   useEffect(() => {
     if (graph !== 'radio' || !journeyPath.length) return;
     const current = journeyPath[journeyPath.length - 1];
     const pathIds = new Set(journeyPath.map(a => a.id));
-    const nodes = [...journeyPath, ...journeyOptions.filter(o => !pathIds.has(o.id))];
+    const nodes = [...journeyPath];
     const links: NodeLink[] = [];
     for (let i = 1; i < journeyPath.length; i++) {
       links.push({ source: journeyPath[i - 1].id, target: journeyPath[i].id, linkType: 'similar' });
     }
-    journeyOptions.forEach(option => {
-      if (!pathIds.has(option.id)) {
-        links.push({ source: current.id, target: option.id, linkType: 'similar' });
-      }
-    });
+    if (journeyNextStop && !pathIds.has(journeyNextStop.id)) {
+      nodes.push(journeyNextStop);
+      links.push({ source: current.id, target: journeyNextStop.id, linkType: 'similar' });
+    }
     setCurrentArtists(nodes);
     setCurrentArtistLinks(links);
-  }, [graph, journeyPath, journeyOptions]);
+  }, [graph, journeyPath, journeyNextStop]);
 
   // Journey path IDs in visit order — drawn as the glowing trail on the graph
   const journeyTrailIds = useMemo(
@@ -1601,7 +1601,8 @@ function App() {
   }
 
   // Play handlers using embedded YouTube player
-  const onPlayArtist = async (artist: Artist, options?: { preview?: boolean }) => {
+  // singleTrack: queue only the artist's top track (radio mode plays one song per stop)
+  const onPlayArtist = async (artist: Artist, options?: { preview?: boolean; singleTrack?: boolean }) => {
     if (!options?.preview) {
       playsRef.current++;
       if (localStorage.getItem('showAlphaSurvey') !== 'false' && playsRef.current >= 3) {
@@ -1636,7 +1637,7 @@ function App() {
       }
       if (req !== playRequest.current) return; // superseded by a newer request
       if (playerIDs && playerIDs.length > 0) {
-        setPlayerVideoIds(playerIDs);
+        setPlayerVideoIds(options?.singleTrack ? playerIDs.slice(0, 1) : playerIDs);
         // title/artwork already set above for instant UI
       } else {
         toast.error('No tracks found for this artist');
@@ -2183,9 +2184,9 @@ function App() {
       addRecentSelection(artist, 'artist');
     }
     if (graph === 'radio') {
-      // Clicking a proposed next stop advances the journey; clicking a visited
+      // Clicking the proposed next stop advances the journey; clicking a visited
       // stop just revisits its info card without changing the path
-      if (journeyOptions.some(o => o.id === artist.id)) {
+      if (journeyNextStop?.id === artist.id) {
         onJourneyChoose(artist);
         return;
       }
@@ -2316,7 +2317,6 @@ function App() {
   };
 
   const resetAppState = () => {
-    endJourney();
     setGraph('genres');
     setCurrentGenres({nodes: genres, links: genreLinks.filter(link => {
         return DEFAULT_CLUSTER_MODE.includes(link.linkType as "subgenre" | "influence" | "fusion")
@@ -2438,20 +2438,25 @@ function App() {
 
   // --- Radio mode (guided journeys) ---
 
-  // Focus a journey stop: bio card, URL sync, recents, and (by default) auto-play its top track
-  const focusJourneyStop = (stop: Artist, options?: { autoplay?: boolean }) => {
+  // Focus a journey stop: bio card, URL sync, recents, and (by default) auto-play
+  // one top track. Graph selection only applies on the journey map so exploring
+  // other views doesn't dim graphs around an absent node.
+  const focusJourneyStop = (stop: Artist, options?: { autoplay?: boolean; select?: boolean }) => {
     setSelectedArtistFromSearch(false);
     setArtistPreviewStack([]);
-    setSelectedArtist(stop);
+    if (options?.select ?? graph === 'radio') {
+      setSelectedArtist(stop);
+      setAutoFocusGraph(true);
+    }
     setArtistInfoToShow(stop);
     setShowArtistCard(true);
     setShowGenreCard(false);
     setRestoreGenreCardOnArtistDismiss(false);
-    setAutoFocusGraph(true);
     addRecentSelection(stop, 'artist');
     updateUrl({ type: 'artist', id: stop.id, name: stop.name });
     if (options?.autoplay !== false) {
-      onPlayArtist(stop);
+      // One song per stop — the journey moves through artists, not discographies
+      onPlayArtist(stop, { singleTrack: true });
     }
   };
 
@@ -2459,27 +2464,56 @@ function App() {
     if (graph === 'similarArtists') setSimilarArtistAnchor(undefined);
     setGraph('radio');
     startJourney(artist);
-    focusJourneyStop(artist);
+    focusJourneyStop(artist, { select: true });
   };
 
-  const onJourneyChoose = (stop: Artist) => {
+  // quiet: advance the journey and play the next track without opening the bio
+  // card or pushing a history entry — used when a track ends while the user is
+  // exploring another view, so the radio rolls on without interrupting them
+  const onJourneyChoose = (stop: Artist, options?: { quiet?: boolean }) => {
     chooseNextStop(stop);
-    focusJourneyStop(stop);
+    if (options?.quiet) {
+      addRecentSelection(stop, 'artist');
+      onPlayArtist(stop, { singleTrack: true });
+    } else {
+      focusJourneyStop(stop);
+    }
   };
 
-  // Lean-back skip: advance to the top-weighted suggestion without picking a branch
-  const onJourneySkip = () => {
-    if (journeyOptions.length) {
-      onJourneyChoose(journeyOptions[0]);
+  // Advance to the proposed next stop (panel button, node click, or track end)
+  const onJourneyAdvance = (options?: { quiet?: boolean }) => {
+    if (journeyNextStop && !journeyOptionsLoading) {
+      onJourneyChoose(journeyNextStop, options);
+    }
+  };
+
+  // Radio loop: when a stop's track finishes, roll on to the next stop
+  const onJourneyTrackEnded = () => {
+    if (journeyActive) {
+      onJourneyAdvance({ quiet: graph !== 'radio' });
+    }
+  };
+
+  // Return to the journey map from another graph view
+  const onShowJourney = () => {
+    const current = journeyPath[journeyPath.length - 1];
+    setGraph('radio');
+    if (current) {
+      setSelectedArtist(current);
+      setAutoFocusGraph(true);
     }
   };
 
   const onJourneyEnd = () => {
     endJourney();
-    if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
-    setCurrentArtists(artists);
-    setCurrentArtistLinks(artistLinks);
-    setGraph('artists');
+    // Only leave the journey map if we're on it — ending radio while exploring
+    // another view shouldn't yank the user away from it
+    if (graph === 'radio') {
+      if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+      setCurrentArtists(artists);
+      setCurrentArtistLinks(artistLinks);
+      setGraph('artists');
+    }
   };
 
   // Restore a shared radio journey from the URL on first load (no autoplay —
@@ -2570,12 +2604,12 @@ function App() {
 
   const onTabChange = async (graphType: GraphType) => {
     if (graphType === 'genres') {
-      // If leaving similarArtists/radio mode, restore the full artist list
+      // If leaving similarArtists/radio mode, restore the full artist list.
+      // The radio journey itself stays active — exploring doesn't end it.
       if (graph === 'similarArtists' || graph === 'radio') {
         setCurrentArtists(artists);
         setCurrentArtistLinks(artistLinks);
         setSimilarArtistAnchor(undefined);
-        if (graph === 'radio') endJourney();
       }
       setGraph('genres');
       // Don't clear currentArtists/currentArtistLinks - preserve them like genre graph does
@@ -2588,12 +2622,12 @@ function App() {
       }
       // Don't clear selected genres or artist filter - they're preserved for potential return
     } else {
-      // Switching to artists view - restore full artist list if coming from similarArtists/radio
+      // Switching to artists view - restore full artist list if coming from similarArtists/radio.
+      // The radio journey itself stays active — exploring doesn't end it.
       if (graph === 'similarArtists' || graph === 'radio') {
         setCurrentArtists(artists);
         setCurrentArtistLinks(artistLinks);
         setSimilarArtistAnchor(undefined);
-        if (graph === 'radio') endJourney();
       }
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
@@ -3039,6 +3073,7 @@ function App() {
         onPlayerTitleClick={handlePlayerTitleClick}
         playerStartIndex={playerStartIndex}
         playerPreviewMode={playerPreviewMode}
+        onPlayerTrackEnded={onJourneyTrackEnded}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -3276,7 +3311,7 @@ function App() {
                   priorityLabelIds={centralArtistLabelIds}
                   clusterOverlays={artistClusterOverlays}
                   savedArtistIds={savedArtistIds}
-                  trailNodeIds={graph === 'radio' ? journeyTrailIds : undefined}
+                  trailNodeIds={journeyActive ? journeyTrailIds : undefined}
                 />
 
           {/* Graph empty states */}
@@ -3309,20 +3344,21 @@ function App() {
             </>
           )}
 
-          {/* Radio mode journey panel */}
+          {/* Radio mode journey bar — persists across graph views while the journey is active */}
           <AnimatePresence>
-            {graph === 'radio' && journeyActive && (
+            {journeyActive && (
               <JourneyPanel
-                show={graph === 'radio' && journeyActive}
+                show={journeyActive}
                 path={journeyPath}
-                options={journeyOptions}
+                nextStop={journeyNextStop}
                 optionsLoading={journeyOptionsLoading}
                 isInCollection={isInCollection}
                 getArtistColor={getArtistColor}
                 onLikeCurrent={() => onAddArtistButtonToggle(journeyPath[journeyPath.length - 1]?.id)}
-                onSkip={onJourneySkip}
-                onChoose={onJourneyChoose}
+                onAdvance={() => onJourneyAdvance()}
+                onShuffle={shuffleNextStop}
                 onEnd={onJourneyEnd}
+                onShowJourney={graph !== 'radio' ? onShowJourney : undefined}
               />
             )}
           </AnimatePresence>

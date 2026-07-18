@@ -41,6 +41,8 @@ type SidebarPlayerProps = {
   onTitleClick?: () => void;
   startIndex?: number;
   previewMode?: boolean;
+  // Fired when single-track playback finishes (radio mode advances the journey on this)
+  onTrackEnded?: () => void;
   sidebarCollapsed: boolean;
   isDesktop: boolean;
   desktopSlotRef?: React.RefObject<HTMLDivElement | null>;
@@ -79,6 +81,7 @@ export default function SidebarPlayer({
   onTitleClick,
   startIndex = 0,
   previewMode = false,
+  onTrackEnded,
   sidebarCollapsed,
   isDesktop,
   desktopSlotRef
@@ -133,6 +136,12 @@ export default function SidebarPlayer({
   useEffect(() => {
     previewModeRef.current = previewMode;
   }, [previewMode]);
+
+  // Latest onTrackEnded without remounting the player (mountPlayer closures capture at mount)
+  const onTrackEndedRef = useRef<(() => void) | undefined>(onTrackEnded);
+  useEffect(() => {
+    onTrackEndedRef.current = onTrackEnded;
+  }, [onTrackEnded]);
 
   const hasPlaylist = videoIds && videoIds.length > 1;
   const currentVideoId = videoIds?.[currentIndex] || videoIds?.[0];
@@ -495,6 +504,9 @@ export default function SidebarPlayer({
           if (state === 0 && hasPlaylist) {
             const idx = playerRef.current?.getPlaylistIndex?.();
             if (typeof idx === 'number') setCurrentIndex(idx);
+          }
+          if (state === 0 && !hasPlaylist) {
+            try { onTrackEndedRef.current?.(); } catch {}
           }
           if (state === 1 || state === 5) {
             setDuration(playerRef.current?.getDuration?.() || 0);

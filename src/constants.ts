@@ -74,7 +74,7 @@ export const UNREGISTERED_USER_ID = 'unregistered';
 export const MAX_YTID_QUEUE_SIZE = 200;
 
 // Radio mode (guided journeys)
-export const JOURNEY_STOP_OPTIONS = 4;
+export const JOURNEY_CANDIDATE_POOL = 8;
 export const JOURNEY_MAX_PATH_LENGTH = 30;
 
 export const DEFAULT_THEME: Theme = 'system';
