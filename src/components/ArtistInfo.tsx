@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveDrawer } from "@/components/ResponsiveDrawer";
 import { fixWikiImageURL, formatDate, formatNumber, clientUrl } from "@/lib/utils";
-import { CirclePlay, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, Disc3, Link, Check} from "lucide-react";
+import { CirclePlay, Ellipsis, Info, Flag, Loader2, ChevronRight, ChevronDown, Disc3, Link, Check, Radio} from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -46,6 +46,7 @@ interface ArtistInfoProps {
   onFocusInArtistsView?: (artist: Artist, options?: { forceRefocus?: boolean }) => void;
   onViewArtistGraph?: (artist: Artist) => void;
   onViewSimilarArtistGraph?: (artist: Artist) => void;
+  onStartRadio?: (artist: Artist) => void;
   playLoading?: boolean;
   onArtistToggle: (id: string | undefined) => void;
   isInCollection: boolean;
@@ -80,6 +81,7 @@ export function ArtistInfo({
                              onFocusInArtistsView,
                              onViewArtistGraph,
                              onViewSimilarArtistGraph,
+                             onStartRadio,
                              playLoading,
                              onArtistToggle,
                              isInCollection,
@@ -382,6 +384,17 @@ export function ArtistInfo({
                             onToggle={() => onArtistToggle(selectedArtist?.id)}
                             isInCollection={isInCollection}
                         />
+                        {onStartRadio && (
+                            <Button
+                                variant="secondary"
+                                size={isDesktop ? 'lg' : 'xl'}
+                                className="shrink-0"
+                                title={selectedArtist ? `Start radio from ${selectedArtist.name}` : 'Start radio'}
+                                onClick={() => selectedArtist && onStartRadio(selectedArtist)}
+                            >
+                              <Radio className="h-4 w-4" />
+                            </Button>
+                        )}
                         <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -394,6 +407,15 @@ export function ArtistInfo({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            {onStartRadio && selectedArtist && (
+                                <>
+                                  <DropdownMenuItem onClick={() => onStartRadio(selectedArtist)}>
+                                    <Radio className="h-4 w-4" />
+                                    Start radio
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                            )}
                             <DropdownMenuItem onClick={handleCopyUrl}>
                               {copied ? <Check className="h-4 w-4" /> : <Link className="h-4 w-4" />}
                               Copy link

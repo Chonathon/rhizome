@@ -48,6 +48,8 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import { useUrlState } from './hooks/useUrlState';
+import useJourney, { parseJourneyParam } from '@/hooks/useJourney';
+import JourneyPanel from '@/components/JourneyPanel';
 import { toSlug } from '@/lib/urlUtils';
 import DisplayPanel from './components/DisplayPanel';
 import SharePanel from './components/SharePanel';
@@ -414,6 +416,18 @@ function App() {
 
   const { hasCompletedOnboarding, setOnboardingCompleted } = useOnboarding();
 
+  // Radio mode (guided journeys) state
+  const {
+    journeyActive,
+    journeyPath,
+    journeyOptions,
+    journeyOptionsLoading,
+    startJourney,
+    chooseNextStop,
+    restoreJourney,
+    endJourney,
+  } = useJourney();
+
   const navigate = useNavigate();
 
   // URL State: Lookup function to find genres by slug
@@ -691,7 +705,7 @@ function App() {
       });
     }
 
-    if ((graph === 'artists' || graph === 'similarArtists') && currentArtists.length) {
+    if ((graph === 'artists' || graph === 'similarArtists' || graph === 'radio') && currentArtists.length) {
       return currentArtists.map((artist) => {
         const subtitleParts: string[] = [];
 
@@ -717,7 +731,7 @@ function App() {
 
   const hasFindSelection =
     (graph === 'genres' && selectedGenres.length > 0) ||
-    ((graph === 'artists' || graph === 'similarArtists') && !!selectedArtist);
+    ((graph === 'artists' || graph === 'similarArtists' || graph === 'radio') && !!selectedArtist);
 
   const findPanelDisabled = !hasFindSelection && findOptions.length === 0;
 
@@ -869,12 +883,38 @@ function App() {
         }), [andGenreIds, genres, genreColorMap]);
 
   // Sets current artists/links shown in the graph
-  // Skip in similarArtists mode — that graph manages currentArtists directly
+  // Skip in similarArtists/radio modes — those graphs manage currentArtists directly
   useEffect(() => {
-    if (graph === 'similarArtists') return;
+    if (graph === 'similarArtists' || graph === 'radio') return;
     setCurrentArtists(displayedArtistsData.artists);
     setCurrentArtistLinks(displayedArtistsData.links);
   }, [displayedArtistsData, graph]);
+
+  // Builds the radio journey graph: the visited path chained in order, with the
+  // current stop fanning out to the proposed next stops
+  useEffect(() => {
+    if (graph !== 'radio' || !journeyPath.length) return;
+    const current = journeyPath[journeyPath.length - 1];
+    const pathIds = new Set(journeyPath.map(a => a.id));
+    const nodes = [...journeyPath, ...journeyOptions.filter(o => !pathIds.has(o.id))];
+    const links: NodeLink[] = [];
+    for (let i = 1; i < journeyPath.length; i++) {
+      links.push({ source: journeyPath[i - 1].id, target: journeyPath[i].id, linkType: 'similar' });
+    }
+    journeyOptions.forEach(option => {
+      if (!pathIds.has(option.id)) {
+        links.push({ source: current.id, target: option.id, linkType: 'similar' });
+      }
+    });
+    setCurrentArtists(nodes);
+    setCurrentArtistLinks(links);
+  }, [graph, journeyPath, journeyOptions]);
+
+  // Journey path IDs in visit order — drawn as the glowing trail on the graph
+  const journeyTrailIds = useMemo(
+    () => (journeyActive ? journeyPath.map(a => a.id) : undefined),
+    [journeyActive, journeyPath]
+  );
 
   // Filter artist links to show only intra-cluster connections
   // This mirrors the genre graph's filterLinksByClusterMode pattern
@@ -1167,7 +1207,7 @@ function App() {
     if (graph === 'genres' && selectedGenres.length) {
       return selectedGenres[0].name;
     }
-    if ((graph === 'artists' || graph === 'similarArtists') && selectedArtist) {
+    if ((graph === 'artists' || graph === 'similarArtists' || graph === 'radio') && selectedArtist) {
       return selectedArtist.name;
     }
     return null;
@@ -2142,6 +2182,20 @@ function App() {
       setAutoFocusGraph(true); // Enable auto-focus for node clicks
       addRecentSelection(artist, 'artist');
     }
+    if (graph === 'radio') {
+      // Clicking a proposed next stop advances the journey; clicking a visited
+      // stop just revisits its info card without changing the path
+      if (journeyOptions.some(o => o.id === artist.id)) {
+        onJourneyChoose(artist);
+        return;
+      }
+      setSelectedArtist(artist);
+      setArtistInfoToShow(artist);
+      setShowArtistCard(true);
+      setShowGenreCard(false);
+      setAutoFocusGraph(true);
+      addRecentSelection(artist, 'artist');
+    }
     updateUrl({ type: 'artist', id: artist.id, name: artist.name });
   };
 
@@ -2256,12 +2310,13 @@ function App() {
       deselectGenre();
       return;
     }
-    if ((graph === 'artists' || graph === 'similarArtists') && selectedArtist) {
+    if ((graph === 'artists' || graph === 'similarArtists' || graph === 'radio') && selectedArtist) {
       deselectArtist();
     }
   };
 
   const resetAppState = () => {
+    endJourney();
     setGraph('genres');
     setCurrentGenres({nodes: genres, links: genreLinks.filter(link => {
         return DEFAULT_CLUSTER_MODE.includes(link.linkType as "subgenre" | "influence" | "fusion")
@@ -2381,6 +2436,77 @@ function App() {
     setArtistInfoToShow(artistResult);
   }
 
+  // --- Radio mode (guided journeys) ---
+
+  // Focus a journey stop: bio card, URL sync, recents, and (by default) auto-play its top track
+  const focusJourneyStop = (stop: Artist, options?: { autoplay?: boolean }) => {
+    setSelectedArtistFromSearch(false);
+    setArtistPreviewStack([]);
+    setSelectedArtist(stop);
+    setArtistInfoToShow(stop);
+    setShowArtistCard(true);
+    setShowGenreCard(false);
+    setRestoreGenreCardOnArtistDismiss(false);
+    setAutoFocusGraph(true);
+    addRecentSelection(stop, 'artist');
+    updateUrl({ type: 'artist', id: stop.id, name: stop.name });
+    if (options?.autoplay !== false) {
+      onPlayArtist(stop);
+    }
+  };
+
+  const onStartRadio = (artist: Artist) => {
+    if (graph === 'similarArtists') setSimilarArtistAnchor(undefined);
+    setGraph('radio');
+    startJourney(artist);
+    focusJourneyStop(artist);
+  };
+
+  const onJourneyChoose = (stop: Artist) => {
+    chooseNextStop(stop);
+    focusJourneyStop(stop);
+  };
+
+  // Lean-back skip: advance to the top-weighted suggestion without picking a branch
+  const onJourneySkip = () => {
+    if (journeyOptions.length) {
+      onJourneyChoose(journeyOptions[0]);
+    }
+  };
+
+  const onJourneyEnd = () => {
+    endJourney();
+    if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
+    setCurrentArtists(artists);
+    setCurrentArtistLinks(artistLinks);
+    setGraph('artists');
+  };
+
+  // Restore a shared radio journey from the URL on first load (no autoplay —
+  // browsers block audio before a user gesture anyway)
+  const journeyRestoredRef = useRef(false);
+  useEffect(() => {
+    if (journeyRestoredRef.current) return;
+    journeyRestoredRef.current = true;
+    const ids = parseJourneyParam(window.location.search);
+    if (!ids.length) return;
+    (async () => {
+      const restored: Artist[] = [];
+      for (const id of ids) {
+        const artist = await fetchSingleArtist(id, false);
+        if (artist) restored.push(artist);
+      }
+      if (!restored.length) return;
+      setGraph('radio');
+      restoreJourney(restored);
+      const last = restored[restored.length - 1];
+      setSelectedArtist(last);
+      setArtistInfoToShow(last);
+      setShowArtistCard(true);
+      addRecentSelection(last, 'artist');
+    })();
+  }, []);
+
   const onGenreClusterModeChange = (newMode: GenreClusterMode[]) => {
     setGenreClusterMode([...newMode]);
     if (currentGenres) {
@@ -2444,11 +2570,12 @@ function App() {
 
   const onTabChange = async (graphType: GraphType) => {
     if (graphType === 'genres') {
-      // If leaving similarArtists mode, restore the full artist list
-      if (graph === 'similarArtists') {
+      // If leaving similarArtists/radio mode, restore the full artist list
+      if (graph === 'similarArtists' || graph === 'radio') {
         setCurrentArtists(artists);
         setCurrentArtistLinks(artistLinks);
         setSimilarArtistAnchor(undefined);
+        if (graph === 'radio') endJourney();
       }
       setGraph('genres');
       // Don't clear currentArtists/currentArtistLinks - preserve them like genre graph does
@@ -2461,11 +2588,12 @@ function App() {
       }
       // Don't clear selected genres or artist filter - they're preserved for potential return
     } else {
-      // Switching to artists view - restore full artist list if coming from similarArtists
-      if (graph === 'similarArtists') {
+      // Switching to artists view - restore full artist list if coming from similarArtists/radio
+      if (graph === 'similarArtists' || graph === 'radio') {
         setCurrentArtists(artists);
         setCurrentArtistLinks(artistLinks);
         setSimilarArtistAnchor(undefined);
+        if (graph === 'radio') endJourney();
       }
       if (isBeforeArtistLoad) setIsBeforeArtistLoad(false);
       setGraph('artists');
@@ -2986,7 +3114,7 @@ function App() {
                   transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   >
                   <Tabs
-                    value={graph === 'similarArtists' ? 'artists' : graph}
+                    value={graph === 'similarArtists' || graph === 'radio' ? 'artists' : graph}
                     onValueChange={(val) => onTabChange(val as GraphType)}>
                     <TabsList>
                       <TabsTrigger value="genres">Genres</TabsTrigger>
@@ -3125,6 +3253,7 @@ function App() {
                   // Hide graph until clustering is ready (for artists graph) to prevent flash of unclustered nodes
                   // When filtering produces zero artists, skip the cluster-ready check so we show the empty state instead of a spinner
                   show={
+                    graph === "radio" ||
                     (graph === "similarArtists" && !artistsError) ||
                     (graph === "artists" && !artistsError && (!!artistClusters || currentArtists.length === 0))
                   }
@@ -3147,6 +3276,7 @@ function App() {
                   priorityLabelIds={centralArtistLabelIds}
                   clusterOverlays={artistClusterOverlays}
                   savedArtistIds={savedArtistIds}
+                  trailNodeIds={graph === 'radio' ? journeyTrailIds : undefined}
                 />
 
           {/* Graph empty states */}
@@ -3179,6 +3309,24 @@ function App() {
             </>
           )}
 
+          {/* Radio mode journey panel */}
+          <AnimatePresence>
+            {graph === 'radio' && journeyActive && (
+              <JourneyPanel
+                show={graph === 'radio' && journeyActive}
+                path={journeyPath}
+                options={journeyOptions}
+                optionsLoading={journeyOptionsLoading}
+                isInCollection={isInCollection}
+                getArtistColor={getArtistColor}
+                onLikeCurrent={() => onAddArtistButtonToggle(journeyPath[journeyPath.length - 1]?.id)}
+                onSkip={onJourneySkip}
+                onChoose={onJourneyChoose}
+                onEnd={onJourneyEnd}
+              />
+            )}
+          </AnimatePresence>
+
           {/* Genre hover preview */}
           {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && (
               <GenrePreview
@@ -3198,7 +3346,7 @@ function App() {
 
           {/* Artist hover preview */}
           {preferences?.enableGraphCards && hoveredArtistData && previewArtist
-              && (graph === 'artists' || graph === 'similarArtists') && (
+              && (graph === 'artists' || graph === 'similarArtists' || graph === 'radio') && (
                   <ArtistPreview
                       artist={hoveredArtistData}
                       genreColorMap={genreColorMap}
@@ -3439,6 +3587,7 @@ function App() {
                 onFocusInArtistsView={focusArtistInCurrentView}
                 onViewArtistGraph={focusArtistRelatedGenres}
                 onViewSimilarArtistGraph={createSimilarArtistGraph}
+                onStartRadio={onStartRadio}
                 playLoading={isPlayerLoadingArtist()}
                 viewRelatedArtistsLoading={!!pendingArtistGenreGraph}
                 onArtistToggle={onAddArtistButtonToggle}

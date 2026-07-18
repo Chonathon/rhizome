@@ -202,6 +202,75 @@ const CLUSTER_HULL_PADDING = 48;
 const CLUSTER_LABEL_SCREEN_PX = 13;
 const CLUSTER_LABEL_STROKE_SCREEN_PX = 1.2;
 
+// --- Journey trail (Radio mode) ---
+
+const TRAIL_COLOR_DARK = '#fbbf24';
+const TRAIL_COLOR_LIGHT = '#f59e0b';
+const TRAIL_GLOW_WIDTH = 26;
+const TRAIL_CORE_WIDTH = 5;
+const TRAIL_NODE_HALO_RADIUS = 34;
+
+// Draws the journey path as a glowing trail through the visited nodes, in visit
+// order. Rendered pre-frame so nodes and labels stay on top of the glow.
+function drawJourneyTrail(
+  ctx: CanvasRenderingContext2D,
+  trailIds: string[],
+  nodeMap: Map<string, NodePosEntry>,
+  isDark: boolean,
+): void {
+  const points: [number, number][] = [];
+  for (const id of trailIds) {
+    const node = nodeMap.get(id);
+    if (node?.x !== undefined && node.y !== undefined) {
+      points.push([node.x, node.y]);
+    }
+  }
+  if (!points.length) return;
+
+  const color = isDark ? TRAIL_COLOR_DARK : TRAIL_COLOR_LIGHT;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (points.length >= 2) {
+    const tracePath = () => {
+      ctx.beginPath();
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i][0], points[i][1]);
+      }
+    };
+
+    // Soft wide underglow
+    tracePath();
+    ctx.strokeStyle = hexToRgba(color, 0.16);
+    ctx.lineWidth = TRAIL_GLOW_WIDTH;
+    ctx.stroke();
+
+    // Bright core with a bloom around it
+    tracePath();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 24;
+    ctx.strokeStyle = hexToRgba(color, 0.85);
+    ctx.lineWidth = TRAIL_CORE_WIDTH;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  // Halo behind every visited stop (also marks the anchor when the trail is one node long)
+  for (const [x, y] of points) {
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, TRAIL_NODE_HALO_RADIUS);
+    gradient.addColorStop(0, hexToRgba(color, 0.35));
+    gradient.addColorStop(1, hexToRgba(color, 0));
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(x, y, TRAIL_NODE_HALO_RADIUS, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
 // A node "click" fired within this window after a multi-touch gesture (pinch-zoom)
 // is treated as an accidental tap and ignored.
 const MULTI_TOUCH_CLICK_SUPPRESS_MS = 300;
@@ -364,6 +433,8 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   clusterOverlays?: ClusterOverlay[];
   // IDs of the user's saved artists — renders a ring to distinguish them from hop-introduced nodes
   savedArtistIds?: Set<string>;
+  // Radio mode journey path (visit order) — drawn as a glowing trail through the graph
+  trailNodeIds?: string[];
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -437,6 +508,7 @@ const Graph = forwardRef(function GraphInner<
     radialLayout,
     clusterOverlays,
     savedArtistIds,
+    trailNodeIds,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -448,6 +520,7 @@ const Graph = forwardRef(function GraphInner<
   const showNodesRef = useRef<boolean>(showNodes);
   const showLinksRef = useRef<boolean>(showLinks);
   const clusterOverlaysRef = useRef<ClusterOverlay[] | undefined>(undefined);
+  const trailNodeIdsRef = useRef<string[] | undefined>(undefined);
   const { resolvedTheme } = useTheme();
   const { state: sidebarState } = useSidebar();
   const sidebarExpanded = sidebarState === "expanded";
@@ -511,6 +584,11 @@ const Graph = forwardRef(function GraphInner<
     showNodesRef.current = showNodes;
     showLinksRef.current = showLinks;
   }, [showNodes, showLinks]);
+
+  useEffect(() => {
+    trailNodeIdsRef.current = trailNodeIds;
+    fgRef.current?.resumeAnimation?.();
+  }, [trailNodeIds]);
 
   useEffect(() => {
     clusterOverlaysRef.current = clusterOverlays;
@@ -1073,13 +1151,19 @@ const Graph = forwardRef(function GraphInner<
 
   const handleRenderFramePre = useCallback((ctx: CanvasRenderingContext2D, globalScale: number) => {
     const overlays = clusterOverlaysRef.current;
-    if (!overlays?.length) return;
+    const trailIds = trailNodeIdsRef.current;
+    if (!overlays?.length && !trailIds?.length) return;
     const nodes = preparedDataRef.current?.nodes;
     if (!nodes?.length) return;
     const nodeMap = new Map<string, NodePosEntry>();
     for (const n of nodes) nodeMap.set(n.id, n);
-    drawClusterHulls(ctx, overlays, nodeMap, globalScale);
-  }, []);
+    if (overlays?.length) {
+      drawClusterHulls(ctx, overlays, nodeMap, globalScale);
+    }
+    if (trailIds?.length) {
+      drawJourneyTrail(ctx, trailIds, nodeMap, resolvedTheme === 'dark');
+    }
+  }, [resolvedTheme]);
 
   const handleRenderFramePost = useCallback((ctx: CanvasRenderingContext2D, globalScale: number) => {
     const overlays = clusterOverlaysRef.current;
