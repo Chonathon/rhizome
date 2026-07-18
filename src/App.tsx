@@ -976,7 +976,7 @@ function App() {
   const clusteringGenerationRef = useRef(0);
 
   useEffect(() => {
-    if (graph !== 'artists' || !currentArtists.length) {
+    if ((graph !== 'artists' && graph !== 'similarArtists') || !currentArtists.length) {
       setArtistClusters(null);
       return;
     }
@@ -1063,7 +1063,7 @@ function App() {
 
   // Use generated links from clustering (artists colored by parent genre)
   useEffect(() => {
-    if (graph === 'artists') {
+    if (graph === 'artists' || graph === 'similarArtists') {
       if (artistClusters) {
         // Use generated links from clustering if available, otherwise filter existing links
         if (artistClusters.links && artistClusters.links.length > 0) {
@@ -1105,11 +1105,11 @@ function App() {
           setFilteredArtistLinks(filtered);
         }
       } else {
-        // On artists graph but no clusters yet - hide links until clustering completes
+        // On a clustered graph but no clusters yet - hide links until clustering completes
         setFilteredArtistLinks([]);
       }
     } else {
-      // Not on artists graph - show raw links (for similar artists graph, etc.)
+      // Not on a clustered graph - show raw links (genres graph, etc.)
       setFilteredArtistLinks(currentArtistLinks);
     }
   }, [artistClusters, graph, currentArtistLinks, filterArtistLinksByClusters, currentArtists]);
