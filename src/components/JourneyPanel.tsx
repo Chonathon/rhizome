@@ -157,7 +157,7 @@ export function JourneyPanel({
                         </Button>
                     </div>
                 ) : (
-                    <span className="text-xs text-muted-foreground px-1">Dead end — no unvisited similar artists</span>
+                    <span className="text-xs text-muted-foreground px-1">End of the line — no connections left to hop to</span>
                 )}
 
                 <span className="hidden sm:block h-5 w-px bg-sidebar-border" aria-hidden />

@@ -99,6 +99,30 @@ export function useJourney() {
         ? journeyCandidates[candidateIndex % journeyCandidates.length]
         : undefined;
 
+    const filterUnvisited = (artists: Artist[], visitedIds: Set<string>): Artist[] => {
+        const seen = new Set<string>();
+        return artists.filter((artist) => {
+            if (!artist?.id || visitedIds.has(artist.id) || seen.has(artist.id)) return false;
+            seen.add(artist.id);
+            return true;
+        });
+    };
+
+    // Same multi-hop graph the discovery hops feature uses — lets the journey
+    // escape dead ends by jumping to nearby connections instead of stopping
+    const fetchHopCandidates = async (seedIds: string[], visitedIds: Set<string>): Promise<Artist[]> => {
+        try {
+            const response = await axios.post(`${url}/artists/hops`, {
+                artistIds: seedIds,
+                hopDepth: 2,
+                limit: 100,
+            });
+            return filterUnvisited((response.data?.artists as Artist[]) ?? [], visitedIds);
+        } catch {
+            return [];
+        }
+    };
+
     const loadCandidates = useCallback(async (stop: Artist, visitedIds: Set<string>) => {
         const request = ++optionsRequestRef.current;
         setJourneyCandidates([]);
@@ -107,14 +131,16 @@ export function useJourney() {
         let candidates: Artist[] = [];
         try {
             const response = await axios.get(`${url}/artists/fetch/similar/${stop.id}`);
-            const seen = new Set<string>();
-            candidates = (response.data as Artist[]).filter((artist) => {
-                if (!artist?.id || visitedIds.has(artist.id) || seen.has(artist.id)) return false;
-                seen.add(artist.id);
-                return true;
-            });
+            candidates = filterUnvisited(response.data as Artist[], visitedIds);
         } catch {
             candidates = [];
+        }
+        // Dead end — hop out from the current stop, then from anywhere along the journey
+        if (!candidates.length) {
+            candidates = await fetchHopCandidates([stop.id], visitedIds);
+        }
+        if (!candidates.length && visitedIds.size > 1) {
+            candidates = await fetchHopCandidates([...visitedIds], visitedIds);
         }
         if (request !== optionsRequestRef.current) return;
         setJourneyCandidates(rankWeightedUnderdogs(candidates, stop, JOURNEY_CANDIDATE_POOL));

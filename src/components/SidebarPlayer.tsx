@@ -43,6 +43,8 @@ type SidebarPlayerProps = {
   previewMode?: boolean;
   // Fired when single-track playback finishes (radio mode advances the journey on this)
   onTrackEnded?: () => void;
+  // Overrides the Next button when there's no playlist (radio mode skips to the next stop)
+  onSkipNext?: () => void;
   sidebarCollapsed: boolean;
   isDesktop: boolean;
   desktopSlotRef?: React.RefObject<HTMLDivElement | null>;
@@ -82,6 +84,7 @@ export default function SidebarPlayer({
   startIndex = 0,
   previewMode = false,
   onTrackEnded,
+  onSkipNext,
   sidebarCollapsed,
   isDesktop,
   desktopSlotRef
@@ -771,8 +774,14 @@ export default function SidebarPlayer({
 
   const next = () => {
     if (!playerRef.current) return;
-    if (hasPlaylist) playerRef.current.nextVideo?.();
+    if (hasPlaylist) {
+      playerRef.current.nextVideo?.();
+    } else {
+      onSkipNext?.();
+    }
   };
+
+  const canSkipNext = hasPlaylist || !!onSkipNext;
 
   const seekTo = (clientX: number, element: HTMLElement | null) => {
     if (!element || !playerRef.current || !duration) return;
@@ -1081,7 +1090,7 @@ export default function SidebarPlayer({
                   variant="ghost"
                   size="icon"
                   onClick={next}
-                  disabled={!hasPlaylist}
+                  disabled={!canSkipNext}
                   title="Next"
                   aria-label="Next"
                 >
@@ -1230,7 +1239,7 @@ export default function SidebarPlayer({
             size="icon"
             className="shrink-0"
             onClick={next}
-            disabled={!hasPlaylist}
+            disabled={!canSkipNext}
             title="Next"
             aria-label="Next"
           >
@@ -1316,7 +1325,7 @@ export default function SidebarPlayer({
                 variant="ghost"
                 size="icon"
                 onClick={next}
-                disabled={!hasPlaylist}
+                disabled={!canSkipNext}
                 title="Next"
                 aria-label="Next"
               >

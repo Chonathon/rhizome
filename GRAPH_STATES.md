@@ -83,7 +83,8 @@
   - Like (heart) → add current stop to collection
   - Map (only while exploring another view) → return to the journey graph
   - Copy journey link / End journey (×)
-- **Data Source**: `useJourney` — `/artists/fetch/similar/:id` per stop
+- **Data Source**: `useJourney` — `/artists/fetch/similar/:id` per stop; on a dead end it falls back to `/artists/hops` (the discovery-hops graph), first from the current stop, then from anywhere along the journey
+- **Player**: the sidebar player's Next button skips to the next journey stop while radio is active
 - **Sharing**: path is mirrored to the `journey` URL param (comma-separated artist IDs) and restored on load
 - **Navigation**:
   - Click the proposed next-stop node → advance journey to it

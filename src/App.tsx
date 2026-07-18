@@ -3085,6 +3085,7 @@ function App() {
         playerStartIndex={playerStartIndex}
         playerPreviewMode={playerPreviewMode}
         onPlayerTrackEnded={onJourneyTrackEnded}
+        onPlayerSkipNext={journeyActive ? () => onJourneyAdvance({ quiet: graph !== 'radio' }) : undefined}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -3322,7 +3323,7 @@ function App() {
                   priorityLabelIds={centralArtistLabelIds}
                   clusterOverlays={artistClusterOverlays}
                   savedArtistIds={savedArtistIds}
-                  trailNodeIds={journeyActive ? journeyTrailIds : undefined}
+                  trailNodeIds={graph === 'radio' ? journeyTrailIds : undefined}
                   flowLayout={graph === 'radio' ? journeyFlowLayout : undefined}
                 />
 

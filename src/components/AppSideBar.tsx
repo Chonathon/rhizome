@@ -71,6 +71,7 @@ interface AppSidebarProps {
   playerStartIndex?: number;
   playerPreviewMode?: boolean;
   onPlayerTrackEnded?: () => void;
+  onPlayerSkipNext?: () => void;
 }
 
 export function AppSidebar({
@@ -105,7 +106,8 @@ export function AppSidebar({
   onPlayerTitleClick,
   playerStartIndex,
   playerPreviewMode,
-  onPlayerTrackEnded
+  onPlayerTrackEnded,
+  onPlayerSkipNext
 }: AppSidebarProps) {
   const { setTheme } = useTheme()
   const { toggleSidebar, state } = useSidebar()
@@ -322,6 +324,7 @@ export function AppSidebar({
         startIndex={playerStartIndex}
         previewMode={playerPreviewMode}
         onTrackEnded={onPlayerTrackEnded}
+        onSkipNext={onPlayerSkipNext}
         sidebarCollapsed={isCollapsed}
         isDesktop={isDesktop}
         desktopSlotRef={desktopPlayerSlotRef}
