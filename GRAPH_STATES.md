@@ -77,11 +77,12 @@
   - A left-to-right flow layout: each stop's x-target advances with its position in the path (organic on the y axis), so the journey reads as a progression rather than a tangle
   - The next stop is drawn from a ranked candidate pool weighted toward lesser-known similar artists (low listeners relative to the current stop); shuffle cycles the pool
 - **Playback**: each stop plays one top track; when it ends the journey auto-advances to the proposed next stop (radio loop)
-- **Controls** (compact journey bar, visible on every graph while a journey is active):
-  - Next-stop card / skip button → advance (plays one track, opens bio card)
+- **Controls** (docked in the left sidebar above the player on expanded desktop; compact floating pill when collapsed or on mobile):
+  - Next-stop row → advance (plays one track, opens bio card); no separate skip button — the player's Next covers lean-back skipping
   - Shuffle → propose a different next stop
   - Like (heart) → add current stop to collection
-  - Map (only while exploring another view) → return to the journey graph
+  - Save (bookmark) → save the journey to the saved-radios list (localStorage); saved radios can be resumed or deleted from the sidebar section, even between journeys
+  - Map (floating pill only, while exploring another view) → return to the journey graph
   - Copy journey link / End journey (×)
 - **Data Source**: `useJourney` — `/artists/fetch/similar/:id` per stop; on a dead end it falls back to `/artists/hops` (the discovery-hops graph), first from the current stop, then from anywhere along the journey
 - **Player**: the sidebar player's Next button skips to the next journey stop while radio is active

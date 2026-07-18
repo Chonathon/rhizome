@@ -230,6 +230,9 @@ export function AppSidebar({
           </SidebarContent>}
         </SidebarContent>
 
+        {/* Portal slot for the radio journey section - JourneyPanel docks into this above the player */}
+        <div id="sidebar-radio-slot" />
+
         {/* Portal slot for desktop player UI - SidebarPlayer renders into this */}
         <div id="sidebar-player-slot" ref={desktopPlayerSlotRef} />
 

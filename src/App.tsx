@@ -48,7 +48,7 @@ import ClusteringPanel from "@/components/ClusteringPanel";
 import { ModeToggle } from './components/ModeToggle';
 import { useRecentSelections } from './hooks/useRecentSelections';
 import { useUrlState } from './hooks/useUrlState';
-import useJourney, { parseJourneyParam } from '@/hooks/useJourney';
+import useJourney, { parseJourneyParam, type SavedRadio } from '@/hooks/useJourney';
 import JourneyPanel from '@/components/JourneyPanel';
 import { toSlug } from '@/lib/urlUtils';
 import DisplayPanel from './components/DisplayPanel';
@@ -422,11 +422,14 @@ function App() {
     journeyPath,
     journeyNextStop,
     journeyOptionsLoading,
+    savedRadios,
     startJourney,
     chooseNextStop,
     shuffleNextStop,
     restoreJourney,
     endJourney,
+    saveJourney,
+    deleteSavedRadio,
   } = useJourney();
 
   const navigate = useNavigate();
@@ -2505,6 +2508,22 @@ function App() {
     }
   };
 
+  // Resume a saved radio: refetch its stops and pick the journey up where it left off
+  const onResumeSavedRadio = async (saved: SavedRadio) => {
+    const restored: Artist[] = [];
+    for (const id of saved.artistIds) {
+      const artist = await fetchSingleArtist(id, false);
+      if (artist) restored.push(artist);
+    }
+    if (!restored.length) {
+      toast.error('Could not load that radio');
+      return;
+    }
+    setGraph('radio');
+    restoreJourney(restored);
+    focusJourneyStop(restored[restored.length - 1], { select: true });
+  };
+
   // Return to the journey map from another graph view
   const onShowJourney = () => {
     const current = journeyPath[journeyPath.length - 1];
@@ -3357,24 +3376,25 @@ function App() {
             </>
           )}
 
-          {/* Radio mode journey bar — persists across graph views while the journey is active */}
-          <AnimatePresence>
-            {journeyActive && (
-              <JourneyPanel
-                show={journeyActive}
-                path={journeyPath}
-                nextStop={journeyNextStop}
-                optionsLoading={journeyOptionsLoading}
-                isInCollection={isInCollection}
-                getArtistColor={getArtistColor}
-                onLikeCurrent={() => onAddArtistButtonToggle(journeyPath[journeyPath.length - 1]?.id)}
-                onAdvance={() => onJourneyAdvance()}
-                onShuffle={shuffleNextStop}
-                onEnd={onJourneyEnd}
-                onShowJourney={graph !== 'radio' ? onShowJourney : undefined}
-              />
-            )}
-          </AnimatePresence>
+          {/* Radio mode UI — docks into the sidebar on expanded desktop, floats otherwise.
+              Renders unconditionally so the saved-radios list is reachable between journeys. */}
+          <JourneyPanel
+            active={journeyActive}
+            path={journeyPath}
+            nextStop={journeyNextStop}
+            optionsLoading={journeyOptionsLoading}
+            savedRadios={savedRadios}
+            isInCollection={isInCollection}
+            getArtistColor={getArtistColor}
+            onLikeCurrent={() => onAddArtistButtonToggle(journeyPath[journeyPath.length - 1]?.id)}
+            onAdvance={() => onJourneyAdvance()}
+            onShuffle={shuffleNextStop}
+            onEnd={onJourneyEnd}
+            onSave={saveJourney}
+            onDeleteSaved={deleteSavedRadio}
+            onResumeSaved={onResumeSavedRadio}
+            onShowJourney={graph !== 'radio' ? onShowJourney : undefined}
+          />
 
           {/* Genre hover preview */}
           {preferences?.enableGraphCards && hoveredGenreData && previewGenre && graph === 'genres' && (

@@ -9,6 +9,28 @@ const url = serverUrl();
 export const JOURNEY_URL_PARAM = "journey";
 const JOURNEY_ID_SEPARATOR = ",";
 
+const SAVED_RADIOS_KEY = "savedRadios";
+const MAX_SAVED_RADIOS = 20;
+
+export interface SavedRadio {
+    /** Joined path IDs — doubles as a natural dedupe key */
+    id: string;
+    /** Anchor artist name, used as the radio's display name */
+    name: string;
+    artistIds: string[];
+    stops: number;
+    savedAt: string;
+}
+
+const readSavedRadios = (): SavedRadio[] => {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(SAVED_RADIOS_KEY) || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
 // How strongly next-stop selection favors artists with fewer listeners than the
 // current stop. 0 = uniform, 1 = fully proportional to the listener ratio.
 const UNDERDOG_EXPONENT = 0.6;
@@ -92,8 +114,37 @@ export function useJourney() {
     const [journeyCandidates, setJourneyCandidates] = useState<Artist[]>([]);
     const [candidateIndex, setCandidateIndex] = useState(0);
     const [journeyOptionsLoading, setJourneyOptionsLoading] = useState(false);
+    const [savedRadios, setSavedRadios] = useState<SavedRadio[]>(readSavedRadios);
     // Guards against a slow candidates fetch landing after the journey moved on
     const optionsRequestRef = useRef(0);
+
+    const persistSavedRadios = useCallback((radios: SavedRadio[]) => {
+        setSavedRadios(radios);
+        try {
+            localStorage.setItem(SAVED_RADIOS_KEY, JSON.stringify(radios));
+        } catch {
+            // Quota/private-mode failures just lose persistence, not the session state
+        }
+    }, []);
+
+    /** Save the current journey path so it can be resumed later. Re-saving the same path bumps it to the top. */
+    const saveJourney = useCallback((): boolean => {
+        if (!journeyPath.length) return false;
+        const id = journeyPath.map((artist) => artist.id).join(JOURNEY_ID_SEPARATOR);
+        const entry: SavedRadio = {
+            id,
+            name: journeyPath[0].name,
+            artistIds: journeyPath.map((artist) => artist.id),
+            stops: journeyPath.length,
+            savedAt: new Date().toISOString(),
+        };
+        persistSavedRadios([entry, ...savedRadios.filter((radio) => radio.id !== id)].slice(0, MAX_SAVED_RADIOS));
+        return true;
+    }, [journeyPath, savedRadios, persistSavedRadios]);
+
+    const deleteSavedRadio = useCallback((id: string) => {
+        persistSavedRadios(savedRadios.filter((radio) => radio.id !== id));
+    }, [savedRadios, persistSavedRadios]);
 
     const journeyNextStop = journeyCandidates.length
         ? journeyCandidates[candidateIndex % journeyCandidates.length]
@@ -195,11 +246,14 @@ export function useJourney() {
         journeyPath,
         journeyNextStop,
         journeyOptionsLoading,
+        savedRadios,
         startJourney,
         chooseNextStop,
         shuffleNextStop,
         restoreJourney,
         endJourney,
+        saveJourney,
+        deleteSavedRadio,
     };
 }
 
