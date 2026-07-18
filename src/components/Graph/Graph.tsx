@@ -212,11 +212,15 @@ const TRAIL_NODE_HALO_RADIUS = 34;
 
 // Draws the journey path as a glowing trail through the visited nodes, in visit
 // order. Rendered pre-frame so nodes and labels stay on top of the glow.
+// Segments are curved with the same quadratic bezier the library uses for links
+// (control point at angle - 90° from the midpoint, offset by length * curvature),
+// so the trail hugs the rendered edges instead of cutting straight across them.
 function drawJourneyTrail(
   ctx: CanvasRenderingContext2D,
   trailIds: string[],
   nodeMap: Map<string, NodePosEntry>,
   isDark: boolean,
+  curvature: number,
 ): void {
   const points: [number, number][] = [];
   for (const id of trailIds) {
@@ -237,7 +241,18 @@ function drawJourneyTrail(
       ctx.beginPath();
       ctx.moveTo(points[0][0], points[0][1]);
       for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i][0], points[i][1]);
+        const [sx, sy] = points[i - 1];
+        const [ex, ey] = points[i];
+        const l = Math.hypot(ex - sx, ey - sy);
+        if (!curvature || l === 0) {
+          ctx.lineTo(ex, ey);
+        } else {
+          const a = Math.atan2(ey - sy, ex - sx);
+          const d = l * curvature;
+          const cpx = (sx + ex) / 2 + d * Math.cos(a - Math.PI / 2);
+          const cpy = (sy + ey) / 2 + d * Math.sin(a - Math.PI / 2);
+          ctx.quadraticCurveTo(cpx, cpy, ex, ey);
+        }
       }
     };
 
@@ -435,6 +450,14 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   savedArtistIds?: Set<string>;
   // Radio mode journey path (visit order) — drawn as a glowing trail through the graph
   trailNodeIds?: string[];
+  // Directional layout (radio mode): pulls each node's x toward order * spacing so a
+  // journey flows left-to-right while the simulation stays organic on the y axis
+  flowLayout?: {
+    enabled: boolean;
+    nodeOrder: Map<string, number>;
+    spacing?: number;
+    strength?: number;
+  };
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -509,6 +532,7 @@ const Graph = forwardRef(function GraphInner<
     clusterOverlays,
     savedArtistIds,
     trailNodeIds,
+    flowLayout,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -925,7 +949,18 @@ const Graph = forwardRef(function GraphInner<
 
     // Centering forces: pull graph toward origin (D3 forceX/forceY default is 0.1)
     // Higher = stronger pull to center, Lower = allows more drift
-    fg.d3Force("x", d3.forceX(0).strength(dagMode ? 0.01 : 0.03));
+    // Flow layout (radio journeys) replaces x-centering with a per-node target so
+    // stops drift left-to-right in visit order while y stays organic
+    if (flowLayout?.enabled && flowLayout.nodeOrder.size > 0) {
+      const spacing = flowLayout.spacing ?? 220;
+      fg.d3Force(
+        "x",
+        d3.forceX<PreparedNode<T>>((node) => (flowLayout.nodeOrder.get(node.id) ?? 0) * spacing)
+          .strength(flowLayout.strength ?? 0.25),
+      );
+    } else {
+      fg.d3Force("x", d3.forceX(0).strength(dagMode ? 0.01 : 0.03));
+    }
     fg.d3Force("y", d3.forceY(0).strength(dagMode ? 0.01 : 0.03));
     // Remove center force in favor of separate x/y forces for better control
     fg.d3Force("center", null);
@@ -946,8 +981,10 @@ const Graph = forwardRef(function GraphInner<
         .iterations(1) // Single pass to minimize bouncing (higher = more accurate but can bounce)
         .strength(dagMode ? 0.02 : 0.2), // Very weak to prevent bouncing while still providing some spacing
     );
-    if (selectedId) {
-      // Pull only the selected node toward the origin to keep it in view
+    if (selectedId && !flowLayout?.enabled) {
+      // Pull only the selected node toward the origin to keep it in view.
+      // Skipped for flow layouts — dragging the current stop back to origin would
+      // fight its flow target; the camera centers on it instead.
       fg.d3Force(
         "selected-position-x",
         d3.forceX<PreparedNode<T>>(0).strength((node) => (node.id === selectedId ? 0.15 : 0)),
@@ -989,7 +1026,7 @@ const Graph = forwardRef(function GraphInner<
     if (signature) {
       lastInitializedSignatureRef.current = signature;
     }
-  }, [dataSignature, dagMode, preparedData, selectedId, show, radialLayout]);
+  }, [dataSignature, dagMode, preparedData, selectedId, show, radialLayout, flowLayout]);
 
   // Cluster centroid force: pulls every node toward its cluster's live centroid each simulation tick.
   // Uses the same nodeIds that determine cluster color, so the force is always consistent with the overlay.
@@ -1161,9 +1198,9 @@ const Graph = forwardRef(function GraphInner<
       drawClusterHulls(ctx, overlays, nodeMap, globalScale);
     }
     if (trailIds?.length) {
-      drawJourneyTrail(ctx, trailIds, nodeMap, resolvedTheme === 'dark');
+      drawJourneyTrail(ctx, trailIds, nodeMap, resolvedTheme === 'dark', dagMode ? 0 : linkCurvatureValue);
     }
-  }, [resolvedTheme]);
+  }, [resolvedTheme, dagMode, linkCurvatureValue]);
 
   const handleRenderFramePost = useCallback((ctx: CanvasRenderingContext2D, globalScale: number) => {
     const overlays = clusterOverlaysRef.current;

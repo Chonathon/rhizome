@@ -41,6 +41,12 @@ interface ArtistsForceGraphProps {
   clusterOverlays?: ClusterOverlay[];
   savedArtistIds?: Set<string>;
   trailNodeIds?: string[];
+  flowLayout?: {
+    enabled: boolean;
+    nodeOrder: Map<string, number>;
+    spacing?: number;
+    strength?: number;
+  };
 }
 
 
@@ -74,6 +80,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
       clusterOverlays,
       savedArtistIds,
       trailNodeIds,
+      flowLayout,
     },
     ref,
   ) => {
@@ -150,6 +157,7 @@ const ArtistsForceGraph = forwardRef<GraphHandle, ArtistsForceGraphProps>(
         clusterOverlays={clusterOverlays}
         savedArtistIds={savedArtistIds}
         trailNodeIds={trailNodeIds}
+        flowLayout={flowLayout}
       />
     );
   },

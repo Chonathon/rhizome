@@ -72,8 +72,9 @@
 - **Label**: Artists tab (with the Radio journey bar overlay)
 - **Purpose**: On-rails "radio with a map" — pick a starting artist and travel stop to stop
 - **Shows**:
-  - Visited stops chained in visit order, drawn with a glowing trail
+  - Visited stops chained in visit order, drawn with a glowing trail that follows the same curved beziers as the rendered links
   - A single proposed next stop branching off the current stop
+  - A left-to-right flow layout: each stop's x-target advances with its position in the path (organic on the y axis), so the journey reads as a progression rather than a tangle
   - The next stop is drawn from a ranked candidate pool weighted toward lesser-known similar artists (low listeners relative to the current stop); shuffle cycles the pool
 - **Playback**: each stop plays one top track; when it ends the journey auto-advances to the proposed next stop (radio loop)
 - **Controls** (compact journey bar, visible on every graph while a journey is active):

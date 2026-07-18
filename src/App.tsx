@@ -916,6 +916,17 @@ function App() {
     [journeyActive, journeyPath]
   );
 
+  // Left-to-right flow for the journey graph: each stop's x-target advances with
+  // its position in the path, so the trail reads as a progression with the next
+  // stop branching off ahead while the layout stays organic
+  const journeyFlowLayout = useMemo(() => {
+    if (!journeyActive || !journeyPath.length) return undefined;
+    const nodeOrder = new Map<string, number>();
+    journeyPath.forEach((artist, index) => nodeOrder.set(artist.id, index));
+    if (journeyNextStop) nodeOrder.set(journeyNextStop.id, journeyPath.length);
+    return { enabled: true, nodeOrder, spacing: 220, strength: 0.25 };
+  }, [journeyActive, journeyPath, journeyNextStop]);
+
   // Filter artist links to show only intra-cluster connections
   // This mirrors the genre graph's filterLinksByClusterMode pattern
   const filterArtistLinksByClusters = useCallback((
@@ -3312,6 +3323,7 @@ function App() {
                   clusterOverlays={artistClusterOverlays}
                   savedArtistIds={savedArtistIds}
                   trailNodeIds={journeyActive ? journeyTrailIds : undefined}
+                  flowLayout={graph === 'radio' ? journeyFlowLayout : undefined}
                 />
 
           {/* Graph empty states */}
