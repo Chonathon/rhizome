@@ -165,6 +165,11 @@ export function JourneyPanel({
                         </span>
                         {active && (
                             <div className="flex items-center">
+                                {onShowJourney && (
+                                    <Button variant="ghost" size="icon" className="size-7" onClick={onShowJourney} title="Back to journey map" aria-label="Back to journey map">
+                                        <Map className="size-3.5" />
+                                    </Button>
+                                )}
                                 <Button variant="ghost" size="icon" className="size-7" onClick={handleSave} title="Save radio" aria-label="Save radio">
                                     <Bookmark className="size-3.5" />
                                 </Button>
