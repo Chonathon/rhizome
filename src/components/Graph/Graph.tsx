@@ -206,6 +206,9 @@ const CLUSTER_LABEL_STROKE_SCREEN_PX = 1.2;
 // is treated as an accidental tap and ignored.
 const MULTI_TOUCH_CLICK_SUPPRESS_MS = 300;
 
+// Amber accent ring for nodes saved to the user's collection, distinct from a node's own color
+const COLLECTION_RING_COLOR = 'oklch(0.77 0.16 70)';
+
 function drawClusterHulls(
   ctx: CanvasRenderingContext2D,
   overlays: ClusterOverlay[],
@@ -364,6 +367,8 @@ export interface GraphProps<T, L extends SharedGraphLink> {
   clusterOverlays?: ClusterOverlay[];
   // IDs of the user's saved artists — renders a ring to distinguish them from hop-introduced nodes
   savedArtistIds?: Set<string>;
+  // IDs of artists in the user's collection — renders a solid accent ring to distinguish them anywhere in the graph
+  collectionArtistIds?: Set<string>;
 }
 
 type PreparedNode<T> = SharedGraphNode<T> & { x?: number; y?: number };
@@ -437,6 +442,7 @@ const Graph = forwardRef(function GraphInner<
     radialLayout,
     clusterOverlays,
     savedArtistIds,
+    collectionArtistIds,
   }: GraphProps<T, L>,
   ref: Ref<GraphHandle>,
 ) {
@@ -1254,6 +1260,18 @@ const Graph = forwardRef(function GraphInner<
               ctx.setLineDash([3, 3]);
               ctx.stroke();
               ctx.setLineDash([]);
+              ctx.restore();
+            }
+
+            // Render solid accent ring for nodes saved to the user's collection
+            if (collectionArtistIds?.has(node.id)) {
+              ctx.save();
+              ctx.globalAlpha = alpha;
+              ctx.beginPath();
+              ctx.arc(x, y, radius + 3, 0, 2 * Math.PI);
+              ctx.strokeStyle = COLLECTION_RING_COLOR;
+              ctx.lineWidth = 2;
+              ctx.stroke();
               ctx.restore();
             }
           }

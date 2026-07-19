@@ -861,6 +861,13 @@ function App() {
     return undefined;
   }, [collectionMode, collectionHops, hopArtists.length, graph, similarArtistHops, artists, similarArtists]);
 
+  // IDs of all artists saved to the user's collection — renders a distinct accent ring
+  // on these nodes wherever they appear in the graph, not just in collection mode
+  const collectionArtistIds = useMemo(
+    () => (likedArtists.length ? new Set(likedArtists) : undefined),
+    [likedArtists],
+  );
+
     // Selected genres as removable chips for the AND empty state
     const andGenreChips = useMemo(() =>
         andGenreIds.flatMap(id => {
@@ -3147,6 +3154,7 @@ function App() {
                   priorityLabelIds={centralArtistLabelIds}
                   clusterOverlays={artistClusterOverlays}
                   savedArtistIds={savedArtistIds}
+                  collectionArtistIds={collectionArtistIds}
                 />
 
           {/* Graph empty states */}
