@@ -51,6 +51,7 @@ interface GenreInfoProps {
   onCanvasDragStart?: () => void;
   onHeaderRefocus?: () => void;
   expandToMiddleTrigger?: number;
+  shouldShowChevron?: boolean;
 }
 
 export function GenreInfo({
@@ -78,6 +79,7 @@ export function GenreInfo({
                             onCanvasDragStart,
                             onHeaderRefocus,
                             expandToMiddleTrigger,
+                            shouldShowChevron,
                           }: GenreInfoProps) {
   // On desktop, allow manual toggling of description; on mobile use snap state from panel
   const [desktopExpanded, setDesktopExpanded] = useState(false)
@@ -256,7 +258,7 @@ export function GenreInfo({
           contentKey={selectedGenre?.id}
           expandToMiddleTrigger={expandToMiddleTrigger}
           headerTitle={
-            selectedGenre && onFocusInGenresView ? (
+            selectedGenre && onFocusInGenresView && shouldShowChevron ? (
                 <button
                     onClick={() => {
                       onFocusInGenresView(selectedGenre, { forceRefocus: true });

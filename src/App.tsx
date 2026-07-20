@@ -379,6 +379,7 @@ function App() {
   const [separationDegrees, setSeparationDegrees] = useState<number>(0);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState<boolean>(isOnPage('reset-password'));
   const [showArtistGoTo, setShowArtistGoTo] = useState<boolean>(false);
+  const [showGenreGoTo, setShowGenreGoTo] = useState<boolean>(false);
   const {
     userID,
     userName,
@@ -1451,6 +1452,12 @@ function App() {
     }
     setShowArtistGoTo(show);
   }, [graph, artistInfoToShow, currentArtists, similarArtists]);
+
+  // Whether or not to show the chevron/focusing action on the genre info
+  useEffect(() => {
+    const show = !!genreInfoToShow && !!currentGenres?.nodes.some((n) => n.id === genreInfoToShow.id);
+    setShowGenreGoTo(show);
+  }, [genreInfoToShow, currentGenres]);
 
   // Add genre play IDs to the playerIDQueue on genre click
   // Allows for manual fetching of top artists if passed a genre (i.e. search)
@@ -3416,6 +3423,7 @@ function App() {
                 onCanvasDragStart={handleGenreCanvasDragStart}
                 onHeaderRefocus={handleGenreHeaderRefocus}
                 expandToMiddleTrigger={genreDrawerExpandTrigger}
+                shouldShowChevron={showGenreGoTo}
               />
               <ArtistInfo
                 key={artistInfoDrawerVersion}
