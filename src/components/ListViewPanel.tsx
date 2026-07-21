@@ -3,9 +3,61 @@ import { Genre, NodeLink } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ArrowUpNarrowWide, UsersRound, Link } from "lucide-react";
 import { useMediaQuery } from "react-responsive";
+import { useMemo, useState } from "react";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { dummyLastFMArtistData, dummyGenres } from "@/DummyDataForDummies";
 import { Loading } from "@/components/Loading";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+type GenreSortOption = "relevant" | "artists" | "az" | "za";
+
+const genreSortLabels: Record<GenreSortOption, string> = {
+  relevant: "Most relevant",
+  artists: "Most artists",
+  az: "Name (A–Z)",
+  za: "Name (Z–A)",
+};
+
+// How connected a genre is to other genres (subgenre/influence/fusion edges
+// in either direction). Used to back the "Most relevant" sort.
+function genreConnectivity(genre: Genre): number {
+  return (
+    (genre.subgenre_of?.length ?? 0) +
+    (genre.influenced_genres?.length ?? 0) +
+    (genre.subgenres?.length ?? 0) +
+    (genre.fusion_genres?.length ?? 0) +
+    (genre.fusion_of?.length ?? 0) +
+    (genre.influenced_by?.length ?? 0)
+  );
+}
+
+function sortGenres(genres: Genre[], sortOption: GenreSortOption): Genre[] {
+  const sorted = [...genres];
+  switch (sortOption) {
+    case "artists":
+      return sorted.sort((a, b) => b.artistCount - a.artistCount);
+    case "az":
+      return sorted.sort((a, b) => a.name.localeCompare(b.name));
+    case "za":
+      return sorted.sort((a, b) => b.name.localeCompare(a.name));
+    case "relevant":
+    default:
+      return sorted.sort((a, b) => {
+        const connectivityDiff = genreConnectivity(b) - genreConnectivity(a);
+        return connectivityDiff !== 0
+          ? connectivityDiff
+          : b.artistCount - a.artistCount;
+      });
+  }
+}
 
 interface ListViewPanelProps {
   genres: Genre[];
@@ -56,6 +108,13 @@ export function ListViewPanel({
   artistsLoading,
   currentGraph,
 }: ListViewPanelProps) {
+  const [genreSort, setGenreSort] = useState<GenreSortOption>("relevant");
+
+  const sortedGenres = useMemo(
+    () => sortGenres(genres, genreSort),
+    [genres, genreSort]
+  );
+
   return !show ? null : (
     <div
       className={`
@@ -87,9 +146,37 @@ export function ListViewPanel({
             <span className="text-muted-foreground text-sm font-normal">
               {formatNumber(genreLinksCount)} Genres
             </span>
-            <Button variant="ghost" size="sm">
-              <ArrowUpNarrowWide /> Sort
-            </Button>
+            {currentGraph === "genres" ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <ArrowUpNarrowWide /> Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Sort genres by</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuRadioGroup
+                    value={genreSort}
+                    onValueChange={(value) =>
+                      setGenreSort(value as GenreSortOption)
+                    }
+                  >
+                    {(Object.keys(genreSortLabels) as GenreSortOption[]).map(
+                      (option) => (
+                        <DropdownMenuRadioItem key={option} value={option}>
+                          {genreSortLabels[option]}
+                        </DropdownMenuRadioItem>
+                      )
+                    )}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="ghost" size="sm">
+                <ArrowUpNarrowWide /> Sort
+              </Button>
+            )}
           </div>
           {/* List */}
 
@@ -107,7 +194,7 @@ export function ListViewPanel({
                   p-1
                   "
               >
-                {genres.map((genre) => (
+                {sortedGenres.map((genre) => (
                   <li
                     key={genre.id}
                     className="
