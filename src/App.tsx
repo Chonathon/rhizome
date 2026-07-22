@@ -3105,6 +3105,7 @@ function App() {
         playerPreviewMode={playerPreviewMode}
         onPlayerTrackEnded={onJourneyTrackEnded}
         onPlayerSkipNext={journeyActive ? () => onJourneyAdvance({ quiet: graph !== 'radio' }) : undefined}
+        playerRadioActive={journeyActive}
       >
         <SidebarLogoTrigger />
         <Toaster />
@@ -3384,6 +3385,7 @@ function App() {
             nextStop={journeyNextStop}
             optionsLoading={journeyOptionsLoading}
             savedRadios={savedRadios}
+            playerOpen={playerOpen}
             isInCollection={isInCollection}
             getArtistColor={getArtistColor}
             onLikeCurrent={() => onAddArtistButtonToggle(journeyPath[journeyPath.length - 1]?.id)}

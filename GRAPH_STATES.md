@@ -77,7 +77,7 @@
   - A left-to-right flow layout: each stop's x-target advances with its position in the path (organic on the y axis), so the journey reads as a progression rather than a tangle
   - The next stop is drawn from a ranked candidate pool weighted toward lesser-known similar artists (low listeners relative to the current stop); shuffle cycles the pool
 - **Playback**: each stop plays one top track; when it ends the journey auto-advances to the proposed next stop (radio loop)
-- **Controls** (docked in the left sidebar above the player on expanded desktop; compact floating pill when collapsed or on mobile):
+- **Controls** (embedded in the player card on expanded desktop — sharing its title, progress bar, and play/next; standalone sidebar section when the player is closed; compact floating pill when collapsed or on mobile):
   - Next-stop row → advance (plays one track, opens bio card); no separate skip button — the player's Next covers lean-back skipping
   - Shuffle → propose a different next stop
   - Like (heart) → add current stop to collection

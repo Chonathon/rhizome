@@ -45,6 +45,10 @@ type SidebarPlayerProps = {
   onTrackEnded?: () => void;
   // Overrides the Next button when there's no playlist (radio mode skips to the next stop)
   onSkipNext?: () => void;
+  // When a radio journey is active, the desktop card becomes the radio: the transport
+  // row (play/title/progress/next) is sandwiched between the radio's header and
+  // journey-controls portal slots so it reads as one section
+  radioActive?: boolean;
   sidebarCollapsed: boolean;
   isDesktop: boolean;
   desktopSlotRef?: React.RefObject<HTMLDivElement | null>;
@@ -85,6 +89,7 @@ export default function SidebarPlayer({
   previewMode = false,
   onTrackEnded,
   onSkipNext,
+  radioActive = false,
   sidebarCollapsed,
   isDesktop,
   desktopSlotRef
@@ -1182,6 +1187,8 @@ export default function SidebarPlayer({
             </div>
           )}
         </motion.div>
+        {/* Radio header - JourneyPanel portals "Radio · n stops" + journey actions here */}
+        {radioActive && <div id="sidebar-player-radio-header-slot" />}
         {/* Controls */}
         <div className="pl-2 flex items-center gap-2">
           <div className="flex-1 min-w-0 flex items-center gap-2">
@@ -1246,6 +1253,8 @@ export default function SidebarPlayer({
             <SkipForward size={18} />
           </Button>
         </div>
+        {/* Radio journey controls - JourneyPanel portals the next-stop row + saved radios here */}
+        {radioActive && <div id="sidebar-player-radio-slot" />}
       </div>
         </motion.div>,
         desktopSlot

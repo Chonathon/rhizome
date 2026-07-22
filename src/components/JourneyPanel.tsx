@@ -20,6 +20,8 @@ interface JourneyPanelProps {
     nextStop?: Artist;
     optionsLoading: boolean;
     savedRadios: SavedRadio[];
+    /** Whether the sidebar player is open — the radio embeds into its card when it is */
+    playerOpen?: boolean;
     isInCollection: (id?: string) => boolean;
     getArtistColor: (artist: Artist) => string;
     onLikeCurrent: () => void;
@@ -29,7 +31,7 @@ interface JourneyPanelProps {
     onSave: () => boolean;
     onDeleteSaved: (id: string) => void;
     onResumeSaved: (saved: SavedRadio) => void;
-    /** Shown in the floating variant when the user is exploring another graph — returns to the journey map */
+    /** Shown when the user is exploring another graph — returns to the journey map */
     onShowJourney?: () => void;
 }
 
@@ -94,13 +96,55 @@ function NextStopRow({
     );
 }
 
+function SavedRadiosList({
+    savedRadios,
+    onResumeSaved,
+    onDeleteSaved,
+    withDivider,
+}: Pick<JourneyPanelProps, "savedRadios" | "onResumeSaved" | "onDeleteSaved"> & { withDivider: boolean }) {
+    if (!savedRadios.length) return null;
+    return (
+        <div className={cn("flex flex-col gap-0.5", withDivider && "border-t border-sidebar-border pt-1.5")}>
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1">
+                Saved radios
+            </span>
+            {savedRadios.map((saved) => (
+                <div key={saved.id} className="group flex items-center gap-1 min-w-0">
+                    <button
+                        onClick={() => onResumeSaved(saved)}
+                        title={`Resume ${saved.name} radio`}
+                        className="flex flex-1 items-center gap-1.5 rounded-md px-1 py-1 min-w-0 hover:bg-accent transition-colors text-left"
+                    >
+                        <Play className="size-3 shrink-0 text-muted-foreground" />
+                        <span className="text-xs truncate">{saved.name}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                            · {saved.stops} {saved.stops === 1 ? "stop" : "stops"}
+                        </span>
+                    </button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-6 shrink-0 opacity-0 group-hover:opacity-100"
+                        onClick={() => onDeleteSaved(saved.id)}
+                        title="Delete saved radio"
+                        aria-label={`Delete ${saved.name} radio`}
+                    >
+                        <Trash2 className="size-3" />
+                    </Button>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 /**
- * Radio mode UI. On desktop with the sidebar expanded it docks as a section
- * above the player (portal into #sidebar-radio-slot), including the saved
- * radios list; when the sidebar is collapsed or on mobile it falls back to a
- * compact floating pill so the journey stays controllable everywhere.
- * Clicking the next-stop row advances the journey (the player's Next button
- * covers lean-back skipping, so there's no separate skip button here).
+ * Radio mode UI. On desktop with the sidebar expanded it embeds directly into
+ * the player card (portal into #sidebar-player-radio-slot) so the radio shares
+ * the player's title, artwork, progress bar, and play/next controls. When the
+ * player is closed it falls back to a standalone sidebar section (which also
+ * hosts saved radios between journeys), and to a compact floating pill when
+ * the sidebar is collapsed or on mobile. Clicking the next-stop row advances;
+ * the player's Next button covers lean-back skipping.
  */
 export function JourneyPanel({
     active,
@@ -108,6 +152,7 @@ export function JourneyPanel({
     nextStop,
     optionsLoading,
     savedRadios,
+    playerOpen,
     isInCollection,
     getArtistColor,
     onLikeCurrent,
@@ -123,11 +168,26 @@ export function JourneyPanel({
     const { state: sidebarState } = useSidebar();
     const isDesktop = useMediaQuery("(min-width: 768px)");
     const docked = isDesktop && sidebarState === "expanded";
-    const [slot, setSlot] = useState<HTMLElement | null>(null);
+    const [playerHeaderSlot, setPlayerHeaderSlot] = useState<HTMLElement | null>(null);
+    const [playerSlot, setPlayerSlot] = useState<HTMLElement | null>(null);
+    const [sidebarSlot, setSidebarSlot] = useState<HTMLElement | null>(null);
 
+    // The player card mounts a beat after playerOpen flips (its portal target is
+    // discovered asynchronously), so re-resolve with short retries
     useEffect(() => {
-        setSlot(document.getElementById("sidebar-radio-slot"));
-    }, [docked]);
+        const resolve = () => {
+            setPlayerHeaderSlot(document.getElementById("sidebar-player-radio-header-slot"));
+            setPlayerSlot(document.getElementById("sidebar-player-radio-slot"));
+            setSidebarSlot(document.getElementById("sidebar-radio-slot"));
+        };
+        resolve();
+        const t1 = window.setTimeout(resolve, 250);
+        const t2 = window.setTimeout(resolve, 800);
+        return () => {
+            window.clearTimeout(t1);
+            window.clearTimeout(t2);
+        };
+    }, [docked, playerOpen, active]);
 
     const currentStop = path[path.length - 1];
     const currentLiked = !!currentStop && isInCollection(currentStop.id);
@@ -152,9 +212,81 @@ export function JourneyPanel({
         if (onSave()) toast.success("Radio saved");
     };
 
-    // Docked in the sidebar: full section with saved radios, shown even between journeys
-    if (docked && slot) {
-        if (!active && !savedRadios.length) return null;
+    const headerActions = (
+        <div className="flex items-center">
+            {onShowJourney && (
+                <Button variant="ghost" size="icon" className="size-7" onClick={onShowJourney} title="Back to journey map" aria-label="Back to journey map">
+                    <Map className="size-3.5" />
+                </Button>
+            )}
+            <Button
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                onClick={onLikeCurrent}
+                title={currentLiked ? `Remove ${currentStop?.name} from collection` : `Like ${currentStop?.name}`}
+                aria-label={currentLiked ? `Remove ${currentStop?.name} from collection` : `Like ${currentStop?.name}`}
+            >
+                <Heart className={cn("size-3.5", currentLiked && "fill-current text-amber-500")} />
+            </Button>
+            <Button variant="ghost" size="icon" className="size-7" onClick={handleSave} title="Save radio" aria-label="Save radio">
+                <Bookmark className="size-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="size-7" onClick={handleCopyUrl} title="Copy journey link" aria-label="Copy journey link">
+                {copied ? <Check className="size-3.5" /> : <Link className="size-3.5" />}
+            </Button>
+            <Button variant="ghost" size="icon" className="size-7" onClick={onEnd} title="End journey" aria-label="End journey">
+                <X className="size-3.5" />
+            </Button>
+        </div>
+    );
+
+    // Embedded in the player card: the card becomes the radio. The radio header
+    // portals above the player's transport row (play / track title / progress /
+    // next) and the journey controls portal below it, so the now-playing info
+    // sits inside the radio section rather than above it.
+    if (docked && active && currentStop && playerOpen && playerHeaderSlot && playerSlot) {
+        return (
+            <>
+                {createPortal(
+                    <div className="px-2 pt-1.5 pb-1 flex items-center justify-between gap-1 min-w-0">
+                        <span className="flex items-center gap-1.5 text-xs font-semibold min-w-0">
+                            <Radio className="size-3.5 text-amber-500 shrink-0" />
+                            Radio
+                            <span className="text-[10px] font-normal text-muted-foreground truncate">
+                                · {path.length} {path.length === 1 ? "stop" : "stops"} from {path[0].name}
+                            </span>
+                        </span>
+                        {headerActions}
+                    </div>,
+                    playerHeaderSlot,
+                )}
+                {createPortal(
+                    <div className="px-2 pb-2 pt-1 flex flex-col gap-1.5">
+                        <NextStopRow
+                            nextStop={nextStop}
+                            optionsLoading={optionsLoading}
+                            isGem={isGem}
+                            getArtistColor={getArtistColor}
+                            onAdvance={onAdvance}
+                            onShuffle={onShuffle}
+                        />
+                        <SavedRadiosList
+                            savedRadios={savedRadios}
+                            onResumeSaved={onResumeSaved}
+                            onDeleteSaved={onDeleteSaved}
+                            withDivider
+                        />
+                    </div>,
+                    playerSlot,
+                )}
+            </>
+        );
+    }
+
+    // Standalone sidebar section: player closed (journey still active) or
+    // between journeys when there are saved radios to resume
+    if (docked && sidebarSlot && (active || savedRadios.length > 0)) {
         return createPortal(
             <div className="px-2 pb-2">
                 <div className="rounded-xl border border-sidebar-border bg-background/60 p-2 flex flex-col gap-2">
@@ -163,24 +295,7 @@ export function JourneyPanel({
                             <Radio className="size-3.5 text-amber-500" />
                             Radio
                         </span>
-                        {active && (
-                            <div className="flex items-center">
-                                {onShowJourney && (
-                                    <Button variant="ghost" size="icon" className="size-7" onClick={onShowJourney} title="Back to journey map" aria-label="Back to journey map">
-                                        <Map className="size-3.5" />
-                                    </Button>
-                                )}
-                                <Button variant="ghost" size="icon" className="size-7" onClick={handleSave} title="Save radio" aria-label="Save radio">
-                                    <Bookmark className="size-3.5" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="size-7" onClick={handleCopyUrl} title="Copy journey link" aria-label="Copy journey link">
-                                    {copied ? <Check className="size-3.5" /> : <Link className="size-3.5" />}
-                                </Button>
-                                <Button variant="ghost" size="icon" className="size-7" onClick={onEnd} title="End journey" aria-label="End journey">
-                                    <X className="size-3.5" />
-                                </Button>
-                            </div>
-                        )}
+                        {active && headerActions}
                     </div>
 
                     {active && currentStop && (
@@ -198,16 +313,6 @@ export function JourneyPanel({
                                         {path.length} {path.length === 1 ? "stop" : "stops"} · from {path[0].name}
                                     </span>
                                 </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-8 shrink-0"
-                                    onClick={onLikeCurrent}
-                                    title={currentLiked ? "Remove from collection" : "Like this artist"}
-                                    aria-label={currentLiked ? "Remove from collection" : "Like this artist"}
-                                >
-                                    <Heart className={cn("size-4", currentLiked && "fill-current text-amber-500")} />
-                                </Button>
                             </div>
                             <NextStopRow
                                 nextStop={nextStop}
@@ -220,41 +325,15 @@ export function JourneyPanel({
                         </>
                     )}
 
-                    {savedRadios.length > 0 && (
-                        <div className={cn("flex flex-col gap-0.5", active && "border-t border-sidebar-border pt-1.5")}>
-                            <span className="text-[10px] uppercase tracking-wide text-muted-foreground px-1">
-                                Saved radios
-                            </span>
-                            {savedRadios.map((saved) => (
-                                <div key={saved.id} className="group flex items-center gap-1 min-w-0">
-                                    <button
-                                        onClick={() => onResumeSaved(saved)}
-                                        title={`Resume ${saved.name} radio`}
-                                        className="flex flex-1 items-center gap-1.5 rounded-md px-1 py-1 min-w-0 hover:bg-accent transition-colors text-left"
-                                    >
-                                        <Play className="size-3 shrink-0 text-muted-foreground" />
-                                        <span className="text-xs truncate">{saved.name}</span>
-                                        <span className="text-[10px] text-muted-foreground shrink-0">
-                                            · {saved.stops} {saved.stops === 1 ? "stop" : "stops"}
-                                        </span>
-                                    </button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="size-6 shrink-0 opacity-0 group-hover:opacity-100"
-                                        onClick={() => onDeleteSaved(saved.id)}
-                                        title="Delete saved radio"
-                                        aria-label={`Delete ${saved.name} radio`}
-                                    >
-                                        <Trash2 className="size-3" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    <SavedRadiosList
+                        savedRadios={savedRadios}
+                        onResumeSaved={onResumeSaved}
+                        onDeleteSaved={onDeleteSaved}
+                        withDivider={active}
+                    />
                 </div>
             </div>,
-            slot,
+            sidebarSlot,
         );
     }
 
